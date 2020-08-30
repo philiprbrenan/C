@@ -20,7 +20,6 @@
 #include <unistd.h>
 
 #define say(args...) fprintf(stderr, args)                                      // Say something
-#include <$$_prototypes.h>                                                      // Arena tree prototypes now that the relevant structures have been declared
 
 //D1 Errors                                                                     // Methods for reporting errors
 
