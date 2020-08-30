@@ -1,0 +1,53 @@
+# Test various C programs written with the help of: https://metacpan.org/pod/Preprocess::Ops
+
+name: Test
+
+on:
+  push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install
+      run: |
+        sudo apt -y install build-essential libgtk-3-dev gdb tree
+        sudo cpan install Data::Table::Text Data::Dump Dita::PCD Getopt::Long File::Basename Java::Doc Preprocess::Ops
+
+    - name: Install Valgrind
+      run: |
+        sudo apt -y install valgrind
+
+    - name: Run arenaRedBlackTree
+      run: |
+        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaRedBlackTree/arenaRedBlackTree.c --cIncludes c/includes
+        valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/arenaRedBlackTree/arenaRedBlackTree
+
+    - name: Run arenaTree
+      run: |
+        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaTree/arenaTree.c --cIncludes c/includes
+        valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/arenaTree/arenaTree
+
+    - name: Run fileName
+      run: |
+        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/fileName/fileName.c --cIncludes c/includes
+        valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/fileName/fileName
+
+    - name: Run redBlackTree
+      run: |
+        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/redBlackTree/redBlackTree.c --cIncludes c/includes
+        valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/redBlackTree/redBlackTree
+
+    - name: Run readOnlyBytes
+      run: |
+        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/readOnlyBytes/readOnlyBytes.c --cIncludes c/includes
+        valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/readOnlyBytes/readOnlyBytes
+
+    - name: Run xml
+      run: |
+        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes
+        valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/xml/xml
+
