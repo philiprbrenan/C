@@ -82,7 +82,7 @@ $ new$                                                                          
 
 //D1 Pointers and Offsets                                                       // Operations on pointers and offsets
 
-static void * pointer_tree_offset                                               //PV Return a temporary pointer to an offset in a tree.
+static void * pointer_$_size                                                    //PV Return a temporary pointer to an offset in a tree.
  (const $      tree,                                                            // Tree
   const size_t delta)                                                           // Delta
  {if (!delta) return NULL;                                                      // A zero delta is an unset delta
@@ -90,14 +90,14 @@ static void * pointer_tree_offset                                               
   return (void *)(tree.arena->data + delta);                                    // Convert a non zero delta that is within the arena to a valid pointer
  }
 
-static void * pointer_offset                                                    //PV Convert a node describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
+static void * pointer_$Offset                                                   //PV Convert a node describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
  (const $Offset o)                                                              // Offset
- {return pointer_tree_offset(o.tree, o.offset);                                 // Return a temporary pointer to an offset in a tree.
+ {return pointer_$_size(o.tree, o.offset);                                      // Return a temporary pointer to an offset in a tree.
  }
 
 static $Content * content_$Node                                                 //PV Convert a node offset to an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
  (const $Node n)                                                                // NodeContent $Offset
- {return ($Content *)pointer_tree_offset(n.tree, n.offset);
+ {return ($Content *)pointer_$_size(n.tree, n.offset);
  }
 
 static int equals_int_$Node_$Node                                               // Confirm two offsets are equal
@@ -137,21 +137,21 @@ static $Node setKey_$Node_$Node_string                                          
   return node;
  };
 
-static $Offset  offset_tree_delta                                               //P Create an offset to locate an item within the tree.
+static $Offset  offset_$_size                                                   //P Create an offset to locate an item within the tree.
  (const $       tree,                                                           // Tree
   const size_t  delta)                                                          // Delta within arena
  {const $Offset o = {tree, delta, &ProtoTypes_$Offset};                         // Create offset locally
   return        o;
  }
 
-static $Node   node_tree_delta                                                  //P Create a node to locate an allocation within the arena of a tree.
+static $Node   node_$_size                                                      //P Create a node to locate an allocation within the arena of a tree.
  (const $      tree,                                                            // Tree
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
  {const $Node  n = {tree, delta, &ProtoTypes_$Node};                            // Create node
   return       n;
  }
 
-static $Offset allocate_offset_tree_delta                                       //P Allocate memory within the arena of a tree and clear the allocated memory
+static $Offset allocate_offset_$_size                                           //P Allocate memory within the arena of a tree and clear the allocated memory
  (const $      tree,                                                            // ArenaTree in which to allocate
   const size_t size)                                                            // Amount of memory required
  {if (tree.arena->used + size < tree.arena->size)                               // Allocate within existing arena
@@ -171,14 +171,14 @@ static $Offset allocate_offset_tree_delta                                       
         tree.arena->size = S;                                                   // Arena size
         const size_t u = tree.arena->used;                                      // Length of free space
         memset(tree.arena->data + u, 0, S - u);                                 // Clear free space
-        return allocate_offset_tree_delta(tree, size);                          // Allocate within arena
+        return tree ▷ allocate(size);                                           // Allocate within arena
        }
      }
    }
   printStackBackTrace("Arena too large\n");                                     // The arena has become too large for the chosen size of offsets.
  }
 
-static $Node newn_$Node_tree_string                                             // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
+static $Node newn_$Node_$_$String                                               // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
  (const $       tree,                                                           // Arena tree in which to create the node
   const $String key,                                                            // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
   const size_t  length)                                                         // Length of the key, or if zero, I will use strlen
@@ -188,13 +188,13 @@ static $Node newn_$Node_tree_string                                             
   return     tree ▷ node(c.offset);                                             // Return node
  }
 
-static $Node new_$Node_tree_string                                              // Create a new tree node keyed by a zero terminated string.
+static $Node new_$Node_$_$String                                                 // Create a new tree node keyed by a zero terminated string.
  (const $       tree,                                                           // Arena tree in which to create the node
   const $String key)                                                            // Key for this node.  Note: we do not order nodes automatically.
  {return tree ▷ newn(key, 0);
  }
 
-static $Offset saveString_offset_tree_string                                    //P Save a copy of a zero terminated string in a tree and return the offset of the string.
+static $Offset saveString_$Offset_$_$String                                      //P Save a copy of a zero terminated string in a tree and return the offset of the string.
  (const $       tree,                                                           // Arena tree in which to create the node
   const $String str,                                                            // String
   const size_t  length)                                                         // String, or if zero I will call strlen
@@ -582,7 +582,7 @@ static size_t used_$                                                            
  {return tree.arena->used;
  }
 
-static void write_void_$_string                                                 // Write a tree to a named file or abort
+static void write_void_$_$String                                                // Write a tree to a named file or abort
  (const $       tree,                                                           // Tree
   const $String file)                                                           // File
  {const int o = open(file, O_CREAT| O_WRONLY, S_IRWXU);                         // Open for output creating if needed
