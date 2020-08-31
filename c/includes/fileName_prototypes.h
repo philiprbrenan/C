@@ -19,6 +19,8 @@ static void writeFile_FileName_string_ssize
  (const FileName      file,
   const char * content,
   const size_t length);
+static void unlink_FileName
+ (const FileName      file);
 static size_t b2SumW8_FileName
  (const FileName i);
 static size_t maxFileNameSize_FileNameFileName
@@ -32,6 +34,8 @@ struct ProtoTypes_FileName {
     const FileName file);                                                       // File name to read
   size_t  (*size)(                                                              // Get the size of a file in bytes
     FileName file);                                                             // Name of the file
+  void  (*unlink)(                                                              // Unlink - delete - the specified file
+    const FileName file);                                                       // File name to delete
   void  (*writeContentToOpenFile)(                                              // Write content to an open file descriptor unti it is either all written or an error occurs.
     const FileName file,                                                        // Name of the file
     const int desc,                                                             // Open file descriptor to write to
@@ -42,4 +46,4 @@ struct ProtoTypes_FileName {
     const char * content,                                                       // Content for the file
     const size_t length);                                                       // Length of content, or zero for a zero terminated string
  } const ProtoTypes_FileName =
-{b2SumW8_FileName, maxFileNameSize_FileNameFileName, readFile_FileName, size, writeContentToOpenFile, writeFile_FileName_string_ssize};
+{b2SumW8_FileName, maxFileNameSize_FileNameFileName, readFile_FileName, size, unlink_FileName, writeContentToOpenFile, writeFile_FileName_string_ssize};
