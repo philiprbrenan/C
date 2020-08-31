@@ -51,12 +51,16 @@ $ new$ParseTreeFromFile                                                         
  (const char *   fileName)                                                      // Name of file holding $
  {say("AAAA %s\n", fileName);
   ArenaTree      t = newArenaTree, errors = newArenaTree;                       // Parse tree
+say("AAAA %s\n", "a");
   ArenaTreeNode  P = t ▷ root;                                                  // Current parent node
+say("AAAA %s\n", "b");
   const FileName f = newFileName(fileName);
+say("AAAA %s\n", "c");
   ReadOnlyBytes  b = newReadOnlyBytesFromFile(f);
+say("AAAA %s\n", "d");
   $              x = {proto:&ProtoTypes_$, fileName: newFileName(fileName),     // Xml parse tree
                      tree: t, errors: errors, data: b};
-//b ▷ writeOpenFile(stderr);
+say("AAAA %s\n", "e");
 
   $ error                                                                       // Report an error
    (char *p,                                                                    // Pointer to position at which the error occurred
@@ -86,13 +90,16 @@ $ new$ParseTreeFromFile                                                         
     return 1;                                                                   // Its all white sace
    }
 
+say("AAAA %s\n", "f");
   for(char *p = b ▷ data; *p;)                                                  // Break out tags and text
    {char *o = strchr(p, $Open);                                                 // Find next open
+say("AAAA %s\n", "g");
     if (o)                                                                      // Found next open
      {if (o > p) P ▷ putLast(t ▷ newNStr(p, o - p));                            // Save text preceding open if any
 
       char *c = strchr(o, $Close);                                              // Save tag: find corresponding close
 
+say("AAAA %s\n", "h");
       if (c)                                                                    // Found closing >
        {ArenaTreeNode save(void){return P ▷ putLast(t ▷ newNStr(o, c - o + 1));}// Save tag as a new node
 
@@ -114,9 +121,11 @@ $ new$ParseTreeFromFile                                                         
      }
     else                                                                        // Check that trailing text is all spaces
      {if (remainderIsWhiteSpace(p)) return x;                                   // End of $ text with just trailing white space
+say("AAAA %s\n", "i");
       return error(p, "Ignoring text at end\n");
      }
    }
+say("AAAA %s\n", "j");
   return x;
  }
 
