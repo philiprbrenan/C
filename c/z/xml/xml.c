@@ -73,14 +73,10 @@ $ new$ParseTreeFromFile                                                         
     printStackBackTrace("Cannot locate position within $\n");                   // This should not happen
    } // error
 
-say("AAAA %s\n", "1");
   char *p  = b ▷ data;                                                          // Start of text to be parsed
-say("AAAA %s %s\n", "2", p);
   if  (*p != $Open)                                                             // Insist that the first character is <
-   {say("AAAA %s\n", "3");
-    return error(p, $makeString("$ must start with: %c\n", $Open));
+   {return error(p, $makeString("$ must start with: %c\n", $Open));
    }
-say("AAAA %s\n", "4");
 
   int remainderIsWhiteSpace(char *p)                                            // Find the next non space character in a zero terminated string
    {for(; *p; ++p) if (!isspace(*p)) return 0;                                  // Non white space
@@ -177,9 +173,13 @@ static void by_$_sub                                                            
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
 
+static int develop()                                                            // Test whether we are local or on github
+ {return !strcmp(getenv("HOME"), "/home/phil");
+ }
+
 void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
- {char file[128];
-  sprintf(file, "%s/%s", getenv("HOME"), "c/z/xml/test.xml");
+ {char file[128] =   "/home/phil/c/z/xml/test.xml";
+  if (!develop()) strcpy(file,  "c/z/xml/test.xml");
   $             x = new$ParseTreeFromFile(file);
   ArenaTree     p = x.tree;
   ArenaTreeNode n;
