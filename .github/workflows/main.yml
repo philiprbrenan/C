@@ -28,31 +28,37 @@ jobs:
 
     - name: Run arenaRedBlackTree
       run: |
+        (ls -la c/z/xml/samples/foreword.dita; echo '')
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaRedBlackTree/arenaRedBlackTree.c --cIncludes c/includes
         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/arenaRedBlackTree/arenaRedBlackTree
 
     - name: Run arenaTree
       run: |
+        (ls -la c/z/xml/samples/foreword.dita; echo '')
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaTree/arenaTree.c --cIncludes c/includes
         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/arenaTree/arenaTree
 
     - name: Run fileName
       run: |
+        (ls -la c/z/xml/samples/foreword.dita; echo '')
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/fileName/fileName.c --cIncludes c/includes
         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/fileName/fileName
 
     - name: Run redBlackTree
       run: |
+        (ls -la c/z/xml/samples/foreword.dita; echo '')
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/redBlackTree/redBlackTree.c --cIncludes c/includes
         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/redBlackTree/redBlackTree
 
     - name: Run readOnlyBytes
       run: |
+        (ls -la c/z/xml/samples/foreword.dita; echo '')
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/readOnlyBytes/readOnlyBytes.c --cIncludes c/includes
         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/readOnlyBytes/readOnlyBytes
 
     - name: Run xml
       run: |
+        (ls -la c/z/xml/samples/foreword.dita; echo '')
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes
         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/xml/xml
 
