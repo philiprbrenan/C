@@ -28,7 +28,9 @@ jobs:
 
     - name: Run xml
       run: |
-        tree
+        pwd
+        ls -la /home/runner/c/z/xml/test.xml
+        ls -la c/z/xml/test.xml
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes
         # valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/xml/xml
 
