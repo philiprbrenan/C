@@ -180,6 +180,7 @@ static int develop()                                                            
 void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {char file[128] =   "/home/phil/c/z/xml/test.xml";
   if (!develop()) strcpy(file,  "c/z/xml/test.xml");
+  strcpy(file,  "c/z/xml/test.xml");
   $             x = new$ParseTreeFromFile(file);
   ArenaTree     p = x.tree;
   ArenaTreeNode n;
