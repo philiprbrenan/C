@@ -177,15 +177,21 @@ static void by_$_sub                                                            
 
 void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {const char *file = "/home/phil/c/z/xml/test.xml";
+say("AAAA %s\n", "a");
   $             x = new$ParseTreeFromFile(file);
+say("AAAA %s\n", "b");
   ArenaTree     p = x.tree;
   ArenaTreeNode n;
 
+say("AAAA %s\n", "c");
   if (     p ▷ findFirstKey("<b>", &n))
+say("AAAA %s\n", "d");
   assert(! p ▷ findFirstKey("<d>", &n));
+say("AAAA %s\n", "e");
   if (     p ▷ findFirstKey( "d",  &n))
 
   x ▷ free;
+say("AAAA %s\n", "f");
  }
 
 void test1()                                                                    //Tprint
