@@ -75,17 +75,17 @@ $ new$ParseTreeFromFile                                                         
 
 say("AAAA %s\n", "1");
   char *p  = b ▷ data;                                                          // Start of text to be parsed
-say("AAAA %s\n", "2");
+say("AAAA %s %s\n", "2", p);
   if  (*p != $Open)                                                             // Insist that the first character is <
-   {return error(p, $makeString("$ must start with: %c\n", $Open));
+   {say("AAAA %s\n", "3");
+    return error(p, $makeString("$ must start with: %c\n", $Open));
    }
-say("AAAA %s\n", "3");
+say("AAAA %s\n", "4");
 
   int remainderIsWhiteSpace(char *p)                                            // Find the next non space character in a zero terminated string
    {for(; *p; ++p) if (!isspace(*p)) return 0;                                  // Non white space
     return 1;                                                                   // Its all white sace
    }
-say("AAAA %s\n", "4");
 
   for(char *p = b ▷ data; *p;)                                                  // Break out tags and text
    {char *o = strchr(p, $Open);                                                 // Find next open
