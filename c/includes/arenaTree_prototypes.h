@@ -1,7 +1,7 @@
-static void * pointer_tree_offset
+static void * pointer_ArenaTree_size
  (const ArenaTree      tree,
   const size_t delta);
-static void * pointer_offset
+static void * pointer_ArenaTreeOffset
  (const ArenaTreeOffset o);
 static ArenaTreeContent * content_ArenaTreeNode
  (const ArenaTreeNode n);
@@ -17,23 +17,23 @@ static ArenaTreeString key_string_ArenaTreeNode
 static ArenaTreeNode setKey_ArenaTreeNode_ArenaTreeNode_string
  (const ArenaTreeNode   node,
   const ArenaTreeString key);
-static ArenaTreeOffset  offset_tree_delta
+static ArenaTreeOffset  offset_ArenaTree_size
  (const ArenaTree       tree,
   const size_t  delta);
-static ArenaTreeNode   node_tree_delta
+static ArenaTreeNode   node_ArenaTree_size
  (const ArenaTree      tree,
   const size_t delta);
-static ArenaTreeOffset allocate_offset_tree_delta
+static ArenaTreeOffset allocate_offset_ArenaTree_size
  (const ArenaTree      tree,
   const size_t size);
-static ArenaTreeNode newn_ArenaTreeNode_tree_string
+static ArenaTreeNode newn_ArenaTreeNode_ArenaTree_ArenaTreeString
  (const ArenaTree       tree,
   const ArenaTreeString key,
   const size_t  length);
-static ArenaTreeNode new_ArenaTreeNode_tree_string
+static ArenaTreeNode new_ArenaTreeNode_ArenaTree_ArenaTreeString
  (const ArenaTree       tree,
   const ArenaTreeString key);
-static ArenaTreeOffset saveString_offset_tree_string
+static ArenaTreeOffset saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString
  (const ArenaTree       tree,
   const ArenaTreeString str,
   const size_t  length);
@@ -120,7 +120,7 @@ static  ArenaTreeNode wrap_ArenaTreeNode_string_pointer
   const ArenaTreeString key);
 static size_t used_ArenaTree
  (const ArenaTree tree);
-static void write_void_ArenaTree_string
+static void write_void_ArenaTree_ArenaTreeString
  (const ArenaTree       tree,
   const ArenaTreeString file);
 struct ProtoTypes_ArenaTree {
@@ -179,7 +179,7 @@ struct ProtoTypes_ArenaTree {
     const ArenaTree tree,                                                       // Tree
     const ArenaTreeString file);                                                // File
  } const ProtoTypes_ArenaTree =
-{allocate_offset_tree_delta, by_ArenaTree_sub, count_size_t_tree, findFirstKey_int_tree_string_ArenaTreeNodePointer, free_tree, fromLetters_tree_str, new_ArenaTreeNode_tree_string, newn_ArenaTreeNode_tree_string, node_tree_delta, offset_tree_delta, pointer_tree_offset, printWithBrackets_string_tree, print_string_tree, putFirst_ArenaTreeNode_tree_ArenaTreeNode, putLast_ArenaTreeNode_tree_ArenaTreeNode, root_ArenaTreeNodeOffset_ArenaTree, saveString_offset_tree_string, used_ArenaTree, write_void_ArenaTree_string};
+{allocate_offset_ArenaTree_size, by_ArenaTree_sub, count_size_t_tree, findFirstKey_int_tree_string_ArenaTreeNodePointer, free_tree, fromLetters_tree_str, new_ArenaTreeNode_ArenaTree_ArenaTreeString, newn_ArenaTreeNode_ArenaTree_ArenaTreeString, node_ArenaTree_size, offset_ArenaTree_size, pointer_ArenaTree_size, printWithBrackets_string_tree, print_string_tree, putFirst_ArenaTreeNode_tree_ArenaTreeNode, putLast_ArenaTreeNode_tree_ArenaTreeNode, root_ArenaTreeNodeOffset_ArenaTree, saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString, used_ArenaTree, write_void_ArenaTree_ArenaTreeString};
 struct ProtoTypes_ArenaTreeNode {
   ArenaTreeContent *  (*content)(                                               // Convert a node offset to an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
     const ArenaTreeNode n);                                                     // NodeContent ArenaTreeOffset
@@ -248,4 +248,4 @@ struct ProtoTypes_ArenaTreeOffset {
   void *  (*pointer)(                                                           // Convert a node describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
     const ArenaTreeOffset o);                                                   // Offset
  } const ProtoTypes_ArenaTreeOffset =
-{pointer_offset};
+{pointer_ArenaTreeOffset};
