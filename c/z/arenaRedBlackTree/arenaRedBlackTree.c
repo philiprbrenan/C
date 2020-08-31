@@ -51,7 +51,7 @@ typedef struct $FindList                                                        
 
 //D1 Pointers, offsets and allocations                                          // Locate items allocated in the arena
 
-include ../arenaTree/arenaTree.c pointer_tree_offset allocate_offset_tree_delta pointer_offset saveString_offset_tree_string new_$Node_tree_string node_tree_delta content_$Node offset_tree_delta new$ write_void_$_string used_$ read_
+include ../arenaTree/arenaTree.c pointer_$_size allocate_offset_$_size pointer_$Offset saveString_$Offset_$_$String new_$Node_$_$String newn_$Node_$_$String node_$_size content_$Node offset_$_size new$ write_void_$_$String used_$
 
 $Found new$Found                                                                //P New found status
  ($Found  allocator)                                                            // Allocator
