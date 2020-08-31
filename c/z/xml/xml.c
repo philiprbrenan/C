@@ -174,13 +174,14 @@ static void by_$_sub                                                            
 #if __INCLUDE_LEVEL__ == 0
 
 static int develop()                                                            // Test whether we are local or on github
- {return !strcmp(getenv("HOME"), "/home/phil");
+ {const int r = !strcmp(getenv("HOME"), "/home/phil");
+  say("AAAA  develop %d\n", r);
+  return r;
  }
 
 void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {char file[128] =   "/home/phil/c/z/xml/test.xml";
   if (!develop()) strcpy(file,  "c/z/xml/test.xml");
-  strcpy(file,  "c/z/xml/test.xml");
   $             x = new$ParseTreeFromFile(file);
   ArenaTree     p = x.tree;
   ArenaTreeNode n;
@@ -193,8 +194,8 @@ void test0()                                                                    
  }
 
 void test1()                                                                    //Tprint
- {char file[128];
-  sprintf(file, "%s/%s", getenv("HOME"), "c/z/xml/samples/foreword.dita");
+ {char file[128] = "/home/phil/c/z/xml/samples/foreword.dita";
+  if (!develop()) strcpy(file, "c/z/xml/samples/foreword.dita");
   $ x = new$ParseTreeFromFile(file);
 
   ArenaTree     p   = x.tree;
