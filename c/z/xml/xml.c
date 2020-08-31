@@ -176,7 +176,8 @@ static void by_$_sub                                                            
 #if __INCLUDE_LEVEL__ == 0
 
 void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
- {const char *file = "/home/phil/c/z/xml/test.xml";
+ {char file[128];
+  sprintf(file, "%s/%s", getenv("HOME"), "c/z/xml/test.xml");
   $             x = new$ParseTreeFromFile(file);
   ArenaTree     p = x.tree;
   ArenaTreeNode n;
@@ -189,7 +190,8 @@ void test0()                                                                    
  }
 
 void test1()                                                                    //Tprint
- {const char *file = "/home/phil/c/z/xml/samples/foreword.dita";
+ {char file[128];
+  sprintf(file, "%s/%s", getenv("HOME"), "c/z/xml/samples/foreword.dita");
   $ x = new$ParseTreeFromFile(file);
 
   ArenaTree     p   = x.tree;
