@@ -3,8 +3,6 @@ ReadOnlyBytes newReadOnlyBytes
 
   const size_t length,
   const enum   ReadOnlyBytes_allocator allocator);
-ReadOnlyBytes newReadOnlyBytesError
- (const int errNo);
 ReadOnlyBytes newReadOnlyBytesFromString
  (const char * string,
   const size_t length);
@@ -20,8 +18,6 @@ static void free_ReadOnlyBytes
 static size_t length_ReadOnlyBytes
  (const ReadOnlyBytes r);
 static char *data_ReadOnlyBytes
- (const ReadOnlyBytes r);
-static int errNo_ReadOnlyBytes
  (const ReadOnlyBytes r);
 static ReadOnlyBytes substring_string_ReadOnlyBytes_sizet_sizet
  (const ReadOnlyBytes      r,
@@ -52,8 +48,6 @@ struct ProtoTypes_ReadOnlyBytes {
   int  (*equals)(                                                               // Compare two read only byte sequences
     const ReadOnlyBytes p,                                                      // Description of first read only sequence of bytes
     const ReadOnlyBytes q);                                                     // Description second read only sequence of bytes
-  int  (*errNo)(                                                                // Error number of the sequence if any
-    const ReadOnlyBytes r);                                                     // Description of a sequence of read only bytes
   void  (*free)(                                                                // Free any resources associated with a read only byte sequence
     const ReadOnlyBytes r);                                                     // Description of a read only sequence of bytes
   size_t  (*length)(                                                            // Length of the sequence
@@ -69,4 +63,4 @@ struct ProtoTypes_ReadOnlyBytes {
     const ReadOnlyBytes r,                                                      // Description of a read only sequence of bytes
     FILE   * f);                                                                // File descriptor
  } const ProtoTypes_ReadOnlyBytes =
-{b2SumW8_ReadOnlyBytes, data_ReadOnlyBytes, equalsString_ReadOnlyBytes_zeroString, equals_ReadOnlyBytes_ReadOnlyBytes, errNo_ReadOnlyBytes, free_ReadOnlyBytes, length_ReadOnlyBytes, substring_string_ReadOnlyBytes_sizet_sizet, writeFile_ReadOnlyBytes_string, writeOpenFile_ReadOnlyBytes_string};
+{b2SumW8_ReadOnlyBytes, data_ReadOnlyBytes, equalsString_ReadOnlyBytes_zeroString, equals_ReadOnlyBytes_ReadOnlyBytes, free_ReadOnlyBytes, length_ReadOnlyBytes, substring_string_ReadOnlyBytes_sizet_sizet, writeFile_ReadOnlyBytes_string, writeOpenFile_ReadOnlyBytes_string};
