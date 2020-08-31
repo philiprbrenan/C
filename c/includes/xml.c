@@ -55,8 +55,6 @@ Xml newXmlParseTreeFromFile                                                     
   ReadOnlyBytes  b = newReadOnlyBytesFromFile(f);
   Xml              x = {proto:&ProtoTypes_Xml, fileName: newFileName(fileName),     // Xml parse tree
                      tree: t, errors: errors, data: b};
-//b.proto->writeOpenFile(b, stderr);
-
   Xml error                                                                       // Report an error
    (char *p,                                                                    // Pointer to position at which the error occurred
     char *m)                                                                    // Message text
@@ -75,10 +73,14 @@ Xml newXmlParseTreeFromFile                                                     
     printStackBackTrace("Cannot locate position within Xml\n");                   // This should not happen
    } // error
 
+say("AAAA %s\n", "1");
   char *p  = b.proto->data(b);                                                          // Start of text to be parsed
+say("AAAA %s %s\n", "2", p);
   if  (*p != XmlOpen)                                                             // Insist that the first character is <
-   {return error(p, XmlmakeString("Xml must start with: %c\n", XmlOpen));
+   {say("AAAA %s\n", "3");
+    return error(p, XmlmakeString("Xml must start with: %c\n", XmlOpen));
    }
+say("AAAA %s\n", "4");
 
   int remainderIsWhiteSpace(char *p)                                            // Find the next non space character in a zero terminated string
    {for(; *p; ++p) if (!isspace(*p)) return 0;                                  // Non white space
@@ -176,7 +178,8 @@ static void by_Xml_sub                                                          
 #if __INCLUDE_LEVEL__ == 0
 
 void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
- {const char *file = "/home/phil/c/z/xml/test.xml";
+ {char file[128];
+  sprintf(file, "%s/%s", getenv("HOME"), "c/z/xml/test.xml");
   Xml             x = newXmlParseTreeFromFile(file);
   ArenaTree     p = x.tree;
   ArenaTreeNode n;
@@ -189,7 +192,8 @@ void test0()                                                                    
  }
 
 void test1()                                                                    //Tprint
- {const char *file = "/home/phil/c/z/xml/samples/foreword.dita";
+ {char file[128];
+  sprintf(file, "%s/%s", getenv("HOME"), "c/z/xml/samples/foreword.dita");
   Xml x = newXmlParseTreeFromFile(file);
 
   ArenaTree     p   = x.tree;
@@ -238,6 +242,7 @@ int main(void)                                                                  
   run_tests("Xml", 1, tests);
   return 0;
  }
+
 #endif
 #endif
 // valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/xml/xml
