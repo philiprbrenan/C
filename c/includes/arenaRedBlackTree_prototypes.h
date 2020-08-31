@@ -1,28 +1,33 @@
-static void * pointer_tree_offset
+static void * pointer_ArenaRedBlackTree_size
  (const ArenaRedBlackTree      tree,
   const size_t delta);
-static void * pointer_offset
+static void * pointer_ArenaRedBlackTreeOffset
  (const ArenaRedBlackTreeOffset o);
 static ArenaRedBlackTreeContent * content_ArenaRedBlackTreeNode
  (const ArenaRedBlackTreeNode n);
-static ArenaRedBlackTreeOffset  offset_tree_delta
+static ArenaRedBlackTreeOffset  offset_ArenaRedBlackTree_size
  (const ArenaRedBlackTree       tree,
   const size_t  delta);
-static ArenaRedBlackTreeNode   node_tree_delta
+static ArenaRedBlackTreeNode   node_ArenaRedBlackTree_size
  (const ArenaRedBlackTree      tree,
   const size_t delta);
-static ArenaRedBlackTreeOffset allocate_offset_tree_delta
+static ArenaRedBlackTreeOffset allocate_offset_ArenaRedBlackTree_size
  (const ArenaRedBlackTree      tree,
   const size_t size);
-static ArenaRedBlackTreeOffset saveString_offset_tree_string
- (const ArenaRedBlackTree tree,
-  const ArenaRedBlackTreeString str);
-static ArenaRedBlackTreeNode new_ArenaRedBlackTreeNode_tree_string
- (const ArenaRedBlackTree          tree,
-  const ArenaRedBlackTreeString    key);
+static ArenaRedBlackTreeNode newn_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString
+ (const ArenaRedBlackTree       tree,
+  const ArenaRedBlackTreeString key,
+  const size_t  length);
+static ArenaRedBlackTreeNode new_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString
+ (const ArenaRedBlackTree       tree,
+  const ArenaRedBlackTreeString key);
+static ArenaRedBlackTreeOffset saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString
+ (const ArenaRedBlackTree       tree,
+  const ArenaRedBlackTreeString str,
+  const size_t  length);
 static size_t used_ArenaRedBlackTree
  (const ArenaRedBlackTree tree);
-static void write_void_ArenaRedBlackTree_string
+static void write_void_ArenaRedBlackTree_ArenaRedBlackTreeString
  (const ArenaRedBlackTree       tree,
   const ArenaRedBlackTreeString file);
 static void free_ArenaRedBlackTree
@@ -98,9 +103,13 @@ struct ProtoTypes_ArenaRedBlackTree {
     char * const key);                                                          // The key to find
   void  (*free)(                                                                // Free a tree in its entirety
     const ArenaRedBlackTree tree);                                              // Tree
-  ArenaRedBlackTreeNode  (*new)(                                                // Create a new tree node and return its offset. The key of the node is zero terminated.
+  ArenaRedBlackTreeNode  (*new)(                                                // Create a new tree node keyed by a zero terminated string.
     const ArenaRedBlackTree tree,                                               // Arena tree in which to create the node
     const ArenaRedBlackTreeString key);                                         // Key for this node.  Note: we do not order nodes automatically.
+  ArenaRedBlackTreeNode  (*newn)(                                               // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
+    const ArenaRedBlackTree tree,                                               // Arena tree in which to create the node
+    const ArenaRedBlackTreeString key,                                          // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
+    const size_t length);                                                       // Length of the key, or if zero, I will use strlen
   ArenaRedBlackTreeNode    (*node)(                                             // Create a node to locate an allocation within the arena of a tree.
     const ArenaRedBlackTree tree,                                               // Tree
     const size_t delta);                                                        // Delta within arena. A delta of zero represents no such node.
@@ -116,7 +125,8 @@ struct ProtoTypes_ArenaRedBlackTree {
     const ArenaRedBlackTree tree);                                              // Tree
   ArenaRedBlackTreeOffset  (*saveString)(                                       // Save a copy of a zero terminated string in a tree and return the offset of the string.
     const ArenaRedBlackTree tree,                                               // Arena tree in which to create the node
-    const ArenaRedBlackTreeString str);                                         // String
+    const ArenaRedBlackTreeString str,                                          // String
+    const size_t length);                                                       // String, or if zero I will call strlen
   char *  (*sprint)(                                                            // Print a tree in a string. We allocate a string large enough to hold the print. Freeing the allocated string containing the print is the responsibility fo the caller.
     const ArenaRedBlackTree tree);                                              // Tree to print
   size_t  (*used)(                                                              // Amount of space currently being used within the arena of a tree.
@@ -125,7 +135,7 @@ struct ProtoTypes_ArenaRedBlackTree {
     const ArenaRedBlackTree tree,                                               // Tree
     const ArenaRedBlackTreeString file);                                        // File
  } const ProtoTypes_ArenaRedBlackTree =
-{add_ArenaRedBlackTreeNode_ArenaRedBlackTree_string, allocate_offset_tree_delta, find_ArenaRedBlackTreeFound_ArenaRedBlackTree_string, free_ArenaRedBlackTree, new_ArenaRedBlackTreeNode_tree_string, node_tree_delta, offset_tree_delta, pointer_tree_offset, print_ArenaRedBlackTree, root_ArenaRedBlackTree, saveString_offset_tree_string, sprint_string_ArenaRedBlackTree, used_ArenaRedBlackTree, write_void_ArenaRedBlackTree_string};
+{add_ArenaRedBlackTreeNode_ArenaRedBlackTree_string, allocate_offset_ArenaRedBlackTree_size, find_ArenaRedBlackTreeFound_ArenaRedBlackTree_string, free_ArenaRedBlackTree, new_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, newn_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, node_ArenaRedBlackTree_size, offset_ArenaRedBlackTree_size, pointer_ArenaRedBlackTree_size, print_ArenaRedBlackTree, root_ArenaRedBlackTree, saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString, sprint_string_ArenaRedBlackTree, used_ArenaRedBlackTree, write_void_ArenaRedBlackTree_ArenaRedBlackTreeString};
 struct ProtoTypes_ArenaRedBlackTreeFindList {
   ArenaRedBlackTreeFindList  (*find)(                                           // Find a list of keys starting at the base tree. Return true if all the keys were found.
     ArenaRedBlackTreeFindList findList,                                         // The list of keys to search for
@@ -185,7 +195,7 @@ struct ProtoTypes_ArenaRedBlackTreeNode {
  } const ProtoTypes_ArenaRedBlackTreeNode =
 {add_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode_string, content_ArenaRedBlackTreeNode, find_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string, height_ArenaRedBlackTreeNode, key_ArenaRedBlackTreeNode, left_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode, ownedTreeRoot_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode, print_ArenaRedBlackTreeNode, right_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode, setHeight_ArenaRedBlackTreeNode, setLeft_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode, setRight_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode, setTree_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode, setUp_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode, sprintRoot_string_rootArenaRedBlackTreeNode, sprint_string_ArenaRedBlackTreeNode, up_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode};
 struct ProtoTypes_ArenaRedBlackTreeOffset {
-  void *  (*pointer)(                                                           // Convert a node  describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
+  void *  (*pointer)(                                                           // Convert a node describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
     const ArenaRedBlackTreeOffset o);                                           // Offset
  } const ProtoTypes_ArenaRedBlackTreeOffset =
-{pointer_offset};
+{pointer_ArenaRedBlackTreeOffset};
