@@ -226,7 +226,6 @@ void test1()                                                                    
 
 void test2()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {char *file =      "/home/phil/c/z/xml/validation/validation.xml";
-  if (!develop()) strcpy(file, "c/z/xml/validation/validation.xml");
   $ x = new$ParseTreeFromFile(file);
 
   void look($Node node)
