@@ -17,10 +17,9 @@
 
 //D1 Read Only Bytes                                                            // Extract information from a buffer containing a read only sequence of bytes
 
-typedef struct ReadOnlyBytes                                                                        //s Description of a read only sequence of bytes
+typedef struct ReadOnlyBytes                                                                //s Description of a read only sequence of bytes
  {const size_t length;                                                          // Length of the byte sequence
   const char  *data;                                                            // Address of the first byte in the read only sequence of bytes
-  const int    errNo;                                                           // Set to an error number if an error occurred while creating the description
   const enum   ReadOnlyBytes_allocator                                                      // Allocation of memory
    {ReadOnlyBytes_allocator_none   = 0,                                                     // Stack
     ReadOnlyBytes_allocator_malloc = 1,                                                     // malloc
@@ -36,14 +35,7 @@ ReadOnlyBytes newReadOnlyBytes                                                  
  (const char  *data,
   const size_t length,                                                          // Length of the byte sequence
   const enum   ReadOnlyBytes_allocator allocator)                                           // Allocation of memory so we know how to free it (or not to free it)
- {ReadOnlyBytes r = {length, data, 0, allocator, &ProtoTypes_ReadOnlyBytes};
-  return r;
- }
-
-ReadOnlyBytes newReadOnlyBytesError                                                                     //CP Create a new description of a read only sequence of bytes
- (const int errNo)                                                              // Set to an error number if an error occurred while creating the description
- {ReadOnlyBytes r = {0, 0, errNo, ReadOnlyBytes_allocator_none,
-                     &ProtoTypes_ReadOnlyBytes};
+ {ReadOnlyBytes r = {length, data, allocator, &ProtoTypes_ReadOnlyBytes};
   return r;
  }
 
@@ -64,26 +56,28 @@ ReadOnlyBytes newReadOnlyBytesFromFormat                                        
  (const char * format, ...)                                                     // Format followed by strings
  {va_list va;
   va_start(va, format);
-  char *data;
-  const int length = vasprintf(&data, format, va);                              // Allocate and format output string
+  char *data; const int length = vasprintf(&data, format, va);                  // Allocate and format output string
   va_end(va);
 
-  if (length < 0) return newReadOnlyBytesError(errno);                                      // Unsuccessful allocation
   return newReadOnlyBytes(data, length, ReadOnlyBytes_allocator_malloc);                    // Successful allocation
  }
 
 ReadOnlyBytes newReadOnlyBytesFromFile                                                                  //C Create a new description of a read only sequence of bytes read from a file
  (FileName file)                                                                // File to read
- {struct stat sb;
-  const char * fileName = file.name;
-  const int fd = open(fileName, O_RDONLY);
-  if (fd == -1 || fstat(fd, &sb) == -1) return newReadOnlyBytesError(errno);                // Unsuccessful allocation
-  const size_t length = sb.st_size;
-  const char *data = mmap(NULL, length + 1, PROT_READ, MAP_PRIVATE, fd, 0);     // Add space for a terminating zero byte - mmap sets unused bytes beyond the file to zero giving us a zero terminated string.
-  if (fd == -1 || fstat(fd, &sb) == -1) return newReadOnlyBytesError(errno);                // Unsuccessful allocation
-  close(fd);                                                                    // Close the file: the map is private so we no long need the underlying file
+ {struct stat  s;
+  char * const f = file.name;
+  const  int   d = open(f, O_RDONLY);
+  if (d < 0 || fstat(d, &s) < 0)                                                // Unsuccessful allocation
+   {printStackBackTrace("Unable to open file %s because: %m\n",  f);
+   }
+  const size_t l = s.st_size;                                                   // Size of file
+  char * const data = mmap(NULL, l + 1, PROT_READ, MAP_PRIVATE, d, 0);          // Add space for a terminating zero byte - mmap sets unused bytes beyond the file to zero giving us a zero terminated string.
+  if (!data)                                                                    // Unsuccessful mapping
+   {printStackBackTrace("Unable to map file %s because: %m\n",  f);
+   }
+  close(d);                                                                     // Close the file: the map is private so we no long need the underlying file
 
-  return newReadOnlyBytes(data, length, ReadOnlyBytes_allocator_mmap);
+  return newReadOnlyBytes(data, l, ReadOnlyBytes_allocator_mmap);                                       // Read only bytes description of a mapped file
  }
 
 static void free_ReadOnlyBytes                                                              //D Free any resources associated with a read only byte sequence
@@ -105,11 +99,6 @@ static size_t length_ReadOnlyBytes                                              
 static char *data_ReadOnlyBytes                                                             // Data field of the sequence
  (const ReadOnlyBytes r)                                                                    // Description of a sequence of read only bytes
  {return (char *)(r.data);
- }
-
-static int errNo_ReadOnlyBytes                                                              // Error number of the sequence if any
- (const ReadOnlyBytes r)                                                                    // Description of a sequence of read only bytes
- {return r.errNo;
  }
 
 static ReadOnlyBytes substring_string_ReadOnlyBytes_sizet_sizet                                         // Describe a sub-string of the specified sequence
@@ -161,23 +150,23 @@ void test0()                                                                    
   assert(r.proto->length(r) == strlen(s));
   ReadOnlyBytes R = r.proto->substring(r, 2, 2);
   assert(strncmp(R.proto->data(R), "23", R.length) == 0);
-  assert(R.proto->errNo(R) == 0);
 
   r.proto->free(r); R.proto->free(R);
  }
 
 void test1()                                                                    //TwriteFile //Tequals //TequalsString //Tfree //TnewReadOnlyBytesFromFile
- {const FileName f = newFileName("/tmp/readOnlyBytes.data");                    // Temporary file
-  char *s = "0123456789";                                                       // Sample sequence of read only bytes
+ {const FileName f = newFileName("zzzReadOnlyBytes.data");                      // Temporary file
+  char          *s = "0123456789";                                              // Sample data
 
   ReadOnlyBytes q = newReadOnlyBytesFromFormat("%s", s);                                                // New descriptor
     q.proto->writeFile(q, f);
 
   ReadOnlyBytes r = newReadOnlyBytesFromFile(f);                                                        // New descriptor
-
   assert(q.proto->equals(q, r));
   assert(q.proto->equalsString(q, s));
     q.proto->free(q); r.proto->free(r);
+  f.proto->unlink(f);
+  assert(!f.proto->size(f));
  }
 
 void test2()                                                                    //TnewReadOnlyBytesFromFormat
