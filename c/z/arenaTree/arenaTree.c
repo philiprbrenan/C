@@ -31,12 +31,11 @@ typedef struct $Content                                                         
  {$Delta parent;                                                                // Offset to the parent of this node or zero if this is the root of the tree
   $Delta first, last, next, prev;                                               // Offsets to the first, last children of this node, amd the next and previous siblings of this node.
   $Delta key;                                                                   // The name of this node represented by a zero terminated string at the specified offset in the arena. Nodes are not ordered by their keys, their order is determined solely by the user. Keys can be reused between nodes.
-  void  *data[0];                                                               // Location of any data following the node in the arena.
  } $Content;
 
 typedef struct $Offset                                                          // Offset to any item in the tree.  The caller is responsible for interpreting the content of the memory so addressed.
- {$      tree;                                                                  // ArenaTree containing the item
-  size_t offset;                                                                // Offset
+ {const $      tree;                                                            // ArenaTree containing the item
+  const size_t offset;                                                          // Offset
   const struct ProtoTypes_$Offset *proto;                                       // Methods associated with offsets
  } $Offset;
 
@@ -54,12 +53,12 @@ typedef struct $Arena                                                           
  } $Arena;
 
 typedef struct $Description                                                     // The description of an arena tree which is written as the header record for dump files.
- {size_t version;                                                               // Version of arena tree
-  size_t littleEndian;                                                          // Little endian if true
-  size_t s64b;                                                                  // 64 bit address if true, else 32 bit
-  size_t used;                                                                  // The number of bytes currently used by the arena.
-  size_t root;                                                                  // Offset to the root node
-  time_t created;                                                               // Time in seconds since the epoch when this tree was created
+ {const size_t version;                                                         // Version of arena tree
+  const size_t littleEndian;                                                    // Little endian if true
+  const size_t s64b;                                                            // 64 bit address if true, else 32 bit
+  const size_t used;                                                            // The number of bytes currently used by the arena.
+  const size_t root;                                                            // Offset to the root node
+  const time_t created;                                                         // Time in seconds since the epoch when this tree was created
  } $Description;
 
 #include <$$_prototypes.h>                                                      // Arena tree prototypes now that the relevant structures have been declared
@@ -83,7 +82,7 @@ $ new$                                                                          
 
 //D1 Pointers and Offsets                                                       // Operations on pointers and offsets
 
-static void * pointer_tree_offset                                               //V Return a temporary pointer to an offset in a tree.
+static void * pointer_tree_offset                                               //PV Return a temporary pointer to an offset in a tree.
  (const $      tree,                                                            // Tree
   const size_t delta)                                                           // Delta
  {if (!delta) return NULL;                                                      // A zero delta is an unset delta
@@ -91,12 +90,12 @@ static void * pointer_tree_offset                                               
   return (void *)(tree.arena->data + delta);                                    // Convert a non zero delta that is within the arena to a valid pointer
  }
 
-static void * pointer_offset                                                    //V Convert a node  describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
+static void * pointer_offset                                                    //PV Convert a node describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
  (const $Offset o)                                                              // Offset
  {return pointer_tree_offset(o.tree, o.offset);                                 // Return a temporary pointer to an offset in a tree.
  }
 
-static $Content * content_$Node                                                 //V Convert a node offset to an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
+static $Content * content_$Node                                                 //PV Convert a node offset to an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
  (const $Node n)                                                                // NodeContent $Offset
  {return ($Content *)pointer_tree_offset(n.tree, n.offset);
  }
@@ -123,7 +122,7 @@ static $Node root_$NodeOffset_$NodeOffset                                       
 
 static $String key_string_$Node                                                 //V Get a temporary pointer to the offset containing the key of a node.
  (const $Node node)                                                             // NodeContent
- {$ t = node.tree;
+ {const $ t = node.tree;
   $Offset k = t ▷ offset((node ▷ content)->key.delta);
   return  k ▷ pointer;
  }
@@ -134,13 +133,11 @@ static $Node setKey_$Node_$Node_string                                          
  (const $Node   node,                                                           // NodeContent
   const $String key)                                                            // Key - it will be copied into the tree
  {const $   t  = node.tree;
-  $Offset   o  = t ▷ saveString(key);                                           // Offset to key
-  $Content *c  = ($Content *)(node ▷ content);
-  c->key.delta = o.offset;
+ (($Content *)(node ▷ content))->key.delta = t ▷ saveString(key, 0).offset;
   return node;
  };
 
-static $Offset  offset_tree_delta                                               // Create an offset to locate an item within the tree.
+static $Offset  offset_tree_delta                                               //P Create an offset to locate an item within the tree.
  (const $       tree,                                                           // Tree
   const size_t  delta)                                                          // Delta within arena
  {const $Offset o = {tree, delta, &ProtoTypes_$Offset};                         // Create offset locally
@@ -181,67 +178,34 @@ static $Offset allocate_offset_tree_delta                                       
   printStackBackTrace("Arena too large\n");                                     // The arena has become too large for the chosen size of offsets.
  }
 
-static $Offset saveString_offset_tree_string                                    // Save a copy of a zero terminated string in a tree and return the offset of the string.
- (const $ tree,                                                                 // Arena tree in which to create the node
-  const $String str)                                                            // String
- {const $Offset o = tree ▷ allocate(strlen(str) + 1);
+static $Node newn_$Node_tree_string                                             // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
+ (const $       tree,                                                           // Arena tree in which to create the node
+  const $String key,                                                            // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
+  const size_t  length)                                                         // Length of the key, or if zero, I will use strlen
+ {const $Offset c = tree ▷ allocate(sizeof($Content));                          // Space required for a tree node
+  const $Offset k = tree ▷ saveString(key, length);                             // Save key string in tree arena
+ (($Content *)  c ▷ pointer)->key.delta = k.offset;                             // Save key offset
+  return     tree ▷ node(c.offset);                                             // Return node
+ }
+
+static $Node new_$Node_tree_string                                              // Create a new tree node keyed by a zero terminated string.
+ (const $       tree,                                                           // Arena tree in which to create the node
+  const $String key)                                                            // Key for this node.  Note: we do not order nodes automatically.
+ {return tree ▷ newn(key, 0);
+ }
+
+static $Offset saveString_offset_tree_string                                    //P Save a copy of a zero terminated string in a tree and return the offset of the string.
+ (const $       tree,                                                           // Arena tree in which to create the node
+  const $String str,                                                            // String
+  const size_t  length)                                                         // String, or if zero I will call strlen
+ {const $Offset o = tree ▷ allocate((length ? : strlen(str)) + 1);              // Allocate space for the string plus a terminating zero
   const $String t = o ▷ pointer;
   strcpy(t, str);
   return o;
  }
 
-static $Offset saveNString_offset_tree_string_delta                             // Save a copy of the specified number of characters from a string as a zero terminated string in a tree and return the offset of the string. (An extra byte is allocated to hold the terminating zero).
- (const $       tree,                                                           // Arena tree in which to create the node
-  const $String str,                                                            // str for this node.  Note: we do not order nodes automatically.
-  const size_t  length)                                                         // str for this node.  Note: we do not order nodes automatically.
- {const size_t  l = length + 1;
-  const $Offset o = tree ▷ allocate(l);
-  const $String t = o ▷ pointer;
-  strncpy(t, str, length); t[l] = 0;
-  return o;
- }
-
-static $Node new_$Node_tree_string                                              // Create a new tree node and return its offset. The key of the node is zero terminated.
- (const $          tree,                                                        // Arena tree in which to create the node
-  const $String    key)                                                         // Key for this node.  Note: we do not order nodes automatically.
- {const $Offset    c = tree ▷ allocate(sizeof($Content));                       // Space required for a tree node
-  const $Offset    k = tree ▷ saveString(key);                                  // Save key string in tree arena
-  $Content * const n = c ▷ pointer;                                             // Temporary pointer to node
-  n->key.delta       = k.offset;                                                // Save key offset
-  return tree ▷ node(c.offset);                                                 // Return node
- }
-
-static $Node newNStr_$Node_tree_string_length                                   // Create a new tree node from a string specified by its location and length
- (const $      tree,                                                            // Arena tree in which to create the node
-  char * const str,                                                             // String location
-  const size_t length)                                                          // String length
- {return tree ▷ newNStrExtra(str, length, 0, 0);                                // Return node with no extension
- }
-
-static $Node newNStrExtra_$Node_tree_string_sizet_sizet_pointer                 // Create a new tree node from a string specified by its location and length with following space for a structure of specified size loaded from the specified pointer.
- (const $      tree,                                                            // Arena tree in which to create the node
-  char * const str,                                                             // String location
-  const size_t length,                                                          // String length
-  const size_t extraLength,                                                     // Length of extra data
-  const void  *extra)                                                           // Extra data
- {const $Offset N = tree ▷ allocate(sizeof($Content) + extraLength);            // Space required for a tree node plus extra
-  const $Offset k = tree ▷ saveNString(str, length);                            // Save key string in tree arena
-  $Content * const n = N ▷ pointer;                                             // Temporary pointer to node
-  n->key.delta       = k.offset;                                                // Save key offset
-  if (extraLength > 0) memcpy(&n->data, extra, extraLength);                    // Copy in extra data if provided
-  return tree ▷ node(N.offset);                                                 // Return node
- }
-
-static void getExtra_$Node_sizet_pointer                                        // Get the extra data after a node - the caller must provide the size of the data and a structure into which to copy it.
- (const $Node  node,                                                            // Node
-  const size_t extraLength,                                                     // Length of extra data
-  void        *extra)                                                           // Extra data area
- {$Content * const n = node ▷ content;                                          // Temporary pointer to node
-  memcpy(extra, &n->data, extraLength);                                         // Copy out extra data
- }
-
 static void fromLetters_tree_str                                                // Load tree from a string of letters and brackets.  The root node of the tree so constructed is always given the letter 'a'.
- ($       tree,                                                                 // Tree
+ (const $ tree,                                                                 // Tree
   $String str)                                                                  // String of letters and brackets describing desired tree structure
  {const $Node n = tree ▷ root;                                                  // The node we are currently  adding to
   n ▷ setKey("a");                                                              // The root is always called "a"
@@ -278,36 +242,36 @@ static void free_tree                                                           
 
 //D1 Navigation                                                                 // Navigate through a tree.
 
-static $Node parent_$Node_$Node                                                 // Get the parent of a child
- (const $Node  child)                                                           // Child
+static  $Node parent_$Node_$Node                                                // Get the parent of a child
+ (const $Node child)                                                            // Child
  {if (child ▷ isRoot) printStackBackTrace("The root node of a tree has no parent\n");
   const $Delta p = (child ▷ content)->parent;
-  const $ t = child.tree;
-  return  t ▷ node(p.delta);
+  const $      t = child.tree;
+  return       t ▷ node(p.delta);
  }
 
-static $Node first_$Node_$Node                                                  // Get the first child under a parent.
+static  $Node first_$Node_$Node                                                 // Get the first child under a parent.
  (const $Node parent)                                                           // Parent
  {const $ t = parent.tree;
-  return t ▷ node((parent ▷ content)->first.delta);
+  return  t ▷ node((parent ▷ content)->first.delta);
  }
 
-static $Node last_$Node_$Node                                                   // Get the last child under a parent.
+static  $Node last_$Node_$Node                                                  // Get the last child under a parent.
  (const $Node parent)                                                           // Parent
  {const $ t = parent.tree;
-  return t ▷ node((parent ▷ content)->last.delta);
+  return  t ▷ node((parent ▷ content)->last.delta);
  }
 
-static $Node next_$Node_$Node                                                   // Get the next sibling of the specified child.
+static  $Node next_$Node_$Node                                                  // Get the next sibling of the specified child.
  (const $Node child)                                                            // Child
  {const $ t = child.tree;
-  return t ▷ node((child ▷ content)->next.delta);
+  return  t ▷ node((child ▷ content)->next.delta);
  }
 
-static $Node prev_$Node_$Node                                                   // Get the previous sibling of the specified child.
+static  $Node prev_$Node_$Node                                                  // Get the previous sibling of the specified child.
  (const $Node child)                                                            // Child
  {const $ t = child.tree;
-  return t ▷ node((child ▷ content)->prev.delta);
+  return  t ▷ node((child ▷ content)->prev.delta);
  }
 
 static int findFirstKey_int_tree_string_$NodePointer                            // Find the first node with the specified key in the tree. Returns true and sets found if a matching key is found else returns false
@@ -336,9 +300,9 @@ static int findFirstKey_int_tree_string_$NodePointer                            
 //D1 Location                                                                   // Verify the current location.
 
 static int context_$Node                                                        // Return true if the parent of the specified child has the specified key.
- ($Node  child,                                                                 // Child
-  $Node *parent,                                                                // Parent container
-  char  *key)                                                                   // Key
+ (const $Node  child,                                                           // Child
+  $Node * const parent,                                                         // Parent container
+  char  * const key)                                                            // Key
  {if (child ▷ isRoot) return 0;                                                 // The root node has no context
   const $Node p = *parent = child ▷ parent;                                     // Get parent if it exists
   return(p.offset && strcmp(p ▷ key, key) == 0);                                // Check key
@@ -494,7 +458,7 @@ static  size_t count_size_t_tree                                                
  (const $ tree)                                                                 // Tree
  {size_t l = 0;
   void count(const $Node parent)                                                // Process the children of the specified parent
-   {l++; $fe(child, parent) count(child);                                        // Each child
+   {l++; $fe(child, parent) count(child);                                       // Each child
     if (l > 99) printStackBackTrace("Too many\n");
    }
   count(tree ▷ root);                                                           // Start at the root
@@ -508,7 +472,7 @@ static  $String printWithBrackets_string_$Node                                  
    {l += strlen(parent ▷ key);                                                  // Parent key
     if (!parent ▷ isEmpty)                                                      // Parent has children
      {l += 2;                                                                   // Space for brackets
-      $fe(child, parent) len(child);                                             // Each child
+      $fe(child, parent) len(child);                                            // Each child
      }
    }
 
@@ -518,7 +482,7 @@ static  $String printWithBrackets_string_$Node                                  
     p = stpcpy(p, k);
     if (!parent ▷ isEmpty)                                                      // Parent has children
      {*p++ = '(';                                                               // Start children
-      $fe(child, parent) print(child);                                           // Each child
+      $fe(child, parent) print(child);                                          // Each child
       *p++ = ')';                                                               // Start children
      }
     *p = 0;                                                                     // End the string
@@ -541,7 +505,7 @@ static  $String print_string_$Node                                              
  {size_t  l = 0;                                                                // Length of output string
   void len(const $Node parent)                                                  // Find the size of buffer we will need
    {l += strlen(parent ▷ key);                                                  // Parent key
-    $fe(child, parent) len(child);                                               // Each child
+    $fe(child, parent) len(child);                                              // Each child
    }
 
   $String p;
@@ -625,7 +589,6 @@ static void write_void_$_string                                                 
   if (o < 0) printStackBackTrace("Cannot open file: %s for write\n", file);
 
   time_t current; time(&current);
-//const $Description h = {1, 1, 0, tree.arena->used, (root_$NodeOffset_$(tree)).offset, current}; // Create arena tree header describing the tree
   const $Description h = {1, 1, 0, tree ▷ used, tree ▷ root.offset, current};   // Create arena tree header describing the tree
 
   if (sizeof(h) != write(o, &h, sizeof(h)))                                     // Write header
@@ -656,7 +619,7 @@ $ read$                                                                         
 
   tree.arena->data = alloc(tree.arena->size = tree.arena->used = h.used);       // Allocate arena
 
-  ssize_t r = read(i, tree.arena->data, tree.arena->used);                      // Read arena
+  const ssize_t r = read(i, tree.arena->data, tree.arena->used);                // Read arena
   if (r < 0 || tree.arena->used != (size_t)r)
    {printStackBackTrace("Cannot read $ from file: %s\n", file);
    }
@@ -671,15 +634,15 @@ $ read$                                                                         
 #if __INCLUDE_LEVEL__ == 0
 #define treeIs(n, s) {$String p = n ▷ printWithBrackets; assert(strcmp(p,s) == 0); free(p);}// Check the content of a tree
 
-void test0()                                                                    //Tnew$ //Tnew //TnewNStr //Tfree //TputFirst //TputLast //Tfe //Tfer
+void test0()                                                                    //Tnew$ //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {$        t = new$;                                                            // Create a tree
   $Node root = t ▷ root;
 
   for(int i = 0; i < 10; ++i)                                                   // Load tree
    {char s[2] = {'a'+i, 0};
-    $Node         child = t ▷ new    (s);    root ▷ putLast(child);
-                  child = t ▷ newNStr(s, 1); root ▷ putFirst(child);
-    s[0] = 'A'+i; child ▷ setKey( s);
+    $Node         child = t ▷ new(s); root ▷ putLast (child);
+                  child = t ▷ new(s); root ▷ putFirst(child);
+    s[0] = 'A'+i; child ▷ setKey(s);
     assert(strcmp(child ▷ key, s) == 0);
    }
 
@@ -813,38 +776,30 @@ void test6()                                                                    
          t ▷ free;
  }
 
-void test7()                                                                    //Toffset //Tallocate //TsetKey //Tkey //TsaveString //TsaveNString //Tpointer //Tused //Tsize
+void test7()                                                                    //TsetKey //Tkey //TsaveString //Tused //Tsize
  {$ t = new$ ; t ▷ fromLetters("");
   $Delta   d = {delta : 1};
   assert(sizeof(d) == 4);
 
-  $Offset  o = t ▷ offset(1);
-  assert (o.tree.arena == t.arena && o.offset == 1);
-
-  $Offset a = t ▷ saveString("aaaa");
+  $Offset a = t ▷ saveString("aaaa", 0);
   assert(strcmp(a ▷ pointer, "aaaa") == 0);
-
-  $Offset b = t ▷ saveNString("bbbb", 2);
-  assert(strcmp(b ▷ pointer, "bb") == 0);
 
   $Node      n = t ▷ new   ("a");
                  n ▷ setKey("A");
   assert(strcmp (n ▷ key,   "A") == 0);
 
-  assert(t ▷ used == 67);
-
   t ▷ free;
  }
 
-void test8()                                                                    //TputNext //TputPrev
+void test8()                                                                    //TputNext //TputPrev //Tnewn
  {$ t = new$; t ▷ fromLetters("A");
   $Node a = t ▷ root;  assert((a ▷ key)[0] == 'a');
   $Node A = a ▷ first; assert((A ▷ key)[0] == 'A');
 
   for(int i = 0; i < 10; ++i)
-   {char c[2] = {'0'+i, 0};
-    A ▷ putNext(t ▷ new(c));
-    A ▷ putPrev(t ▷ new(c));
+   {char c[2] = {'0'+i};
+    A ▷ putNext(t ▷ newn(c, 1));
+    A ▷ putPrev(t ▷ newn(c, 1));
    }
 
   treeIs(t ▷ root, "a(0123456789A9876543210)");
@@ -852,31 +807,10 @@ void test8()                                                                    
   t ▷ free;
  }
 
-void test9()                                                                    //TgetExtra //TnewNStrExtra //Tcontent
- {$ t = new$;
-  struct S {int a, b;} s = {1, 2};
-  $Node r = t ▷ root; r ▷ setKey("a");
-
-  $Node b = t ▷ newNStrExtra("b", 1, sizeof(s), &s);
-
-  r ▷ putLast(b); r ▷ putLast(t ▷ new("c")); r ▷ putLast(t ▷ new("d"));
-
-  treeIs(t ▷ root, "a(bcd)");
-  b ▷ getExtra(sizeof(s), &s);
-  assert(s.a == 1 && s.b == 2);
-  $Node R = b ▷ root;
-  assert(memcmp(&R, &r, sizeof($Node)) == 0);
-
-  const $Content *c = R ▷ content;
-  assert(strcmp((char *)(t.arena->data + c->key.delta), b ▷ key));
-
-  t ▷ free;
- }
-
 int main(void)                                                                  // Run tests
- {const int repetitions = 10;                                                   // Number of times to test
+ {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7, test8, test9, 0};
+                           test6, test7, test8, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
