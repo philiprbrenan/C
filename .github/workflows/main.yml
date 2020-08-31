@@ -14,7 +14,8 @@ jobs:
 
     - name: Home
       run: |
-        echo $HOME;
+        echo $HOME
+        tree
 
     - name: Install
       run: |
