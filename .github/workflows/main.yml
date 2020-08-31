@@ -12,6 +12,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Home
+      run: |
+        echo $HOME;
+
     - name: Install
       run: |
         sudo apt -y install build-essential libgtk-3-dev gdb tree
