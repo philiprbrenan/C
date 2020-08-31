@@ -220,21 +220,21 @@ void test1()                                                                    
   x ▷ free;
  }
 
-void test2()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
- {const char *file = "/home/phil/c/z/xml/validation/validation.xml";
-  $ x = new$ParseTreeFromFile(file);
-
-  void look($Node node)
-   {//const ReadOnlyBytes tag = node ▷ getTag;
-   }
-
-  x ▷ by(look);
-
-  x ▷ free;
- }
+//void test2()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
+// {const char *file = "/home/phil/c/z/xml/validation/validation.xml";
+//  $ x = new$ParseTreeFromFile(file);
+//
+//  void look($Node node)
+//   {//const ReadOnlyBytes tag = node ▷ getTag;
+//   }
+//
+//  x ▷ by(look);
+//
+//  x ▷ free;
+// }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test0, test1, 0, test1, 0};
   run_tests("$", 1, tests);
   return 0;
  }
