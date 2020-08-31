@@ -68,12 +68,12 @@ $ new$FromFile                                                                  
   char * const f = file.name;
   const  int   d = open(f, O_RDONLY);
   if (d < 0 || fstat(d, &s) < 0)                                                // Unsuccessful allocation
-   {printStackBackTrace("Unable to open file %s because: %m\n",  f);
+   {printStackBackTrace("Unable to open file: %s because: %m\n",  f);
    }
   const size_t l = s.st_size;                                                   // Size of file
   char * const data = mmap(NULL, l + 1, PROT_READ, MAP_PRIVATE, d, 0);          // Add space for a terminating zero byte - mmap sets unused bytes beyond the file to zero giving us a zero terminated string.
   if (!data)                                                                    // Unsuccessful mapping
-   {printStackBackTrace("Unable to map file %s because: %m\n",  f);
+   {printStackBackTrace("Unable to map file: %s because: %m\n",  f);
    }
   close(d);                                                                     // Close the file: the map is private so we no long need the underlying file
 
@@ -155,8 +155,9 @@ void test0()                                                                    
  }
 
 void test1()                                                                    //TwriteFile //Tequals //TequalsString //Tfree //TnewReadOnlyBytesFromFile
- {const FileName f = newFileName("zzzReadOnlyBytes.data");                      // Temporary file
-  char          *s = "0123456789";                                              // Sample data
+ {char *s = "0123456789";                                                       // Sample data
+  const FileName f = newFileNameTemporaryWithContent                            // Temporary file
+   ("readOnlyBytes.data", s, 0);
 
   $ q = new$FromFormat("%s", s);                                                // New descriptor
     q ▷ writeFile(f);
