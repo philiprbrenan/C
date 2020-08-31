@@ -83,7 +83,7 @@ ArenaTree newArenaTree                                                          
 
 //D1 Pointers and Offsets                                                       // Operations on pointers and offsets
 
-static void * pointer_tree_offset                                               //PV Return a temporary pointer to an offset in a tree.
+static void * pointer_ArenaTree_size                                                    //PV Return a temporary pointer to an offset in a tree.
  (const ArenaTree      tree,                                                            // Tree
   const size_t delta)                                                           // Delta
  {if (!delta) return NULL;                                                      // A zero delta is an unset delta
@@ -91,14 +91,14 @@ static void * pointer_tree_offset                                               
   return (void *)(tree.arena->data + delta);                                    // Convert a non zero delta that is within the arena to a valid pointer
  }
 
-static void * pointer_offset                                                    //PV Convert a node describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
+static void * pointer_ArenaTreeOffset                                                   //PV Convert a node describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
  (const ArenaTreeOffset o)                                                              // Offset
- {return pointer_tree_offset(o.tree, o.offset);                                 // Return a temporary pointer to an offset in a tree.
+ {return pointer_ArenaTree_size(o.tree, o.offset);                                      // Return a temporary pointer to an offset in a tree.
  }
 
 static ArenaTreeContent * content_ArenaTreeNode                                                 //PV Convert a node offset to an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
  (const ArenaTreeNode n)                                                                // NodeContent ArenaTreeOffset
- {return (ArenaTreeContent *)pointer_tree_offset(n.tree, n.offset);
+ {return (ArenaTreeContent *)pointer_ArenaTree_size(n.tree, n.offset);
  }
 
 static int equals_int_ArenaTreeNode_ArenaTreeNode                                               // Confirm two offsets are equal
@@ -138,21 +138,21 @@ static ArenaTreeNode setKey_ArenaTreeNode_ArenaTreeNode_string                  
   return node;
  };
 
-static ArenaTreeOffset  offset_tree_delta                                               //P Create an offset to locate an item within the tree.
+static ArenaTreeOffset  offset_ArenaTree_size                                                   //P Create an offset to locate an item within the tree.
  (const ArenaTree       tree,                                                           // Tree
   const size_t  delta)                                                          // Delta within arena
  {const ArenaTreeOffset o = {tree, delta, &ProtoTypes_ArenaTreeOffset};                         // Create offset locally
   return        o;
  }
 
-static ArenaTreeNode   node_tree_delta                                                  //P Create a node to locate an allocation within the arena of a tree.
+static ArenaTreeNode   node_ArenaTree_size                                                      //P Create a node to locate an allocation within the arena of a tree.
  (const ArenaTree      tree,                                                            // Tree
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
  {const ArenaTreeNode  n = {tree, delta, &ProtoTypes_ArenaTreeNode};                            // Create node
   return       n;
  }
 
-static ArenaTreeOffset allocate_offset_tree_delta                                       //P Allocate memory within the arena of a tree and clear the allocated memory
+static ArenaTreeOffset allocate_offset_ArenaTree_size                                           //P Allocate memory within the arena of a tree and clear the allocated memory
  (const ArenaTree      tree,                                                            // ArenaTree in which to allocate
   const size_t size)                                                            // Amount of memory required
  {if (tree.arena->used + size < tree.arena->size)                               // Allocate within existing arena
@@ -172,14 +172,14 @@ static ArenaTreeOffset allocate_offset_tree_delta                               
         tree.arena->size = S;                                                   // Arena size
         const size_t u = tree.arena->used;                                      // Length of free space
         memset(tree.arena->data + u, 0, S - u);                                 // Clear free space
-        return allocate_offset_tree_delta(tree, size);                          // Allocate within arena
+        return tree.proto->allocate(tree, size);                                           // Allocate within arena
        }
      }
    }
   printStackBackTrace("Arena too large\n");                                     // The arena has become too large for the chosen size of offsets.
  }
 
-static ArenaTreeNode newn_ArenaTreeNode_tree_string                                             // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
+static ArenaTreeNode newn_ArenaTreeNode_ArenaTree_ArenaTreeString                                               // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
  (const ArenaTree       tree,                                                           // Arena tree in which to create the node
   const ArenaTreeString key,                                                            // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
   const size_t  length)                                                         // Length of the key, or if zero, I will use strlen
@@ -189,13 +189,13 @@ static ArenaTreeNode newn_ArenaTreeNode_tree_string                             
   return     tree.proto->node(tree, c.offset);                                             // Return node
  }
 
-static ArenaTreeNode new_ArenaTreeNode_tree_string                                              // Create a new tree node keyed by a zero terminated string.
+static ArenaTreeNode new_ArenaTreeNode_ArenaTree_ArenaTreeString                                                 // Create a new tree node keyed by a zero terminated string.
  (const ArenaTree       tree,                                                           // Arena tree in which to create the node
   const ArenaTreeString key)                                                            // Key for this node.  Note: we do not order nodes automatically.
  {return tree.proto->newn(tree, key, 0);
  }
 
-static ArenaTreeOffset saveString_offset_tree_string                                    //P Save a copy of a zero terminated string in a tree and return the offset of the string.
+static ArenaTreeOffset saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString                                      //P Save a copy of a zero terminated string in a tree and return the offset of the string.
  (const ArenaTree       tree,                                                           // Arena tree in which to create the node
   const ArenaTreeString str,                                                            // String
   const size_t  length)                                                         // String, or if zero I will call strlen
@@ -583,7 +583,7 @@ static size_t used_ArenaTree                                                    
  {return tree.arena->used;
  }
 
-static void write_void_ArenaTree_string                                                 // Write a tree to a named file or abort
+static void write_void_ArenaTree_ArenaTreeString                                                // Write a tree to a named file or abort
  (const ArenaTree       tree,                                                           // Tree
   const ArenaTreeString file)                                                           // File
  {const int o = open(file, O_CREAT| O_WRONLY, S_IRWXU);                         // Open for output creating if needed
