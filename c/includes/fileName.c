@@ -5,6 +5,7 @@
 #define _GNU_SOURCE
 #ifndef FileName_included
 #define FileName_included
+#include <unistd.h>
 #include <utilities.c>
 
 typedef struct FileName                                                                // File names (of limited length)
@@ -20,7 +21,7 @@ static size_t size                                                              
  (FileName file)                                                                       // Name of the file
  {struct stat buf;
   if (!stat(file.name, &buf)) return buf.st_size;
-  return -1;
+  return 0;
  }
 
 static void writeContentToOpenFile                                              //P Write content to an open file descriptor unti it is either all written or an error occurs.
@@ -113,11 +114,19 @@ static void writeFile_FileName_string_ssize                                     
   close(o);                                                                     // Close the file: the map is private so we no long need the underlying file
  }
 
+static void unlink_FileName                                                            // Unlink - delete - the specified file
+ (const FileName      file)                                                            // File name to delete
+ {unlink(file.name);
+ }
+
 static size_t b2SumW8_FileName                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const FileName i)                                                                    // Name of file containing content for which we want a digest.
  {const FileName o = newFileNameTemporary("o.txt");                                           // File to receive output
   Utilities_system("b2sum -l 8 < %s > %s", i.name, o.name);                     // Execute Blake command via shell
-  return strtol(o.proto->readFile(o), NULL, 16);
+  char * const r = o.proto->readFile(o);                                                // Read results from command
+  const size_t d = strtol(r, NULL, 16);                                         // Convert result from hex string to integer
+  free(r);                                                                      // Free read string
+  return d;                                                                     // Return digest
  }
 
 static size_t maxFileNameSize_FileNameFileName                                         // Maximum size of a file name
@@ -127,7 +136,7 @@ static size_t maxFileNameSize_FileNameFileName                                  
 #endif
 
 #if __INCLUDE_LEVEL__ == 0
-void test0()                                                                    //Tb2SumW8 //TnewFileNameTemporaryWithContent //TnewFileNameTemporary //TreadFile //TmaxFileNameSize //TnewFileName //Tsize //TwriteFile
+void test0()                                                                    //Tb2SumW8 //TnewFileNameTemporaryWithContent //TnewFileNameTemporary //TreadFile //TmaxFileNameSize //TnewFileName //Tsize //TwriteFile //Tunlink
  {FileName f = newFileNameTemporaryWithContent("aaa.c", "aaaa", 0);
   assert(f.proto->maxFileNameSize(f) == 255);
   assert(f.proto->b2SumW8(f) == 0x8f);
@@ -141,6 +150,8 @@ void test0()                                                                    
           F.proto->writeFile(F, "bbbb", 0);
   assert( F.proto->size(F) == 4);
   assert( F.proto->b2SumW8(F) == 0x12);
+          F.proto->unlink(F);
+  assert(!F.proto->size(F));
  }
 
 int main(void)                                                                  // Run tests
