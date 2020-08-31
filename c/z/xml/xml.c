@@ -49,7 +49,8 @@ typedef struct $Node                                                            
 
 $ new$ParseTreeFromFile                                                         // Parse $ held in a file
  (const char *   fileName)                                                      // Name of file holding $
- {ArenaTree      t = newArenaTree, errors = newArenaTree;                       // Parse tree
+ {say("AAAA %s\n", filename);
+  ArenaTree      t = newArenaTree, errors = newArenaTree;                       // Parse tree
   ArenaTreeNode  P = t ▷ root;                                                  // Current parent node
   const FileName f = newFileName(fileName);
   ReadOnlyBytes  b = newReadOnlyBytesFromFile(f);
