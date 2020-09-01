@@ -10,7 +10,6 @@ tree dependent from it with the same arena*/
 #define _GNU_SOURCE
 #ifndef ArenaRedBlackTree_included
 #define ArenaRedBlackTree_included
-//#include <readOnlyBytes.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Red Black Tree.
@@ -26,26 +25,26 @@ typedef struct ArenaRedBlackTree                                                
 typedef struct ArenaRedBlackTreeDelta                                                           // The amount an item is offset within a tree.
  {unsigned int delta;
  } ArenaRedBlackTreeDelta;
-#line 33 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 34 "/home/phil/c/z/arenaTree/arenaTree.c"
 typedef struct ArenaRedBlackTreeOffset                                                          // Offset to any item in the tree.  The caller is responsible for interpreting the content of the memory so addressed.
  {const ArenaRedBlackTree      tree;                                                            // ArenaTree containing the item
   const size_t offset;                                                          // Offset
   const struct ProtoTypes_ArenaRedBlackTreeOffset *proto;                                       // Methods associated with offsets
  } ArenaRedBlackTreeOffset;
-#line 39 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 40 "/home/phil/c/z/arenaTree/arenaTree.c"
 typedef struct ArenaRedBlackTreeNode                                                            // Offset to a node in the tree. As we know what is being addressed we have a more specific set of methods available than those available to a generic Offset.
  {ArenaRedBlackTree      tree;                                                                  // ArenaTree containing the item
   size_t offset;                                                                // Offset
   const struct ProtoTypes_ArenaRedBlackTreeNode *proto;                                         // Methods associated with nodes
  } ArenaRedBlackTreeNode;
-#line 45 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 46 "/home/phil/c/z/arenaTree/arenaTree.c"
 typedef struct ArenaRedBlackTreeArena                                                           // Description of the block of memory that holds a tree.  The individual nodes of the tree cannot be cannot be freed individually, but of course the entire arena can be. As the arena uses offsets to store addresses, the arena can be resized by copying it into a new, larger arena.
  {size_t  size;                                                                 // The total size of the arena used to hold data associated with the tree.
   size_t  used;                                                                 // The number of bytes currently used.
   size_t  root;                                                                 // Offset to the root node
   ArenaRedBlackTreeString data;                                                                 // The arena containing the data associated with the tree
  } ArenaRedBlackTreeArena;
-#line 52 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 53 "/home/phil/c/z/arenaTree/arenaTree.c"
 typedef struct ArenaRedBlackTreeDescription                                                     // The description of an arena tree which is written as the header record for dump files.
  {const size_t version;                                                         // Version of arena tree
   const size_t littleEndian;                                                    // Little endian if true
@@ -54,7 +53,7 @@ typedef struct ArenaRedBlackTreeDescription                                     
   const size_t root;                                                            // Offset to the root node
   const time_t created;                                                         // Time in seconds since the epoch when this tree was created
  } ArenaRedBlackTreeDescription;
-#line 20 "/home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree.c"
+#line 19 "/home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree.c"
 
 typedef struct ArenaRedBlackTreeContent                                                         // Content of a node in a red black tree
  {ArenaRedBlackTreeDelta left;                                                                  // Left child node offset
@@ -86,7 +85,7 @@ typedef struct ArenaRedBlackTreeFindList                                        
 
 //D1 Pointers, offsets and allocations                                          // Locate items allocated in the arena
 
-#line 65 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 66 "/home/phil/c/z/arenaTree/arenaTree.c"
 ArenaRedBlackTree newArenaRedBlackTree                                                                          // Create a new arena tree
  (const struct ArenaRedBlackTree allocator)                                                     // ArenaTree allocator
  {ArenaRedBlackTree t;                                                                          // Arena tree we are creating
@@ -101,7 +100,7 @@ ArenaRedBlackTree newArenaRedBlackTree                                          
   t.proto->new(t, "");                                                                  // Initialize root node
   return t;
  }
-#line 82 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 83 "/home/phil/c/z/arenaTree/arenaTree.c"
 static void * pointer_ArenaRedBlackTree_size                                                    //PV Return a temporary pointer to an offset in a tree.
  (const ArenaRedBlackTree      tree,                                                            // Tree
   const size_t delta)                                                           // Delta
@@ -109,31 +108,31 @@ static void * pointer_ArenaRedBlackTree_size                                    
   if ( delta > tree.arena->used) return NULL;                                   // An delta outside the arena is an unset delta
   return (void *)(tree.arena->data + delta);                                    // Convert a non zero delta that is within the arena to a valid pointer
  }
-#line 90 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 91 "/home/phil/c/z/arenaTree/arenaTree.c"
 static void * pointer_ArenaRedBlackTreeOffset                                                   //PV Convert a node describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
  (const ArenaRedBlackTreeOffset o)                                                              // Offset
  {return pointer_ArenaRedBlackTree_size(o.tree, o.offset);                                      // Return a temporary pointer to an offset in a tree.
  }
-#line 95 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 96 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeContent * content_ArenaRedBlackTreeNode                                                 //PV Convert a node offset to an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
  (const ArenaRedBlackTreeNode n)                                                                // NodeContent ArenaRedBlackTreeOffset
  {return (ArenaRedBlackTreeContent *)pointer_ArenaRedBlackTree_size(n.tree, n.offset);
  }
-#line 138 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 139 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeOffset  offset_ArenaRedBlackTree_size                                                   //P Create an offset to locate an item within the tree.
  (const ArenaRedBlackTree       tree,                                                           // Tree
   const size_t  delta)                                                          // Delta within arena
  {const ArenaRedBlackTreeOffset o = {tree, delta, &ProtoTypes_ArenaRedBlackTreeOffset};                         // Create offset locally
   return        o;
  }
-#line 145 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 146 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeNode   node_ArenaRedBlackTree_size                                                      //P Create a node to locate an allocation within the arena of a tree.
  (const ArenaRedBlackTree      tree,                                                            // Tree
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
  {const ArenaRedBlackTreeNode  n = {tree, delta, &ProtoTypes_ArenaRedBlackTreeNode};                            // Create node
   return       n;
  }
-#line 152 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 153 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeOffset allocate_offset_ArenaRedBlackTree_size                                           //P Allocate memory within the arena of a tree and clear the allocated memory
  (const ArenaRedBlackTree      tree,                                                            // ArenaTree in which to allocate
   const size_t size)                                                            // Amount of memory required
@@ -160,7 +159,7 @@ static ArenaRedBlackTreeOffset allocate_offset_ArenaRedBlackTree_size           
    }
   printStackBackTrace("Arena too large\n");                                     // The arena has become too large for the chosen size of offsets.
  }
-#line 179 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 180 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeNode newn_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString                                               // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
  (const ArenaRedBlackTree       tree,                                                           // Arena tree in which to create the node
   const char * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
@@ -171,13 +170,13 @@ static ArenaRedBlackTreeNode newn_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaR
   a->key.delta = k.offset;                                                      // Save key offset
   return tree.proto->node(tree, c.offset);                                                 // Return node
  }
-#line 190 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 191 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeNode new_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString                                                // Create a new tree node keyed by a zero terminated string.
  (const ArenaRedBlackTree            tree,                                                      // Arena tree in which to create the node
   const char * const key)                                                       // Key for this node.  Note: we do not order nodes automatically.
  {return tree.proto->newn(tree, key, 0);
  }
-#line 196 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 197 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeOffset saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString                                     //P Save a copy of a zero terminated string in a tree and return the offset of the string.
  (const ArenaRedBlackTree       tree,                                                           // Arena tree in which to create the node
   const char * const str,                                                       // String
@@ -187,7 +186,7 @@ static ArenaRedBlackTreeOffset saveString_ArenaRedBlackTreeOffset_ArenaRedBlackT
   strcpy(t, str);
   return o;
  }
-#line 52 "/home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree.c"
+#line 51 "/home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree.c"
 
 ArenaRedBlackTreeFound newArenaRedBlackTreeFound                                                                //P New found status
  (ArenaRedBlackTreeFound  allocator)                                                            // Allocator
