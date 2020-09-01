@@ -39,6 +39,26 @@ static ArenaTreeOffset saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString
  (const ArenaTree       tree,
   const char * const str,
   const size_t  length);
+static void get_ArenaTree_data_size
+ (const ArenaTree      tree,
+  const size_t offset,
+  void * const data,
+  const size_t length);
+static ArenaTreeOffset save_offset_ArenaTree_data_size
+ (const ArenaTree       tree,
+  const void *  const data,
+  const size_t  length);
+static void get_ArenaTreeNode_data_size
+ (const ArenaTreeNode  node,
+  void * const data,
+  const size_t length);
+static void set_ArenaTreeNode_data_size
+ (const ArenaTreeNode  node,
+  const void * const data,
+  const size_t length);
+static void copyData_ArenaTreeNode_ArenaTreeNode
+ (const ArenaTreeNode target,
+  const ArenaTreeNode source);
 static void fromLetters_ArenaTree_ArenaTreeString
  (const ArenaTree tree,
   ArenaTreeString str);
@@ -143,6 +163,11 @@ struct ProtoTypes_ArenaTree {
   void  (*fromLetters)(                                                         // Load tree from a string of letters and brackets.  The root node of the tree so constructed is always given the letter 'a'.
     const ArenaTree tree,                                                       // Tree
     ArenaTreeString str);                                                       // String of letters and brackets describing desired tree structure
+  void  (*get)(                                                                 // Get a copy of the data at the specified offset in the arena of a tree.
+    const ArenaTree tree,                                                       // Arena tree
+    const size_t offset,                                                        // Offset to data in arena
+    void * const data,                                                          // Pointer to the area into which the data is to be copied
+    const size_t length);                                                       // Length of the data to be retrieved
   ArenaTreeNode  (*new)(                                                        // Create a new tree node keyed by a zero terminated string.
     const ArenaTree tree,                                                       // Arena tree in which to create the node
     const char * const key);                                                    // Key for this node.  Note: we do not order nodes automatically.
@@ -175,13 +200,17 @@ struct ProtoTypes_ArenaTree {
     const ArenaTree tree,                                                       // Arena tree in which to create the node
     const char * const str,                                                     // String
     const size_t length);                                                       // String, or if zero I will call strlen
+  ArenaTreeOffset  (*save)(                                                     // Save a copy of the specified data in the arena of the tree and return the offset of the data.
+    const ArenaTree tree,                                                       // Arena tree in which to create the node
+    const void *  const data,                                                   // Pointer to the data to be saved
+    const size_t length);                                                       // Length of the data to be saved
   size_t  (*used)(                                                              // Amount of space currently being used within the arena of a tree.
     const ArenaTree tree);                                                      // Tree
   void  (*write)(                                                               // Write a tree to a named file or abort
     const ArenaTree tree,                                                       // Tree
     const char * const file);                                                   // File
  } const ProtoTypes_ArenaTree =
-{allocate_offset_ArenaTree_size, by_ArenaTree_sub, count_size_ArenaTree, findFirstKey_int_tree_string_ArenaTreeNodePointer, free_ArenaTree, fromLetters_ArenaTree_ArenaTreeString, new_ArenaTreeNode_ArenaTree_ArenaTreeString, newn_ArenaTreeNode_ArenaTree_ArenaTreeString, node_ArenaTree_size, offset_ArenaTree_size, pointer_ArenaTree_size, printWithBrackets_ArenaTreeString_ArenaTree, print_ArenaTreeString_ArenaTree, putFirst_ArenaTreeNode_tree_ArenaTreeNode, putLast_ArenaTreeNode_tree_ArenaTreeNode, root_ArenaTreeNodeOffset_ArenaTree, saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString, used_ArenaTree, write_void_ArenaTree_ArenaTreeString};
+{allocate_offset_ArenaTree_size, by_ArenaTree_sub, count_size_ArenaTree, findFirstKey_int_tree_string_ArenaTreeNodePointer, free_ArenaTree, fromLetters_ArenaTree_ArenaTreeString, get_ArenaTree_data_size, new_ArenaTreeNode_ArenaTree_ArenaTreeString, newn_ArenaTreeNode_ArenaTree_ArenaTreeString, node_ArenaTree_size, offset_ArenaTree_size, pointer_ArenaTree_size, printWithBrackets_ArenaTreeString_ArenaTree, print_ArenaTreeString_ArenaTree, putFirst_ArenaTreeNode_tree_ArenaTreeNode, putLast_ArenaTreeNode_tree_ArenaTreeNode, root_ArenaTreeNodeOffset_ArenaTree, saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString, save_offset_ArenaTree_data_size, used_ArenaTree, write_void_ArenaTree_ArenaTreeString};
 struct ProtoTypes_ArenaTreeNode {
   ArenaTreeContent *  (*content)(                                               // Convert a node offset to an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
     const ArenaTreeNode n);                                                     // NodeContent ArenaTreeOffset
@@ -189,6 +218,9 @@ struct ProtoTypes_ArenaTreeNode {
     const ArenaTreeNode child,                                                  // Child
     ArenaTreeNode * const parent,                                               // Parent container
     const char * const key);                                                    // Key
+  void  (*copyData)(                                                            // Copy the data associated with the sourtce node to the target node by copying the offset to the data held in the source node to the target node.
+    const ArenaTreeNode target,                                                 // Target node
+    const ArenaTreeNode source);                                                // Source node
   size_t  (*count)(                                                             // Count the number of children in a parent
     const ArenaTreeNode parent);                                                // Parent
   ArenaTreeNode  (*cut)(                                                        // Cut out a child.
@@ -198,6 +230,10 @@ struct ProtoTypes_ArenaTreeNode {
     const ArenaTreeNode b);                                                     // Second offset
   ArenaTreeNode  (*first)(                                                      // Get the first child under a parent.
     const ArenaTreeNode parent);                                                // Parent
+  void  (*get)(                                                                 // Get a copy of the data addressed by a node.
+    const ArenaTreeNode node,                                                   // Node in an arena tree associated with the data
+    void * const data,                                                          // Pointer to the area into which the data is to be copied
+    const size_t length);                                                       // Length of the data to be retrieved
   int  (*isEmpty)(                                                              // Confirm a node has no children.
     const ArenaTreeNode node);                                                  // NodeContent
   int  (*isFirst)(                                                              // Confirm a child is first under its parent
@@ -239,13 +275,17 @@ struct ProtoTypes_ArenaTreeNode {
   ArenaTreeNode  (*setKey)(                                                     // Copy a string into the key field of a node
     const ArenaTreeNode node,                                                   // Node
     const char * const key);                                                    // Key - it will be copied into the tree
+  void  (*set)(                                                                 // Save a copy of the specified data in the arena of the tree and return the offset of the data.
+    const ArenaTreeNode node,                                                   // Node in an arena tree to associate with the data
+    const void * const data,                                                    // Pointer to the data to be saved
+    const size_t length);                                                       // Length of the data to be saved
   ArenaTreeNode  (*unwrap)(                                                     // Unwrap the specified parent and return it.
     const ArenaTreeNode parent);                                                // Parent to unwrap
   ArenaTreeNode  (*wrap)(                                                       // Wrap the specified child with a new parent and return the new parent optionally setting its L[key] and L[value].
     const ArenaTreeNode child,                                                  // Child to wrap
     const char * const key);                                                    // Key for new parent
  } const ProtoTypes_ArenaTreeNode =
-{content_ArenaTreeNode, context_ArenaTreeNode, count_size_ArenaTreeNodeOffset, cut_ArenaTreeNode_ArenaTreeNode, equals_int_ArenaTreeNode_ArenaTreeNode, first_ArenaTreeNode_ArenaTreeNode, isEmpty_ArenaTreeNode, isFirst_ArenaTreeNode, isLast_ArenaTreeNode, isOnlyChild_ArenaTreeNode, isRoot_ArenaTreeNode, key_string_ArenaTreeNode, last_ArenaTreeNode_ArenaTreeNode, next_ArenaTreeNode_ArenaTreeNode, parent_ArenaTreeNode_ArenaTreeNode, prev_ArenaTreeNode_ArenaTreeNode, printWithBrackets_string_ArenaTreeNode, print_string_ArenaTreeNode, putFirst_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putLast_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putNext_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putPrev_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, root_ArenaTreeNodeOffset_ArenaTreeNodeOffset, setKey_ArenaTreeNode_ArenaTreeNode_ArenaTreeString, unwrap_ArenaTreeNode_ArenaTreeNode, wrap_ArenaTreeNode_ArenaTreeString};
+{content_ArenaTreeNode, context_ArenaTreeNode, copyData_ArenaTreeNode_ArenaTreeNode, count_size_ArenaTreeNodeOffset, cut_ArenaTreeNode_ArenaTreeNode, equals_int_ArenaTreeNode_ArenaTreeNode, first_ArenaTreeNode_ArenaTreeNode, get_ArenaTreeNode_data_size, isEmpty_ArenaTreeNode, isFirst_ArenaTreeNode, isLast_ArenaTreeNode, isOnlyChild_ArenaTreeNode, isRoot_ArenaTreeNode, key_string_ArenaTreeNode, last_ArenaTreeNode_ArenaTreeNode, next_ArenaTreeNode_ArenaTreeNode, parent_ArenaTreeNode_ArenaTreeNode, prev_ArenaTreeNode_ArenaTreeNode, printWithBrackets_string_ArenaTreeNode, print_string_ArenaTreeNode, putFirst_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putLast_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putNext_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putPrev_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, root_ArenaTreeNodeOffset_ArenaTreeNodeOffset, setKey_ArenaTreeNode_ArenaTreeNode_ArenaTreeString, set_ArenaTreeNode_data_size, unwrap_ArenaTreeNode_ArenaTreeNode, wrap_ArenaTreeNode_ArenaTreeString};
 struct ProtoTypes_ArenaTreeOffset {
   void *  (*pointer)(                                                           // Convert a node describing an offset into an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
     const ArenaTreeOffset o);                                                   // Offset
