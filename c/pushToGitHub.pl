@@ -30,8 +30,8 @@ arenaTree
 fileName
 redBlackTree
 readOnlyBytes
-xml
 END
+#xml
 
 if (1)                                                                          # Upload files
  {my @files;
