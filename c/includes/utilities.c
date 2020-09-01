@@ -1,3 +1,4 @@
+#line 1 "/home/phil/c/z/utilities/utilities.c"
 //------------------------------------------------------------------------------
 // Useful functions
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
