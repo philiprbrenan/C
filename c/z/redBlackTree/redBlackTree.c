@@ -5,10 +5,6 @@
 #define _GNU_SOURCE
 #ifndef $_included
 #define $_included
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <arenaTree.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing the tree. ArenaTree and TreeAllocator are not held inside the arena and so are pointers not offsets.
