@@ -28,6 +28,7 @@ typedef struct ArenaTreeContent                                                 
  {ArenaTreeDelta parent;                                                                // Offset to the parent of this node or zero if this is the root of the tree
   ArenaTreeDelta first, last, next, prev;                                               // Offsets to the first, last children of this node, amd the next and previous siblings of this node.
   ArenaTreeDelta key;                                                                   // The name of this node represented by a zero terminated string at the specified offset in the arena. Nodes are not ordered by their keys, their order is determined solely by the user. Keys can be reused between nodes.
+  ArenaTreeDelta data;                                                                  // The data carried by this node.
  } ArenaTreeContent;
 
 typedef struct ArenaTreeOffset                                                          // Offset to any item in the tree.  The caller is responsible for interpreting the content of the memory so addressed.
@@ -201,6 +202,49 @@ static ArenaTreeOffset saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString     
   const ArenaTreeString t = o.proto->pointer(o);
   strcpy(t, str);
   return o;
+ }
+
+static void get_ArenaTree_data_size                                                     // Get a copy of the data at the specified offset in the arena of a tree.
+ (const ArenaTree      tree,                                                            // Arena tree
+  const size_t offset,                                                          // Offset to data in arena
+  void * const data,                                                            // Pointer to the area into which the data is to be copied
+  const size_t length)                                                          // Length of the data to be retrieved
+ {void * const s = tree.proto->pointer(tree, offset);                                      // Locate data
+  memcpy(data, s, length);                                                      // Copy out data
+ }
+
+static ArenaTreeOffset save_offset_ArenaTree_data_size                                          // Save a copy of the specified data in the arena of the tree and return the offset of the data.
+ (const ArenaTree       tree,                                                           // Arena tree in which to create the node
+  const void *  const data,                                                     // Pointer to the data to be saved
+  const size_t  length)                                                         // Length of the data to be saved
+ {const ArenaTreeOffset o = tree.proto->allocate(tree, length);                                    // Allocate space for data
+  void * const  t = o.proto->pointer(o);                                                // Address allocation
+  memcpy(t, data, length);                                                      // Copy in data
+  return o;
+ }
+
+static void get_ArenaTreeNode_data_size                                                 // Get a copy of the data addressed by a node.
+ (const ArenaTreeNode  node,                                                            // Node in an arena tree associated with the data
+  void * const data,                                                            // Pointer to the area into which the data is to be copied
+  const size_t length)                                                          // Length of the data to be retrieved
+ {const ArenaTree tree  = node.tree;                                                    // Tree containing node
+  tree.proto->get(tree, node.proto->content(node)->data.delta, data, length);                         // Locate data
+ }
+
+static void set_ArenaTreeNode_data_size                                                 // Save a copy of the specified data in the arena of the tree and return the offset of the data.
+ (const ArenaTreeNode  node,                                                            // Node in an arena tree to associate with the data
+  const void * const data,                                                      // Pointer to the data to be saved
+  const size_t length)                                                          // Length of the data to be saved
+ {const ArenaTree    tree = node.tree;                                                  // Tree containing node
+  node.proto->content(node)->data.delta = tree.proto->save(tree, data, length).offset;                // Record offset of saved data
+ }
+
+static void copyData_ArenaTreeNode_ArenaTreeNode                                                // Copy the data associated with the sourtce node to the target node by copying the offset to the data held in the source node to the target node.
+ (const ArenaTreeNode target,                                                           // Target node
+  const ArenaTreeNode source)                                                           // Source node
+ {      ArenaTreeContent * const t = target.proto->content(target);                                  // Target content
+  const ArenaTreeContent * const s = source.proto->content(source);                                  // Source content
+  t->data = s->data;                                                            // Copy data offset
  }
 
 static void fromLetters_ArenaTree_ArenaTreeString                                               // Load tree from a string of letters and brackets.  The root node of the tree so constructed is always given the letter 'a'.
@@ -812,10 +856,32 @@ void test8()                                                                    
   t.proto->free(t);
  }
 
+void test9()                                                                    //Tget //Tset //TcopyData
+ {ArenaTree t = newArenaTree(({struct ArenaTree t = {proto: &ProtoTypes_ArenaTree};   t;}));
+    t.proto->fromLetters(t, "a");
+  struct S
+   {int a;
+   } S = {1}, T;
+
+  ArenaTreeNode b = t.proto->new(t, "b");
+        b.proto->set(b, &S, sizeof(S));
+  T.a = 0;
+  b.proto->get(b, &T, sizeof(T));
+  assert (T.a == 1);
+
+  ArenaTreeNode c = t.proto->new(t, "c");
+  c.proto->copyData(c, b);
+  T.a = 0;
+  c.proto->get(c, &T, sizeof(T));
+  assert (T.a == 1);
+
+  t.proto->free(t);
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7, test8, 0};
+                           test6, test7, test8, test9, 0};
   run_tests("ArenaTree", repetitions, tests);
 
   return 0;
