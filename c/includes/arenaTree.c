@@ -6,16 +6,12 @@
 #define _GNU_SOURCE
 #ifndef ArenaTree_included
 #define ArenaTree_included
-#include <assert.h>
-#include <fcntl.h>
 #include <setjmp.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <utilities.c>
 
 #define ArenaTreeStartString "phi"                                                      // String that starts the arena
 
-//D1 Structures                                                                 // Structures describing the tree. ArenaTree and TreeAllocator are not held inside the arena and so are pointers not offsets.
+//D1 Structures                                                                 // Structures describing an Arena Tree.
 
 typedef char * ArenaTreeString;                                                         // Arena Tree string
 
@@ -69,7 +65,7 @@ typedef struct ArenaTreeDescription                                             
 ArenaTree newArenaTree                                                                          // Create a new arena tree
  (const struct ArenaTree allocator)                                                     // ArenaTree allocator
  {ArenaTree t;                                                                          // Arena tree we are creating
-  ArenaTreeArena *a = t.arena = alloc(sizeof(ArenaTreeArena));                                  // Allocate Arena description
+  ArenaTreeArena * const a = t.arena = alloc(sizeof(ArenaTreeArena));                           // Allocate Arena description
   a->size   = 256;                                                              // This could be any reasonable value - it will be doubled everytime the arena overflows.
   a->data   = alloc( a->size);                                                  // Allocate arena
   memset(a->data, 0, a->size);                                                  // ValGrind
@@ -130,11 +126,12 @@ static ArenaTreeString key_string_ArenaTreeNode                                 
 
 //D1 Allocation                                                                 // Allocating memory in the tree
 
-static ArenaTreeNode setKey_ArenaTreeNode_ArenaTreeNode_string                                          // Copy a string into the key field of a node
- (const ArenaTreeNode   node,                                                           // NodeContent
-  const ArenaTreeString key)                                                            // Key - it will be copied into the tree
+static ArenaTreeNode setKey_ArenaTreeNode_ArenaTreeNode_ArenaTreeString                                         // Copy a string into the key field of a node
+ (const ArenaTreeNode        node,                                                      // Node
+  const char * const key)                                                       // Key - it will be copied into the tree
  {const ArenaTree   t  = node.tree;
- ((ArenaTreeContent *)(node.proto->content(node)))->key.delta = t.proto->saveString(t, key, 0).offset;
+  ArenaTreeContent * const c = node.proto->content(node);
+  c->key.delta = t.proto->saveString(t, key, 0).offset;
   return node;
  };
 
@@ -181,23 +178,24 @@ static ArenaTreeOffset allocate_offset_ArenaTree_size                           
 
 static ArenaTreeNode newn_ArenaTreeNode_ArenaTree_ArenaTreeString                                               // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
  (const ArenaTree       tree,                                                           // Arena tree in which to create the node
-  const ArenaTreeString key,                                                            // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
+  const char * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
   const size_t  length)                                                         // Length of the key, or if zero, I will use strlen
  {const ArenaTreeOffset c = tree.proto->allocate(tree, sizeof(ArenaTreeContent));                          // Space required for a tree node
   const ArenaTreeOffset k = tree.proto->saveString(tree, key, length);                             // Save key string in tree arena
- ((ArenaTreeContent *)  c.proto->pointer(c))->key.delta = k.offset;                             // Save key offset
-  return     tree.proto->node(tree, c.offset);                                             // Return node
+  ArenaTreeContent * const a = c.proto->pointer(c);
+  a->key.delta = k.offset;                                                      // Save key offset
+  return tree.proto->node(tree, c.offset);                                                 // Return node
  }
 
-static ArenaTreeNode new_ArenaTreeNode_ArenaTree_ArenaTreeString                                                 // Create a new tree node keyed by a zero terminated string.
- (const ArenaTree       tree,                                                           // Arena tree in which to create the node
-  const ArenaTreeString key)                                                            // Key for this node.  Note: we do not order nodes automatically.
+static ArenaTreeNode new_ArenaTreeNode_ArenaTree_ArenaTreeString                                                // Create a new tree node keyed by a zero terminated string.
+ (const ArenaTree            tree,                                                      // Arena tree in which to create the node
+  const char * const key)                                                       // Key for this node.  Note: we do not order nodes automatically.
  {return tree.proto->newn(tree, key, 0);
  }
 
-static ArenaTreeOffset saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString                                      //P Save a copy of a zero terminated string in a tree and return the offset of the string.
+static ArenaTreeOffset saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString                                     //P Save a copy of a zero terminated string in a tree and return the offset of the string.
  (const ArenaTree       tree,                                                           // Arena tree in which to create the node
-  const ArenaTreeString str,                                                            // String
+  const char * const str,                                                       // String
   const size_t  length)                                                         // String, or if zero I will call strlen
  {const ArenaTreeOffset o = tree.proto->allocate(tree, (length ? : strlen(str)) + 1);              // Allocate space for the string plus a terminating zero
   const ArenaTreeString t = o.proto->pointer(o);
@@ -205,7 +203,7 @@ static ArenaTreeOffset saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString     
   return o;
  }
 
-static void fromLetters_tree_str                                                // Load tree from a string of letters and brackets.  The root node of the tree so constructed is always given the letter 'a'.
+static void fromLetters_ArenaTree_ArenaTreeString                                               // Load tree from a string of letters and brackets.  The root node of the tree so constructed is always given the letter 'a'.
  (const ArenaTree tree,                                                                 // Tree
   ArenaTreeString str)                                                                  // String of letters and brackets describing desired tree structure
  {const ArenaTreeNode n = tree.proto->root(tree);                                                  // The node we are currently  adding to
@@ -235,7 +233,7 @@ static void fromLetters_tree_str                                                
   parse(n);                                                                     // Parse the string of letters and brackets to construct the desired tree
  };
 
-static void free_tree                                                           // Free an entire arena tree.
+static void free_ArenaTree                                                              // Free an entire arena tree.
  (const ArenaTree tree)                                                                 // Arena tree to free
  {if (tree.arena->data) free(tree.arena->data);
   free(tree.arena);
@@ -246,7 +244,8 @@ static void free_tree                                                           
 static  ArenaTreeNode parent_ArenaTreeNode_ArenaTreeNode                                                // Get the parent of a child
  (const ArenaTreeNode child)                                                            // Child
  {if (child.proto->isRoot(child)) printStackBackTrace("The root node of a tree has no parent\n");
-  const ArenaTreeDelta p = (child.proto->content(child))->parent;
+  const ArenaTreeContent * const c = child.proto->content(child);
+  const ArenaTreeDelta p = c->parent;
   const ArenaTree      t = child.tree;
   return       t.proto->node(t, p.delta);
  }
@@ -254,31 +253,35 @@ static  ArenaTreeNode parent_ArenaTreeNode_ArenaTreeNode                        
 static  ArenaTreeNode first_ArenaTreeNode_ArenaTreeNode                                                 // Get the first child under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
  {const ArenaTree t = parent.tree;
-  return  t.proto->node(t, (parent.proto->content(parent))->first.delta);
+  const ArenaTreeContent * const c = parent.proto->content(parent);
+  return  t.proto->node(t, c->first.delta);
  }
 
 static  ArenaTreeNode last_ArenaTreeNode_ArenaTreeNode                                                  // Get the last child under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
  {const ArenaTree t = parent.tree;
-  return  t.proto->node(t, (parent.proto->content(parent))->last.delta);
+  const ArenaTreeContent * const c = parent.proto->content(parent);
+  return  t.proto->node(t, c->last.delta);
  }
 
 static  ArenaTreeNode next_ArenaTreeNode_ArenaTreeNode                                                  // Get the next sibling of the specified child.
  (const ArenaTreeNode child)                                                            // Child
  {const ArenaTree t = child.tree;
-  return  t.proto->node(t, (child.proto->content(child))->next.delta);
+  const ArenaTreeContent * const c = child.proto->content(child);
+  return  t.proto->node(t, c->next.delta);
  }
 
 static  ArenaTreeNode prev_ArenaTreeNode_ArenaTreeNode                                                  // Get the previous sibling of the specified child.
  (const ArenaTreeNode child)                                                            // Child
  {const ArenaTree t = child.tree;
-  return  t.proto->node(t, (child.proto->content(child))->prev.delta);
+  const ArenaTreeContent * const c = child.proto->content(child);
+  return  t.proto->node(t, c->prev.delta);
  }
 
 static int findFirstKey_int_tree_string_ArenaTreeNodePointer                            // Find the first node with the specified key in the tree. Returns true and sets found if a matching key is found else returns false
- (const ArenaTree        tree,                                                          // Tree
-  const ArenaTreeString  key,                                                           // Key to find
-  ArenaTreeNode  * const result)                                                        // Output area for node if found
+ (const ArenaTree            tree,                                                      // Tree
+  const char * const key,                                                       // Key to find
+  ArenaTreeNode  * const     result)                                                    // Output area for node if found
  {jmp_buf found;
   ArenaTreeNode F;
 
@@ -301,9 +304,9 @@ static int findFirstKey_int_tree_string_ArenaTreeNodePointer                    
 //D1 Location                                                                   // Verify the current location.
 
 static int context_ArenaTreeNode                                                        // Return true if the parent of the specified child has the specified key.
- (const ArenaTreeNode  child,                                                           // Child
-  ArenaTreeNode * const parent,                                                         // Parent container
-  char  * const key)                                                            // Key
+ (const ArenaTreeNode        child,                                                     // Child
+  ArenaTreeNode * const      parent,                                                    // Parent container
+  const char * const key)                                                       // Key
  {if (child.proto->isRoot(child)) return 0;                                                 // The root node has no context
   const ArenaTreeNode p = *parent = child.proto->parent(child);                                     // Get parent if it exists
   return(p.offset && strcmp(p.proto->key(p), key) == 0);                                // Check key
@@ -321,21 +324,22 @@ static int isLast_ArenaTreeNode                                                 
   return child.proto->equals(child, parent.proto->last(parent));
  }
 
-static int isEmpty                                                              // Confirm a node has no children.
+static int isEmpty_ArenaTreeNode                                                        // Confirm a node has no children.
  (const ArenaTreeNode node)                                                             // NodeContent
  {const ArenaTreeNode child = node.proto->first(node);
   return child.offset == 0;                                                     // No first child so the node is empty
  }
 
-static int isOnlyChild                                                          // Confirm that this child is the only child of its parent
+static int isOnlyChild_ArenaTreeNode                                                    // Confirm that this child is the only child of its parent
  (const ArenaTreeNode child)                                                            // Child
  {const ArenaTreeNode parent = child.proto->parent(child);                                          // Parent
   return parent.offset != 0 && child.proto->isFirst(child) && child.proto->isLast(child);               // Child is first and last and not the root so it is an only child
  }
 
-static int isRoot                                                               // Confirm a node is the root
+static int isRoot_ArenaTreeNode                                                         // Confirm a node is the root
  (const ArenaTreeNode node)                                                             // NodeContent
- {const ArenaTreeDelta p = (node.proto->content(node))->parent;
+ {const ArenaTreeContent * const c = node.proto->content(node);
+  const ArenaTreeDelta p = c->parent;
   return p.delta == 0;                                                          // No parent so the node is a root node
  }
 
@@ -448,14 +452,14 @@ static void by_ArenaTree_sub                                                    
   children(t.proto->root(t));                                                           // Start at the root
  }
 
-static  size_t count_sizet_ArenaTreeNodeOffset                                          // Count the number of children in a parent
+static  size_t count_size_ArenaTreeNodeOffset                                           // Count the number of children in a parent
  (const ArenaTreeNode parent)                                                           // Parent
  {size_t l = 0;
   ArenaTreefe(child, parent) ++l;
   return l;                                                                     // Return count
  }
 
-static  size_t count_size_t_tree                                                // Count the number of nodes in a tree
+static  size_t count_size_ArenaTree                                                     // Count the number of nodes in a tree
  (const ArenaTree tree)                                                                 // Tree
  {size_t l = 0;
   void count(const ArenaTreeNode parent)                                                // Process the children of the specified parent
@@ -495,7 +499,7 @@ static  ArenaTreeString printWithBrackets_string_ArenaTreeNode                  
   return s;
  }
 
-static  ArenaTreeString printWithBrackets_string_tree                                   // Print an entire tree in preorder as a string with brackets around each sub tree
+static  ArenaTreeString printWithBrackets_ArenaTreeString_ArenaTree                                     // Print an entire tree in preorder as a string with brackets around each sub tree
  (const ArenaTree t)                                                                    // Tree
  {const ArenaTreeNode node = t.proto->root(t);                                                  // Root
   return node.proto->printWithBrackets(node);
@@ -523,7 +527,7 @@ static  ArenaTreeString print_string_ArenaTreeNode                              
   return s;
  }
 
-static  ArenaTreeString print_string_tree                                               // Print an entire tree in preorder as a string.
+static  ArenaTreeString print_ArenaTreeString_ArenaTree                                                 // Print an entire tree in preorder as a string.
  (const ArenaTree t)                                                                    // Tree
  {const ArenaTreeNode node = t.proto->root(t);                                                  // Root
   return node.proto->print(node);
@@ -566,9 +570,9 @@ static  ArenaTreeNode unwrap_ArenaTreeNode_ArenaTreeNode                        
   return parent.proto->cut(parent);                                                          // Remove and return empty parent
  }
 
-static  ArenaTreeNode wrap_ArenaTreeNode_string_pointer                                         // Wrap the specified child with a new parent and return the new parent optionally setting its L[key] and L[value].
+static  ArenaTreeNode wrap_ArenaTreeNode_ArenaTreeString                                                // Wrap the specified child with a new parent and return the new parent optionally setting its L[key] and L[value].
  (const ArenaTreeNode   child,                                                          // Child to wrap
-  const ArenaTreeString key)                                                            // Key for new parent
+  const char * const key)                                                            // Key for new parent
  {const ArenaTree       tree = child.tree;                                              // Tree
   const ArenaTreeNode   parent = tree.proto->new(tree, key);                                       // New parent
   child.proto->putNext(child, parent);                                                     // Place parent after child
@@ -585,7 +589,7 @@ static size_t used_ArenaTree                                                    
 
 static void write_void_ArenaTree_ArenaTreeString                                                // Write a tree to a named file or abort
  (const ArenaTree       tree,                                                           // Tree
-  const ArenaTreeString file)                                                           // File
+  const char * const file)                                                      // File
  {const int o = open(file, O_CREAT| O_WRONLY, S_IRWXU);                         // Open for output creating if needed
   if (o < 0) printStackBackTrace("Cannot open file: %s for write\n", file);
 
@@ -605,7 +609,7 @@ static void write_void_ArenaTree_ArenaTreeString                                
  }
 
 ArenaTree readArenaTree                                                                         // Read a tree from a file
- (const ArenaTreeString file)                                                           // File
+ (const char * const file)                                                      // File
  {ArenaTree tree;
   tree.arena = alloc(sizeof(ArenaTreeArena));
   tree.proto = &ProtoTypes_ArenaTree;                                                   // Initialize tree prototype
@@ -818,4 +822,3 @@ int main(void)                                                                  
  }
 #endif
 #endif
-// valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/arenaTree/arenaTree
