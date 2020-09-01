@@ -5,13 +5,6 @@
 #define _GNU_SOURCE
 #ifndef $_included
 #define $_included
-#include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/mman.h>
 #include <fileName.c>
 #include <utilities.c>
 
@@ -156,8 +149,9 @@ void test0()                                                                    
 
 void test1()                                                                    //TwriteFile //Tequals //TequalsString //Tfree //TnewReadOnlyBytesFromFile
  {char *s = "0123456789";                                                       // Sample data
-  const FileName f = newFileNameTemporaryWithContent                            // Temporary file
-   ("readOnlyBytes.data", s, 0);
+  const FileName f = newFileNameTemporaryWithContent
+  ("readOnlyBytes.data", s, 0);                                                 // Temporary file
+
 
   $ q = new$FromFormat("%s", s);                                                // New descriptor
     q ▷ writeFile(f);
