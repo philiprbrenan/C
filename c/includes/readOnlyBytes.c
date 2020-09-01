@@ -1,3 +1,4 @@
+#line 1 "/home/phil/c/z/readOnlyBytes/readOnlyBytes.c"
 //------------------------------------------------------------------------------
 // Read Only Bytes
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
@@ -5,13 +6,6 @@
 #define _GNU_SOURCE
 #ifndef ReadOnlyBytes_included
 #define ReadOnlyBytes_included
-#include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/mman.h>
 #include <fileName.c>
 #include <utilities.c>
 
@@ -156,8 +150,9 @@ void test0()                                                                    
 
 void test1()                                                                    //TwriteFile //Tequals //TequalsString //Tfree //TnewReadOnlyBytesFromFile
  {char *s = "0123456789";                                                       // Sample data
-  const FileName f = newFileNameTemporaryWithContent                            // Temporary file
-   ("readOnlyBytes.data", s, 0);
+  const FileName f = newFileNameTemporaryWithContent
+  ("readOnlyBytes.data", s, 0);                                                 // Temporary file
+
 
   ReadOnlyBytes q = newReadOnlyBytesFromFormat("%s", s);                                                // New descriptor
     q.proto->writeFile(q, f);
