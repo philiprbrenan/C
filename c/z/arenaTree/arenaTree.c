@@ -27,6 +27,7 @@ typedef struct $Content                                                         
  {$Delta parent;                                                                // Offset to the parent of this node or zero if this is the root of the tree
   $Delta first, last, next, prev;                                               // Offsets to the first, last children of this node, amd the next and previous siblings of this node.
   $Delta key;                                                                   // The name of this node represented by a zero terminated string at the specified offset in the arena. Nodes are not ordered by their keys, their order is determined solely by the user. Keys can be reused between nodes.
+  $Delta data;                                                                  // The data carried by this node.
  } $Content;
 
 typedef struct $Offset                                                          // Offset to any item in the tree.  The caller is responsible for interpreting the content of the memory so addressed.
@@ -200,6 +201,49 @@ static $Offset saveString_$Offset_$_$String                                     
   const $String t = o ▷ pointer;
   strcpy(t, str);
   return o;
+ }
+
+static void get_$_data_size                                                     // Get a copy of the data at the specified offset in the arena of a tree.
+ (const $      tree,                                                            // Arena tree
+  const size_t offset,                                                          // Offset to data in arena
+  void * const data,                                                            // Pointer to the area into which the data is to be copied
+  const size_t length)                                                          // Length of the data to be retrieved
+ {void * const s = tree ▷ pointer(offset);                                      // Locate data
+  memcpy(data, s, length);                                                      // Copy out data
+ }
+
+static $Offset save_offset_$_data_size                                          // Save a copy of the specified data in the arena of the tree and return the offset of the data.
+ (const $       tree,                                                           // Arena tree in which to create the node
+  const void *  const data,                                                     // Pointer to the data to be saved
+  const size_t  length)                                                         // Length of the data to be saved
+ {const $Offset o = tree ▷ allocate(length);                                    // Allocate space for data
+  void * const  t = o ▷ pointer;                                                // Address allocation
+  memcpy(t, data, length);                                                      // Copy in data
+  return o;
+ }
+
+static void get_$Node_data_size                                                 // Get a copy of the data addressed by a node.
+ (const $Node  node,                                                            // Node in an arena tree associated with the data
+  void * const data,                                                            // Pointer to the area into which the data is to be copied
+  const size_t length)                                                          // Length of the data to be retrieved
+ {const $ tree  = node.tree;                                                    // Tree containing node
+  tree ▷ get(node ▷ content->data.delta, data, length);                         // Locate data
+ }
+
+static void set_$Node_data_size                                                 // Save a copy of the specified data in the arena of the tree and return the offset of the data.
+ (const $Node  node,                                                            // Node in an arena tree to associate with the data
+  const void * const data,                                                      // Pointer to the data to be saved
+  const size_t length)                                                          // Length of the data to be saved
+ {const $    tree = node.tree;                                                  // Tree containing node
+  node ▷ content->data.delta = tree ▷ save(data, length).offset;                // Record offset of saved data
+ }
+
+static void copyData_$Node_$Node                                                // Copy the data associated with the sourtce node to the target node by copying the offset to the data held in the source node to the target node.
+ (const $Node target,                                                           // Target node
+  const $Node source)                                                           // Source node
+ {      $Content * const t = target ▷ content;                                  // Target content
+  const $Content * const s = source ▷ content;                                  // Source content
+  t->data = s->data;                                                            // Copy data offset
  }
 
 static void fromLetters_$_$String                                               // Load tree from a string of letters and brackets.  The root node of the tree so constructed is always given the letter 'a'.
@@ -811,10 +855,32 @@ void test8()                                                                    
   t ▷ free;
  }
 
+void test9()                                                                    //Tget //Tset //TcopyData
+ {$ t = new$;
+    t ▷ fromLetters("a");
+  struct S
+   {int a;
+   } S = {1}, T;
+
+  $Node b = t ▷ new("b");
+        b ▷ set(&S, sizeof(S));
+  T.a = 0;
+  b ▷ get(&T, sizeof(T));
+  assert (T.a == 1);
+
+  $Node c = t ▷ new("c");
+  c ▷ copyData(b);
+  T.a = 0;
+  c ▷ get(&T, sizeof(T));
+  assert (T.a == 1);
+
+  t ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7, test8, 0};
+                           test6, test7, test8, test9, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
