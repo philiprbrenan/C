@@ -1,3 +1,5 @@
+Xml newXmlParseTreeFromFile
+ (const char *   fileName);
 static void free_Xml
  (Xml x);
 static char * print_Xml
