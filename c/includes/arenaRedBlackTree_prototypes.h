@@ -1,3 +1,5 @@
+ArenaRedBlackTree newArenaRedBlackTree
+ (const struct ArenaRedBlackTree allocator);
 static void * pointer_ArenaRedBlackTree_size
  (const ArenaRedBlackTree      tree,
   const size_t delta);
@@ -16,20 +18,19 @@ static ArenaRedBlackTreeOffset allocate_offset_ArenaRedBlackTree_size
   const size_t size);
 static ArenaRedBlackTreeNode newn_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString
  (const ArenaRedBlackTree       tree,
-  const ArenaRedBlackTreeString key,
+  const char * const key,
   const size_t  length);
 static ArenaRedBlackTreeNode new_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString
- (const ArenaRedBlackTree       tree,
-  const ArenaRedBlackTreeString key);
+ (const ArenaRedBlackTree            tree,
+  const char * const key);
 static ArenaRedBlackTreeOffset saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString
  (const ArenaRedBlackTree       tree,
-  const ArenaRedBlackTreeString str,
+  const char * const str,
   const size_t  length);
-static size_t used_ArenaRedBlackTree
- (const ArenaRedBlackTree tree);
-static void write_void_ArenaRedBlackTree_ArenaRedBlackTreeString
- (const ArenaRedBlackTree       tree,
-  const ArenaRedBlackTreeString file);
+ArenaRedBlackTreeFound newArenaRedBlackTreeFound
+ (ArenaRedBlackTreeFound  allocator);
+ArenaRedBlackTreeFindList newArenaRedBlackTreeFindList
+ (ArenaRedBlackTreeFindList allocator);
 static void free_ArenaRedBlackTree
  (const ArenaRedBlackTree tree);
 static ArenaRedBlackTreeNode root_ArenaRedBlackTree
@@ -105,10 +106,10 @@ struct ProtoTypes_ArenaRedBlackTree {
     const ArenaRedBlackTree tree);                                              // Tree
   ArenaRedBlackTreeNode  (*new)(                                                // Create a new tree node keyed by a zero terminated string.
     const ArenaRedBlackTree tree,                                               // Arena tree in which to create the node
-    const ArenaRedBlackTreeString key);                                         // Key for this node.  Note: we do not order nodes automatically.
+    const char * const key);                                                    // Key for this node.  Note: we do not order nodes automatically.
   ArenaRedBlackTreeNode  (*newn)(                                               // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
     const ArenaRedBlackTree tree,                                               // Arena tree in which to create the node
-    const ArenaRedBlackTreeString key,                                          // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
+    const char * const key,                                                     // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
     const size_t length);                                                       // Length of the key, or if zero, I will use strlen
   ArenaRedBlackTreeNode    (*node)(                                             // Create a node to locate an allocation within the arena of a tree.
     const ArenaRedBlackTree tree,                                               // Tree
@@ -125,31 +126,30 @@ struct ProtoTypes_ArenaRedBlackTree {
     const ArenaRedBlackTree tree);                                              // Tree
   ArenaRedBlackTreeOffset  (*saveString)(                                       // Save a copy of a zero terminated string in a tree and return the offset of the string.
     const ArenaRedBlackTree tree,                                               // Arena tree in which to create the node
-    const ArenaRedBlackTreeString str,                                          // String
+    const char * const str,                                                     // String
     const size_t length);                                                       // String, or if zero I will call strlen
   char *  (*sprint)(                                                            // Print a tree in a string. We allocate a string large enough to hold the print. Freeing the allocated string containing the print is the responsibility fo the caller.
     const ArenaRedBlackTree tree);                                              // Tree to print
-  size_t  (*used)(                                                              // Amount of space currently being used within the arena of a tree.
-    const ArenaRedBlackTree tree);                                              // Tree
-  void  (*write)(                                                               // Write a tree to a named file or abort
-    const ArenaRedBlackTree tree,                                               // Tree
-    const ArenaRedBlackTreeString file);                                        // File
  } const ProtoTypes_ArenaRedBlackTree =
-{add_ArenaRedBlackTreeNode_ArenaRedBlackTree_string, allocate_offset_ArenaRedBlackTree_size, find_ArenaRedBlackTreeFound_ArenaRedBlackTree_string, free_ArenaRedBlackTree, new_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, newn_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, node_ArenaRedBlackTree_size, offset_ArenaRedBlackTree_size, pointer_ArenaRedBlackTree_size, print_ArenaRedBlackTree, root_ArenaRedBlackTree, saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString, sprint_string_ArenaRedBlackTree, used_ArenaRedBlackTree, write_void_ArenaRedBlackTree_ArenaRedBlackTreeString};
+{add_ArenaRedBlackTreeNode_ArenaRedBlackTree_string, allocate_offset_ArenaRedBlackTree_size, find_ArenaRedBlackTreeFound_ArenaRedBlackTree_string, free_ArenaRedBlackTree, new_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, newn_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, node_ArenaRedBlackTree_size, offset_ArenaRedBlackTree_size, pointer_ArenaRedBlackTree_size, print_ArenaRedBlackTree, root_ArenaRedBlackTree, saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString, sprint_string_ArenaRedBlackTree};
 struct ProtoTypes_ArenaRedBlackTreeFindList {
   ArenaRedBlackTreeFindList  (*find)(                                           // Find a list of keys starting at the base tree. Return true if all the keys were found.
     ArenaRedBlackTreeFindList findList,                                         // The list of keys to search for
     const ArenaRedBlackTree tree);                                              // The base tree to search
+  ArenaRedBlackTreeFindList  (*newArenaRedBlackTreeFindList)(                   // New find list
+    ArenaRedBlackTreeFindList allocator);                                       // Allocator
  } const ProtoTypes_ArenaRedBlackTreeFindList =
-{find_ArenaRedBlackTreeFindList_ArenaRedBlackTree};
+{find_ArenaRedBlackTreeFindList_ArenaRedBlackTree, newArenaRedBlackTreeFindList};
 struct ProtoTypes_ArenaRedBlackTreeFound {
   ArenaRedBlackTreeFound  (*add)(                                               // Add a new key if not already present in the tree root at the specified node.
     ArenaRedBlackTreeFound f);                                                  // Found status for the tree to which the specified key is being added.
   ArenaRedBlackTreeFound   (*find)(                                             // Find a key if it exists within the tree starting at this node.
     ArenaRedBlackTreeFound found,                                               // Found definition
     const ArenaRedBlackTreeNode root);                                          // The root node at which the tree starts
+  ArenaRedBlackTreeFound  (*newArenaRedBlackTreeFound)(                         // New found status
+    ArenaRedBlackTreeFound allocator);                                          // Allocator
  } const ProtoTypes_ArenaRedBlackTreeFound =
-{add_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string, find_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string};
+{add_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string, find_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string, newArenaRedBlackTreeFound};
 struct ProtoTypes_ArenaRedBlackTreeNode {
   ArenaRedBlackTreeFound  (*add)(                                               // Add a new key if not already present in the tree owned by the specified node.
     const ArenaRedBlackTreeNode node,                                           // The tree to search
