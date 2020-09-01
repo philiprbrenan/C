@@ -9,10 +9,6 @@ tree dependent from it with the same arena*/
 #define _GNU_SOURCE
 #ifndef $_included
 #define $_included
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <readOnlyBytes.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Red Black Tree.
@@ -51,7 +47,7 @@ typedef struct $FindList                                                        
 
 //D1 Pointers, offsets and allocations                                          // Locate items allocated in the arena
 
-include ../arenaTree/arenaTree.c pointer_$_size allocate_offset_$_size pointer_$Offset saveString_$Offset_$_$String new_$Node_$_$String newn_$Node_$_$String node_$_size content_$Node offset_$_size new$ write_void_$_$String used_$
+include ../arenaTree/arenaTree.c pointer_$_size allocate_offset_$_size pointer_$Offset saveString_$Offset_$_$String new_$Node_$_$String newn_$Node_$_$String node_$_size content_$Node offset_$_size new$
 
 $Found new$Found                                                                //P New found status
  ($Found  allocator)                                                            // Allocator
@@ -349,7 +345,7 @@ static void print_$                                                             
 
 #define TEST_TREE_SIZE 10
 
-void test0()                                                                    //Tnew //Tadd //Tleft //Tright //Tkey //Tsprint //Tup
+void test0()                                                                    //Tnew$ //Tadd //Tleft //Tright //Tkey //Tsprint //Tup
  {$ t = new$;
     t ▷ add("b");
     t ▷ add("a");
