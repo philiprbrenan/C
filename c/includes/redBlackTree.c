@@ -1,3 +1,4 @@
+#line 1 "/home/phil/c/z/redBlackTree/redBlackTree.c"
 //------------------------------------------------------------------------------
 // Red black tree.
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
@@ -5,10 +6,6 @@
 #define _GNU_SOURCE
 #ifndef RedBlackTree_included
 #define RedBlackTree_included
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <arenaTree.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing the tree. ArenaTree and TreeAllocator are not held inside the arena and so are pointers not offsets.
