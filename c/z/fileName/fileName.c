@@ -5,7 +5,6 @@
 #define _GNU_SOURCE
 #ifndef $_included
 #define $_included
-#include <unistd.h>
 #include <utilities.c>
 
 typedef struct $                                                                // File names (of limited length)
@@ -78,10 +77,10 @@ $ new$Temporary                                                                 
  }
 
 $ new$                                                                          //C Create a new  file name from a string - no corresponding file is actually created.
- (const char *name)                                                         // Base name and extension of the file
+ (const char *name)                                                             // Base name and extension of the file
  {$ f = {proto: &ProtoTypes_$};
   const size_t l = sizeof(f.name);
-  if (strlen(name) > l) printStackBackTrace
+  if (strlen(name) >= l) printStackBackTrace
    ("File name too long, must be less than %lu bytes\n", l);
   strncpy(f.name, name, l);
   return f;
