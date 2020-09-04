@@ -24,14 +24,14 @@ my $user = q(philiprbrenan);                                                    
 my $repo = q(C);
 my $wf   = q(.github/workflows/main.yml);
 
-my @c    =  split /\s+/, <<END;                                                 # C files
+my @c    =  grep {!/\A#/} split /\s+/, <<END;                                   # C files
 arenaRedBlackTree
 arenaTree
 fileName
-redBlackTree
+#redBlackTree
 readOnlyBytes
+xml
 END
-#xml
 
 if (1)                                                                          # Upload files
  {my @files;
