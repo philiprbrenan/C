@@ -1,9 +1,5 @@
-RedBlackTree newRedBlackTree
- (const struct RedBlackTree     allocator);
 static void free_RedBlackTree
  (RedBlackTree tree);
-RedBlackTreeNode newRedBlackTreeNode
- (const struct RedBlackTreeNode allocator);
 static RedBlackTreeFound find_node_tree_string
  (RedBlackTree           tree,
   const char *key);
@@ -27,8 +23,12 @@ struct ProtoTypes_RedBlackTree {
     RedBlackTree tree);                                                         // Tree
  } const ProtoTypes_RedBlackTree =
 {add_node_tree_string, find_node_tree_string, free_RedBlackTree, print_tree};
+RedBlackTree newRedBlackTree(RedBlackTree allocator) {return allocator;}
+
 struct ProtoTypes_RedBlackTreeNode {
   char * (*key)(                                                                // Get the key of a node
     RedBlackTreeNode node);                                                     // Node
  } const ProtoTypes_RedBlackTreeNode =
 {key};
+RedBlackTreeNode newRedBlackTreeNode(RedBlackTreeNode allocator) {return allocator;}
+
