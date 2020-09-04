@@ -6,8 +6,8 @@
 #define _GNU_SOURCE
 #ifndef Xml_included
 #define Xml_included
-#include <arenaTree.c>
 #include <assert.h>
+#include <arenaTree.c>
 #include <ctype.h>
 #include <fcntl.h>
 #include <readOnlyBytes.c>
@@ -21,57 +21,57 @@
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
-typedef struct Xml                                                                // Parse tree
- {const struct ProtoTypes_Xml *proto;                                             // Prototypes for methods
+typedef struct XmlParse                                                           // Xml parse tree
+ {const struct ProtoTypes_XmlParse *proto;                                        // Prototypes for methods
   FileName      fileName;                                                       // Source file containing Xml to be parsed
   ReadOnlyBytes data;                                                           // Xml to be parsed
   ArenaTree     tree;                                                           // Parse tree created from Xml being parsed
   ArenaTree     errors;                                                         // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is XmlError
- } Xml;
+ } XmlParse;
 
-typedef struct XmlError                                                           // Error location
- {size_t byte;                                                                  // The byte at which the error occured
-  size_t line;                                                                  // Line in which the error occured
-  size_t lineOffset;                                                            // Offset in the line of the error
- } XmlError;
-
-typedef struct XmlNode                                                            // Node in the parse tree.
- {const struct ProtoTypes_XmlNode *proto;                                         // Prototypes for XmlNode methods
-  ArenaTreeNode node;                                                           // Prototypes for ArenaTreeNodes
- } XmlNode;
+typedef struct XmlTag                                                             // Tag in an Xml parse tree
+ {const struct ProtoTypes_XmlTag *proto;                                          // Prototypes for methods
+  XmlParse        xml;                                                            // Xml parse tree
+  ArenaTreeNode node;                                                           // Arena tree node in the xml parse tree that contains this tag
+ } XmlTag;
 
 #include <xml_prototypes.h>
-#define XmlOpen     '<'
+
+#define XmlOpen     '<'                                                           // Important Xml characters
 #define XmlClose    '>'
 #define XmlSlash    '/'
 #define XmlQuestion '?'
 #define XmlExclaim  '!'
-#define XmlmakeString(args...) ({char *m; int r = asprintf(&m, args); if (r) {} m;})
+#define XmlmakeString(args...) ({char *m; int r = asprintf(&m, args); if(r){} m;})
 
-Xml newXmlParseTreeFromFile                                                         // Parse Xml held in a file
- (const char *   fileName)                                                      // Name of file holding Xml
- {ArenaTree      t = newArenaTree(({struct ArenaTree t = {proto: &ProtoTypes_ArenaTree};   t;})), errors = newArenaTree(({struct ArenaTree t = {proto: &ProtoTypes_ArenaTree};   t;}));                       // Parse tree
-  ArenaTreeNode  P = t.proto->root(t);                                                  // Current parent node
-  const FileName f = newFileName(fileName);
-  ReadOnlyBytes  b = newReadOnlyBytesFromFile(f);
-  Xml              x = {proto:&ProtoTypes_Xml, fileName: newFileName(fileName),     // Xml parse tree
-                     tree: t, errors: errors, data: b};
-  Xml error                                                                       // Report an error
+static XmlTag makeXmlTag_XmlParse_ArenaTreeNode                                       // Make a tag descriptor from a parse tree node holding the tag
+ (XmlParse        xml,                                                            // Xml parse tree
+  ArenaTreeNode node)                                                           // Node holding tag
+ {XmlTag t = newXmlTag(({struct XmlTag t = {xml: xml, node: node, proto: &ProtoTypes_XmlTag}; t;}));
+  return t;
+ }
+
+static ArenaTreeNode node_XmlTag                                                  // Get a node from a tag
+ (XmlTag tag)                                                                     // Tag
+ {return tag.node;
+ }
+
+static XmlParse makeXmlParseFromFile                                                // Parse Xml held in a file
+ (FileName      fileName)                                                       // Name of file holding Xml
+ {XmlParse        x = newXmlParse(({struct XmlParse t = {proto: &ProtoTypes_XmlParse};   t;}));
+  ArenaTree     t = x.tree     = makeArenaTree();                               // Parse tree,
+  ArenaTree     e = x.errors   = makeArenaTree();                               // Errors list
+  FileName      f = x.fileName = fileName;                                      // Name of file containing parse
+  ReadOnlyBytes b = x.data     = makeReadOnlyBytesFromFile(f);                  // String to parse
+  ArenaTreeNode P = t.proto->root(t);                                                   // Current parent node
+
+  XmlParse error                                                                  // Report an error
    (char *p,                                                                    // Pointer to position at which the error occurred
     char *m)                                                                    // Message text
-   {struct XmlError E;                                                            // Error description
-    E.byte = p - b.proto->data(b);                                                      // Byte offset of error
-    size_t line  = 0, offset = 0;                                               // Find line an offset in line
-    for(char *q  = p; *q; ++q)                                                  // Line number and position in that line
-     {if (*q == '\n') {++line; offset = 0;} else ++offset;                      // New line
-      if ( q == p)                                                              // Error point
-       {E.line = line; E.lineOffset = offset;                                   // Record position
-        ArenaTreeNode n = errors.proto->newNStrExtra(errors, m, strlen(m), sizeof(E), &E);   // Create message node - the text of the message  is the key of the node
-        errors.proto->putLast(errors, n);                                                    // Record the error message
-        return x;                                                               // Return with error detail
-       }
-     }
-    printStackBackTrace("Cannot locate position within Xml\n");                   // This should not happen
+   {const ArenaTreeNode n = e.proto->node(e, m);                                         // Save the text of the error message as the key of a node
+    n.proto->setData(n, p - b.proto->data(b));                                                  // Save the offset of the error in the node data offset.
+    n.proto->putTreeLast(n);                                                            // Add the error to the error list
+    return x;
    } // error
 
   char *p  = b.proto->data(b);                                                          // Start of text to be parsed
@@ -87,12 +87,13 @@ Xml newXmlParseTreeFromFile                                                     
   for(char *p = b.proto->data(b); *p;)                                                  // Break out tags and text
    {char *o = strchr(p, XmlOpen);                                                 // Find next open
     if (o)                                                                      // Found next open
-     {if (o > p) P.proto->putLast(P, t.proto->newNStr(t, p, o - p));                            // Save text preceding open if any
+     {if (o > p) P.proto->putLast(P, t.proto->noden(t, p, o - p));                              // Save text preceding open if any
 
       char *c = strchr(o, XmlClose);                                              // Save tag: find corresponding close
-
       if (c)                                                                    // Found closing >
-       {ArenaTreeNode save(void){return P.proto->putLast(P, t.proto->newNStr(t, o, c - o + 1));}// Save tag as a new node
+       {ArenaTreeNode save(void)                                                // Save tag as a new node
+         {return P.proto->putLast(P, t.proto->noden(t, o, c - o + 1));
+         }
 
         const char oo = *(o+1), cc = *(c-1);                                    // First character after <, last character before >
         if (oo == XmlSlash)                                                       // Closing tag
@@ -115,24 +116,25 @@ Xml newXmlParseTreeFromFile                                                     
       return error(p, "Ignoring text at end\n");
      }
    }
+
   return x;
  }
 
-static void free_Xml                                                              // Free an xml tree
- (Xml x)                                                                          // Xml descriptor
+static void free_XmlParse                                                         // Free an xml parse
+ (XmlParse x)                                                                     // Xml descriptor
  {ArenaTree t = x.tree, e = x.errors;
   t.proto->free(t); e.proto->free(e);
  }
 
-static char * print_Xml                                                           // Print an Xml parse tree
- (Xml x)                                                                          // Xml descriptor
+static char * print_XmlParse                                                      // Print an Xml parse tree
+ (XmlParse x)                                                                     // Xml parse tree
  {ArenaTree     t = x.tree;
   ArenaTreeNode r = t.proto->root(t);
   return        r.proto->print(r);
  }
 
-static int printsAs_Xml                                                           // Check the print of a parse tree is as expected.
- (const Xml      x,                                                               // Xml descriptor
+static int printsAs_XmlParse                                                      // Check the print of a parse tree is as expected.
+ (const XmlParse x,                                                               // Xml descriptor
   const char * expected)                                                        // Expected print string
  {char    * s = x.proto->print(x);
   const int r = !strcmp(s, expected);
@@ -140,33 +142,28 @@ static int printsAs_Xml                                                         
   return    r;
  }
 
-XmlNode nodeFromArenaTreeNode                                                     // Convert an Arena Tree Node to an Xml Node.
- (ArenaTreeNode node)                                                           // Node in parse tree
- {XmlNode  n;                                                                     // Arena tree node
-         n.node  = node;                                                        // Copy node
-         n.proto = &ProtoTypes_XmlNode;                                           // Set prototypes
-  return n;
- }
-
-static ReadOnlyBytes getTag_Xml                                                   // Get the tag name.
- (XmlNode node)                                                                   // Node in parse tree
- {ArenaTreeNode   n = node.node;                                                // Arena tree node from Xml node
-  ArenaTreeString k = n.proto->key(n);                                                  // Point to key
+char XmltagName[256];                                                             // Tag name returned by getTag
+static char * getTag_Xml                                                          // Get the tag name from a node in the Xml parse tree. The tag name is returned in a reused static buffer that the caller should not free.
+ (XmlTag tag)                                                                     // Tag
+ {ArenaTreeNode   n = tag.proto->node(tag);                                             // Point to key
+  ArenaTreeString k = n.proto->key(n);                                               // Point to key
   if (*k == XmlOpen)                                                            // Tag
    {const size_t s = strspn(k, "< /?!"), f = strcspn(k+s, "> /?!");             // Start and finish of tag
-//say("AAAA %lu %lu\n", s, f);
-    if (f > 0) return newReadOnlyBytesFromAllocatedString(k+s, f);              // Read only bytes representation of the tag
+    if (f > 0)
+     {if (f < sizeof(XmltagName)) return strncpy(XmltagName, k+s, f);               // Return tag name
+      printStackBackTrace("Tag  too long in %s\n", k);
+     }
     printStackBackTrace("No tag in %s\n", k);
    }
-  return newReadOnlyBytesFromAllocatedString("text", 0);                        // Text
+  return strcpy(XmltagName, "text");                                              // In a text tag
  }
 
 static void by_Xml_sub                                                            // Traverse an xml parse tree in post-order calling the specified function to process each child node.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
- (Xml xml,                                                                        // Xml parse tree
-  void (* const function) (const XmlNode node))                                   // Function
+ (XmlParse xml,                                                                   // Xml parse tree
+  void (* const function) (const ArenaTreeNode node))                           // Function
  {const ArenaTree tree = xml.tree;                                              // Parse tree
   void f(const ArenaTreeNode parent)
-   {function(nodeFromArenaTreeNode(parent));
+   {function(parent);
    }
   tree.proto->by(tree, f);
  }
@@ -181,7 +178,7 @@ static int develop()                                                            
 void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {char file[128] =   "/home/phil/c/z/xml/test.xml";
   if (!develop()) strcpy(file,  "c/z/xml/test.xml");
-  Xml             x = newXmlParseTreeFromFile(file);
+  XmlParse        x = makeXmlParseFromFile(makeFileName(file));
   ArenaTree     p = x.tree;
   ArenaTreeNode n;
 
@@ -195,9 +192,9 @@ void test0()                                                                    
 void test1()                                                                    //Tprint
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
   if (!develop()) strcpy(file, "c/z/xml/samples/foreword.dita");
-  Xml x = newXmlParseTreeFromFile(file);
+  XmlParse x = makeXmlParseFromFile(makeFileName(file));
 
-  ArenaTree     p   = x.tree;
+  ArenaTree     p = x.tree;
   ArenaTreeNode n;
 
   if (p.proto->findFirstKey(p, "<p>", &n))
@@ -205,21 +202,18 @@ void test1()                                                                    
     assert(strstr(p, "<p>DITA represents a fundamental shift"));
     free(p);
 
-    XmlNode N = nodeFromArenaTreeNode(n);
-    ReadOnlyBytes r = N.proto->getTag(N);
-    assert(       r.proto->equalsString(r, "p"));
+    XmlTag t = x.proto->makeXmlTag(x, n);
+    assert(!strcmp(t.proto->getTag(t), "p"));
    }
 
   if (p.proto->findFirstKey(p, "</p>", &n))
-   {XmlNode N = nodeFromArenaTreeNode(n);
-    ReadOnlyBytes r = N.proto->getTag(N);
-    assert(       r.proto->equalsString(r, "p"));
+   {XmlTag t = x.proto->makeXmlTag(x, n);
+    assert(!strcmp(t.proto->getTag(t), "p"));
    }
 
   if (p.proto->findFirstKey(p, "<conbody>", &n))
-   {XmlNode N = nodeFromArenaTreeNode(n);
-    ReadOnlyBytes r = N.proto->getTag(N);
-    assert(       r.proto->equalsString(r, "conbody"));
+   {XmlTag t = x.proto->makeXmlTag(x, n);
+    assert(!strcmp(t.proto->getTag(t), "conbody"));
    }
 
   x.proto->free(x);
@@ -227,9 +221,9 @@ void test1()                                                                    
 
 void test2()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {char *file =      "/home/phil/c/z/xml/validation/validation.xml";
-  Xml x = newXmlParseTreeFromFile(file);
+  XmlParse x = makeXmlParseFromFile(makeFileName(file));
 
-  void look(XmlNode node)
+  void look(ArenaTreeNode node)
    {//const ReadOnlyBytes tag = node.proto->getTag(node);
    }
 
