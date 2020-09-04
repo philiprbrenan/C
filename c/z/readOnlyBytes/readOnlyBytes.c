@@ -11,9 +11,9 @@
 //D1 Read Only Bytes                                                            // Extract information from a buffer containing a read only sequence of bytes
 
 typedef struct $                                                                //s Description of a read only sequence of bytes
- {const size_t length;                                                          // Length of the byte sequence
-  const char  *data;                                                            // Address of the first byte in the read only sequence of bytes
-  const enum   $_allocator                                                      // Allocation of memory
+ {size_t length;                                                                // Length of the byte sequence
+  char  *data;                                                                  // Address of the first byte in the read only sequence of bytes
+  enum   $_allocator                                                            // Allocation of memory
    {$_allocator_none   = 0,                                                     // Stack
     $_allocator_malloc = 1,                                                     // malloc
     $_allocator_mmap   = 2} allocator;                                          // mmap
@@ -24,38 +24,38 @@ typedef struct $                                                                
 
 //D1 Constructors                                                               // Construct a description of a read only byte sequence
 
-$ new$                                                                          //CP Create a new description of a read only sequence of bytes
- (const char  *data,
+static $ make$                                                                          //CP Create a new description of a read only sequence of bytes
+ (char  * const data,
   const size_t length,                                                          // Length of the byte sequence
   const enum   $_allocator allocator)                                           // Allocation of memory so we know how to free it (or not to free it)
  {$ r = {length, data, allocator, &ProtoTypes_$};
   return r;
  }
 
-$ new$FromString                                                                //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
- (const char * string,                                                          // String
+static $ make$FromString                                                                //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
+ (char * const string,                                                          // String
   const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
- {return new$(strndup(string, length), length, $_allocator_malloc);
+ {return make$(strndup(string, length), length, $_allocator_malloc);
  }
 
-$ new$FromAllocatedString                                                       //C Create a new description of a read only sequence of bytes read from a specified string of specified length that has already been allocated via malloc.
- (const char * string,                                                          // String
+static $ make$FromAllocatedString                                                       //C Create a new description of a read only sequence of bytes read from a specified string of specified length that has already been allocated via malloc.
+ (char * const string,                                                          // String
   const size_t length)                                                          // Length of string (no need to include any zero terminating byte) or zero if a zero terminated string
  {const size_t l = length ? : (size_t)strlen(string);
-  return new$(string, l, $_allocator_none);
+  return make$(string, l, $_allocator_none);
  }
 
-$ new$FromFormat                                                                //C Create a new description of a read only sequence of bytes read from a formatted string
+static $ make$FromFormat                                                                //C Create a new description of a read only sequence of bytes read from a formatted string
  (const char * format, ...)                                                     // Format followed by strings
  {va_list va;
   va_start(va, format);
   char *data; const int length = vasprintf(&data, format, va);                  // Allocate and format output string
   va_end(va);
 
-  return new$(data, length, ReadOnlyBytes_allocator_malloc);                    // Successful allocation
+  return make$(data, length, ReadOnlyBytes_allocator_malloc);                    // Successful allocation
  }
 
-$ new$FromFile                                                                  //C Create a new description of a read only sequence of bytes read from a file
+static $ make$FromFile                                                                  //C Create a new description of a read only sequence of bytes read from a file
  (FileName file)                                                                // File to read
  {struct stat  s;
   char * const f = file.name;
@@ -70,7 +70,7 @@ $ new$FromFile                                                                  
    }
   close(d);                                                                     // Close the file: the map is private so we no long need the underlying file
 
-  return new$(data, l, $_allocator_mmap);                                       // Read only bytes description of a mapped file
+  return make$(data, l, $_allocator_mmap);                                       // Read only bytes description of a mapped file
  }
 
 static void free_$                                                              //D Free any resources associated with a read only byte sequence
@@ -98,7 +98,7 @@ static $ substring_string_$_sizet_sizet                                         
  (const $      r,                                                               // Description of a sequence of read only bytes
   const size_t start,                                                           // Start position of the sub-string
   const size_t length)                                                          // Length of the sub-string
- {return new$(r.data+start, length, $_allocator_none);                          // Create a new description of a read only sequence of bytes
+ {return make$(r.data+start, length, $_allocator_none);                          // Create a new description of a read only sequence of bytes
  }
 
 static void writeFile_$_string                                                  // Write a read only byte sequence to the specified file.
@@ -127,7 +127,7 @@ static int equalsString_$_zeroString                                            
 
 static size_t b2SumW8_$                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const $ r)                                                                    // Description of read only sequence of bytes
- {const FileName i = newFileNameTemporaryWithContent("i.txt", 0, 0);
+ {const FileName i = makeFileNameTemporaryWithContent("i.txt", 0, 0);
   r ▷ writeFile(i);
   return i ▷ b2SumW8;                                                           // The digest is in the first two bytes
  }
@@ -138,7 +138,7 @@ static size_t b2SumW8_$                                                         
 
 void test0()                                                                    //Tlength //Tdata //Tsubstring //TnewReadOnlyBytesFromFormat //TerrNo
  {char *s = "0123456789";                                                       // Sample sequence of read only bytes
-  $ r = new$FromFormat(s);                                                      // New descriptor
+  $ r = make$FromFormat(s);                                                     // New descriptor
 
   assert(r ▷ length == strlen(s));
   $ R = r ▷ substring(2, 2);
@@ -149,14 +149,14 @@ void test0()                                                                    
 
 void test1()                                                                    //TwriteFile //Tequals //TequalsString //Tfree //TnewReadOnlyBytesFromFile
  {char *s = "0123456789";                                                       // Sample data
-  const FileName f = newFileNameTemporaryWithContent
+  const FileName f = makeFileNameTemporaryWithContent
   ("readOnlyBytes.data", s, 0);                                                 // Temporary file
 
 
-  $ q = new$FromFormat("%s", s);                                                // New descriptor
+  $ q = make$FromFormat("%s", s);                                                // New descriptor
     q ▷ writeFile(f);
 
-  $ r = new$FromFile(f);                                                        // New descriptor
+  $ r = make$FromFile(f);                                                        // New descriptor
   assert(q ▷ equals(r));
   assert(q ▷ equalsString(s));
     q ▷ free; r ▷ free;
@@ -166,7 +166,7 @@ void test1()                                                                    
 
 void test2()                                                                    //TnewReadOnlyBytesFromFormat
  {char *s = "abcdefg";
-  $     q = new$FromFormat("%s %d %s", s, strlen(s), s);
+  $     q = make$FromFormat("%s %d %s", s, strlen(s), s);
 
   assert(q ▷ length == 17);
   assert(q ▷ equalsString("abcdefg 7 abcdefg"));
@@ -176,8 +176,8 @@ void test2()                                                                    
 
 void test3()                                                                    //TwriteOpenFile
  {char    *s = "abcdefg";
-  $        q = new$FromFormat("%s %d %s", s, strlen(s), s);
-  FileName f = newFileNameTemporaryWithContent("$.data", 0, 0);
+  $        q = make$FromFormat("%s %d %s", s, strlen(s), s);
+  FileName f = makeFileNameTemporaryWithContent("$.data", 0, 0);
   FILE    *o = fopen(f.name, "w");
            q ▷ writeOpenFile(o);
   fclose  (o);
@@ -187,14 +187,14 @@ void test3()                                                                    
 
 void test4()                                                                    //TnewReadOnlyBytesFromString
  {char *s = "abcdefg";
-  $     q = new$FromString(s, strlen(s));
+  $     q = make$FromString(s, strlen(s));
   assert(strncmp(q.data, s, q.length) == 0 && q.length == strlen(s));
         q ▷ free;
  }
 
 void test5()                                                                    //TnewReadOnlyBytesFromAllocatedString
  {char *s = strdup("abcdefg");
-  $     q = new$FromAllocatedString(s, strlen(s));
+  $     q = make$FromAllocatedString(s, strlen(s));
   assert(strncmp(q.data, s, q.length) == 0 && q.length == strlen(s));
         q ▷ free;
   free (s);
@@ -202,7 +202,7 @@ void test5()                                                                    
 
 void test6()                                                                    //Tb2SumW8
  {char  *s = strdup("aaaa\n");
-  $      q = new$FromString(s, strlen(s));
+  $      q = make$FromString(s, strlen(s));
   assert(q ▷ b2SumW8 == 0x83);
          q ▷ free;
   free  (s);
