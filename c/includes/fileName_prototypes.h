@@ -5,14 +5,12 @@ static void writeContentToOpenFile
   const int desc,
   const char *content,
   const size_t length);
-FileName newFileNameTemporaryWithContent
+static FileName makeFileNameTemporaryWithContent
  (const char *fileName,
   const char *content,
   const size_t length);
-FileName newFileNameTemporary
+static FileName makeFileNameTemporary
  (const char *fileName);
-FileName newFileName
- (const char *name);
 static char * readFile_FileName
  (const FileName file);
 static void writeFile_FileName_string_ssize
@@ -47,3 +45,5 @@ struct ProtoTypes_FileName {
     const size_t length);                                                       // Length of content, or zero for a zero terminated string
  } const ProtoTypes_FileName =
 {b2SumW8_FileName, maxFileNameSize_FileNameFileName, readFile_FileName, size, unlink_FileName, writeContentToOpenFile, writeFile_FileName_string_ssize};
+FileName newFileName(FileName allocator) {return allocator;}
+
