@@ -15,7 +15,7 @@ tree dependent from it with the same arena*/
 #define $StartString "rbt"                                                      // String that starts the arena
 typedef char * $String;                                                         // Arena Tree string
 
-include ../arenaTree/arenaTree.c $ $Delta $Node $Offset $Arena $Description
+include ../arenaTree/arenaTree.c :structs !$Content
 
 typedef struct $Content                                                         // Content of a node in a red black tree
  {$Delta left;                                                                  // Left child node offset
@@ -23,6 +23,7 @@ typedef struct $Content                                                         
   $Delta up;                                                                    // Parent node offset
   $Delta height;                                                                // Height of the tree below this node
   $Delta key;                                                                   // Offset of the key of the node - a zero terminated character string
+  $Delta data;                                                                  // User data associated with this node.
   $Delta tree;                                                                  // Location of another tree
  } $Content;
 
@@ -47,17 +48,7 @@ typedef struct $FindList                                                        
 
 //D1 Pointers, offsets and allocations                                          // Locate items allocated in the arena
 
-include ../arenaTree/arenaTree.c pointer_$_size allocate_offset_$_size pointer_$Offset saveString_$Offset_$_$String new_$Node_$_$String newn_$Node_$_$String node_$_size content_$Node offset_$_size new$
-
-$Found new$Found                                                                //P New found status
- ($Found  allocator)                                                            // Allocator
- {return allocator;
- }
-
-$FindList new$FindList                                                          //P New find list
- ($FindList allocator)                                                          // Allocator
- {return allocator;
- }
+include ../arenaTree/arenaTree.c :arena
 
 static void free_$                                                              // Free a tree in its entirety
  (const $ tree)                                                                 // Tree
@@ -69,7 +60,7 @@ static void free_$                                                              
 
 static $Node root_$                                                             // The root node in a red black tree
  (const $ tree)                                                                 // Tree
- {return tree ▷ node(tree.arena->root);
+ {return tree ▷ nodeFromOffset(tree.arena->root);
  }
 
 static size_t height_$Node                                                      // Height of a sub tree starting at the specified node
@@ -87,25 +78,25 @@ static char *key_$Node                                                          
 static $Node up_$Node_$Node                                                     // Parent node for the specified node.
  (const $Node node)                                                             // Node
  {const $         t = node.tree;
-  return t ▷ node(node ▷ content->up.delta);                                    // $Node.offset will be zero if we are at the top of the tree
+  return t ▷ nodeFromOffset(node ▷ content->up.delta);                          // $Node.offset will be zero if we are at the top of the tree
  }
 
 static $Node left_$Node_$Node                                                   // Left child node below the specified parent node.
  (const $Node     parent)                                                       // Parent
  {const $         t = parent.tree;
-  return t ▷ node(parent ▷ content->left.delta);
+  return t ▷ nodeFromOffset(parent ▷ content->left.delta);
  }
 
 static $Node right_$Node_$Node                                                  // Right child node below the specified parent node.
  (const $Node     parent)                                                       // Parent
  {const $         t = parent.tree;
-  return t ▷ node(parent ▷ content->right.delta);
+  return t ▷ nodeFromOffset(parent ▷ content->right.delta);
  }
 
 static $Node ownedTreeRoot_$Node_$Node                                          //P Root of tree owned by this node if there is  one, else the returned node has an offset of zero.
  (const $Node     parent)                                                       // Parent
  {const $         t = parent.tree;
-  return t ▷ node(parent ▷ content->tree.delta);
+  return t ▷ nodeFromOffset(parent ▷ content->tree.delta);
  }
 
 static void setHeight_$Node                                                     //P Save the height of the sub tree starting at the specified node
@@ -153,7 +144,7 @@ static $Found  find_$Found_$Found_$Node_string                                  
 
     if (!i) return found;                                                       // Found
     $Content * const c = p ▷ content;                                           // Continue
-    p = tree ▷ node(i < 0 ? c->left.delta : c->right.delta);                    // Continue left or right
+    p = tree ▷ nodeFromOffset(i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
    }
 
   return found;                                                                 // Found
@@ -173,7 +164,7 @@ static  $Found find_$Found_$_string                                             
   char * const key)                                                             // The key to find
  {$Found f = new$Found(tree: tree,      key: key);                              // Status of find
   if (!tree.arena->root) return f;                                              // Empty tree
-  return f ▷ find(tree ▷ node(tree.arena->root));                               // Search the non empty base tree starting at the specified node.
+  return f ▷ find(tree ▷ nodeFromOffset(tree.arena->root));                     // Search the non empty base tree starting at the specified node.
  }
 
 static $FindList find_$FindList_$                                               // Find a list of keys starting at the base tree. Return true if all the keys were found.
@@ -202,7 +193,7 @@ static $Found add_$Found_$Found_$Node_string                                    
 
   char * const key = f.key;                                                     // The key to add
   const $ tree = f.last.tree;                                                   // The base tree
-  const $Node          n = f.added = tree ▷ new(key), p = f.last;               // Create new node under parent
+  const $Node          n = f.added = tree ▷ node(key), p = f.last;              // Create new node under parent
   $Content * const N = n ▷ content,       * const P = p ▷ content;
 
   if (f.different < 0) P->left .delta = n.offset;                               // Insert node left
@@ -262,7 +253,7 @@ static $Found add_$Node_$Node_string                                            
   $Found f = node ▷ find(key);                                                  // Try to find the key
 
   if (!f.last.offset)                                                           // Empty tree
-   {const $Node root = f.added = tree ▷ new(key);                               // Add new key in a node
+   {const $Node root = f.added = tree ▷ node(key);                              // Add new key in a node
     node ▷ setTree(root);                                                       // Make the new node the root node
     return f;                                                                   // Find status
    }
@@ -275,7 +266,7 @@ static $Found add_$Node_$_string                                                
  {$Found f = tree ▷ find(key);                                                  // Try to find the key
 
   if (!f.last.offset)                                                           // Empty tree
-   {const $Node root = f.added = tree ▷ new(key);                               // Add new key in a node
+   {const $Node root = f.added = tree ▷ node(key);                              // Add new key in a node
     tree.arena->root = root.offset;                                             // Make the new node the root node
     return f;                                                                   // Find status
    }
@@ -346,7 +337,7 @@ static void print_$                                                             
 #define TEST_TREE_SIZE 10
 
 void test0()                                                                    //Tnew$ //Tadd //Tleft //Tright //Tkey //Tsprint //Tup
- {$ t = new$;
+ {$ t = make$();
     t ▷ add("b");
     t ▷ add("a");
     t ▷ add("c");
@@ -379,7 +370,7 @@ void test0()                                                                    
  }
 
 void test1()
- {$ t = new$;
+ {$ t = make$();
     t ▷ add("a"); t ▷ add("b");
   $Node a = t ▷ root, b = a ▷ right;
 
@@ -430,7 +421,7 @@ void test1()
  }
 
 void test2()                                                                    //Tprint //Tfree
- {$ t = new$;
+ {$ t = make$();
 
   for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
    {char c[2]; c[0] = 'a' + i;
@@ -441,7 +432,7 @@ void test2()                                                                    
  }
 
 void test3()                                                                    //Theight //Tfind //Troot
- {$ t = new$;
+ {$ t = make$();
 
   for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
    {for(size_t j = 0; j < TEST_TREE_SIZE; ++j)
@@ -462,7 +453,7 @@ void test3()                                                                    
  }
 
 void test4()
- {$ t = new$;
+ {$ t = make$();
 
   for  (size_t i = TEST_TREE_SIZE; i > 0; --i)
    {for(size_t j = TEST_TREE_SIZE; j > 0; --j)
@@ -482,7 +473,7 @@ void test4()
  }
 
 void test5()
- {$ t = new$;
+ {$ t = make$();
 
   for  (size_t i = 0; i < TEST_TREE_SIZE;        ++i)
    {for(size_t j =        TEST_TREE_SIZE; j > 0; --j)
