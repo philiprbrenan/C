@@ -9,10 +9,8 @@
 
 //D1 Structures                                                                 // Structures describing the tree. ArenaTree and TreeAllocator are not held inside the arena and so are pointers not offsets.
 
-typedef struct $     *$;                                                        // Red black tree
-typedef struct $Node *$Node;                                                    // A node in a red black tree
 
-struct $Node                                                                    // A node in the tree
+typedef struct $Node                                                            // A node in the tree
  {const struct ProtoTypes_$Node *proto;                                         // Methods associated with a node
   $Node  left;                                                                  // Left child node
   $Node  right;                                                                 // Right child node
@@ -27,21 +25,14 @@ typedef struct $Found                                                           
   int    different;                                                             // The compare result on the last node
  } $Found;
 
-struct $                                                                        // Arena Tree.
+typedef struct $                                                                // Red black tree
  {const struct ProtoTypes_$ *proto;                                             // Methods associated with a red black tree
   $Node root;                                                                   // Root element of the tree
- };
+ } $;
 
 #include <$$_prototypes.h>                                                      // Arena tree prototypes now that the relevant structures have been declared
 
 //D1 Constructor                                                                // Construct a new Arena tree.
-
-$ new$                                                                          // Create a new red black tree
- (const struct $     allocator)                                                 // Tree allocator
- {$ t = alloc(sizeof(allocator));                                               // Allocate tree
-   *t = allocator;                                                              // Initialize tree
-  return t;
- }
 
 static void free_$                                                              // Free a red black tree
  ($ tree)                                                                       // Tree to free
@@ -57,13 +48,6 @@ static void free_$                                                              
   freeNode(tree->root);
 
   free(tree);
- }
-
-$Node new$Node                                                                  // Create a new node
- (const struct $Node allocator)                                                 // Node allocator
- {$Node  n = alloc(sizeof(allocator));                                          // Allocate node
-        *n = allocator;                                                         // Initialize node
-  return n;
  }
 
 //D1 Find                                                                       // Find a key if it exists with the tree.
@@ -169,7 +153,7 @@ static char *key                                                                
 #define TEST_TREE_SIZE 10
 
 void test0()                                                                    //Tadd //Tprint //Tkey //Tfind
- {$ t = new$;
+ {$ t = make$();
 
   for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
    {for(size_t j = 0; j < TEST_TREE_SIZE; ++j)
@@ -188,7 +172,7 @@ void test0()                                                                    
  }
 
 void test1()
- {$ t = new$;
+ {$ t = make$();
   for  (size_t i = TEST_TREE_SIZE; i > 0; --i)
    {for(size_t j = TEST_TREE_SIZE; j > 0; --j)
      {char c[4]; memset(c, 0, 4); c[0] = '0' + i - 1; c[1] = '0' + j - 1;
@@ -206,7 +190,7 @@ void test1()
  }
 
 void test2()
- {$ t = new$;
+ {$ t = make$();
   for  (size_t i = 0; i < TEST_TREE_SIZE;        ++i)
    {for(size_t j =        TEST_TREE_SIZE; j > 0; --j)
      {char c[4]; memset(c, 0, 4); c[0] = '0' + i; c[1] = '0' + j - 1;
