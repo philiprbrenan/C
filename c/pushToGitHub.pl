@@ -43,8 +43,8 @@ if (1)                                                                          
   for my $f(sort keys %files)
    {my $t = swapFilePrefix($f, $home);
        $t = swapFilePrefix($t, q(c/)) if $t =~ m(readme)i and $t !~ m(samples);
-    say STDERR "$f to $t";
-    say STDERR dump GitHub::Crud::writeFileUsingSavedToken($user, $repo, $t, readFile($f));
+    say STDERR "$f to $t ",
+      GitHub::Crud::writeFileUsingSavedToken($user, $repo, $t, readFile($f));
    }
  }
 
