@@ -10,10 +10,8 @@
 
 //D1 Structures                                                                 // Structures describing the tree. ArenaTree and TreeAllocator are not held inside the arena and so are pointers not offsets.
 
-typedef struct RedBlackTree     *RedBlackTree;                                                        // Red black tree
-typedef struct RedBlackTreeNode *RedBlackTreeNode;                                                    // A node in a red black tree
 
-struct RedBlackTreeNode                                                                    // A node in the tree
+typedef struct RedBlackTreeNode                                                            // A node in the tree
  {const struct ProtoTypes_RedBlackTreeNode *proto;                                         // Methods associated with a node
   RedBlackTreeNode  left;                                                                  // Left child node
   RedBlackTreeNode  right;                                                                 // Right child node
@@ -28,21 +26,14 @@ typedef struct RedBlackTreeFound                                                
   int    different;                                                             // The compare result on the last node
  } RedBlackTreeFound;
 
-struct RedBlackTree                                                                        // Arena Tree.
+typedef struct RedBlackTree                                                                // Red black tree
  {const struct ProtoTypes_RedBlackTree *proto;                                             // Methods associated with a red black tree
   RedBlackTreeNode root;                                                                   // Root element of the tree
- };
+ } RedBlackTree;
 
 #include <redBlackTree_prototypes.h>                                                      // Arena tree prototypes now that the relevant structures have been declared
 
 //D1 Constructor                                                                // Construct a new Arena tree.
-
-RedBlackTree newRedBlackTree                                                                          // Create a new red black tree
- (const struct RedBlackTree     allocator)                                                 // Tree allocator
- {RedBlackTree t = alloc(sizeof(allocator));                                               // Allocate tree
-   *t = allocator;                                                              // Initialize tree
-  return t;
- }
 
 static void free_RedBlackTree                                                              // Free a red black tree
  (RedBlackTree tree)                                                                       // Tree to free
@@ -58,13 +49,6 @@ static void free_RedBlackTree                                                   
   freeNode(tree->root);
 
   free(tree);
- }
-
-RedBlackTreeNode newRedBlackTreeNode                                                                  // Create a new node
- (const struct RedBlackTreeNode allocator)                                                 // Node allocator
- {RedBlackTreeNode  n = alloc(sizeof(allocator));                                          // Allocate node
-        *n = allocator;                                                         // Initialize node
-  return n;
  }
 
 //D1 Find                                                                       // Find a key if it exists with the tree.
@@ -170,7 +154,7 @@ static char *key                                                                
 #define TEST_TREE_SIZE 10
 
 void test0()                                                                    //Tadd //Tprint //Tkey //Tfind
- {RedBlackTree t = newRedBlackTree(({struct RedBlackTree t = {proto: &ProtoTypes_RedBlackTree};   t;}));
+ {RedBlackTree t = makeRedBlackTree();
 
   for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
    {for(size_t j = 0; j < TEST_TREE_SIZE; ++j)
@@ -189,7 +173,7 @@ void test0()                                                                    
  }
 
 void test1()
- {RedBlackTree t = newRedBlackTree(({struct RedBlackTree t = {proto: &ProtoTypes_RedBlackTree};   t;}));
+ {RedBlackTree t = makeRedBlackTree();
   for  (size_t i = TEST_TREE_SIZE; i > 0; --i)
    {for(size_t j = TEST_TREE_SIZE; j > 0; --j)
      {char c[4]; memset(c, 0, 4); c[0] = '0' + i - 1; c[1] = '0' + j - 1;
@@ -207,7 +191,7 @@ void test1()
  }
 
 void test2()
- {RedBlackTree t = newRedBlackTree(({struct RedBlackTree t = {proto: &ProtoTypes_RedBlackTree};   t;}));
+ {RedBlackTree t = makeRedBlackTree();
   for  (size_t i = 0; i < TEST_TREE_SIZE;        ++i)
    {for(size_t j =        TEST_TREE_SIZE; j > 0; --j)
      {char c[4]; memset(c, 0, 4); c[0] = '0' + i; c[1] = '0' + j - 1;
