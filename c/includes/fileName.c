@@ -17,6 +17,16 @@ typedef struct FileName                                                         
 
 //D1 Files                                                                      // Methods for processing files
 
+FileName makeFileName                                                                         //C Create a new  file name from a string - no corresponding file is actually created.
+ (const char *name)                                                             // Base name and extension of the file
+ {FileName f = {proto: &ProtoTypes_FileName};
+  const size_t l = sizeof(f.name);
+  if (strlen(name) >= l) printStackBackTrace
+   ("File name too long, must be less than %lu bytes\n", l);
+  strncpy(f.name, name, l);
+  return f;
+ }
+
 static size_t size                                                              // Get the size of a file in bytes
  (FileName file)                                                                       // Name of the file
  {struct stat buf;
@@ -42,11 +52,11 @@ static void writeContentToOpenFile                                              
    }
  }
 
-FileName newFileNameTemporaryWithContent                                                      //C Create a temporary file with the specified base name and extension preloaded with the specified content.
+static FileName makeFileNameTemporaryWithContent                                              //C Create a temporary file with the specified base name and extension preloaded with the specified content.
  (const char *fileName,                                                         // Base name and extension of the file
   const char *content,                                                          // Content for the file
   const size_t length)                                                          // Length of content, or zero for a zero terminated string
- {FileName f = newFileName("");                                                               // Create file name with a yet to be determined name
+ {FileName f = makeFileName("");                                                              // Create file name with a yet to be determined name
 
   if (strlen(fileName) + 16 > f.proto->maxFileNameSize(f))                              // Check file name length
    {printStackBackTrace("File name too big: %s\n", fileName);
@@ -72,19 +82,9 @@ FileName newFileNameTemporaryWithContent                                        
   return f;
  }
 
-FileName newFileNameTemporary                                                                 //C Create an empty temporary file with the specified base name and extension .
+static FileName makeFileNameTemporary                                                         //C Create an empty temporary file with the specified base name and extension .
  (const char *fileName)                                                         // Base name and extension of the file
- {return newFileNameTemporaryWithContent(fileName, "", 0);
- }
-
-FileName newFileName                                                                          //C Create a new  file name from a string - no corresponding file is actually created.
- (const char *name)                                                             // Base name and extension of the file
- {FileName f = {proto: &ProtoTypes_FileName};
-  const size_t l = sizeof(f.name);
-  if (strlen(name) >= l) printStackBackTrace
-   ("File name too long, must be less than %lu bytes\n", l);
-  strncpy(f.name, name, l);
-  return f;
+ {return makeFileNameTemporaryWithContent(fileName, "", 0);
  }
 
 static char * readFile_FileName                                                        // Return the content of a specified file as a string.
@@ -121,7 +121,7 @@ static void unlink_FileName                                                     
 
 static size_t b2SumW8_FileName                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const FileName i)                                                                    // Name of file containing content for which we want a digest.
- {const FileName o = newFileNameTemporary("o.txt");                                           // File to receive output
+ {const FileName o = makeFileNameTemporary("o.txt");                                           // File to receive output
   Utilities_system("b2sum -l 8 < %s > %s", i.name, o.name);                     // Execute Blake command via shell
   char * const r = o.proto->readFile(o);                                                // Read results from command
   const size_t d = strtol(r, NULL, 16);                                         // Convert result from hex string to integer
@@ -137,7 +137,7 @@ static size_t maxFileNameSize_FileNameFileName                                  
 
 #if __INCLUDE_LEVEL__ == 0
 void test0()                                                                    //Tb2SumW8 //TnewFileNameTemporaryWithContent //TnewFileNameTemporary //TreadFile //TmaxFileNameSize //TnewFileName //Tsize //TwriteFile //Tunlink
- {FileName f = newFileNameTemporaryWithContent("aaa.c", "aaaa", 0);
+ {FileName f = makeFileNameTemporaryWithContent("aaa.c", "aaaa", 0);
   assert(f.proto->maxFileNameSize(f) == 255);
   assert(f.proto->b2SumW8(f) == 0x8f);
 
@@ -146,7 +146,7 @@ void test0()                                                                    
   assert(f.proto->size(f) == 4);
   free(s);
 
-  const FileName F = newFileName(f.name);
+  const FileName F = makeFileName(f.name);
           F.proto->writeFile(F, "bbbb", 0);
   assert( F.proto->size(F) == 4);
   assert( F.proto->b2SumW8(F) == 0x12);
