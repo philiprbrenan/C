@@ -16,6 +16,16 @@ typedef struct $                                                                
 
 //D1 Files                                                                      // Methods for processing files
 
+$ make$                                                                         //C Create a new  file name from a string - no corresponding file is actually created.
+ (const char *name)                                                             // Base name and extension of the file
+ {$ f = {proto: &ProtoTypes_$};
+  const size_t l = sizeof(f.name);
+  if (strlen(name) >= l) printStackBackTrace
+   ("File name too long, must be less than %lu bytes\n", l);
+  strncpy(f.name, name, l);
+  return f;
+ }
+
 static size_t size                                                              // Get the size of a file in bytes
  ($ file)                                                                       // Name of the file
  {struct stat buf;
@@ -41,11 +51,11 @@ static void writeContentToOpenFile                                              
    }
  }
 
-$ new$TemporaryWithContent                                                      //C Create a temporary file with the specified base name and extension preloaded with the specified content.
+static $ make$TemporaryWithContent                                              //C Create a temporary file with the specified base name and extension preloaded with the specified content.
  (const char *fileName,                                                         // Base name and extension of the file
   const char *content,                                                          // Content for the file
   const size_t length)                                                          // Length of content, or zero for a zero terminated string
- {$ f = new$("");                                                               // Create file name with a yet to be determined name
+ {$ f = make$("");                                                              // Create file name with a yet to be determined name
 
   if (strlen(fileName) + 16 > f ▷ maxFileNameSize)                              // Check file name length
    {printStackBackTrace("File name too big: %s\n", fileName);
@@ -71,19 +81,9 @@ $ new$TemporaryWithContent                                                      
   return f;
  }
 
-$ new$Temporary                                                                 //C Create an empty temporary file with the specified base name and extension .
+static $ make$Temporary                                                         //C Create an empty temporary file with the specified base name and extension .
  (const char *fileName)                                                         // Base name and extension of the file
- {return new$TemporaryWithContent(fileName, "", 0);
- }
-
-$ new$                                                                          //C Create a new  file name from a string - no corresponding file is actually created.
- (const char *name)                                                             // Base name and extension of the file
- {$ f = {proto: &ProtoTypes_$};
-  const size_t l = sizeof(f.name);
-  if (strlen(name) >= l) printStackBackTrace
-   ("File name too long, must be less than %lu bytes\n", l);
-  strncpy(f.name, name, l);
-  return f;
+ {return make$TemporaryWithContent(fileName, "", 0);
  }
 
 static char * readFile_$                                                        // Return the content of a specified file as a string.
@@ -120,7 +120,7 @@ static void unlink_$                                                            
 
 static size_t b2SumW8_$                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const $ i)                                                                    // Name of file containing content for which we want a digest.
- {const $ o = new$Temporary("o.txt");                                           // File to receive output
+ {const $ o = make$Temporary("o.txt");                                           // File to receive output
   Utilities_system("b2sum -l 8 < %s > %s", i.name, o.name);                     // Execute Blake command via shell
   char * const r = o ▷ readFile;                                                // Read results from command
   const size_t d = strtol(r, NULL, 16);                                         // Convert result from hex string to integer
@@ -136,7 +136,7 @@ static size_t maxFileNameSize_$FileName                                         
 
 #if __INCLUDE_LEVEL__ == 0
 void test0()                                                                    //Tb2SumW8 //Tnew$TemporaryWithContent //Tnew$Temporary //TreadFile //TmaxFileNameSize //TnewFileName //Tsize //TwriteFile //Tunlink
- {$ f = new$TemporaryWithContent("aaa.c", "aaaa", 0);
+ {$ f = make$TemporaryWithContent("aaa.c", "aaaa", 0);
   assert(f ▷ maxFileNameSize == 255);
   assert(f ▷ b2SumW8 == 0x8f);
 
@@ -145,7 +145,7 @@ void test0()                                                                    
   assert(f ▷ size == 4);
   free(s);
 
-  const $ F = new$(f.name);
+  const $ F = make$(f.name);
           F ▷ writeFile("bbbb", 0);
   assert( F ▷ size == 4);
   assert( F ▷ b2SumW8 == 0x12);
