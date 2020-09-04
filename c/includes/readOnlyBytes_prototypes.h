@@ -1,17 +1,17 @@
-ReadOnlyBytes newReadOnlyBytes
- (const char  *data,
+static ReadOnlyBytes makeReadOnlyBytes
+ (char  * const data,
 
   const size_t length,
   const enum   ReadOnlyBytes_allocator allocator);
-ReadOnlyBytes newReadOnlyBytesFromString
- (const char * string,
+static ReadOnlyBytes makeReadOnlyBytesFromString
+ (char * const string,
   const size_t length);
-ReadOnlyBytes newReadOnlyBytesFromAllocatedString
- (const char * string,
+static ReadOnlyBytes makeReadOnlyBytesFromAllocatedString
+ (char * const string,
   const size_t length);
-ReadOnlyBytes newReadOnlyBytesFromFormat
+static ReadOnlyBytes makeReadOnlyBytesFromFormat
  (const char * format, ...);
-ReadOnlyBytes newReadOnlyBytesFromFile
+static ReadOnlyBytes makeReadOnlyBytesFromFile
  (FileName file);
 static void free_ReadOnlyBytes
  (const ReadOnlyBytes r);
@@ -64,3 +64,5 @@ struct ProtoTypes_ReadOnlyBytes {
     FILE   * f);                                                                // File descriptor
  } const ProtoTypes_ReadOnlyBytes =
 {b2SumW8_ReadOnlyBytes, data_ReadOnlyBytes, equalsString_ReadOnlyBytes_zeroString, equals_ReadOnlyBytes_ReadOnlyBytes, free_ReadOnlyBytes, length_ReadOnlyBytes, substring_string_ReadOnlyBytes_sizet_sizet, writeFile_ReadOnlyBytes_string, writeOpenFile_ReadOnlyBytes_string};
+ReadOnlyBytes newReadOnlyBytes(ReadOnlyBytes allocator) {return allocator;}
+
