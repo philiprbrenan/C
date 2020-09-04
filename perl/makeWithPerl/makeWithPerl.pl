@@ -278,10 +278,10 @@ elsif ($c)                                                                      
  {my $lp = '-L/usr/lib/x86_64-linux-gnu/libperl.so.5.26 ';
   my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8);
 
-  for my $lib(qw(gtk+-3.0 glib-2.0))
-   {$cp .= ' '.trim(qx(pkg-config --cflags $lib));
-    $lp .= ' '.trim(qx(pkg-config --libs $lib));
-   }
+#  for my $lib(qw(gtk+-3.0 glib-2.0))
+#   {$cp .= ' '.trim(qx(pkg-config --cflags $lib));
+#    $lp .= ' '.trim(qx(pkg-config --libs $lib));
+#   }
 
   my $optimize = 0;                                                             # Whether to optimize or not
 # my $opt = 0 ? '-O3' : '-fprofile-arcs -ftest-coverage -aux-info /tmp/aux-info.data';
@@ -304,10 +304,11 @@ elsif ($c)                                                                      
    }
   else
    {my $e = $file =~ s(\.cp?p?\Z) ()gsr;                                        # Execute
-    my $o = $file =~ s(\.cp?p?\Z) (.o)gsr;                                      # Object file
-    my $a = $file =~ s(\.cp?p?\Z) (.gcda)gsr;                                   # Coverage file
+    my $o = fpe($e, q(o));                                                      # Object file
+    my $a = fpe($e, q(gcda));                                                   # Coverage file
+    my $G = $optimize ? '' : qq(gcov $a);                                       # Gcov if not optimzing
     my $g = owf(undef, "run\n");                                                # Gdb command file
-    my $c = qq(rm $e $o $a 2>/dev/null; $gcc -o "$e" "$cFile" $lp; gdb -batch-silent -x $g $e);
+    my $c = qq(rm $e $o $a 2>/dev/null; $gcc -o "$e" "$cFile" $lp; gdb -batch-silent -x $g $e; $G);
     say STDERR qq($c);
     say STDERR qx($c);
 #   unlink $e, $o;
