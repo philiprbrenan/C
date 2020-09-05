@@ -5,20 +5,14 @@
 #define _GNU_SOURCE
 #ifndef $_included
 #define $_included
-#include <assert.h>
-#include <arenaTree.c>
 #include <ctype.h>
-#include <fcntl.h>
+#include <arenaTree.c>
 #include <readOnlyBytes.c>
-#include <setjmp.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
-#include <fileName.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
+
+char $tagName[256];                                                             // Tag name returned by getTag
 
 typedef struct $Parse                                                           // $ parse tree
  {const struct ProtoTypes_$Parse *proto;                                        // Prototypes for methods
@@ -41,7 +35,6 @@ typedef struct $Tag                                                             
 #define $Slash    '/'
 #define $Question '?'
 #define $Exclaim  '!'
-#define $makeString(args...) ({char *m; int r = asprintf(&m, args); if(r){} m;})
 
 static $Tag make$Tag_$Parse_ArenaTreeNode                                       // Make a tag descriptor from a parse tree node holding the tag
  ($Parse        xml,                                                            // Xml parse tree
@@ -66,16 +59,21 @@ static $Parse make$ParseFromFile                                                
 
   $Parse error                                                                  // Report an error
    (char *p,                                                                    // Pointer to position at which the error occurred
-    char *m)                                                                    // Message text
-   {const ArenaTreeNode n = e ▷ node(m);                                         // Save the text of the error message as the key of a node
+    char *format, ...)                                                          // Message text
+   {va_list va;
+    va_start(va, format);
+    char * m; const int length = vasprintf(&m, format, va);                     // Allocate and format message
+    va_end(va);
+    const ArenaTreeNode n = e ▷ node(m);                                        // Save the text of the error message as the key of a node
     n ▷ setData(p - b ▷ data);                                                  // Save the offset of the error in the node data offset.
     n ▷ putTreeLast;                                                            // Add the error to the error list
+    free(m);
     return x;
    } // error
 
   char *p  = b ▷ data;                                                          // Start of text to be parsed
   if  (*p != $Open)                                                             // Insist that the first character is <
-   {return error(p, $makeString("$ must start with: %c\n", $Open));
+   {return error(p, "$ must start with: %c\n", $Open);
    }
 
   int remainderIsWhiteSpace(char *p)                                            // Find the next non space character in a zero terminated string
@@ -94,21 +92,30 @@ static $Parse make$ParseFromFile                                                
          {return P ▷ putLast(t ▷ noden(o, c - o + 1));
          }
 
-        const char oo = *(o+1), cc = *(c-1);                                    // First character after <, last character before >
-        if (oo == $Slash)                                                       // Closing tag
-         {save();
+        void end(void)                                                          // End tag
+         {size_t N = sizeof($tagName);
+          char a[N+1]; strncpy(a, parse$TagName(P ▷ key), N);                   // Start tag name
+          char b[N+1]; strncpy(b, parse$TagName(o),       N);                   // End tag name
+
+          if (strncmp(a, b, N))                                                 // Tag name mismatch
+           {error(o, "End tag: %s does not match start tag: %s\n", a, b);
+           }
+
           if (!P ▷ isRoot) P = P ▷ parent;                                      // Go up one level if possible
           else if (remainderIsWhiteSpace(p)) {}                                 // On root - ignore trailing white space
-          else return error(o, strdup("Ignoring text beyond closing tag\n"));   // On root with remaining text
+          else return error(o, "Ignoring text beyond closing tag\n");           // On root with remaining text
          }
-        else if (oo == $Question) {}                                            // Ignore ?xml
-        else if (oo == $Exclaim)  {}                                            // Ignore !DOCTYPE
-        else if (cc == $Slash)    {save();}                                     // Unitag
+
+        const char oo = *(o+1), cc = *(c-1);                                    // First character after <, last character before >
+        if        (oo == $Slash)     end();                                     // Closing tag
+        else if   (oo == $Question) {}                                          // Ignore ?xml
+        else if   (oo == $Exclaim)  {}                                          // Ignore !DOCTYPE
+        else if   (cc == $Slash)     save();                                    // Unitag
         else P = save();                                                        // Opening tag - make current node the current parent
         p = c + 1;                                                              // Start of text
        }
 
-      else return error(o, $makeString("No closing: %c\n", $Close));            // No closing >
+      else return error(o, "Cannot find closing: %c\n", $Close);                // No closing > present
      }
     else                                                                        // Check that trailing text is all spaces
      {if (remainderIsWhiteSpace(p)) return x;                                   // End of $ text with just trailing white space
@@ -125,37 +132,68 @@ static void free_$Parse                                                         
   t ▷ free; e ▷ free;
  }
 
-static char * print_$Parse                                                      // Print an $ parse tree
- ($Parse x)                                                                     // $ parse tree
- {ArenaTree     t = x.tree;
-  ArenaTreeNode r = t ▷ root;
-  return        r ▷ print;
+static size_t errors_$Parse                                                     // Number of errors encountered while creating an $ parse tree.
+ ($Parse x)                                                                     // $ descriptor
+ {ArenaTree e = x.errors;
+  return e ▷ count - 1;                                                           // The root node is included in the count but does not containg an error message - so we discount it
  }
 
-static int printsAs_$Parse                                                      // Check the print of a parse tree is as expected.
- (const $Parse x,                                                               // $ descriptor
-  const char * expected)                                                        // Expected print string
- {char    * s = x ▷ print;
-  const int r = !strcmp(s, expected);
-  free     (s);
-  return    r;
- }
-
-char $tagName[256];                                                             // Tag name returned by getTag
-static char * getTag_$                                                          // Get the tag name from a node in the $ parse tree. The tag name is returned in a reused static buffer that the caller should not free.
- ($Tag tag)                                                                     // Tag
- {ArenaTreeNode   n = tag  ▷ node;                                             // Point to key
-  ArenaTreeString k = n    ▷ key;                                               // Point to key
-  if (*k == XmlOpen)                                                            // Tag
-   {const size_t s = strspn(k, "< /?!"), f = strcspn(k+s, "> /?!");             // Start and finish of tag
+static char  * parse$TagName                                                    // Get the tag name from an $ tag
+ (const char * const tagString)                                                 // String representation of a tag
+ {const char * const p = tagString;
+  if (*p == XmlOpen)                                                            // Tag
+   {const size_t s = strspn(p, "< /?!"), f = strcspn(p+s, "> /?!");             // Start and finish of tag
     if (f > 0)
-     {if (f < sizeof($tagName)) return strncpy($tagName, k+s, f);               // Return tag name
-      printStackBackTrace("Tag  too long in %s\n", k);
+     {if (f < sizeof($tagName))                                                 // Return tag name
+       {char * const q = stpncpy($tagName, p+s, f);
+        *q = 0;
+        return $tagName;                                                        // Add terminating
+       }
+      printStackBackTrace("Tag too long in %s\n", tagString);
      }
-    printStackBackTrace("No tag in %s\n", k);
+    printStackBackTrace("No tag in %s\n", tagString);
    }
   return strcpy($tagName, "text");                                              // In a text tag
  }
+
+static char * getTag_$Tag                                                       // Get the tag name from a node in the $ parse tree. The tag name is returned in a reused static buffer that the caller should not free.
+ ($Tag tag)                                                                     // Tag
+ {ArenaTreeNode n = tag ▷ node;                                                 // Parse tree node defining tag
+  return parse$TagName(n ▷ key);
+ }
+
+static int tagNameIs_$Tag_string                                                // Check the name of a tag.
+ ($Tag         tag,                                                             // Tag
+  char * const expected)                                                        // Expected name of tag
+ {return !strcmp(tag ▷ getTag, expected);
+ }
+
+static int findFirstTag_int_tree_string_$NodePointer                            // Find the first node in an $ parse tree with the specified tag.
+ ($Parse       xml,                                                             // Xml parse tree
+  char * const key,                                                             // Name of the tag to find
+  $Tag * const result)                                                          // Output area for tag if found
+ {jmp_buf found;
+  ArenaTreeNode F;                                                              // Matching node in $ parse tree.
+
+  void find(typeof(F) node)                                                     // Check whether the key of the current node matches the specified key
+   {if (parse$TagName(node ▷ key) && !strcmp($tagName, key))
+     {F = node;                                                                   // Found
+      longjmp(found, 1);
+     }
+   }
+
+  if (!setjmp(found))                                                           // Search the tree
+   {ArenaTree t = xml.tree;
+    t ▷ by(find);
+    return 0;                                                                   // No matching tag
+   }
+  else                                                                          // Found matching tag
+   {*result = new $Tag(xml: xml, node: F);
+    return 1;
+   }
+ }
+
+//D1 Traverse                                                                   // Traverse the $ parse tree.
 
 static void by_$_sub                                                            // Traverse an xml parse tree in post-order calling the specified function to process each child node.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
  ($Parse xml,                                                                   // Xml parse tree
@@ -167,6 +205,39 @@ static void by_$_sub                                                            
   tree ▷ by(f);
  }
 
+//D1 Print                                                                      // Print an $ parse tree starting at the specified tag.
+
+static ReadOnlyBytes print_readOnlyBytes_$Tag                                   // Print the parse tree as a string starting at the specified tag.
+ (const $Tag tag)                                                               // Starting tag
+ {const ArenaTreeNode n = tag.node;
+  return              n ▷ print;
+ }
+
+static ReadOnlyBytes print_ReadOnlyBytes_$Parse                                 // Print an entire $ parse tree as a string.
+ ($Parse xml)                                                                   // $ parse tree
+ {ArenaTree     t = xml.tree;
+  ArenaTreeNode r = t ▷ root;
+  return            r ▷ print;
+ }
+
+static int printsAs_$Tag                                                        // Check the print of an $ parse tree staring at the specified tag is as expected.
+ (const $Tag    tag,                                                            // Starting tag
+  const char *  expected)                                                       // Expected print string
+ {ReadOnlyBytes s = tag ▷ print;
+  const int     r = s ▷ equalsString(expected);
+  s ▷ free;
+  return r;
+ }
+
+static int printsAs_$Parse                                                      // Check the print of an $ parse tree is as expected.
+ (const $Parse  xml,                                                            // $ parse tree
+  const char *  expected)                                                       // Expected print string
+ {ReadOnlyBytes s = xml ▷ print;
+  const int     r = s ▷ equalsString(expected);
+  s ▷ free;
+  return r;
+ }
+
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
 
@@ -174,16 +245,23 @@ static int develop()                                                            
  {return !strcmp(getenv("HOME"), "/home/phil");
  }
 
-void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
+void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors
  {char file[128] =   "/home/phil/c/z/xml/test.xml";
   if (!develop()) strcpy(file,  "c/z/xml/test.xml");
-  $Parse        x = make$ParseFromFile(makeFileName(file));
-  ArenaTree     p = x.tree;
-  ArenaTreeNode n;
 
-  if (     p ▷ findFirstKey("<b>", &n))
-  assert(! p ▷ findFirstKey("<d>", &n));
-  if (     p ▷ findFirstKey( "d",  &n))
+  $Parse x = make$ParseFromFile(makeFileName(file));
+
+  if (1)
+   {ArenaTree e = x.errors;
+    assert(x ▷ errors == 1);
+    assert(!strcmp(e ▷ print .data, "Ignoring text at end\n"));
+   }
+
+  $Tag   t;
+
+  if (     x ▷ findFirstTag("<b>", &t))
+  assert(! x ▷ findFirstTag("<d>", &t));
+  if (     x ▷ findFirstTag( "d",  &t))
 
   x ▷ free;
  }
@@ -192,27 +270,15 @@ void test1()                                                                    
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
   if (!develop()) strcpy(file, "c/z/xml/samples/foreword.dita");
   $Parse x = make$ParseFromFile(makeFileName(file));
+  $Tag   t;
 
-  ArenaTree     p = x.tree;
-  ArenaTreeNode n;
-
-  if (p ▷ findFirstKey("<p>", &n))
-   {char *p = n ▷ print;
-    assert(strstr(p, "<p>DITA represents a fundamental shift"));
-    free(p);
-
-    $Tag t = x ▷ make$Tag(n);
-    assert(!strcmp(t ▷ getTag, "p"));
+  if (x ▷ findFirstTag("pp", &t))
+   {assert(t ▷ printsAs("<p>DITA represents a fundamental shift"));
+    assert(t ▷ tagNameIs("p"));
    }
 
-  if (p ▷ findFirstKey("</p>", &n))
-   {$Tag t = x ▷ make$Tag(n);
-    assert(!strcmp(t ▷ getTag, "p"));
-   }
-
-  if (p ▷ findFirstKey("<conbody>", &n))
-   {$Tag t = x ▷ make$Tag(n);
-    assert(!strcmp(t ▷ getTag, "conbody"));
+  if (x ▷ findFirstTag("conbody", &t))
+   {assert(t ▷ tagNameIs("conbody"));
    }
 
   x ▷ free;
@@ -221,6 +287,10 @@ void test1()                                                                    
 void test2()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {char *file =      "/home/phil/c/z/xml/validation/validation.xml";
   $Parse x = make$ParseFromFile(makeFileName(file));
+  $Tag   possibilities;
+
+  if (!x ▷ findFirstTag("possibilities", &possibilities)) printStackBackTrace
+   ("Cannot find possibilities");
 
   void look(ArenaTreeNode node)
    {//const ReadOnlyBytes tag = node ▷ getTag;
