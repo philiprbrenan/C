@@ -573,6 +573,8 @@ static  size_t count_size_$                                                     
   return l;                                                                     // Return count
  }
 
+//D1 Print                                                                      // Print Arena Trees in various ways
+
 static  $String printWithBrackets_string_$Node                                  // Print a node and the tree below it in preorder as a string with each sub tree enclosed in brackets.
  (const $Node   node)                                                           // Node
  {size_t  l = 0;                                                                // Length of output string
@@ -634,6 +636,25 @@ static ReadOnlyBytes print_string_$                                             
  (const $ t)                                                                    // Tree
  {const $Node node = t ▷ root;                                                  // Root
   return node ▷ print;
+ }
+
+static int printsAs_int_$_string                                                // Check that the specified arena tree prints as expected.
+ (const $            tree,                                                      // Tree
+  const char * const expected)                                                  // Expected string when printed
+ {const $Node node = tree ▷ root;                                               // Root
+  const ReadOnlyBytes s = node ▷ print;
+  const int r = s ▷ equalsString(expected);
+  s ▷ free;
+  return r;
+ }
+
+static int printsAs_int_$Node_string                                            // Check that the specified tree starting at the specified node prints as expected.
+ (const $Node        node,                                                         // Tree
+  const char * const expected)                                                  // Expected string when printed
+ {const ReadOnlyBytes s = node ▷ print;
+  const int r = s ▷ equalsString(expected);
+  s ▷ free;
+  return r;
  }
 
 //D1 Edit                                                                       // Edit a tree in situ.
@@ -764,7 +785,7 @@ void test0()                                                                    
   t ▷ free;
  }
 
-void test1()                                                                    //Troot //Tfirst //Tlast //Tnext //Tprev //Tparent //Tequals //Tprint //TprintWithBrackets //TfromLetters
+void test1()                                                                    //Troot //Tfirst //Tlast //Tnext //Tprev //Tparent //Tequals //Tprint //TprintWithBrackets //TfromLetters //TprintAs
  {$ t = make$(); t ▷ fromLetters("b(c(de)f)g(hi)j");
           treeIs(t ▷ root,     "a(b(c(de)f)g(hi)j)");
 
@@ -786,6 +807,9 @@ void test1()                                                                    
   assert(b ▷ equals(c ▷ parent));
   assert(a ▷ equals(b ▷ parent));
   assert(a ▷ equals(t ▷ root));
+
+  assert(c ▷ printsAs("cde"));
+  assert(t ▷ printsAs("abcdefghij"));
 
   t ▷ free;
  }
