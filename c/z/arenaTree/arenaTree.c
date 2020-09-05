@@ -6,6 +6,7 @@
 #ifndef $_included
 #define $_included
 #include <setjmp.h>
+#include <readOnlyBytes.c>
 #include <utilities.c>
 
 #define $StartString "phi"                                                      // String that starts the arena
@@ -79,9 +80,9 @@ static $ make$                                                                  
   return t;
  }
 
-static char * check                                                             //P Return a string describing the structure
+static char * check_$                                                           //P Return a string describing the structure
  (const $ tree)                                                                 // Tree
- {return "tree";
+ {if (tree.arena->data) {} return "tree";
  }
 
 //D1 Pointers and Offsets                                                       // Operations on pointers and offsets
@@ -113,6 +114,14 @@ static $Offset offsetTo_$_pointer                                               
 static $Content * content_$Node                                                 //PV Convert a node offset to an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
  (const $Node n)                                                                // NodeContent $Offset
  {return ($Content *)pointer_$_size(n.tree, n.offset);
+ }
+
+static int checkKey_int_$Node_string_size                                       // Confirm that the key of a node is equal to the specified string
+ (const $Node        node,                                                      // Node whose key is to be checked
+  const char * const key,                                                       // Expected key value
+  const size_t       length)                                                    // Length of expected key value or zero to request strlen
+ {const char * const k = node ▷ key;
+  return !strncmp(k, key, length ? : strlen(key));
  }
 
 static int equals_int_$Node_$Node                                               // Confirm two offsets are equal
@@ -599,7 +608,7 @@ static  $String printWithBrackets_$String_$                                     
   return node ▷ printWithBrackets;
  }
 
-static  $String print_string_$Node                                              // Print a node and the tree below it in preorder as a string.
+static ReadOnlyBytes print_string_$Node                                         // Print a node and the tree below it in preorder as a string.
  (const $Node   node)                                                           // Node
  {size_t  l = 0;                                                                // Length of output string
   void len(const $Node parent)                                                  // Find the size of buffer we will need
@@ -618,10 +627,10 @@ static  $String print_string_$Node                                              
   len(node);
   const $String s = p = alloc(l+1); *s = 0;
   print(node);
-  return s;
+  return new ReadOnlyBytes(data:s, length: l, ReadOnlyBytesAllocator_malloc);
  }
 
-static  $String print_$String_$                                                 // Print an entire tree in preorder as a string.
+static ReadOnlyBytes print_string_$                                             // Print an entire tree in preorder as a string.
  (const $ t)                                                                    // Tree
  {const $Node node = t ▷ root;                                                  // Root
   return node ▷ print;
@@ -760,7 +769,7 @@ void test1()                                                                    
           treeIs(t ▷ root,     "a(b(c(de)f)g(hi)j)");
 
   {$String p = t ▷ printWithBrackets; assert(!strcmp(p, "a(b(c(de)f)g(hi)j)")); free(p);}
-  {$String p = t ▷ print;             assert(!strcmp(p, "abcdefghij"));         free(p);}
+  {ReadOnlyBytes p = t ▷ print;       assert(p ▷ equalsString("abcdefghij"));   p ▷ free;}
 
   $Node a = t ▷ root,
         b = a ▷ first,
@@ -793,20 +802,20 @@ void test2()                                                                    
   t ▷ free;
  }
 
-void test3()                                                                    //TisFirst //TisLast //TisEmpty //TisRoot //TisOnlyChild //Tcontext
+void test3()                                                                    //TisFirst //TisLast //TisEmpty //TisRoot //TisOnlyChild //Tcontext //TcheckKey
  {$ t = make$(); t ▷ fromLetters("b(c(de(f)gh)i)j");
           treeIs(t ▷ root,     "a(b(c(de(f)gh)i)j)");
 
-  $Node a = t ▷ root;  assert((a ▷ key)[0] == 'a');                                 treeIs(a, "a(b(c(de(f)gh)i)j)");
-  $Node b = a ▷ first; assert((b ▷ key)[0] == 'b'); assert(a ▷ equals(b ▷ parent)); treeIs(b, "b(c(de(f)gh)i)");
-  $Node c = b ▷ first; assert((c ▷ key)[0] == 'c'); assert(b ▷ equals(c ▷ parent)); treeIs(c, "c(de(f)gh)");
-  $Node d = c ▷ first; assert((d ▷ key)[0] == 'd'); assert(c ▷ equals(d ▷ parent)); treeIs(d, "d");
-  $Node e = d ▷ next;  assert((e ▷ key)[0] == 'e'); assert(c ▷ equals(e ▷ parent)); treeIs(e, "e(f)");
-  $Node f = e ▷ last;  assert((f ▷ key)[0] == 'f'); assert(e ▷ equals(f ▷ parent)); treeIs(f, "f");
-  $Node g = e ▷ next;  assert((g ▷ key)[0] == 'g'); assert(c ▷ equals(g ▷ parent)); treeIs(g, "g");
-  $Node h = g ▷ next;  assert((h ▷ key)[0] == 'h'); assert(c ▷ equals(h ▷ parent)); treeIs(h, "h");
-  $Node i = c ▷ next;  assert((i ▷ key)[0] == 'i'); assert(b ▷ equals(i ▷ parent)); treeIs(i, "i");
-  $Node j = b ▷ next;  assert((j ▷ key)[0] == 'j'); assert(a ▷ equals(j ▷ parent)); treeIs(j, "j");
+  $Node a = t ▷ root;  assert(a ▷ checkKey("a", 0));                                 treeIs(a, "a(b(c(de(f)gh)i)j)");
+  $Node b = a ▷ first; assert(b ▷ checkKey("b", 0)); assert(a ▷ equals(b ▷ parent)); treeIs(b, "b(c(de(f)gh)i)");
+  $Node c = b ▷ first; assert(c ▷ checkKey("c", 0)); assert(b ▷ equals(c ▷ parent)); treeIs(c, "c(de(f)gh)");
+  $Node d = c ▷ first; assert(d ▷ checkKey("d", 0)); assert(c ▷ equals(d ▷ parent)); treeIs(d, "d");
+  $Node e = d ▷ next;  assert(e ▷ checkKey("e", 0)); assert(c ▷ equals(e ▷ parent)); treeIs(e, "e(f)");
+  $Node f = e ▷ last;  assert(f ▷ checkKey("f", 0)); assert(e ▷ equals(f ▷ parent)); treeIs(f, "f");
+  $Node g = e ▷ next;  assert(g ▷ checkKey("g", 0)); assert(c ▷ equals(g ▷ parent)); treeIs(g, "g");
+  $Node h = g ▷ next;  assert(h ▷ checkKey("h", 0)); assert(c ▷ equals(h ▷ parent)); treeIs(h, "h");
+  $Node i = c ▷ next;  assert(i ▷ checkKey("i", 0)); assert(b ▷ equals(i ▷ parent)); treeIs(i, "i");
+  $Node j = b ▷ next;  assert(j ▷ checkKey("j", 0)); assert(a ▷ equals(j ▷ parent)); treeIs(j, "j");
 
   assert( b ▷ isFirst);
   assert( j ▷ isLast);
