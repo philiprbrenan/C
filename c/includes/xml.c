@@ -63,12 +63,11 @@ static XmlParse makeXmlParseFromFile                                            
     char *format, ...)                                                          // Message text
    {va_list va;
     va_start(va, format);
-    char * m; const int length = vasprintf(&m, format, va);                     // Allocate and format message
+    char m[256]; vsnprintf(m, sizeof(m), format, va);                           // Format message
     va_end(va);
     const ArenaTreeNode n = e.proto->node(e, m);                                        // Save the text of the error message as the key of a node
     n.proto->setData(n, p - b.proto->data(b));                                                  // Save the offset of the error in the node data offset.
     n.proto->putTreeLast(n);                                                            // Add the error to the error list
-    free(m);
     return x;
    } // error
 
@@ -104,7 +103,7 @@ static XmlParse makeXmlParseFromFile                                            
 
           if (!P.proto->isRoot(P)) P = P.proto->parent(P);                                      // Go up one level if possible
           else if (remainderIsWhiteSpace(p)) {}                                 // On root - ignore trailing white space
-          else return error(o, "Ignoring text beyond closing tag\n");           // On root with remaining text
+          else error(o, "Ignoring text beyond closing tag\n");                  // On root with remaining text
          }
 
         const char oo = *(o+1), cc = *(c-1);                                    // First character after <, last character before >
@@ -221,9 +220,9 @@ static ReadOnlyBytes print_ReadOnlyBytes_XmlParse                               
   return            r.proto->print(r);
  }
 
-static int printsAs_XmlTag                                                        // Check the print of an Xml parse tree staring at the specified tag is as expected.
+static int printsAs_XmlTag                                                        // Check the print of an Xml parse tree starting at the specified tag is as expected.
  (const XmlTag    tag,                                                            // Starting tag
-  const char *  expected)                                                       // Expected print string
+  const char *  expected)                                                       // Expected string
  {ReadOnlyBytes s = tag.proto->print(tag);
   const int     r = s.proto->equalsString(s, expected);
   s.proto->free(s);
@@ -232,9 +231,27 @@ static int printsAs_XmlTag                                                      
 
 static int printsAs_XmlParse                                                      // Check the print of an Xml parse tree is as expected.
  (const XmlParse  xml,                                                            // Xml parse tree
-  const char *  expected)                                                       // Expected print string
+  const char *  expected)                                                       // Expected string
  {ReadOnlyBytes s = xml.proto->print(xml);
   const int     r = s.proto->equalsString(s, expected);
+  s.proto->free(s);
+  return r;
+ }
+
+static int printContains_XmlTag                                                   // Check the print of an Xml parse tree starting at the specified tag contains the expected string
+ (const XmlTag    tag,                                                            // Starting tag
+  const char *  expected)                                                       // Expected string
+ {ReadOnlyBytes s = tag.proto->print(tag);
+  const int     r = s.proto->containsString(s, expected);
+  s.proto->free(s);
+  return r;
+ }
+
+static int printContains_XmlParse                                                 // Check the print of an Xml parse tree contains the expected string.
+ (const XmlParse  xml,                                                            // Xml parse tree
+  const char *  expected)                                                       // Expected string
+ {ReadOnlyBytes s = xml.proto->print(xml);
+  const int     r = s.proto->containsString(s, expected);
   s.proto->free(s);
   return r;
  }
@@ -255,14 +272,13 @@ void test0()                                                                    
   if (1)
    {ArenaTree e = x.errors;
     assert(x.proto->errors(x) == 1);
-    assert(!strcmp(e.proto->print(e) .data, "Ignoring text at end\n"));
+    assert(!strcmp(e.proto->print(e).data, "Ignoring text at end\n"));
    }
 
   XmlTag   t;
 
-  if (     x.proto->findFirstTag(x, "<b>", &t))
-  assert(! x.proto->findFirstTag(x, "<d>", &t));
-  if (     x.proto->findFirstTag(x,  "d",  &t))
+  assert( x.proto->findFirstTag(x, "b", &t));
+  assert(!x.proto->findFirstTag(x, "d", &t));
 
   x.proto->free(x);
  }
@@ -273,14 +289,12 @@ void test1()                                                                    
   XmlParse x = makeXmlParseFromFile(makeFileName(file));
   XmlTag   t;
 
-  if (x.proto->findFirstTag(x, "pp", &t))
-   {assert(t.proto->printsAs(t, "<p>DITA represents a fundamental shift"));
-    assert(t.proto->tagNameIs(t, "p"));
-   }
+  assert(x.proto->findFirstTag(x, "p", &t));
+  assert(t.proto->printContains(t, "<p>DITA represents a fundamental shift"));
+  assert(t.proto->tagNameIs(t, "p"));
 
-  if (x.proto->findFirstTag(x, "conbody", &t))
-   {assert(t.proto->tagNameIs(t, "conbody"));
-   }
+  assert(x.proto->findFirstTag(x, "conbody", &t));
+  assert(t.proto->tagNameIs(t, "conbody"));
 
   x.proto->free(x);
  }
