@@ -35,11 +35,17 @@ static int equals_ReadOnlyBytes_ReadOnlyBytes
 static int equalsString_ReadOnlyBytes_zeroString
  (const ReadOnlyBytes     r,
   const char *s);
+static int containsString_ReadOnlyBytes_zeroString
+ (const ReadOnlyBytes     r,
+  const char *s);
 static size_t b2SumW8_ReadOnlyBytes
  (const ReadOnlyBytes r);
 struct ProtoTypes_ReadOnlyBytes {
   size_t  (*b2SumW8)(                                                           // Get a BLAKE2 digest for a file represented as two hex digits.
     const ReadOnlyBytes r);                                                     // Description of read only sequence of bytes
+  int  (*containsString)(                                                       // Check that a read only byte sequence contains the specified zero terminated string
+    const ReadOnlyBytes r,                                                      // Description of read only sequence of bytes
+    const char * s);                                                            // Zero terminated string
   char * (*data)(                                                               // Data field of the sequence
     const ReadOnlyBytes r);                                                     // Description of a sequence of read only bytes
   int  (*equalsString)(                                                         // Compare a read only byte sequence with a zero terminated string
@@ -63,6 +69,6 @@ struct ProtoTypes_ReadOnlyBytes {
     const ReadOnlyBytes r,                                                      // Description of a read only sequence of bytes
     FILE   * f);                                                                // File descriptor
  } const ProtoTypes_ReadOnlyBytes =
-{b2SumW8_ReadOnlyBytes, data_ReadOnlyBytes, equalsString_ReadOnlyBytes_zeroString, equals_ReadOnlyBytes_ReadOnlyBytes, free_ReadOnlyBytes, length_ReadOnlyBytes, substring_string_ReadOnlyBytes_sizet_sizet, writeFile_ReadOnlyBytes_string, writeOpenFile_ReadOnlyBytes_string};
+{b2SumW8_ReadOnlyBytes, containsString_ReadOnlyBytes_zeroString, data_ReadOnlyBytes, equalsString_ReadOnlyBytes_zeroString, equals_ReadOnlyBytes_ReadOnlyBytes, free_ReadOnlyBytes, length_ReadOnlyBytes, substring_string_ReadOnlyBytes_sizet_sizet, writeFile_ReadOnlyBytes_string, writeOpenFile_ReadOnlyBytes_string};
 ReadOnlyBytes newReadOnlyBytes(ReadOnlyBytes allocator) {return allocator;}
 
