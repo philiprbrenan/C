@@ -62,12 +62,11 @@ static $Parse make$ParseFromFile                                                
     char *format, ...)                                                          // Message text
    {va_list va;
     va_start(va, format);
-    char * m; const int length = vasprintf(&m, format, va);                     // Allocate and format message
+    char m[256]; vsnprintf(m, sizeof(m), format, va);                           // Format message
     va_end(va);
     const ArenaTreeNode n = e ▷ node(m);                                        // Save the text of the error message as the key of a node
     n ▷ setData(p - b ▷ data);                                                  // Save the offset of the error in the node data offset.
     n ▷ putTreeLast;                                                            // Add the error to the error list
-    free(m);
     return x;
    } // error
 
@@ -103,7 +102,7 @@ static $Parse make$ParseFromFile                                                
 
           if (!P ▷ isRoot) P = P ▷ parent;                                      // Go up one level if possible
           else if (remainderIsWhiteSpace(p)) {}                                 // On root - ignore trailing white space
-          else return error(o, "Ignoring text beyond closing tag\n");           // On root with remaining text
+          else error(o, "Ignoring text beyond closing tag\n");                  // On root with remaining text
          }
 
         const char oo = *(o+1), cc = *(c-1);                                    // First character after <, last character before >
@@ -220,9 +219,9 @@ static ReadOnlyBytes print_ReadOnlyBytes_$Parse                                 
   return            r ▷ print;
  }
 
-static int printsAs_$Tag                                                        // Check the print of an $ parse tree staring at the specified tag is as expected.
+static int printsAs_$Tag                                                        // Check the print of an $ parse tree starting at the specified tag is as expected.
  (const $Tag    tag,                                                            // Starting tag
-  const char *  expected)                                                       // Expected print string
+  const char *  expected)                                                       // Expected string
  {ReadOnlyBytes s = tag ▷ print;
   const int     r = s ▷ equalsString(expected);
   s ▷ free;
@@ -231,9 +230,27 @@ static int printsAs_$Tag                                                        
 
 static int printsAs_$Parse                                                      // Check the print of an $ parse tree is as expected.
  (const $Parse  xml,                                                            // $ parse tree
-  const char *  expected)                                                       // Expected print string
+  const char *  expected)                                                       // Expected string
  {ReadOnlyBytes s = xml ▷ print;
   const int     r = s ▷ equalsString(expected);
+  s ▷ free;
+  return r;
+ }
+
+static int printContains_$Tag                                                   // Check the print of an $ parse tree starting at the specified tag contains the expected string
+ (const $Tag    tag,                                                            // Starting tag
+  const char *  expected)                                                       // Expected string
+ {ReadOnlyBytes s = tag ▷ print;
+  const int     r = s ▷ containsString(expected);
+  s ▷ free;
+  return r;
+ }
+
+static int printContains_$Parse                                                 // Check the print of an $ parse tree contains the expected string.
+ (const $Parse  xml,                                                            // $ parse tree
+  const char *  expected)                                                       // Expected string
+ {ReadOnlyBytes s = xml ▷ print;
+  const int     r = s ▷ containsString(expected);
   s ▷ free;
   return r;
  }
@@ -254,14 +271,13 @@ void test0()                                                                    
   if (1)
    {ArenaTree e = x.errors;
     assert(x ▷ errors == 1);
-    assert(!strcmp(e ▷ print .data, "Ignoring text at end\n"));
+    assert(!strcmp(e ▷ print.data, "Ignoring text at end\n"));
    }
 
   $Tag   t;
 
-  if (     x ▷ findFirstTag("<b>", &t))
-  assert(! x ▷ findFirstTag("<d>", &t));
-  if (     x ▷ findFirstTag( "d",  &t))
+  assert( x ▷ findFirstTag("b", &t));
+  assert(!x ▷ findFirstTag("d", &t));
 
   x ▷ free;
  }
@@ -272,14 +288,12 @@ void test1()                                                                    
   $Parse x = make$ParseFromFile(makeFileName(file));
   $Tag   t;
 
-  if (x ▷ findFirstTag("pp", &t))
-   {assert(t ▷ printsAs("<p>DITA represents a fundamental shift"));
-    assert(t ▷ tagNameIs("p"));
-   }
+  assert(x ▷ findFirstTag("p", &t));
+  assert(t ▷ printContains("<p>DITA represents a fundamental shift"));
+  assert(t ▷ tagNameIs("p"));
 
-  if (x ▷ findFirstTag("conbody", &t))
-   {assert(t ▷ tagNameIs("conbody"));
-   }
+  assert(x ▷ findFirstTag("conbody", &t));
+  assert(t ▷ tagNameIs("conbody"));
 
   x ▷ free;
  }
