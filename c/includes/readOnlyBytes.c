@@ -12,12 +12,12 @@
 //D1 Read Only Bytes                                                            // Extract information from a buffer containing a read only sequence of bytes
 
 typedef struct ReadOnlyBytes                                                                //s Description of a read only sequence of bytes
- {size_t length;                                                                // Length of the byte sequence
-  char  *data;                                                                  // Address of the first byte in the read only sequence of bytes
-  enum   ReadOnlyBytes_allocator                                                            // Allocation of memory
-   {ReadOnlyBytes_allocator_none   = 0,                                                     // Stack
-    ReadOnlyBytes_allocator_malloc = 1,                                                     // malloc
-    ReadOnlyBytes_allocator_mmap   = 2} allocator;                                          // mmap
+ {char  *data;                                                                  // Address of the first byte in the read only sequence of bytes
+  size_t length;                                                                // Length of the byte sequence
+  enum   ReadOnlyBytesAllocator                                                             // Allocation of memory
+   {ReadOnlyBytesAllocator_none   = 0,                                                      // Stack
+    ReadOnlyBytesAllocator_malloc = 1,                                                      // malloc
+    ReadOnlyBytesAllocator_mmap   = 2} allocator;                                           // mmap
   const struct ProtoTypes_ReadOnlyBytes *proto;                                             // Prototypes for methods
  } ReadOnlyBytes;
 
@@ -25,38 +25,38 @@ typedef struct ReadOnlyBytes                                                    
 
 //D1 Constructors                                                               // Construct a description of a read only byte sequence
 
-static ReadOnlyBytes makeReadOnlyBytes                                                                          //CP Create a new description of a read only sequence of bytes
+static ReadOnlyBytes makeReadOnlyBytes                                                                  //CP Create a new description of a read only sequence of bytes
  (char  * const data,
   const size_t length,                                                          // Length of the byte sequence
-  const enum   ReadOnlyBytes_allocator allocator)                                           // Allocation of memory so we know how to free it (or not to free it)
- {ReadOnlyBytes r = {length, data, allocator, &ProtoTypes_ReadOnlyBytes};
+  const enum ReadOnlyBytesAllocator allocator)                                              // Allocation of memory so we know how to free it (or not to free it)
+ {ReadOnlyBytes r = {data, length, allocator, &ProtoTypes_ReadOnlyBytes};
   return r;
  }
 
-static ReadOnlyBytes makeReadOnlyBytesFromString                                                                //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
+static ReadOnlyBytes makeReadOnlyBytesFromString                                                        //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
  (char * const string,                                                          // String
   const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
- {return makeReadOnlyBytes(strndup(string, length), length, ReadOnlyBytes_allocator_malloc);
+ {return makeReadOnlyBytes(strndup(string, length), length, ReadOnlyBytesAllocator_malloc);
  }
 
-static ReadOnlyBytes makeReadOnlyBytesFromAllocatedString                                                       //C Create a new description of a read only sequence of bytes read from a specified string of specified length that has already been allocated via malloc.
+static ReadOnlyBytes makeReadOnlyBytesFromAllocatedString                                               //C Create a new description of a read only sequence of bytes read from a specified string of specified length that has already been allocated via malloc.
  (char * const string,                                                          // String
   const size_t length)                                                          // Length of string (no need to include any zero terminating byte) or zero if a zero terminated string
  {const size_t l = length ? : (size_t)strlen(string);
-  return makeReadOnlyBytes(string, l, ReadOnlyBytes_allocator_none);
+  return makeReadOnlyBytes(string, l, ReadOnlyBytesAllocator_none);
  }
 
-static ReadOnlyBytes makeReadOnlyBytesFromFormat                                                                //C Create a new description of a read only sequence of bytes read from a formatted string
+static ReadOnlyBytes makeReadOnlyBytesFromFormat                                                        //C Create a new description of a read only sequence of bytes read from a formatted string
  (const char * format, ...)                                                     // Format followed by strings
  {va_list va;
   va_start(va, format);
   char *data; const int length = vasprintf(&data, format, va);                  // Allocate and format output string
   va_end(va);
 
-  return makeReadOnlyBytes(data, length, ReadOnlyBytes_allocator_malloc);                    // Successful allocation
+  return makeReadOnlyBytes(data, length, ReadOnlyBytesAllocator_malloc);                                // Successful allocation
  }
 
-static ReadOnlyBytes makeReadOnlyBytesFromFile                                                                  //C Create a new description of a read only sequence of bytes read from a file
+static ReadOnlyBytes makeReadOnlyBytesFromFile                                                          //C Create a new description of a read only sequence of bytes read from a file
  (FileName file)                                                                // File to read
  {struct stat  s;
   char * const f = file.name;
@@ -71,15 +71,15 @@ static ReadOnlyBytes makeReadOnlyBytesFromFile                                  
    }
   close(d);                                                                     // Close the file: the map is private so we no long need the underlying file
 
-  return makeReadOnlyBytes(data, l, ReadOnlyBytes_allocator_mmap);                                       // Read only bytes description of a mapped file
+  return makeReadOnlyBytes(data, l, ReadOnlyBytesAllocator_mmap);                                       // Read only bytes description of a mapped file
  }
 
 static void free_ReadOnlyBytes                                                              //D Free any resources associated with a read only byte sequence
  (const ReadOnlyBytes r)                                                                    // Description of a read only sequence of bytes
  {switch(r.allocator)
-   {case ReadOnlyBytes_allocator_none:                             break;
-    case ReadOnlyBytes_allocator_malloc: free  ((void *)(r.data)); break;
-    case ReadOnlyBytes_allocator_mmap:   munmap((void *)(r.data), r.length + 1); break;     // Include the trailing zero used to delimit the file content.
+   {case ReadOnlyBytesAllocator_none:                             break;
+    case ReadOnlyBytesAllocator_malloc: free  ((void *)(r.data)); break;
+    case ReadOnlyBytesAllocator_mmap:   munmap((void *)(r.data), r.length + 1); break;      // Include the trailing zero used to delimit the file content.
    }
  }
 
@@ -99,7 +99,7 @@ static ReadOnlyBytes substring_string_ReadOnlyBytes_sizet_sizet                 
  (const ReadOnlyBytes      r,                                                               // Description of a sequence of read only bytes
   const size_t start,                                                           // Start position of the sub-string
   const size_t length)                                                          // Length of the sub-string
- {return makeReadOnlyBytes(r.data+start, length, ReadOnlyBytes_allocator_none);                          // Create a new description of a read only sequence of bytes
+ {return makeReadOnlyBytes(r.data+start, length, ReadOnlyBytesAllocator_none);                          // Create a new description of a read only sequence of bytes
  }
 
 static void writeFile_ReadOnlyBytes_string                                                  // Write a read only byte sequence to the specified file.
