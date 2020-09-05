@@ -36,9 +36,10 @@ END
 if (1)                                                                          # Upload files
  {my @files;
   push @files, grep {!-d $_ and !m(/backup/|/z/z/)}
-    searchDirectoryTreesForMatchingFiles(qw(/home/phil/c/ .h .c .pl .md));
+    searchDirectoryTreesForMatchingFiles(qw(/home/phil/c/ .h .c .pl .md)),
+    q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);
 
-  my %files = map {$_=>1} @files;
+  my %files = map {$_=>1} grep {1 or /makeWithPerl/} @files;
 
   for my $f(sort keys %files)
    {my $t = swapFilePrefix($f, $home);
@@ -79,7 +80,7 @@ jobs:
 
     - name: Install
       run: |
-        sudo apt -y install build-essential libgtk-3-dev gdb tree
+        sudo apt -y install build-essential gdb tree
         sudo cpan install Data::Table::Text Data::Dump Dita::PCD Getopt::Long File::Basename Java::Doc Preprocess::Ops
 
     - name: Install Valgrind
@@ -93,5 +94,6 @@ jobs:
 
 $tests
 END
+#        sudo apt -y install build-essential libgtk-3-dev gdb tree
 
 GitHub::Crud::writeFileUsingSavedToken($user, $repo, $wf, $y);
