@@ -1,3 +1,4 @@
+#line 1 "utilities.c"
 #line 1 "/home/phil/c/z/utilities/utilities.c"
 //------------------------------------------------------------------------------
 // Useful functions
