@@ -7,6 +7,7 @@
 #ifndef ArenaTree_included
 #define ArenaTree_included
 #include <setjmp.h>
+#include <readOnlyBytes.c>
 #include <utilities.c>
 
 #define ArenaTreeStartString "phi"                                                      // String that starts the arena
@@ -80,9 +81,9 @@ static ArenaTree makeArenaTree                                                  
   return t;
  }
 
-static char * check                                                             //P Return a string describing the structure
+static char * check_ArenaTree                                                           //P Return a string describing the structure
  (const ArenaTree tree)                                                                 // Tree
- {return "tree";
+ {if (tree.arena->data) {} return "tree";
  }
 
 //D1 Pointers and Offsets                                                       // Operations on pointers and offsets
@@ -114,6 +115,14 @@ static ArenaTreeOffset offsetTo_ArenaTree_pointer                               
 static ArenaTreeContent * content_ArenaTreeNode                                                 //PV Convert a node offset to an address so that the content of a node can be updated in situ as long as the arena tree is not reallocated to a different position.
  (const ArenaTreeNode n)                                                                // NodeContent ArenaTreeOffset
  {return (ArenaTreeContent *)pointer_ArenaTree_size(n.tree, n.offset);
+ }
+
+static int checkKey_int_ArenaTreeNode_string_size                                       // Confirm that the key of a node is equal to the specified string
+ (const ArenaTreeNode        node,                                                      // Node whose key is to be checked
+  const char * const key,                                                       // Expected key value
+  const size_t       length)                                                    // Length of expected key value or zero to request strlen
+ {const char * const k = node.proto->key(node);
+  return !strncmp(k, key, length ? : strlen(key));
  }
 
 static int equals_int_ArenaTreeNode_ArenaTreeNode                                               // Confirm two offsets are equal
@@ -600,7 +609,7 @@ static  ArenaTreeString printWithBrackets_ArenaTreeString_ArenaTree             
   return node.proto->printWithBrackets(node);
  }
 
-static  ArenaTreeString print_string_ArenaTreeNode                                              // Print a node and the tree below it in preorder as a string.
+static ReadOnlyBytes print_string_ArenaTreeNode                                         // Print a node and the tree below it in preorder as a string.
  (const ArenaTreeNode   node)                                                           // Node
  {size_t  l = 0;                                                                // Length of output string
   void len(const ArenaTreeNode parent)                                                  // Find the size of buffer we will need
@@ -619,10 +628,10 @@ static  ArenaTreeString print_string_ArenaTreeNode                              
   len(node);
   const ArenaTreeString s = p = alloc(l+1); *s = 0;
   print(node);
-  return s;
+  return newReadOnlyBytes(({struct ReadOnlyBytes t = {data:s, length: l, ReadOnlyBytesAllocator_malloc, proto: &ProtoTypes_ReadOnlyBytes}; t;}));
  }
 
-static  ArenaTreeString print_ArenaTreeString_ArenaTree                                                 // Print an entire tree in preorder as a string.
+static ReadOnlyBytes print_string_ArenaTree                                             // Print an entire tree in preorder as a string.
  (const ArenaTree t)                                                                    // Tree
  {const ArenaTreeNode node = t.proto->root(t);                                                  // Root
   return node.proto->print(node);
@@ -761,7 +770,7 @@ void test1()                                                                    
           treeIs(t.proto->root(t),     "a(b(c(de)f)g(hi)j)");
 
   {ArenaTreeString p = t.proto->printWithBrackets(t); assert(!strcmp(p, "a(b(c(de)f)g(hi)j)")); free(p);}
-  {ArenaTreeString p = t.proto->print(t);             assert(!strcmp(p, "abcdefghij"));         free(p);}
+  {ReadOnlyBytes p = t.proto->print(t);       assert(p.proto->equalsString(p, "abcdefghij"));   p.proto->free(p);}
 
   ArenaTreeNode a = t.proto->root(t),
         b = a.proto->first(a),
@@ -794,20 +803,20 @@ void test2()                                                                    
   t.proto->free(t);
  }
 
-void test3()                                                                    //TisFirst //TisLast //TisEmpty //TisRoot //TisOnlyChild //Tcontext
+void test3()                                                                    //TisFirst //TisLast //TisEmpty //TisRoot //TisOnlyChild //Tcontext //TcheckKey
  {ArenaTree t = makeArenaTree(); t.proto->fromLetters(t, "b(c(de(f)gh)i)j");
           treeIs(t.proto->root(t),     "a(b(c(de(f)gh)i)j)");
 
-  ArenaTreeNode a = t.proto->root(t);  assert((a.proto->key(a))[0] == 'a');                                 treeIs(a, "a(b(c(de(f)gh)i)j)");
-  ArenaTreeNode b = a.proto->first(a); assert((b.proto->key(b))[0] == 'b'); assert(a.proto->equals(a, b.proto->parent(b))); treeIs(b, "b(c(de(f)gh)i)");
-  ArenaTreeNode c = b.proto->first(b); assert((c.proto->key(c))[0] == 'c'); assert(b.proto->equals(b, c.proto->parent(c))); treeIs(c, "c(de(f)gh)");
-  ArenaTreeNode d = c.proto->first(c); assert((d.proto->key(d))[0] == 'd'); assert(c.proto->equals(c, d.proto->parent(d))); treeIs(d, "d");
-  ArenaTreeNode e = d.proto->next(d);  assert((e.proto->key(e))[0] == 'e'); assert(c.proto->equals(c, e.proto->parent(e))); treeIs(e, "e(f)");
-  ArenaTreeNode f = e.proto->last(e);  assert((f.proto->key(f))[0] == 'f'); assert(e.proto->equals(e, f.proto->parent(f))); treeIs(f, "f");
-  ArenaTreeNode g = e.proto->next(e);  assert((g.proto->key(g))[0] == 'g'); assert(c.proto->equals(c, g.proto->parent(g))); treeIs(g, "g");
-  ArenaTreeNode h = g.proto->next(g);  assert((h.proto->key(h))[0] == 'h'); assert(c.proto->equals(c, h.proto->parent(h))); treeIs(h, "h");
-  ArenaTreeNode i = c.proto->next(c);  assert((i.proto->key(i))[0] == 'i'); assert(b.proto->equals(b, i.proto->parent(i))); treeIs(i, "i");
-  ArenaTreeNode j = b.proto->next(b);  assert((j.proto->key(j))[0] == 'j'); assert(a.proto->equals(a, j.proto->parent(j))); treeIs(j, "j");
+  ArenaTreeNode a = t.proto->root(t);  assert(a.proto->checkKey(a, "a", 0));                                 treeIs(a, "a(b(c(de(f)gh)i)j)");
+  ArenaTreeNode b = a.proto->first(a); assert(b.proto->checkKey(b, "b", 0)); assert(a.proto->equals(a, b.proto->parent(b))); treeIs(b, "b(c(de(f)gh)i)");
+  ArenaTreeNode c = b.proto->first(b); assert(c.proto->checkKey(c, "c", 0)); assert(b.proto->equals(b, c.proto->parent(c))); treeIs(c, "c(de(f)gh)");
+  ArenaTreeNode d = c.proto->first(c); assert(d.proto->checkKey(d, "d", 0)); assert(c.proto->equals(c, d.proto->parent(d))); treeIs(d, "d");
+  ArenaTreeNode e = d.proto->next(d);  assert(e.proto->checkKey(e, "e", 0)); assert(c.proto->equals(c, e.proto->parent(e))); treeIs(e, "e(f)");
+  ArenaTreeNode f = e.proto->last(e);  assert(f.proto->checkKey(f, "f", 0)); assert(e.proto->equals(e, f.proto->parent(f))); treeIs(f, "f");
+  ArenaTreeNode g = e.proto->next(e);  assert(g.proto->checkKey(g, "g", 0)); assert(c.proto->equals(c, g.proto->parent(g))); treeIs(g, "g");
+  ArenaTreeNode h = g.proto->next(g);  assert(h.proto->checkKey(h, "h", 0)); assert(c.proto->equals(c, h.proto->parent(h))); treeIs(h, "h");
+  ArenaTreeNode i = c.proto->next(c);  assert(i.proto->checkKey(i, "i", 0)); assert(b.proto->equals(b, i.proto->parent(i))); treeIs(i, "i");
+  ArenaTreeNode j = b.proto->next(b);  assert(j.proto->checkKey(j, "j", 0)); assert(a.proto->equals(a, j.proto->parent(j))); treeIs(j, "j");
 
   assert( b.proto->isFirst(b));
   assert( j.proto->isLast(j));
@@ -962,7 +971,7 @@ void test12()                                                                   
   ArenaTreeNode b = t.proto->node(t, "b"); b.proto->putTreeFirst(b);
 
   treeIs(t.proto->root(t), "a(bcd)");
-fprintf(stderr, "Line 964: b.proto->key(b) = %s c.proto->key(c) = %s d.proto->key(d) = %s\n", b.proto->key(b), c.proto->key(c), d.proto->key(d));
+fprintf(stderr, "Line 973: b.proto->key(b) = %s c.proto->key(c) = %s d.proto->key(d) = %s\n", b.proto->key(b), c.proto->key(c), d.proto->key(d));
   t.proto->free(t);
  }
 
