@@ -11,12 +11,12 @@
 //D1 Read Only Bytes                                                            // Extract information from a buffer containing a read only sequence of bytes
 
 typedef struct $                                                                //s Description of a read only sequence of bytes
- {size_t length;                                                                // Length of the byte sequence
-  char  *data;                                                                  // Address of the first byte in the read only sequence of bytes
-  enum   $_allocator                                                            // Allocation of memory
-   {$_allocator_none   = 0,                                                     // Stack
-    $_allocator_malloc = 1,                                                     // malloc
-    $_allocator_mmap   = 2} allocator;                                          // mmap
+ {char  *data;                                                                  // Address of the first byte in the read only sequence of bytes
+  size_t length;                                                                // Length of the byte sequence
+  enum   $Allocator                                                             // Allocation of memory
+   {$Allocator_none   = 0,                                                      // Stack
+    $Allocator_malloc = 1,                                                      // malloc
+    $Allocator_mmap   = 2} allocator;                                           // mmap
   const struct ProtoTypes_$ *proto;                                             // Prototypes for methods
  } $;
 
@@ -24,38 +24,38 @@ typedef struct $                                                                
 
 //D1 Constructors                                                               // Construct a description of a read only byte sequence
 
-static $ make$                                                                          //CP Create a new description of a read only sequence of bytes
+static $ make$                                                                  //CP Create a new description of a read only sequence of bytes
  (char  * const data,
   const size_t length,                                                          // Length of the byte sequence
-  const enum   $_allocator allocator)                                           // Allocation of memory so we know how to free it (or not to free it)
- {$ r = {length, data, allocator, &ProtoTypes_$};
+  const enum $Allocator allocator)                                              // Allocation of memory so we know how to free it (or not to free it)
+ {$ r = {data, length, allocator, &ProtoTypes_$};
   return r;
  }
 
-static $ make$FromString                                                                //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
+static $ make$FromString                                                        //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
  (char * const string,                                                          // String
   const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
- {return make$(strndup(string, length), length, $_allocator_malloc);
+ {return make$(strndup(string, length), length, $Allocator_malloc);
  }
 
-static $ make$FromAllocatedString                                                       //C Create a new description of a read only sequence of bytes read from a specified string of specified length that has already been allocated via malloc.
+static $ make$FromAllocatedString                                               //C Create a new description of a read only sequence of bytes read from a specified string of specified length that has already been allocated via malloc.
  (char * const string,                                                          // String
   const size_t length)                                                          // Length of string (no need to include any zero terminating byte) or zero if a zero terminated string
  {const size_t l = length ? : (size_t)strlen(string);
-  return make$(string, l, $_allocator_none);
+  return make$(string, l, $Allocator_none);
  }
 
-static $ make$FromFormat                                                                //C Create a new description of a read only sequence of bytes read from a formatted string
+static $ make$FromFormat                                                        //C Create a new description of a read only sequence of bytes read from a formatted string
  (const char * format, ...)                                                     // Format followed by strings
  {va_list va;
   va_start(va, format);
   char *data; const int length = vasprintf(&data, format, va);                  // Allocate and format output string
   va_end(va);
 
-  return make$(data, length, ReadOnlyBytes_allocator_malloc);                    // Successful allocation
+  return make$(data, length, $Allocator_malloc);                                // Successful allocation
  }
 
-static $ make$FromFile                                                                  //C Create a new description of a read only sequence of bytes read from a file
+static $ make$FromFile                                                          //C Create a new description of a read only sequence of bytes read from a file
  (FileName file)                                                                // File to read
  {struct stat  s;
   char * const f = file.name;
@@ -70,15 +70,15 @@ static $ make$FromFile                                                          
    }
   close(d);                                                                     // Close the file: the map is private so we no long need the underlying file
 
-  return make$(data, l, $_allocator_mmap);                                       // Read only bytes description of a mapped file
+  return make$(data, l, $Allocator_mmap);                                       // Read only bytes description of a mapped file
  }
 
 static void free_$                                                              //D Free any resources associated with a read only byte sequence
  (const $ r)                                                                    // Description of a read only sequence of bytes
  {switch(r.allocator)
-   {case $_allocator_none:                             break;
-    case $_allocator_malloc: free  ((void *)(r.data)); break;
-    case $_allocator_mmap:   munmap((void *)(r.data), r.length + 1); break;     // Include the trailing zero used to delimit the file content.
+   {case $Allocator_none:                             break;
+    case $Allocator_malloc: free  ((void *)(r.data)); break;
+    case $Allocator_mmap:   munmap((void *)(r.data), r.length + 1); break;      // Include the trailing zero used to delimit the file content.
    }
  }
 
@@ -98,7 +98,7 @@ static $ substring_string_$_sizet_sizet                                         
  (const $      r,                                                               // Description of a sequence of read only bytes
   const size_t start,                                                           // Start position of the sub-string
   const size_t length)                                                          // Length of the sub-string
- {return make$(r.data+start, length, $_allocator_none);                          // Create a new description of a read only sequence of bytes
+ {return make$(r.data+start, length, $Allocator_none);                          // Create a new description of a read only sequence of bytes
  }
 
 static void writeFile_$_string                                                  // Write a read only byte sequence to the specified file.
