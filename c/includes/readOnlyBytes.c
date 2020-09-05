@@ -126,6 +126,12 @@ static int equalsString_ReadOnlyBytes_zeroString                                
  {return r.length == strlen(s) && strncmp(r.data, s, r.length) == 0;
  }
 
+static int containsString_ReadOnlyBytes_zeroString                                          // Check that a read only byte sequence contains the specified zero terminated string
+ (const ReadOnlyBytes     r,                                                                // Description of read only sequence of bytes
+  const char *s)                                                                // Zero terminated string
+ {return strstr(r.data, s) != NULL;
+ }
+
 static size_t b2SumW8_ReadOnlyBytes                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const ReadOnlyBytes r)                                                                    // Description of read only sequence of bytes
  {const FileName i = makeFileNameTemporaryWithContent("i.txt", 0, 0);
@@ -207,6 +213,13 @@ void test6()                                                                    
   assert(q.proto->b2SumW8(q) == 0x83);
          q.proto->free(q);
   free  (s);
+ }
+
+void test7()                                                                    //TcontainsString
+ {ReadOnlyBytes s = makeReadOnlyBytesFromFormat("abcd");
+  assert( s.proto->containsString(s, "bc"));
+  assert(!s.proto->containsString(s, "cb"));
+  s.proto->free(s);
  }
 
 int main(void)                                                                  // Run tests
