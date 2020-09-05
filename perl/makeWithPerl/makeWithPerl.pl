@@ -285,7 +285,7 @@ elsif ($c)                                                                      
 
   my $optimize = 0;                                                             # Whether to optimize or not
 # my $opt = 0 ? '-O3' : '-fprofile-arcs -ftest-coverage -aux-info /tmp/aux-info.data';
-  my $opt = $compile ? '' : $optimize ? '-O3' : '--coverage';
+  my $opt = $compile ? '' : $optimize ? '-O3' : '--coverage -Wno-unused-function';
 
 
   my $I    = $cIncludes;                                                        # Includes folders
@@ -313,6 +313,13 @@ elsif ($c)                                                                      
     say STDERR qx($c);
 #   unlink $e, $o;
     unlink $o, $g;
+    if (1)                                                                      # Place coverage files in a sub folder
+     {my $d = fp($file);
+      my $g = fpd($d, q(gcov));
+      makePath($g);
+      my @files = searchDirectoryTreesForMatchingFiles(fp($file), qw(.gcda .gcno .gcov));
+      moveFileWithClobber $_, swapFilePrefix($_, $d, $g) for @files;
+     }
    }
  }
 elsif ($html)                                                                   # html
@@ -347,19 +354,6 @@ elsif ($vala)                                                                   
    {say STDERR "Document perl $file";
     updatePerlModuleDocumentation($file);
    }
- }
-
-sub preprocess_2020_08_12($)                                                    # Preprocess a C file
- {my ($file) = @_;                                                              # File to preprocess
-  my $c = readFile($file);
-  $c =~ s{(\w+)\s*▶\s*(\w+)\s*\(} {$1->proto->$2($1, }gs;                       # Method call with arguments
-  $c =~ s{(\w+)\s*▶\s*(\w+)}      {$1->proto->$2($1)}gs;                        # Method call with no arguments
-  $c =~ s{(\w+)\s*▷\s*(\w+)\s*\(} {$1.proto->$2($1, }gs;                        # Method call with arguments
-  $c =~ s{(\w+)\s*▷\s*(\w+)}      {$1.proto->$2($1)}gs;                         # Method call with no arguments
-  my $f = writeTempFile(qq(#line 0 "$file"\n), $c);                             # Temporary file
-  my $F = setFileExtension($f, q(c));                                           # C file name
-  rename $f, $F;                                                                # Rename temporary file
-  $F;
  }
 
 sub removeClasses
