@@ -125,6 +125,12 @@ static int equalsString_$_zeroString                                            
  {return r.length == strlen(s) && strncmp(r.data, s, r.length) == 0;
  }
 
+static int containsString_$_zeroString                                          // Check that a read only byte sequence contains the specified zero terminated string
+ (const $     r,                                                                // Description of read only sequence of bytes
+  const char *s)                                                                // Zero terminated string
+ {return strstr(r.data, s) != NULL;
+ }
+
 static size_t b2SumW8_$                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const $ r)                                                                    // Description of read only sequence of bytes
  {const FileName i = makeFileNameTemporaryWithContent("i.txt", 0, 0);
@@ -206,6 +212,13 @@ void test6()                                                                    
   assert(q ▷ b2SumW8 == 0x83);
          q ▷ free;
   free  (s);
+ }
+
+void test7()                                                                    //TcontainsString
+ {$ s = make$FromFormat("abcd");
+  assert( s ▷ containsString("bc"));
+  assert(!s ▷ containsString("cb"));
+  s ▷ free;
  }
 
 int main(void)                                                                  // Run tests
