@@ -574,6 +574,8 @@ static  size_t count_size_ArenaTree                                             
   return l;                                                                     // Return count
  }
 
+//D1 Print                                                                      // Print Arena Trees in various ways
+
 static  ArenaTreeString printWithBrackets_string_ArenaTreeNode                                  // Print a node and the tree below it in preorder as a string with each sub tree enclosed in brackets.
  (const ArenaTreeNode   node)                                                           // Node
  {size_t  l = 0;                                                                // Length of output string
@@ -635,6 +637,25 @@ static ReadOnlyBytes print_string_ArenaTree                                     
  (const ArenaTree t)                                                                    // Tree
  {const ArenaTreeNode node = t.proto->root(t);                                                  // Root
   return node.proto->print(node);
+ }
+
+static int printsAs_int_ArenaTree_string                                                // Check that the specified arena tree prints as expected.
+ (const ArenaTree            tree,                                                      // Tree
+  const char * const expected)                                                  // Expected string when printed
+ {const ArenaTreeNode node = tree.proto->root(tree);                                               // Root
+  const ReadOnlyBytes s = node.proto->print(node);
+  const int r = s.proto->equalsString(s, expected);
+  s.proto->free(s);
+  return r;
+ }
+
+static int printsAs_int_ArenaTreeNode_string                                            // Check that the specified tree starting at the specified node prints as expected.
+ (const ArenaTreeNode        node,                                                         // Tree
+  const char * const expected)                                                  // Expected string when printed
+ {const ReadOnlyBytes s = node.proto->print(node);
+  const int r = s.proto->equalsString(s, expected);
+  s.proto->free(s);
+  return r;
  }
 
 //D1 Edit                                                                       // Edit a tree in situ.
@@ -765,7 +786,7 @@ void test0()                                                                    
   t.proto->free(t);
  }
 
-void test1()                                                                    //Troot //Tfirst //Tlast //Tnext //Tprev //Tparent //Tequals //Tprint //TprintWithBrackets //TfromLetters
+void test1()                                                                    //Troot //Tfirst //Tlast //Tnext //Tprev //Tparent //Tequals //Tprint //TprintWithBrackets //TfromLetters //TprintAs
  {ArenaTree t = makeArenaTree(); t.proto->fromLetters(t, "b(c(de)f)g(hi)j");
           treeIs(t.proto->root(t),     "a(b(c(de)f)g(hi)j)");
 
@@ -787,6 +808,9 @@ void test1()                                                                    
   assert(b.proto->equals(b, c.proto->parent(c)));
   assert(a.proto->equals(a, b.proto->parent(b)));
   assert(a.proto->equals(a, t.proto->root(t)));
+
+  assert(c.proto->printsAs(c, "cde"));
+  assert(t.proto->printsAs(t, "abcdefghij"));
 
   t.proto->free(t);
  }
@@ -971,7 +995,7 @@ void test12()                                                                   
   ArenaTreeNode b = t.proto->node(t, "b"); b.proto->putTreeFirst(b);
 
   treeIs(t.proto->root(t), "a(bcd)");
-fprintf(stderr, "Line 973: b.proto->key(b) = %s c.proto->key(c) = %s d.proto->key(d) = %s\n", b.proto->key(b), c.proto->key(c), d.proto->key(d));
+fprintf(stderr, "Line 997: b.proto->key(b) = %s c.proto->key(c) = %s d.proto->key(d) = %s\n", b.proto->key(b), c.proto->key(c), d.proto->key(d));
   t.proto->free(t);
  }
 
