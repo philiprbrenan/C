@@ -1,4 +1,3 @@
-#line 1 "utilities.c"
 #line 1 "/home/phil/c/z/utilities/utilities.c"
 //------------------------------------------------------------------------------
 // Useful functions
@@ -64,7 +63,7 @@ void * __attribute__ ((unused)) alloc                                           
  (const size_t N)                                                               // Amount of memory requested
  {const size_t n = nextPowerOfTwo(N);
   void  *r = malloc(n);                                                         // Allocate arena
-  memset(r, -1, n);                                                             // Clear memory
+  memset(r, -1, n);                                                             // Clear memory to avoid complaints from valgrind
   return r;                                                                     // Return memory address
  }
 
