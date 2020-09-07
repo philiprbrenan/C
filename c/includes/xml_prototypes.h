@@ -4,7 +4,7 @@ static XmlTag makeXmlTag_XmlParse_ArenaTreeNode
 static ArenaTreeNode node_XmlTag
  (XmlTag tag);
 static XmlParse makeXmlParseFromFile
- (FileName      fileName);
+ (FileName          fileName);
 static void free_XmlParse
  (XmlParse x);
 static size_t errors_XmlParse
