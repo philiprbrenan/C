@@ -694,6 +694,24 @@ static int printsAs_int_ArenaTree_string                                        
   return root.proto->printsAs(root, expected);
  }
 
+static int printContains_ArenaTreeNode                                                  // Check the print of an ArenaTree starting at the specified tag contains the expected string.
+ (const ArenaTreeNode   node,                                                           // Starting node
+  const char *  expected)                                                       // Expected string
+ {ReadOnlyBytes s = node.proto->print(node);
+  const int     r = s.proto->containsString(s, expected);
+  s.proto->free(s);
+  return r;
+ }
+
+static int printContains_ArenaTree                                                      // Check the print of an ArenaTree contains the expected string.
+ (const ArenaTree       tree,                                                            // ArenaTree parse tree
+  const char *  expected)                                                       // Expected string
+ {ReadOnlyBytes s = tree.proto->print(tree);
+  const int     r = s.proto->containsString(s, expected);
+  s.proto->free(s);
+  return r;
+ }
+
 //D1 Edit                                                                       // Edit a tree in situ.
 
 static  ArenaTreeNode cut_ArenaTreeNode_ArenaTreeNode                                                   // Cut out a child.
