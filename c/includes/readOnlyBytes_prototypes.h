@@ -4,9 +4,13 @@ static ReadOnlyBytes makeReadOnlyBytes
   const size_t length,
   const enum ReadOnlyBytesAllocator allocator);
 static ReadOnlyBytes makeReadOnlyBytesFromString
+ (char * const string);
+static ReadOnlyBytes makeReadOnlyBytesFromStringN
  (char * const string,
   const size_t length);
-static ReadOnlyBytes makeReadOnlyBytesFromAllocatedString
+static ReadOnlyBytes makeReadOnlyBytesDup
+ (char * const string);
+static ReadOnlyBytes makeReadOnlyBytesDupN
  (char * const string,
   const size_t length);
 static ReadOnlyBytes makeReadOnlyBytesFromFormat
@@ -23,6 +27,9 @@ static ReadOnlyBytes substring_string_ReadOnlyBytes_sizet_sizet
  (const ReadOnlyBytes      r,
   const size_t start,
   const size_t length);
+static FileName writeTemporaryFile_ReadOnlyBytes_string
+ (const ReadOnlyBytes      r,
+  const char * fileName);
 static void writeFile_ReadOnlyBytes_string
  (const ReadOnlyBytes        r,
   const FileName fileName);
@@ -68,7 +75,10 @@ struct ProtoTypes_ReadOnlyBytes {
   int  (*writeOpenFile)(                                                        // Write a read only byte sequence to the specified file descriptor.
     const ReadOnlyBytes r,                                                      // Description of a read only sequence of bytes
     FILE   * f);                                                                // File descriptor
+  FileName  (*writeTemporaryFile)(                                              // Write a read only byte sequence to a temporary file with the specified base name.
+    const ReadOnlyBytes r,                                                      // Description of a read only sequence of bytes
+    const char * fileName);                                                     // Base name of the file
  } const ProtoTypes_ReadOnlyBytes =
-{b2SumW8_ReadOnlyBytes, containsString_ReadOnlyBytes_zeroString, data_ReadOnlyBytes, equalsString_ReadOnlyBytes_zeroString, equals_ReadOnlyBytes_ReadOnlyBytes, free_ReadOnlyBytes, length_ReadOnlyBytes, substring_string_ReadOnlyBytes_sizet_sizet, writeFile_ReadOnlyBytes_string, writeOpenFile_ReadOnlyBytes_string};
+{b2SumW8_ReadOnlyBytes, containsString_ReadOnlyBytes_zeroString, data_ReadOnlyBytes, equalsString_ReadOnlyBytes_zeroString, equals_ReadOnlyBytes_ReadOnlyBytes, free_ReadOnlyBytes, length_ReadOnlyBytes, substring_string_ReadOnlyBytes_sizet_sizet, writeFile_ReadOnlyBytes_string, writeOpenFile_ReadOnlyBytes_string, writeTemporaryFile_ReadOnlyBytes_string};
 ReadOnlyBytes newReadOnlyBytes(ReadOnlyBytes allocator) {return allocator;}
 
