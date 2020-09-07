@@ -32,17 +32,29 @@ static $ make$                                                                  
   return r;
  }
 
-static $ make$FromString                                                        //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
- (char * const string,                                                          // String
-  const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
- {return make$(strndup(string, length), length, $Allocator_malloc);
+static $ make$FromString                                                        //C Create a new description of a read only sequence of bytes read from a specified string.
+ (char * const string)                                                          // Zero terminated string
+ {return make$(string, strlen(string), $Allocator_none);
  }
 
-static $ make$FromAllocatedString                                               //C Create a new description of a read only sequence of bytes read from a specified string of specified length that has already been allocated via malloc.
+static $ make$FromStringN                                                       //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
  (char * const string,                                                          // String
-  const size_t length)                                                          // Length of string (no need to include any zero terminating byte) or zero if a zero terminated string
- {const size_t l = length ? : (size_t)strlen(string);
+  const size_t length)                                                          // Length of string, apply strlen if zero
+ {const size_t l = length ? : strlen(string);
   return make$(string, l, $Allocator_none);
+ }
+
+static $ make$Dup                                                               //C Create a new description of a read only sequence of bytes read from a specified string by duplicating it.
+ (char * const string)                                                          // Zero terminated string
+ {const size_t l = strlen(string);
+  return make$(strndup(string, l), l, $Allocator_malloc);
+ }
+
+static $ make$DupN                                                               //C Create a new description of a read only sequence of bytes read from a specified string of specified length by duplicating it.
+ (char * const string,                                                          // String
+  const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
+ {const size_t l = length ? : strlen(string);
+  return make$(strndup(string, l), l, $Allocator_malloc);
  }
 
 static $ make$FromFormat                                                        //C Create a new description of a read only sequence of bytes read from a formatted string
@@ -55,7 +67,7 @@ static $ make$FromFormat                                                        
   return make$(data, length, $Allocator_malloc);                                // Successful allocation
  }
 
-static $ make$FromFile                                                          //C Create a new description of a read only sequence of bytes read from a file
+static $ make$FromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
  (FileName file)                                                                // File to read
  {struct stat  s;
   char * const f = file.name;
@@ -101,6 +113,12 @@ static $ substring_string_$_sizet_sizet                                         
  {return make$(r.data+start, length, $Allocator_none);                          // Create a new description of a read only sequence of bytes
  }
 
+static FileName writeTemporaryFile_$_string                                     // Write a read only byte sequence to a temporary file with the specified base name.
+ (const $      r,                                                               // Description of a read only sequence of bytes
+  const char * fileName)                                                        // Base name of the file
+ {return makeFileNameTemporaryWithContent(fileName, r.data, r.length);
+ }
+
 static void writeFile_$_string                                                  // Write a read only byte sequence to the specified file.
  (const $        r,                                                             // Description of a read only sequence of bytes
   const FileName fileName)                                                      // Name of the file
@@ -133,8 +151,7 @@ static int containsString_$_zeroString                                          
 
 static size_t b2SumW8_$                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const $ r)                                                                    // Description of read only sequence of bytes
- {const FileName i = makeFileNameTemporaryWithContent("i.txt", 0, 0);
-  r ▷ writeFile(i);
+ {const FileName i = makeFileNameTemporaryWithContent("i.txt", r.data,r.length);
   return i ▷ b2SumW8;                                                           // The digest is in the first two bytes
  }
 
@@ -193,37 +210,46 @@ void test3()                                                                    
 
 void test4()                                                                    //TnewReadOnlyBytesFromString
  {char *s = "abcdefg";
-  $     q = make$FromString(s, strlen(s));
+  $     q = make$FromString(s);
   assert(strncmp(q.data, s, q.length) == 0 && q.length == strlen(s));
         q ▷ free;
  }
 
-void test5()                                                                    //TnewReadOnlyBytesFromAllocatedString
- {char *s = strdup("abcdefg");
-  $     q = make$FromAllocatedString(s, strlen(s));
-  assert(strncmp(q.data, s, q.length) == 0 && q.length == strlen(s));
-        q ▷ free;
-  free (s);
- }
-
-void test6()                                                                    //Tb2SumW8
+void test5()                                                                    //Tb2SumW8
  {char  *s = strdup("aaaa\n");
-  $      q = make$FromString(s, strlen(s));
+  $      q = make$FromString(s);
   assert(q ▷ b2SumW8 == 0x83);
          q ▷ free;
   free  (s);
  }
 
-void test7()                                                                    //TcontainsString
+void test6()                                                                    //TcontainsString
  {$ s = make$FromFormat("abcd");
   assert( s ▷ containsString("bc"));
   assert(!s ▷ containsString("cb"));
   s ▷ free;
  }
 
+void test7()                                                                    //Tmake$Dup //Tmake$DupN //Tmake$FromString //Tmake$FromStringN //Tmake$FromFormat
+ {$ d = make$Dup       ("aaa"), D = make$DupN       ("aaaa", 3),
+    s = make$FromString("aaa"), S = make$FromStringN("aaaa", 3),
+    f = make$FromFormat("%s", "aaa");
+  assert(d ▷ equals(D)); assert(d ▷ length == 3); assert(D ▷ length == 3);
+  assert(d ▷ equals(s)); assert(s ▷ length == 3);
+  assert(d ▷ equals(S)); assert(S ▷ length == 3);
+  assert(d ▷ equals(f)); assert(f ▷ length == 3);
+ }
+
+void test8()                                                                    //Tmake$FromFile //Twrite$TemporaryFile
+ {$ s = make$FromStringN("aaa", 2);
+  FileName f = s ▷ writeTemporaryFile("test.data");
+  $ t = make$FromFile(f);
+  assert(t ▷ equals(s)); assert(t ▷ equalsString("aa"));
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, 0};
+                           test6, test7, test8, 0};
   run_tests("$", 1, tests);
   return 0;
  }
