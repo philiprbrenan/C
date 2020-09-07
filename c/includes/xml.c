@@ -7,6 +7,7 @@
 #ifndef Xml_included
 #define Xml_included
 #include <ctype.h>
+#include <arenaRedBlackTree.c>
 #include <arenaTree.c>
 #include <readOnlyBytes.c>
 #include <utilities.c>
@@ -17,10 +18,11 @@ char XmltagName[256];                                                           
 
 typedef struct XmlParse                                                           // Xml parse tree
  {const struct ProtoTypes_XmlParse *proto;                                        // Prototypes for methods
-  FileName      fileName;                                                       // Source file containing Xml to be parsed
-  ReadOnlyBytes data;                                                           // Xml to be parsed
-  ArenaTree     tree;                                                           // Parse tree created from Xml being parsed
-  ArenaTree     errors;                                                         // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is XmlError
+  FileName          fileName;                                                   // Source file containing Xml to be parsed
+  ReadOnlyBytes     data;                                                       // Xml to be parsed
+  ArenaTree         tree;                                                       // Parse tree created from Xml being parsed
+  ArenaTree         errors;                                                     // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is XmlError
+  ArenaRedBlackTree validation;                                                 // Single Step Validation relationships
  } XmlParse;
 
 typedef struct XmlTag                                                             // Tag in an Xml parse tree
@@ -50,13 +52,14 @@ static ArenaTreeNode node_XmlTag                                                
  }
 
 static XmlParse makeXmlParseFromFile                                                // Parse Xml held in a file
- (FileName      fileName)                                                       // Name of file holding Xml
- {XmlParse        x = newXmlParse(({struct XmlParse t = {proto: &ProtoTypes_XmlParse};   t;}));
-  ArenaTree     t = x.tree     = makeArenaTree();                               // Parse tree,
-  ArenaTree     e = x.errors   = makeArenaTree();                               // Errors list
-  FileName      f = x.fileName = fileName;                                      // Name of file containing parse
-  ReadOnlyBytes b = x.data     = makeReadOnlyBytesFromFile(f);                  // String to parse
-  ArenaTreeNode P = t.proto->root(t);                                                   // Current parent node
+ (FileName          fileName)                                                   // Name of file holding Xml
+ {XmlParse            x = newXmlParse(({struct XmlParse t = {proto: &ProtoTypes_XmlParse};   t;}));
+  ArenaTree         t = x.tree       = makeArenaTree();                         // Parse tree,
+  ArenaTree         e = x.errors     = makeArenaTree();                         // Errors list
+  ArenaRedBlackTree v = x.validation = makeArenaRedBlackTree();                 // Single Step Validation
+  FileName          f = x.fileName   = fileName;                                // Name of file containing parse
+  ReadOnlyBytes     b = x.data       = makeReadOnlyBytesFromFile(f);            // String to parse
+  ArenaTreeNode     P = t.proto->root(t);                                               // Current parent node
 
   XmlParse error                                                                  // Report an error
    (char *p,                                                                    // Pointer to position at which the error occurred
@@ -113,7 +116,7 @@ static XmlParse makeXmlParseFromFile                                            
           char b[N+1]; strncpy(b, parseXmlTagName(o),       N);                   // End tag name
 
           if (strncmp(a, b, N))                                                 // Tag name mismatch
-           {error(o, "End tag: %s does not match start tag: %s\n", a, b);
+           {error(o, "End tag: %s does not match start tag: %s\n", b, a);
            }
 
           if (!P.proto->isRoot(P)) P = P.proto->parent(P);                                      // Go up one level if possible
@@ -363,8 +366,9 @@ void test0()                                                                    
 
   if (1)
    {ArenaTree e = x.errors;
-    assert(x.proto->errors(x) == 1);
-    assert(!strcmp(e.proto->print(e).data, "Ignoring text at end\n"));
+    assert(x.proto->errors(x) == 2);
+    assert(e.proto->printContains(e, "End tag: A does not match start tag: a"));
+    assert(e.proto->printContains(e, "Ignoring text at end"));
    }
 
   XmlTag b = x.proto->findFirstTag(x, "b"), d = x.proto->findFirstTag(x, "d");
@@ -397,23 +401,28 @@ void test1()                                                                    
  }
 
 void test2()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
- {char *file =      "/home/phil/c/z/xml/validation/validation.xml";
-  XmlParse x = makeXmlParseFromFile(makeFileName(file));
+ {char *file = "/home/phil/c/z/xml/validation/validation.xml";
+  XmlParse xml = makeXmlParseFromFile(makeFileName(file));
 
-  XmlTag p = x.proto->findFirstChild(x, "possibilities");
-  assert(p.proto->valid(p));
+  XmlTag possibilities = xml.proto->findFirstChild(xml, "possibilities");
+  assert(possibilities.proto->valid(possibilities));
 
-  XmlTag a = p.proto->findFirstTag(p, "array");
-  assert(a.proto->valid(a));
+  XmlTag array = possibilities.proto->findFirstTag(possibilities, "array");
+  assert(array.proto->valid(array));
 
   if (1)                                                                        // Possibilities array
-   {size_t i = 0;
-    Xmlfe(element, a)
-     {Xmlfe(hash, element)
+   {char buffer[256];
+    size_t i = 0;
+    Xmlfe(element, array)
+     {sprintf(buffer, "%lu", i);
+      ArenaRedBlackTreeFound f = xml.validation.proto->add(xml.validation, buffer);
+
+      Xmlfe(hash, element)
        {Xmlfe(key, hash)
          {char * const name = key.proto->getTag(key);
           if (strcmp(name, "text"))
-           {say("%lu %s\n", i, key.proto->getTag(key));
+           {//say("%lu %s\n", i, key.proto->getTag(key));
+            //f.node.proto->add(f.node, key.proto->getTag(key));
            }
          }
        }
@@ -421,7 +430,7 @@ void test2()                                                                    
      }
    }
 
-  x.proto->free(x);
+  xml.proto->free(xml);
  }
 
 int main(void)                                                                  // Run tests
