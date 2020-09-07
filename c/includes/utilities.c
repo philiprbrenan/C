@@ -91,11 +91,10 @@ int run_tests                                                                   
   for(int j = 0; j < repetitions; ++j)                                          // Test a few times
    {n = 0;
     for(int i = 0; tests[i]; ++i, ++n)                                          // Tests
-     {say("%d", i);
+     {say("Test: %2d ", i);
       tests[i]();
-      say(".");
+      say(" - done\n");
      }
-    say("done\n");
    }
 
   say("SUCCESS: All %d %s tests passed successfully in %lu microseconds\n",     // Run time
