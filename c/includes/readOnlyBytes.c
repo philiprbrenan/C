@@ -33,17 +33,29 @@ static ReadOnlyBytes makeReadOnlyBytes                                          
   return r;
  }
 
-static ReadOnlyBytes makeReadOnlyBytesFromString                                                        //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
- (char * const string,                                                          // String
-  const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
- {return makeReadOnlyBytes(strndup(string, length), length, ReadOnlyBytesAllocator_malloc);
+static ReadOnlyBytes makeReadOnlyBytesFromString                                                        //C Create a new description of a read only sequence of bytes read from a specified string.
+ (char * const string)                                                          // Zero terminated string
+ {return makeReadOnlyBytes(string, strlen(string), ReadOnlyBytesAllocator_none);
  }
 
-static ReadOnlyBytes makeReadOnlyBytesFromAllocatedString                                               //C Create a new description of a read only sequence of bytes read from a specified string of specified length that has already been allocated via malloc.
+static ReadOnlyBytes makeReadOnlyBytesFromStringN                                                       //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
  (char * const string,                                                          // String
-  const size_t length)                                                          // Length of string (no need to include any zero terminating byte) or zero if a zero terminated string
- {const size_t l = length ? : (size_t)strlen(string);
+  const size_t length)                                                          // Length of string, apply strlen if zero
+ {const size_t l = length ? : strlen(string);
   return makeReadOnlyBytes(string, l, ReadOnlyBytesAllocator_none);
+ }
+
+static ReadOnlyBytes makeReadOnlyBytesDup                                                               //C Create a new description of a read only sequence of bytes read from a specified string by duplicating it.
+ (char * const string)                                                          // Zero terminated string
+ {const size_t l = strlen(string);
+  return makeReadOnlyBytes(strndup(string, l), l, ReadOnlyBytesAllocator_malloc);
+ }
+
+static ReadOnlyBytes makeReadOnlyBytesDupN                                                               //C Create a new description of a read only sequence of bytes read from a specified string of specified length by duplicating it.
+ (char * const string,                                                          // String
+  const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
+ {const size_t l = length ? : strlen(string);
+  return makeReadOnlyBytes(strndup(string, l), l, ReadOnlyBytesAllocator_malloc);
  }
 
 static ReadOnlyBytes makeReadOnlyBytesFromFormat                                                        //C Create a new description of a read only sequence of bytes read from a formatted string
@@ -56,7 +68,7 @@ static ReadOnlyBytes makeReadOnlyBytesFromFormat                                
   return makeReadOnlyBytes(data, length, ReadOnlyBytesAllocator_malloc);                                // Successful allocation
  }
 
-static ReadOnlyBytes makeReadOnlyBytesFromFile                                                          //C Create a new description of a read only sequence of bytes read from a file
+static ReadOnlyBytes makeReadOnlyBytesFromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
  (FileName file)                                                                // File to read
  {struct stat  s;
   char * const f = file.name;
@@ -102,6 +114,12 @@ static ReadOnlyBytes substring_string_ReadOnlyBytes_sizet_sizet                 
  {return makeReadOnlyBytes(r.data+start, length, ReadOnlyBytesAllocator_none);                          // Create a new description of a read only sequence of bytes
  }
 
+static FileName writeTemporaryFile_ReadOnlyBytes_string                                     // Write a read only byte sequence to a temporary file with the specified base name.
+ (const ReadOnlyBytes      r,                                                               // Description of a read only sequence of bytes
+  const char * fileName)                                                        // Base name of the file
+ {return makeFileNameTemporaryWithContent(fileName, r.data, r.length);
+ }
+
 static void writeFile_ReadOnlyBytes_string                                                  // Write a read only byte sequence to the specified file.
  (const ReadOnlyBytes        r,                                                             // Description of a read only sequence of bytes
   const FileName fileName)                                                      // Name of the file
@@ -134,8 +152,7 @@ static int containsString_ReadOnlyBytes_zeroString                              
 
 static size_t b2SumW8_ReadOnlyBytes                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const ReadOnlyBytes r)                                                                    // Description of read only sequence of bytes
- {const FileName i = makeFileNameTemporaryWithContent("i.txt", 0, 0);
-  r.proto->writeFile(r, i);
+ {const FileName i = makeFileNameTemporaryWithContent("i.txt", r.data,r.length);
   return i.proto->b2SumW8(i);                                                           // The digest is in the first two bytes
  }
 
@@ -194,37 +211,46 @@ void test3()                                                                    
 
 void test4()                                                                    //TnewReadOnlyBytesFromString
  {char *s = "abcdefg";
-  ReadOnlyBytes     q = makeReadOnlyBytesFromString(s, strlen(s));
+  ReadOnlyBytes     q = makeReadOnlyBytesFromString(s);
   assert(strncmp(q.data, s, q.length) == 0 && q.length == strlen(s));
         q.proto->free(q);
  }
 
-void test5()                                                                    //TnewReadOnlyBytesFromAllocatedString
- {char *s = strdup("abcdefg");
-  ReadOnlyBytes     q = makeReadOnlyBytesFromAllocatedString(s, strlen(s));
-  assert(strncmp(q.data, s, q.length) == 0 && q.length == strlen(s));
-        q.proto->free(q);
-  free (s);
- }
-
-void test6()                                                                    //Tb2SumW8
+void test5()                                                                    //Tb2SumW8
  {char  *s = strdup("aaaa\n");
-  ReadOnlyBytes      q = makeReadOnlyBytesFromString(s, strlen(s));
+  ReadOnlyBytes      q = makeReadOnlyBytesFromString(s);
   assert(q.proto->b2SumW8(q) == 0x83);
          q.proto->free(q);
   free  (s);
  }
 
-void test7()                                                                    //TcontainsString
+void test6()                                                                    //TcontainsString
  {ReadOnlyBytes s = makeReadOnlyBytesFromFormat("abcd");
   assert( s.proto->containsString(s, "bc"));
   assert(!s.proto->containsString(s, "cb"));
   s.proto->free(s);
  }
 
+void test7()                                                                    //TmakeReadOnlyBytesDup //TmakeReadOnlyBytesDupN //TmakeReadOnlyBytesFromString //TmakeReadOnlyBytesFromStringN //TmakeReadOnlyBytesFromFormat
+ {ReadOnlyBytes d = makeReadOnlyBytesDup       ("aaa"), D = makeReadOnlyBytesDupN       ("aaaa", 3),
+    s = makeReadOnlyBytesFromString("aaa"), S = makeReadOnlyBytesFromStringN("aaaa", 3),
+    f = makeReadOnlyBytesFromFormat("%s", "aaa");
+  assert(d.proto->equals(d, D)); assert(d.proto->length(d) == 3); assert(D.proto->length(D) == 3);
+  assert(d.proto->equals(d, s)); assert(s.proto->length(s) == 3);
+  assert(d.proto->equals(d, S)); assert(S.proto->length(S) == 3);
+  assert(d.proto->equals(d, f)); assert(f.proto->length(f) == 3);
+ }
+
+void test8()                                                                    //TmakeReadOnlyBytesFromFile //TwriteReadOnlyBytesTemporaryFile
+ {ReadOnlyBytes s = makeReadOnlyBytesFromStringN("aaa", 2);
+  FileName f = s.proto->writeTemporaryFile(s, "test.data");
+  ReadOnlyBytes t = makeReadOnlyBytesFromFile(f);
+  assert(t.proto->equals(t, s)); assert(t.proto->equalsString(t, "aa"));
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, 0};
+                           test6, test7, test8, 0};
   run_tests("ReadOnlyBytes", 1, tests);
   return 0;
  }
