@@ -12,7 +12,7 @@
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
 exports structs $ $Delta $Node $Offset $Arena $Description
-exports arena   pointer_$_size allocate_offset_$_size pointer_$Offset saveString_$Offset_$_$String node_$Node_$_$String noden_$Node_$_$String nodeFromOffset_$_size content_$Node offset_$_size make$ new$Offset setData_$Node_size getData_size_$Node
+exports arena   pointer_$_size allocate_offset_$_size pointer_$Offset saveString_$Offset_$_$String node_$Node_$_$String noden_$Node_$_$String nodeFromOffset_$_size content_$Node offset_$_size make$ new$Offset setData_$Node_size getData_size_$Node equals_int_$Node_$Node equalsString_$Node_string
 
 typedef char * $String;                                                         // Arena Tree string
 
@@ -691,6 +691,24 @@ static int printsAs_int_$_string                                                
   const char * const expected)                                                  // Expected string when printed
  {const $Node root = tree ▷ root;                                               // Root
   return root ▷ printsAs(expected);
+ }
+
+static int printContains_$Node                                                  // Check the print of an $ starting at the specified tag contains the expected string.
+ (const $Node   node,                                                           // Starting node
+  const char *  expected)                                                       // Expected string
+ {ReadOnlyBytes s = node ▷ print;
+  const int     r = s ▷ containsString(expected);
+  s ▷ free;
+  return r;
+ }
+
+static int printContains_$                                                      // Check the print of an $ contains the expected string.
+ (const $       tree,                                                            // $ parse tree
+  const char *  expected)                                                       // Expected string
+ {ReadOnlyBytes s = tree ▷ print;
+  const int     r = s ▷ containsString(expected);
+  s ▷ free;
+  return r;
  }
 
 //D1 Edit                                                                       // Edit a tree in situ.
