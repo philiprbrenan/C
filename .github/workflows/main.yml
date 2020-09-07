@@ -29,30 +29,30 @@ jobs:
     - name: Run arenaRedBlackTree
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaRedBlackTree/arenaRedBlackTree.c --cIncludes c/includes
-         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/arenaRedBlackTree/arenaRedBlackTree
+         (valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/arenaRedBlackTree/arenaRedBlackTree; true)
 
     - name: Run arenaTree
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaTree/arenaTree.c --cIncludes c/includes
-         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/arenaTree/arenaTree
+         (valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/arenaTree/arenaTree; true)
 
     - name: Run fileName
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/fileName/fileName.c --cIncludes c/includes
-         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/fileName/fileName
+         (valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/fileName/fileName; true)
 
     - name: Run readOnlyBytes
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/readOnlyBytes/readOnlyBytes.c --cIncludes c/includes
-         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/readOnlyBytes/readOnlyBytes
+         (valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/readOnlyBytes/readOnlyBytes; true)
 
     - name: Run xml
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes
-        # valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/xml/xml
+        # (valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/xml/xml; true)
 
     - name: Run utilities
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/utilities/utilities.c --cIncludes c/includes
-         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/utilities/utilities
+         (valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/utilities/utilities; true)
 
