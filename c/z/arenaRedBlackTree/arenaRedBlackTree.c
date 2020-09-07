@@ -9,10 +9,10 @@ tree dependent from it with the same arena*/
 #define _GNU_SOURCE
 #ifndef $_included
 #define $_included
+#include <readOnlyBytes.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Red Black Tree.
-#define $StartString "rbt"                                                      // String that starts the arena
 typedef char * $String;                                                         // Arena Tree string
 
 include ../arenaTree/arenaTree.c :structs !$Content
@@ -31,8 +31,9 @@ typedef struct $Found                                                           
  {const struct ProtoTypes_$Found *proto;                                        // Methods
   char *key;                                                                    // Key to find
   $     tree;                                                                   // Tree being processed
-  $Node last;                                                                   // Last node found during find(). last.offset will be zero if the tree to be searched is empty.
-  $Node added;                                                                  // Last node added during add()
+  $Node last;                                                                   // Last node found during find.
+  $Node added;                                                                  // Last node added during add if valid.
+  $Node node;                                                                   // Matching node.
   int   different;                                                              // The compare result on the last node found. If zero, the last node found was a match
  } $Found;
 
@@ -56,6 +57,12 @@ static void free_$                                                              
   free(tree.arena);
  }
 
+static  $Found make$Found                                                       //P Create a new found description
+ (const $      tree,                                                            // The tree being searched
+  char * const key)                                                             // The key to find
+ {return new$Found(tree: tree, key: key, last: new$Node, added: new$Node, node: new$Node);
+ }
+
 //D1 Attributes                                                                 // Get and set the attributes of a node
 
 static $Node root_$                                                             // The root node in a red black tree
@@ -65,8 +72,7 @@ static $Node root_$                                                             
 
 static size_t height_$Node                                                      // Height of a sub tree starting at the specified node
  (const $Node node)                                                             // Node
- {if (node.offset == 0) return 0;
-  return node ▷ content->height.delta;
+ {return node ▷ content->height.delta;
  }
 
 static char *key_$Node                                                          // Key of the specified node as a zero terminated string
@@ -129,6 +135,11 @@ static void setTree_$Node_$Node                                                 
  {parent ▷ content->tree.delta = tree.offset;
  }
 
+static int valid_$Node                                                          // Check that the specified node is valid.
+ (const $Node node)                                                             // Node
+ {return node.offset;                                                           // A node is valid unless it has a zero offset in which case it is not a valid node. Typically an invalid node is returned when a method applied to a valid node cannot be completed as in: get the next sibling following the last sibling.
+ }
+
 //D1 Find                                                                       // Find a key if it exists within the base tree or an owned tree.
 
 static $Found  find_$Found_$Found_$Node_string                                  //P Find a key if it exists within the tree starting at this node.
@@ -137,12 +148,16 @@ static $Found  find_$Found_$Found_$Node_string                                  
  {$ tree = root.tree;                                                           // Tree containing node
   char *key = found.key;                                                        // The key to find
 
-  for($Node p     = root; p.offset;)                                            // Search down through tree
+  for($Node p     = root; p ▷ valid;)                                           // Search down through tree
    {found.last    = p;                                                          // Record last parent compared with key sought
     const char *k = p ▷ key;                                                    // Key of current parent node
     const int i   = found.different = strcmp(key, k);                           // Compare key sought with current key
 
-    if (!i) return found;                                                       // Found
+    if (!i)                                                                     // Found
+     {found.node = p;
+      return found;
+     }
+
     $Content * const c = p ▷ content;                                           // Continue
     p = tree ▷ nodeFromOffset(i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
    }
@@ -150,19 +165,37 @@ static $Found  find_$Found_$Found_$Node_string                                  
   return found;                                                                 // Found
  }
 
+static void check_$                                                             // Check the integrity of the tree
+ ($ tree)                                                                       // Tree to check
+ {void check($Node p)
+   {if (!p ▷ valid) return;
+    $Node  l = p ▷ left, r = p ▷ right;
+    $Node  L = l ▷ up,   R = r ▷ up;
+    if (l ▷ valid && !p ▷ equals(l ▷ up))  printStackBackTrace("Bad left  up %s to %s should be %s\n", l ▷ key, L ▷ key, p ▷ key);
+    if (r ▷ valid && !p ▷ equals(r ▷ up))  printStackBackTrace("Bad right up %s to %s should be %s\n", r ▷ key, R ▷ key, p ▷ key);
+    if (l ▷ valid && r ▷ valid)
+     {size_t lh = l ▷ height, rh = r ▷ height;
+      if (lh > 2 * rh + 1 || rh > 2 * lh + 1 ) printStackBackTrace("Unbalanced tree at %s with left %lu versus right %lu\n", p ▷ key, lh, rh);
+     }
+    check(l);
+    check(r);
+   }
+  check(tree ▷ root);
+ }
+
 static  $Found find_$Found_$Node_string                                         // Find a key if it exists within the tree owned by the specified node.
  (const $Node  node,                                                            // The node owning the tree to search
   char * const key)                                                             // The key to find
- {$Found f = new$Found(tree: node.tree, key: key);                              // Status of find
+ {$Found f = make$Found(node.tree, key);                                        // Status of find
   $Node  r = node ▷ ownedTreeRoot;                                              // Root node of owned tree
-  if (!r.offset) return f;                                                      // Empty owned tree
+  if (!r ▷ valid) return f;                                                     // Empty owned tree
   return f ▷ find(r);                                                           // Search the non empty owned tree starting at the specified node.
  }
 
 static  $Found find_$Found_$_string                                             // Find a key if it exists within the base tree.
  (const $      tree,                                                            // The base tree to search
   char * const key)                                                             // The key to find
- {$Found f = new$Found(tree: tree,      key: key);                              // Status of find
+ {$Found f = make$Found(tree, key);                                             // Status of find
   if (!tree.arena->root) return f;                                              // Empty tree
   return f ▷ find(tree ▷ nodeFromOffset(tree.arena->root));                     // Search the non empty base tree starting at the specified node.
  }
@@ -192,18 +225,16 @@ static $Found add_$Found_$Found_$Node_string                                    
  {if (!f.different) return f;                                                   // Key already present
 
   char * const key = f.key;                                                     // The key to add
-  const $ tree = f.last.tree;                                                   // The base tree
-  const $Node          n = f.added = tree ▷ node(key), p = f.last;              // Create new node under parent
-  $Content * const N = n ▷ content,       * const P = p ▷ content;
+  const $     tree = f.last.tree;                                               // The base tree
+  const $Node    n = f.added = tree ▷ node(key), p = f.last;                    // Create new node under parent
 
-  if (f.different < 0) P->left .delta = n.offset;                               // Insert node left
-  else                 P->right.delta = n.offset;                               // Insert node right
+  if (f.different < 0) p ▷ setLeft(n); else p ▷ setRight(n);                    // Insert node
 
-  N->up.delta = p.offset;                                                       // Set parent of inserted node
+  n ▷ setUp(p);                                                                 // Set parent of inserted node
 
-  for($Node p = n; p.offset; p = p ▷ up)                                        // Balance nodes along path back to root
+  for($Node p = n; p ▷ valid; p = p ▷ up)                                       // Balance nodes along path back to root
    {size_t height($Node p)                                                      // Height of a node
-     {return p.offset ? p ▷ height : 0;
+     {return p ▷ valid ? p ▷ height : 0;
      }
 
     void setHeight($Node p)                                                     // Set the height of a node
@@ -212,29 +243,43 @@ static $Found add_$Found_$Found_$Node_string                                    
      }
 
     $Node balance                                                               // Balance node
-     (const int d)                                                              // Balance left if true
+     (const int d)                                                              // Rotate left if true
      {const $Node q = p ▷ up, l = p ▷ left, r = p ▷ right, rl = d ? r : l;
-      if (!q.offset)                                                            // Root node
-       {const $Node z = {};
-        tree.arena->root = rl.offset;
-        rl ▷ setUp(z);
-       }
-      else                                                                      // Not the root node
-       {if ((q ▷ right).offset == p.offset)
-         {q ▷ setRight(rl); rl ▷ setUp(q);
+
+      if (!q ▷ valid)                                                           // Balance the root node
+       {tree.arena->root = rl.offset;                                           // New root node
+        if (d)
+         {p ▷ setRight(r ▷ left);     r ▷ setLeft         (p);
+          $Node R =    p ▷ right; if (R ▷ valid) R ▷ setUp(p);
          }
         else
-         {q ▷ setLeft(rl);  rl ▷ setUp(q);
+         {p ▷ setLeft(l ▷ right);    l ▷ setRight        (p);
+          $Node L =   p ▷ left;  if (L ▷ valid) L ▷ setUp(p);
          }
+
+        rl ▷ content->up.delta = 0;                                             // Nothing above this node as it is now the new root node
        }
 
-      if (d) {p ▷ setRight(r ▷ left);  r ▷ setLeft (p);}                        // Balance left
-      else   {p ▷ setLeft (l ▷ right); l ▷ setRight(p);}                        // Balance right
+      else                                                                      // Balance a node that is not the root node
+       {rl ▷ setUp(q);
+        if (p ▷ equals(q ▷ right)) q ▷ setRight(rl); else q ▷ setLeft(rl);
+        if (d)
+         {p ▷ setRight(r ▷ left);
+          $Node R = p ▷ right; if (R ▷ valid) R ▷ setUp(p);
+          r ▷ setLeft(p);
+         }
+        else
+         {p ▷ setLeft(l ▷ right);
+          $Node L = p ▷ left;  if (L ▷ valid) L ▷ setUp(p);
+          l ▷ setRight(p);
+         }
+        setHeight(q);
+       }
 
       p ▷ setUp(rl);
-      setHeight(rl);
       setHeight(p);
-      return p ▷ up;                                                            // The node above the input node is now balanced
+      setHeight(rl);
+      return rl;                                                                // The node now above the input node is now balanced
      }
 
     const int L = height(p ▷ left), R = height(p ▷ right);                      // Left and right depths
@@ -246,26 +291,12 @@ static $Found add_$Found_$Found_$Node_string                                    
   return f;
  }
 
-static $Found add_$Node_$Node_string                                            // Add a new key if not already present in the tree owned by the specified node.
- (const $Node  node,                                                            // The tree to search
-  char * const key)                                                             // The key to add
- {$ tree   = node.tree;                                                         // Tree to search
-  $Found f = node ▷ find(key);                                                  // Try to find the key
+static  $Found  add_$Found_$_string                                             // Add a new key if not already present in the specified base tree.
+ (const $       tree,                                                           // The tree to search
+  char  * const key)                                                            // The key to add
+ {$Found f =    tree ▷ find(key);                                               // Try to find the key
 
-  if (!f.last.offset)                                                           // Empty tree
-   {const $Node root = f.added = tree ▷ node(key);                              // Add new key in a node
-    node ▷ setTree(root);                                                       // Make the new node the root node
-    return f;                                                                   // Find status
-   }
-  return f ▷ add;                                                               // Non empty tree - add the node below the root node
- }
-
-static $Found add_$Node_$_string                                                // Add a new key if not already present in the specified base tree.
- (const $     tree,                                                             // The tree to search
-  char * const key)                                                             // The key to add
- {$Found f = tree ▷ find(key);                                                  // Try to find the key
-
-  if (!f.last.offset)                                                           // Empty tree
+  if (!f.last ▷ valid)                                                          // Empty tree
    {const $Node root = f.added = tree ▷ node(key);                              // Add new key in a node
     tree.arena->root = root.offset;                                             // Make the new node the root node
     return f;                                                                   // Find status
@@ -273,62 +304,77 @@ static $Found add_$Node_$_string                                                
   return f ▷ add;                                                               // Non empty tree - add the node below the root node
  }
 
-//D1 Print                                                                      // Print a tree.
-
-static char * sprintRoot_string_root$Node                                       //P Print a tree, starting at the specified root node, as a string. We allocate a string large enough to hold the print. Freeing the allocated string containing the print is the responsibility fo the caller.
- (const $Node root)                                                             // Root node of tree to be printed
- {const int W = 4;                                                              // Width of height field
-  if (!root.offset) return strdup("");                                          // The tree is empty - return a freeable empty string
-
-  size_t l = 0;                                                                 // Length of buffer needed
-  void len($Node node)                                                          // Get length of print
-   {if (node.offset)
-     {len(node ▷ left); l += 2 + W + 1 + 4 * node ▷ height; len(node ▷ right);  // With room for white space
-     }
+static  $Found  add_$Found_$Node_string                                         // Add a new key if not already present in the tree owned by the specified node.
+ (const $Node   node,                                                           // The tree to search
+  char  * const key)                                                            // The key to add
+ {$ tree   = node.tree;                                                         // Tree to search
+  $Found f = node ▷ find(key);                                                  // Try to find the key
+  if (!f.last ▷ valid)                                                          // Empty tree
+   {const $Node root = f.added = tree ▷ node(key);                              // Add new key in a node
+    node ▷ setTree(root);                                                       // Make the new node the root node
+    return f;                                                                   // Find status
    }
-  len(root);                                                                    // Set size of print
-
-  char *p;
-  void print(const $Node node)                                                  // Print to allocated string
-   {if (!node.offset) return;                                                   // No such node
-    print(node ▷ left);                                                         // Print left
-
-    const size_t H = node ▷ height, N = H > 0 ? H - 1 : 0;                      // Height
-    char w[W+2]; sprintf(w, "%04lu ", N);
-    p = stpcpy(p, w);
-
-    for(size_t i = 0; i < N; ++i) p = stpcpy(p, "    ");                        // Spacer
-    p = stpcpy(p, node ▷ key);                                                  // Key
-    p = stpcpy(p, "\n");                                                        // End of line
-    print(node ▷ right);                                                        // Print right
-   }
-
-  char *P = p = malloc(l); *p = 0;                                              // Create buffer
-  print(root);                                                                  // Print to buffer
-
-  return P;                                                                     // Please free the returned string when done.
+  return f ▷ add;                                                               // Non empty tree - add the node below the root node
  }
 
-static char * sprint_string_$Node                                               // Print the tree owned by the specified node in a string. We allocate a string large enough to hold the print. Freeing the allocated string containing the print is the responsibility fo the caller.
+//D1 Print                                                                      // Print a tree.
+
+static ReadOnlyBytes sprintRoot_string_root$Node                                //P Print a tree, starting at the specified root node, as a string. We allocate a string large enough to hold the print. Freeing the allocated string containing the print is the responsibility fo the caller.
+ (const $Node root)                                                             // Root node of tree to be printed
+ {const int W = 4;                                                              // Width of height field
+  if (!root ▷ valid) return makeReadOnlyBytesFromString("");                    // The tree is empty - return a freeable empty string
+
+  size_t l = 1;                                                                 // Length of buffer needed
+  void len($Node node, size_t depth)                                            // Get length of print
+   {if (node ▷ valid)
+     {len(node ▷ left, depth+1);
+      l += 1 + (1 + depth) * W;
+      len(node ▷ right, depth+1);
+     }
+   }
+  len(root, 0);                                                                 // Set size of print
+
+  ReadOnlyBytes r = makeReadOnlyBytesDupN("", l);                               // Output area
+  char *        p = r.data;
+
+  void print(const $Node node, size_t depth)                                    // Print to allocated string
+   {if (!node ▷ valid) return;                                                  // No such node
+    print(node ▷ left, depth+1);                                                // Print left
+    for(size_t i = 0; i < depth * W; ++i) p = stpcpy(p, " ");                   // Spacer
+    p = stpcpy(p, node ▷ key);                                                  // Key
+    p = stpcpy(p, "\n");                                                        // End of line
+    print(node ▷ right, depth+1);                                               // Print right
+   }
+
+  print(root, 0);                                                               // Print to buffer
+
+  return r;                                                                     // Please free the returned string when done.
+ }
+
+static ReadOnlyBytes sprint_string_$Node                                        // Print the tree owned by the specified node as ReadOnlyBytes.
  (const $Node node)                                                             // Node owning tree to be printed
  {$Node  root = node ▷ ownedTreeRoot;                                           // Root of tree to be printed
   return root ▷ sprintRoot;
  }
 
-static char * sprint_string_$                                                   // Print a tree in a string. We allocate a string large enough to hold the print. Freeing the allocated string containing the print is the responsibility fo the caller.
+static ReadOnlyBytes sprint_string_$                                            // Print a tree  as ReadOnlyBytes.
  (const $ tree)                                                                 // Tree to print
  {const $Node root = tree ▷ root;                                               // Root of tree to print
   return root ▷ sprintRoot;
  }
-
-static void print_$Node                                                         // Print the tree owned by the specified node to stderr.
+// Marked with I to prevent tests needed.
+static void print_$Node                                                         //I Print the tree owned by the specified node to stderr.
  (const $Node node)                                                             // Node owning tree to be printed
- {char * const p = node ▷ sprint; fprintf(stderr, "%s\n", p); free(p);
+ {ReadOnlyBytes p = node ▷ sprint;
+  fprintf(stderr, "%s\n", p.data);
+  p ▷ free;
  }
 
-static void print_$                                                             // Print the specified base tree to stderr.
+static void print_$                                                             //I Print the specified base tree to stderr.
  (const $ tree)                                                                 // Tree
- {char * const p = tree ▷ sprint; fprintf(stderr, "%s\n", p); free(p);
+ {ReadOnlyBytes p = tree ▷ sprint;
+  fprintf(stderr, "%s\n", p.data);
+  p ▷ free;
  }
 
 //D1 Tests                                                                      // Tests
@@ -336,7 +382,7 @@ static void print_$                                                             
 
 #define TEST_TREE_SIZE 10
 
-void test0()                                                                    //Tnew$ //Tadd //Tleft //Tright //Tkey //Tsprint //Tup
+void test0()                                                                    //Tnew$ //Tadd //Tleft //Tright //Tkey //Tup //Tfree
  {$ t = make$();
     t ▷ add("b");
     t ▷ add("a");
@@ -354,14 +400,6 @@ void test0()                                                                    
   assert((c  ▷ up).offset == b.offset);
   assert((bb ▷ up).offset == c.offset);
   assert((cc ▷ up).offset == c.offset);
-
-  char * const p = t ▷ sprint;
-  assert(strstr(p, "0000 a"));
-  assert(strstr(p, "0002         b"));
-  assert(strstr(p, "0000 bb"));
-  assert(strstr(p, "0001     c"));
-  assert(strstr(p, "0000 cc"));
-  free(p);
 
   assert(!t ▷ find("cc").different);
   assert( t ▷ find("dd").different);
@@ -394,21 +432,6 @@ void test1()
   assert((b5 ▷ up).offset == b6.offset);
   assert((b7 ▷ up).offset == b6.offset);
 
-  char * const p = b ▷ sprint;
-  assert(strstr(p, "0000 1"));
-  assert(strstr(p, "0001     2"));
-  assert(strstr(p, "0000 3"));
-  assert(strstr(p, "0002         4"));
-  assert(strstr(p, "0000 5"));
-  assert(strstr(p, "0001     6"));
-  assert(strstr(p, "0000 7"));
-  free(p);
-
-  char * const q = t ▷ sprint;
-  assert(strstr(q, "0001     a"));
-  assert(strstr(q, "0000 b"));
-  free(q);
-
   assert(!b ▷ find("7").different);
   assert( b ▷ find("8").different);
 
@@ -420,18 +443,43 @@ void test1()
   t ▷ free;
  }
 
-void test2()                                                                    //Tprint //Tfree
+void test2()
  {$ t = make$();
 
-  for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
-   {char c[2]; c[0] = 'a' + i;
+  for  (int i = 0; i < 100; ++i)
+   {char c[256]; sprintf(c, "%d", i);
     t ▷ add(c);
    }
-  //t ▷ print;
+
+  $Found f28 = t ▷ find("28");
+  $Node    r = t ▷ root, n27 = f28.node ▷ up, n25 = n27 ▷ up, n23 = n25 ▷ up;
+
+  assert(r   ▷ equalsString("3"));
+  assert(r   ▷ height == 11);
+  assert(n23 ▷ equalsString("23"));
+
+  t ▷ check;
   t ▷ free;
  }
 
-void test3()                                                                    //Theight //Tfind //Troot
+void test3()
+ {$ t = make$();
+
+  for  (int i = 0; i < 256*256; ++i)
+   {char c[256]; sprintf(c, "%x", i);
+    t ▷ add(c);
+   }
+
+  t ▷ check;
+
+  $Node r = t ▷ root;
+  assert(r   ▷ equalsString("3"));
+  assert(r   ▷ height == 33);
+
+  t ▷ free;
+ }
+
+void test4()                                                                    //Theight //Tfind //Troot
  {$ t = make$();
 
   for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
@@ -443,16 +491,15 @@ void test3()                                                                    
 
   $Node r = t ▷ root;
   assert(!strcmp(r ▷ key, "31"));
-  assert(r ▷ height == 9);
+  assert(r ▷ height == 11);
 
   $Found f = t ▷ find("85");
   assert(!f.different && ({$Node F = f.last; F ▷ height;}) == 2);
 
-  //t ▷ print;
   t ▷ free;
  }
 
-void test4()
+void test5()
  {$ t = make$();
 
   for  (size_t i = TEST_TREE_SIZE; i > 0; --i)
@@ -463,16 +510,15 @@ void test4()
    }
   $Node r = t ▷ root;
   assert(!strcmp(r ▷ key, "68"));
-  assert(r ▷ height == 9);
+  assert(r ▷ height == 11);
 
   $Found f = t ▷ find("86");
   assert(!f.different && ({$Node F = f.last; F ▷ height;}) == 2);
 
-//t ▷ print;
   t ▷ free;
  }
 
-void test5()
+void test6()
  {$ t = make$();
 
   for  (size_t i = 0; i < TEST_TREE_SIZE;        ++i)
@@ -482,19 +528,46 @@ void test5()
      }
    }
   $Node r = t ▷ root;
-  assert(!strcmp(r ▷ key, "17"));
+  assert(!strcmp(r ▷ key, "16"));
   assert(r ▷ height == 13);
 
   $Found f = t ▷ find("86");
-  assert(!f.different && ({$Node F = f.last; F ▷ height;}) == 8);
+  $Node  n76 = f.node ▷ up, n66 = n76 ▷ up, n56 = n66 ▷ up, n46 = n56 ▷ up;
+  assert(n46 ▷ equalsString("46"));
 
-// t ▷ print;
   t ▷ free;
+ }
+
+void test7()                                                                    //Tcheck //Tsprint
+ {$ t = make$();
+  const size_t N = 10;
+
+  for  (size_t i = 0; i < N; ++i)
+   {char c[128]; sprintf(c, "%lu", i);
+    t ▷ add(c);
+    sprintf(c, "%lu", 2*N - i);
+    t ▷ add(c);
+   }
+  t ▷ check;
+
+  $Node r = t ▷ root;
+  assert(!strcmp(r ▷ key, "19"));
+  assert(r ▷ height == 6);
+
+  ReadOnlyBytes s = t ▷ sprint;
+  assert(s ▷ b2SumW8 == 111);
+
+  t ▷ free;
+ }
+
+void test8()                                                                    //Tvalid
+ {$Node n = new $Node; assert(!n ▷ valid);
  }
 
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
-  void (*tests[])(void) = {test0, test1, test2, test3, test4, test5, 0};
+  void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
+                           test6, test7, test8, 0};
   run_tests("$", repetitions, tests);
   return 0;
  }
