@@ -6,6 +6,7 @@
 #ifndef $_included
 #define $_included
 #include <ctype.h>
+#include <arenaRedBlackTree.c>
 #include <arenaTree.c>
 #include <readOnlyBytes.c>
 #include <utilities.c>
@@ -16,10 +17,11 @@ char $tagName[256];                                                             
 
 typedef struct $Parse                                                           // $ parse tree
  {const struct ProtoTypes_$Parse *proto;                                        // Prototypes for methods
-  FileName      fileName;                                                       // Source file containing $ to be parsed
-  ReadOnlyBytes data;                                                           // $ to be parsed
-  ArenaTree     tree;                                                           // Parse tree created from $ being parsed
-  ArenaTree     errors;                                                         // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is $Error
+  FileName          fileName;                                                   // Source file containing $ to be parsed
+  ReadOnlyBytes     data;                                                       // $ to be parsed
+  ArenaTree         tree;                                                       // Parse tree created from $ being parsed
+  ArenaTree         errors;                                                     // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is $Error
+  ArenaRedBlackTree validation;                                                 // Single Step Validation relationships
  } $Parse;
 
 typedef struct $Tag                                                             // Tag in an $ parse tree
@@ -49,13 +51,14 @@ static ArenaTreeNode node_$Tag                                                  
  }
 
 static $Parse make$ParseFromFile                                                // Parse $ held in a file
- (FileName      fileName)                                                       // Name of file holding $
- {$Parse        x = new$Parse;
-  ArenaTree     t = x.tree     = makeArenaTree();                               // Parse tree,
-  ArenaTree     e = x.errors   = makeArenaTree();                               // Errors list
-  FileName      f = x.fileName = fileName;                                      // Name of file containing parse
-  ReadOnlyBytes b = x.data     = makeReadOnlyBytesFromFile(f);                  // String to parse
-  ArenaTreeNode P = t ▷ root;                                                   // Current parent node
+ (FileName          fileName)                                                   // Name of file holding $
+ {$Parse            x = new$Parse;
+  ArenaTree         t = x.tree       = makeArenaTree();                         // Parse tree,
+  ArenaTree         e = x.errors     = makeArenaTree();                         // Errors list
+  ArenaRedBlackTree v = x.validation = makeArenaRedBlackTree();                 // Single Step Validation
+  FileName          f = x.fileName   = fileName;                                // Name of file containing parse
+  ReadOnlyBytes     b = x.data       = makeReadOnlyBytesFromFile(f);            // String to parse
+  ArenaTreeNode     P = t ▷ root;                                               // Current parent node
 
   $Parse error                                                                  // Report an error
    (char *p,                                                                    // Pointer to position at which the error occurred
@@ -112,7 +115,7 @@ static $Parse make$ParseFromFile                                                
           char b[N+1]; strncpy(b, parse$TagName(o),       N);                   // End tag name
 
           if (strncmp(a, b, N))                                                 // Tag name mismatch
-           {error(o, "End tag: %s does not match start tag: %s\n", a, b);
+           {error(o, "End tag: %s does not match start tag: %s\n", b, a);
            }
 
           if (!P ▷ isRoot) P = P ▷ parent;                                      // Go up one level if possible
@@ -362,8 +365,9 @@ void test0()                                                                    
 
   if (1)
    {ArenaTree e = x.errors;
-    assert(x ▷ errors == 1);
-    assert(!strcmp(e ▷ print.data, "Ignoring text at end\n"));
+    assert(x ▷ errors == 2);
+    assert(e ▷ printContains("End tag: A does not match start tag: a"));
+    assert(e ▷ printContains("Ignoring text at end"));
    }
 
   $Tag b = x ▷ findFirstTag("b"), d = x ▷ findFirstTag("d");
@@ -396,23 +400,28 @@ void test1()                                                                    
  }
 
 void test2()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
- {char *file =      "/home/phil/c/z/xml/validation/validation.xml";
-  $Parse x = make$ParseFromFile(makeFileName(file));
+ {char *file = "/home/phil/c/z/xml/validation/validation.xml";
+  $Parse xml = make$ParseFromFile(makeFileName(file));
 
-  $Tag p = x ▷ findFirstChild("possibilities");
-  assert(p ▷ valid);
+  $Tag possibilities = xml ▷ findFirstChild("possibilities");
+  assert(possibilities ▷ valid);
 
-  $Tag a = p ▷ findFirstTag("array");
-  assert(a ▷ valid);
+  $Tag array = possibilities ▷ findFirstTag("array");
+  assert(array ▷ valid);
 
   if (1)                                                                        // Possibilities array
-   {size_t i = 0;
-    $fe(element, a)
-     {$fe(hash, element)
+   {char buffer[256];
+    size_t i = 0;
+    $fe(element, array)
+     {sprintf(buffer, "%lu", i);
+      ArenaRedBlackTreeFound f = xml.validation ▷ add(buffer);
+
+      $fe(hash, element)
        {$fe(key, hash)
          {char * const name = key ▷ getTag;
           if (strcmp(name, "text"))
-           {say("%lu %s\n", i, key ▷ getTag);
+           {//say("%lu %s\n", i, key ▷ getTag);
+            //f.node ▷ add(key ▷ getTag);
            }
          }
        }
@@ -420,7 +429,7 @@ void test2()                                                                    
      }
    }
 
-  x ▷ free;
+  xml ▷ free;
  }
 
 int main(void)                                                                  // Run tests
