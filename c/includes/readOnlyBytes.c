@@ -30,7 +30,7 @@ static ReadOnlyBytes makeReadOnlyBytes                                          
  (char  * const data,
   const size_t length,                                                          // Length of the byte sequence
   const enum ReadOnlyBytesAllocator allocator)                                              // Allocation of memory so we know how to free it (or not to free it)
- {ReadOnlyBytes r = {data, length, allocator, &ProtoTypes_ReadOnlyBytes};
+ {const ReadOnlyBytes r = {data, length, allocator, &ProtoTypes_ReadOnlyBytes};
   return r;
  }
 
@@ -81,7 +81,7 @@ static ReadOnlyBytes makeReadOnlyBytesBuffer                                    
 static ReadOnlyBytes makeReadOnlyBytesFromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
  (FileName file)                                                                // File to read
  {struct stat  s;
-  char * const f = file.name;
+  const char * const f = file.name;
   const  int   d = open(f, O_RDONLY);
   if (d < 0 || fstat(d, &s) < 0)                                                // Unsuccessful allocation
    {printStackBackTrace("Unable to open file: %s because: %m\n",  f);
@@ -157,7 +157,7 @@ static int equalsString_ReadOnlyBytes_zeroString                                
 
 static int containsString_ReadOnlyBytes_zeroString                                          // Check that a read only byte sequence contains the specified zero terminated string
  (const ReadOnlyBytes     r,                                                                // Description of read only sequence of bytes
-  const char *s)                                                                // Zero terminated string
+  const char * const s)                                                                // Zero terminated string
  {return strstr(r.data, s) != NULL;
  }
 
