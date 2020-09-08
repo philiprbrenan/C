@@ -55,7 +55,7 @@ static $Parse make$ParseFromFile                                                
  {$Parse            x = new$Parse;
   ArenaTree         t = x.tree       = makeArenaTree();                         // Parse tree,
   ArenaTree         e = x.errors     = makeArenaTree();                         // Errors list
-  ArenaRedBlackTree v = x.validation = makeArenaRedBlackTree();                 // Single Step Validation
+                        x.validation = makeArenaRedBlackTree();                 // Single Step Validation
   FileName          f = x.fileName   = fileName;                                // Name of file containing parse
   ReadOnlyBytes     b = x.data       = makeReadOnlyBytesFromFile(f);            // String to parse
   ArenaTreeNode     P = t ▷ root;                                               // Current parent node
@@ -419,10 +419,7 @@ void test2()                                                                    
       $fe(hash, element)
        {$fe(key, hash)
          {char * const name = key ▷ getTag;
-          if (strcmp(name, "text"))
-           {//say("%lu %s\n", i, key ▷ getTag);
-            //f.node ▷ add(key ▷ getTag);
-           }
+          if (strcmp(name, "text")) f.node ▷ add(key ▷ getTag);
          }
        }
       ++i;
@@ -433,7 +430,8 @@ void test2()                                                                    
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, 0};
+// {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test2, 0};
   run_tests("$", 1, tests);
   return 0;
  }
