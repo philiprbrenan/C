@@ -14,9 +14,10 @@ typedef struct $                                                                
  {char  *data;                                                                  // Address of the first byte in the read only sequence of bytes
   size_t length;                                                                // Length of the byte sequence
   enum   $Allocator                                                             // Allocation of memory
-   {$Allocator_none   = 0,                                                      // Stack
-    $Allocator_malloc = 1,                                                      // malloc
-    $Allocator_mmap   = 2} allocator;                                           // mmap
+   {$Allocator_none    = 0,                                                     // Stack
+    $Allocator_malloc  = 1,                                                     // malloc
+    $Allocator_malloc1 = 2,                                                     // malloc with extra string terminating zero
+    $Allocator_mmap    = 3} allocator;                                          // mmap
   const struct ProtoTypes_$ *proto;                                             // Prototypes for methods
  } $;
 
@@ -47,14 +48,16 @@ static $ make$FromStringN                                                       
 static $ make$Dup                                                               //C Create a new description of a read only sequence of bytes read from a specified string by duplicating it.
  (char * const string)                                                          // Zero terminated string
  {const size_t l = strlen(string);
-  return make$(strndup(string, l), l, $Allocator_malloc);
+  char * const s = alloc(l + 1); s[l] = 0;
+  return make$(strncpy(s, string, l), l, $Allocator_malloc1);
  }
 
 static $ make$DupN                                                               //C Create a new description of a read only sequence of bytes read from a specified string of specified length by duplicating it.
  (char * const string,                                                          // String
   const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
  {const size_t l = length ? : strlen(string);
-  return make$(strndup(string, l), l, $Allocator_malloc);
+  char * const s = alloc(l + 1); s[l] = 0;
+  return make$(strncpy(s, string, l), l, $Allocator_malloc1);
  }
 
 static $ make$FromFormat                                                        //C Create a new description of a read only sequence of bytes read from a formatted string
@@ -65,6 +68,13 @@ static $ make$FromFormat                                                        
   va_end(va);
 
   return make$(data, length, $Allocator_malloc);                                // Successful allocation
+ }
+
+static $ make$Buffer                                                            //C Create an empty read only sequence of bytes of the specified length which can be written into to load it.
+ (const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
+ {char * const s = alloc(length);
+  memset(s, 0, length);
+  return make$(s, length, $Allocator_malloc);
  }
 
 static $ make$FromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
@@ -88,9 +98,10 @@ static $ make$FromFile                                                          
 static void free_$                                                              //D Free any resources associated with a read only byte sequence
  (const $ r)                                                                    // Description of a read only sequence of bytes
  {switch(r.allocator)
-   {case $Allocator_none:                             break;
-    case $Allocator_malloc: free  ((void *)(r.data)); break;
-    case $Allocator_mmap:   munmap((void *)(r.data), r.length + 1); break;      // Include the trailing zero used to delimit the file content.
+   {case $Allocator_none:                                            break;
+    case $Allocator_malloc:
+    case $Allocator_malloc1: free  ((void *)(r.data));               break;
+    case $Allocator_mmap:    munmap((void *)(r.data), r.length + 1); break;     // Include the trailing zero used to delimit the file content.
    }
  }
 
@@ -230,14 +241,17 @@ void test6()                                                                    
   s ▷ free;
  }
 
-void test7()                                                                    //Tmake$Dup //Tmake$DupN //Tmake$FromString //Tmake$FromStringN //Tmake$FromFormat
+void test7()                                                                    //Tmake$Dup //Tmake$DupN //Tmake$FromString //Tmake$FromStringN //Tmake$FromFormat //Tmake$Buffer
  {$ d = make$Dup       ("aaa"), D = make$DupN       ("aaaa", 3),
     s = make$FromString("aaa"), S = make$FromStringN("aaaa", 3),
-    f = make$FromFormat("%s", "aaa");
+    f = make$FromFormat("%s", "aaa"), m = make$Buffer(3);
+    memcpy(m.data, "aaaa", 3);
   assert(d ▷ equals(D)); assert(d ▷ length == 3); assert(D ▷ length == 3);
   assert(d ▷ equals(s)); assert(s ▷ length == 3);
   assert(d ▷ equals(S)); assert(S ▷ length == 3);
   assert(d ▷ equals(f)); assert(f ▷ length == 3);
+
+  d ▷ free; D ▷ free; s ▷ free; S ▷ free; f ▷ free; m ▷ free;
  }
 
 void test8()                                                                    //Tmake$FromFile //Twrite$TemporaryFile
