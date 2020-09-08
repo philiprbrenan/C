@@ -45,7 +45,7 @@ if (1)                                                                          
   for my $f(sort keys %files)
    {my $t = swapFilePrefix($f, $home);
        $t = swapFilePrefix($t, q(c/)) if $t =~ m(readme)i and $t !~ m(samples);
-    say STDERR "$f to $t ",
+    lll "$f to $t ",
       GitHub::Crud::writeFileUsingSavedToken($user, $repo, $t, readFile($f));
    }
  }
@@ -54,7 +54,7 @@ my $tests = sub                                                                 
  {my @t;
   for my $c(@c)
    {my $v = $c =~ m(xml) ? '#' : '';
-     push @t, <<END;
+    push @t, <<END;
     - name: Run $c
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/$c/$c.c --cIncludes c/includes
@@ -97,4 +97,4 @@ $tests
 END
 #        sudo apt -y install build-essential libgtk-3-dev gdb tree
 
-GitHub::Crud::writeFileUsingSavedToken($user, $repo, $wf, $y);
+lll GitHub::Crud::writeFileUsingSavedToken($user, $repo, $wf, $y);
