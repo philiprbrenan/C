@@ -227,8 +227,8 @@ static $Offset saveString_$Offset_$_$String                                     
   const size_t  length)                                                         // String, or if zero I will call strlen
  {const size_t l = length ? : strlen(str);                                      // Length of string
   const $Offset o = tree ▷ allocate(l + 1);                                     // Allocate space for the string plus a terminating zero
-  const $String t = o ▷ pointer;
-  strncpy(t, str, l);
+  char * const t = o ▷ pointer;
+  char * const T = stpncpy(t, str, l); *T = 0;
   return o;
  }
 
