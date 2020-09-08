@@ -91,7 +91,8 @@ static char * check_ArenaTree                                                   
 static void * pointer_ArenaTree_size                                                    //PV Return a temporary pointer to an offset in a tree.
  (const ArenaTree      tree,                                                            // Tree
   const size_t delta)                                                           // Delta
- {if ( delta > tree.arena->used) return NULL;                                   // An delta outside the arena is an unset delta
+//{if ( delta > tree.arena->used) return NULL;                                  // An delta outside the arena is an unset delta
+ {if ( delta > tree.arena->used) printStackBackTrace("AAAA");                   // An delta outside the arena is an unset delta
   return (void *)(tree.arena->data + delta);                                    // Convert a non zero delta that is within the arena to a valid pointer
  }
 
