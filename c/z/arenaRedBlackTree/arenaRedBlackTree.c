@@ -322,19 +322,19 @@ static  $Found  add_$Found_$Node_string                                         
 static ReadOnlyBytes sprintRoot_string_root$Node                                //P Print a tree, starting at the specified root node, as a string. We allocate a string large enough to hold the print. Freeing the allocated string containing the print is the responsibility fo the caller.
  (const $Node root)                                                             // Root node of tree to be printed
  {const int W = 4;                                                              // Width of height field
-  if (!root ▷ valid) return makeReadOnlyBytesFromString("");                    // The tree is empty - return a freeable empty string
+  if (!root ▷ valid) return makeReadOnlyBytesFromString("");                    // The tree is empty
 
-  size_t l = 1;                                                                 // Length of buffer needed
+  size_t l = 1;                                                                 // Length of buffer needed - terminating 0
   void len($Node node, size_t depth)                                            // Get length of print
    {if (node ▷ valid)
      {len(node ▷ left, depth+1);
-      l += 1 + (1 + depth) * W;
+      l += 1 + depth * W + strlen(node ▷ key);                                  // new line, spacing, key
       len(node ▷ right, depth+1);
      }
    }
   len(root, 0);                                                                 // Set size of print
 
-  ReadOnlyBytes r = makeReadOnlyBytesDupN("", l);                               // Output area
+  ReadOnlyBytes r = makeReadOnlyBytesBuffer(l);                                 // Output area
   char *        p = r.data;
 
   void print(const $Node node, size_t depth)                                    // Print to allocated string
@@ -481,10 +481,11 @@ void test3()
 
 void test4()                                                                    //Theight //Tfind //Troot
  {$ t = make$();
+  char c[4]; memset(c, 0, sizeof(c));
 
   for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
    {for(size_t j = 0; j < TEST_TREE_SIZE; ++j)
-     {char c[4]; c[0] = '0' + i; c[1] = '0' + j;
+     {c[0] = '0' + i; c[1] = '0' + j;
       t ▷ add(c);
      }
    }
@@ -501,10 +502,11 @@ void test4()                                                                    
 
 void test5()
  {$ t = make$();
+  char c[4]; memset(c, 0, sizeof(c));
 
   for  (size_t i = TEST_TREE_SIZE; i > 0; --i)
    {for(size_t j = TEST_TREE_SIZE; j > 0; --j)
-     {char c[4]; c[0] = '0' + i - 1; c[1] = '0' + j - 1;
+     {c[0] = '0' + i - 1; c[1] = '0' + j - 1;
       t ▷ add(c);
      }
    }
@@ -520,10 +522,11 @@ void test5()
 
 void test6()
  {$ t = make$();
+  char c[4]; memset(c, 0, sizeof(c));
 
   for  (size_t i = 0; i < TEST_TREE_SIZE;        ++i)
    {for(size_t j =        TEST_TREE_SIZE; j > 0; --j)
-     {char c[4]; c[0] = '0' + i; c[1] = '0' + j - 1;
+     {c[0] = '0' + i; c[1] = '0' + j - 1;
       t ▷ add(c);
      }
    }
@@ -541,9 +544,10 @@ void test6()
 void test7()                                                                    //Tcheck //Tsprint
  {$ t = make$();
   const size_t N = 10;
+  char c[128]; memset(c, 0, sizeof(c));
 
   for  (size_t i = 0; i < N; ++i)
-   {char c[128]; sprintf(c, "%lu", i);
+   {sprintf(c, "%lu", i);
     t ▷ add(c);
     sprintf(c, "%lu", 2*N - i);
     t ▷ add(c);
@@ -553,11 +557,11 @@ void test7()                                                                    
   $Node r = t ▷ root;
   assert(!strcmp(r ▷ key, "19"));
   assert(r ▷ height == 6);
-
   ReadOnlyBytes s = t ▷ sprint;
-  assert(s ▷ b2SumW8 == 111);
+//say("AAAA %lu\n", s ▷ b2SumW8);
+  assert(s ▷ b2SumW8 == 96);
 
-  t ▷ free;
+  t ▷ free; s ▷ free;
  }
 
 void test8()                                                                    //Tvalid
