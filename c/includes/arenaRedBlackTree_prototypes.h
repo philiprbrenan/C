@@ -74,11 +74,11 @@ static void setTree_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode
   const ArenaRedBlackTreeNode tree);
 static int valid_ArenaRedBlackTreeNode
  (const ArenaRedBlackTreeNode node);
-static ArenaRedBlackTreeFound  find_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string
- (ArenaRedBlackTreeFound       found,
-  const ArenaRedBlackTreeNode  root);
+static ArenaRedBlackTreeFound find_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string
+ (ArenaRedBlackTreeFound      found,
+  const ArenaRedBlackTreeNode root);
 static void check_ArenaRedBlackTree
- (ArenaRedBlackTree tree);
+ (const ArenaRedBlackTree tree);
 static  ArenaRedBlackTreeFound find_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string
  (const ArenaRedBlackTreeNode  node,
   char * const key);
@@ -114,7 +114,7 @@ struct ProtoTypes_ArenaRedBlackTree {
     const ArenaRedBlackTree tree,                                               // ArenaTree in which to allocate
     const size_t size);                                                         // Amount of memory required
   void  (*check)(                                                               // Check the integrity of the tree
-    ArenaRedBlackTree tree);                                                    // Tree to check
+    const ArenaRedBlackTree tree);                                              // Tree to check
   ArenaRedBlackTreeFound  (*find)(                                              // Find a key if it exists within the base tree.
     const ArenaRedBlackTree tree,                                               // The base tree to search
     char * const key);                                                          // The key to find
@@ -164,7 +164,7 @@ ArenaRedBlackTreeFindList newArenaRedBlackTreeFindList(ArenaRedBlackTreeFindList
 struct ProtoTypes_ArenaRedBlackTreeFound {
   ArenaRedBlackTreeFound  (*add)(                                               // Add a new key if not already present in the tree root at the specified node.
     ArenaRedBlackTreeFound f);                                                  // Found status for the tree to which the specified key is being added.
-  ArenaRedBlackTreeFound   (*find)(                                             // Find a key if it exists within the tree starting at this node.
+  ArenaRedBlackTreeFound  (*find)(                                              // Find a key if it exists within the tree starting at this node.
     ArenaRedBlackTreeFound found,                                               // Found definition
     const ArenaRedBlackTreeNode root);                                          // The root node at which the tree starts
  } const ProtoTypes_ArenaRedBlackTreeFound =
