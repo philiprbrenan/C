@@ -46,7 +46,7 @@ static int equalsString_ReadOnlyBytes_zeroString
   const char *s);
 static int containsString_ReadOnlyBytes_zeroString
  (const ReadOnlyBytes     r,
-  const char *s);
+  const char * const s);
 static size_t b2SumW8_ReadOnlyBytes
  (const ReadOnlyBytes r);
 struct ProtoTypes_ReadOnlyBytes {
@@ -54,7 +54,7 @@ struct ProtoTypes_ReadOnlyBytes {
     const ReadOnlyBytes r);                                                     // Description of read only sequence of bytes
   int  (*containsString)(                                                       // Check that a read only byte sequence contains the specified zero terminated string
     const ReadOnlyBytes r,                                                      // Description of read only sequence of bytes
-    const char * s);                                                            // Zero terminated string
+    const char * const s);                                                      // Zero terminated string
   char * (*data)(                                                               // Data field of the sequence
     const ReadOnlyBytes r);                                                     // Description of a sequence of read only bytes
   int  (*equalsString)(                                                         // Compare a read only byte sequence with a zero terminated string
