@@ -39,7 +39,7 @@ static ArenaTreeNode   nodeFromOffset_ArenaTree_size
 static ArenaTreeOffset allocate_offset_ArenaTree_size
  (const ArenaTree      tree,
   const size_t size);
-static __attribute__ ((unused)) ArenaTreeNode noden_ArenaTreeNode_ArenaTree_ArenaTreeString
+static ArenaTreeNode noden_ArenaTreeNode_ArenaTree_ArenaTreeString
  (const ArenaTree       tree,
   const char * const key,
   const size_t  length);
@@ -229,7 +229,7 @@ struct ProtoTypes_ArenaTree {
   ArenaTreeNode  (*node)(                                                       // Create a new tree node keyed by a zero terminated string.
     const ArenaTree tree,                                                       // Arena tree in which to create the node
     const char * const key);                                                    // Key for this node.  Note: we do not order nodes automatically.
-  __attribute__ ((unused)) ArenaTreeNode  (*noden)(                             // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
+  ArenaTreeNode  (*noden)(                                                      // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
     const ArenaTree tree,                                                       // Arena tree in which to create the node
     const char * const key,                                                     // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
     const size_t length);                                                       // Length of the key, or if zero, I will use strlen
