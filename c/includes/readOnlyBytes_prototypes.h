@@ -15,6 +15,8 @@ static ReadOnlyBytes makeReadOnlyBytesDupN
   const size_t length);
 static ReadOnlyBytes makeReadOnlyBytesFromFormat
  (const char * format, ...);
+static ReadOnlyBytes makeReadOnlyBytesBuffer
+ (const size_t length);
 static ReadOnlyBytes makeReadOnlyBytesFromFile
  (FileName file);
 static void free_ReadOnlyBytes
