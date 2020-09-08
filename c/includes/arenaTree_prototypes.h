@@ -8,8 +8,8 @@ static void * pointer_ArenaTree_size
 static void * pointer_ArenaTreeOffset
  (const ArenaTreeOffset o);
 static ArenaTreeOffset offsetTo_ArenaTree_pointer
- (const ArenaTree tree,
-  void * const pointer);
+ (const ArenaTree            tree,
+  const void * const pointer);
 static ArenaTreeContent * content_ArenaTreeNode
  (const ArenaTreeNode n);
 static int checkKey_int_ArenaTreeNode_string_size
@@ -113,9 +113,9 @@ static  ArenaTreeNode findFirstChild_ArenaTree_string
  (const ArenaTree            tree,
   const char * const key);
 static int context_ArenaTreeNode
- (const ArenaTreeNode        child,
-  ArenaTreeNode * const      parent,
-  const char * const key);
+ (const ArenaTreeNode         child,
+        ArenaTreeNode * const parent,
+  const char  * const key);
 static int isFirst_ArenaTreeNode
  (const ArenaTreeNode child);
 static int isLast_ArenaTreeNode
@@ -154,7 +154,7 @@ static void by_ArenaTreeNode_sub
  (ArenaTreeNode node,
   void (* const function) (const ArenaTreeNode node));
 static void by_ArenaTree_sub
- (ArenaTree tree,
+ (const ArenaTree tree,
   void (* const function) (const ArenaTreeNode node));
 static  size_t countChildren_size_ArenaTreeNodeOffset
  (const ArenaTreeNode parent);
@@ -201,7 +201,7 @@ struct ProtoTypes_ArenaTree {
     const ArenaTree tree,                                                       // ArenaTree in which to allocate
     const size_t size);                                                         // Amount of memory required
   void  (*by)(                                                                  // Traverse a tree in post-order calling the specified function to process each child node.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
-    ArenaTree tree,                                                             // Tree
+    const ArenaTree tree,                                                       // Tree
     void (* const function) (const ArenaTreeNode node));                        // Function
   char *  (*check)(                                                             // Return a string describing the structure
     const ArenaTree tree);                                                      // Tree
@@ -235,7 +235,7 @@ struct ProtoTypes_ArenaTree {
     const size_t length);                                                       // Length of the key, or if zero, I will use strlen
   ArenaTreeOffset  (*offsetTo)(                                                 // Create an offset from a pointer into the arena of a tree.
     const ArenaTree tree,                                                       // Offset
-    void * const pointer);                                                      // Pointer into arena
+    const void * const pointer);                                                // Pointer into arena
   ArenaTreeOffset   (*offset)(                                                  // Create an offset to locate an item within the tree.
     const ArenaTree tree,                                                       // Tree
     const size_t delta);                                                        // Delta within arena
@@ -292,7 +292,7 @@ struct ProtoTypes_ArenaTreeNode {
   int  (*context)(                                                              // Return true if the parent of the specified child has the specified key.
     const ArenaTreeNode child,                                                  // Child
     ArenaTreeNode * const parent,                                               // Parent container
-    const char * const key);                                                    // Key
+    const char  * const key);                                                   // Key
   void  (*copyData)(                                                            // Copy the data associated with the sourtce node to the target node by copying the offset to the data held in the source node to the target node.
     const ArenaTreeNode target,                                                 // Target node
     const ArenaTreeNode source);                                                // Source node
