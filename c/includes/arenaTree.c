@@ -205,7 +205,7 @@ static ArenaTreeOffset allocate_offset_ArenaTree_size                           
   printStackBackTrace("Arena too large\n");                                     // The arena has become too large for the chosen size of offsets.
  }
 
-static __attribute__ ((unused)) ArenaTreeNode noden_ArenaTreeNode_ArenaTree_ArenaTreeString                                              // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
+static ArenaTreeNode noden_ArenaTreeNode_ArenaTree_ArenaTreeString                                              // Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
  (const ArenaTree       tree,                                                           // Arena tree in which to create the node
   const char * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
   const size_t  length)                                                         // Length of the key, or if zero, I will use strlen
@@ -228,8 +228,8 @@ static ArenaTreeOffset saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString     
   const size_t  length)                                                         // String, or if zero I will call strlen
  {const size_t l = length ? : strlen(str);                                      // Length of string
   const ArenaTreeOffset o = tree.proto->allocate(tree, l + 1);                                     // Allocate space for the string plus a terminating zero
-  const ArenaTreeString t = o.proto->pointer(o);
-  strncpy(t, str, l);
+  char * const t = o.proto->pointer(o);
+  char * const T = stpncpy(t, str, l); *T = 0;
   return o;
  }
 
