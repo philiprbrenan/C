@@ -60,7 +60,8 @@ static void free_$                                                              
 static  $Found make$Found                                                       //P Create a new found description
  (const $      tree,                                                            // The tree being searched
   char * const key)                                                             // The key to find
- {return new$Found(tree: tree, key: key, last: new$Node, added: new$Node, node: new$Node);
+ {const $Node n = new $Node;
+  return new$Found(tree: tree, key: key, last: n, added: n, node: n);
  }
 
 //D1 Attributes                                                                 // Get and set the attributes of a node
