@@ -60,7 +60,7 @@ static void free_$                                                              
 static  $Found make$Found                                                       //P Create a new found description
  (const $      tree,                                                            // The tree being searched
   char * const key)                                                             // The key to find
- {const $Node n = new $Node;
+ {const $Node n = new $Node(tree: tree);                                        // Sample node within tree
   return new$Found(tree: tree, key: key, last: n, added: n, node: n);
  }
 
@@ -103,6 +103,7 @@ static $Node right_$Node_$Node                                                  
 static $Node ownedTreeRoot_$Node_$Node                                          //P Root of tree owned by this node if there is  one, else the returned node has an offset of zero.
  (const $Node     parent)                                                       // Parent
  {const $         t = parent.tree;
+  const $Node n = t ▷ nodeFromOffset(parent ▷ content->tree.delta);
   return t ▷ nodeFromOffset(parent ▷ content->tree.delta);
  }
 
@@ -132,7 +133,7 @@ static void setRight_$Node_$Node                                                
 
 static void setTree_$Node_$Node                                                 //P Set the other tree located by this node.
  (const $Node parent,                                                           // Parent
-  const $Node tree)                                                             // Right child
+  const $Node tree)                                                             // Tree to be added to parent
  {parent ▷ content->tree.delta = tree.offset;
  }
 
@@ -298,7 +299,7 @@ static  $Found  add_$Found_$_string                                             
  {$Found f =    tree ▷ find(key);                                               // Try to find the key
 
   if (!f.last ▷ valid)                                                          // Empty tree
-   {const $Node root = f.added = tree ▷ node(key);                              // Add new key in a node
+   {const $Node root = f.added = f.node = tree ▷ node(key);                     // Add new key in a node
     tree.arena->root = root.offset;                                             // Make the new node the root node
     return f;                                                                   // Find status
    }
@@ -311,7 +312,7 @@ static  $Found  add_$Found_$Node_string                                         
  {$ tree   = node.tree;                                                         // Tree to search
   $Found f = node ▷ find(key);                                                  // Try to find the key
   if (!f.last ▷ valid)                                                          // Empty tree
-   {const $Node root = f.added = tree ▷ node(key);                              // Add new key in a node
+   {const $Node root = f.added = f.node = tree ▷ node(key);                     // Add new key in a node
     node ▷ setTree(root);                                                       // Make the new node the root node
     return f;                                                                   // Find status
    }
