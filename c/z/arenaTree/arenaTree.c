@@ -69,8 +69,8 @@ typedef struct $Description                                                     
 
 static $ make$                                                                  // Create a new arena tree
  ()                                                                             // ArenaTree allocator
- {$ t       = new$;                                                             // Arena tree we are creating
-  $Arena * const a = t.arena = alloc(sizeof($Arena));                           // Allocate Arena description
+ {$Arena * const a = alloc(sizeof($Arena));                                     // Allocate arena description
+  const $ t = new $(arena: a);                                                  // Arena tree we are creating
   a->size   = 256;                                                              // This could be any reasonable value - it will be doubled everytime the arena overflows.
   a->data   = alloc( a->size);                                                  // Allocate arena
   memset(a->data, 0, a->size);                                                  // ValGrind
@@ -90,8 +90,9 @@ static char * check_$                                                           
 static void * pointer_$_size                                                    //PV Return a temporary pointer to an offset in a tree.
  (const $      tree,                                                            // Tree
   const size_t delta)                                                           // Delta
-//{if ( delta > tree.arena->used) return NULL;                                  // An delta outside the arena is an unset delta
- {if ( delta > tree.arena->used) printStackBackTrace("AAAA");                   // An delta outside the arena is an unset delta
+ {if (delta > tree.arena->used)                                                 // An delta outside the arena is an unset delta
+   {printStackBackTrace("Accessing area outside arena");
+   }
   return (void *)(tree.arena->data + delta);                                    // Convert a non zero delta that is within the arena to a valid pointer
  }
 
@@ -101,10 +102,10 @@ static void * pointer_$Offset                                                   
  }
 
 static $Offset offsetTo_$_pointer                                               //P Create an offset from a pointer into the arena of a tree.
- (const $ tree,                                                                 // Offset
-  void * const pointer)                                                         // Pointer into arena
+ (const $            tree,                                                      // Offset
+  const void * const pointer)                                                   // Pointer into arena
  {const $Arena a = *tree.arena;
-  char * const p = (char *)pointer;
+  const char * const p = (char *)pointer;
   if (p > a.data && p < a.data + a.used)
    {return new$Offset(tree: tree, offset: p - a.data);
    }
@@ -144,7 +145,7 @@ static $Node root_$NodeOffset_$NodeOffset                                       
 static $String key_string_$Node                                                 //V Get a temporary pointer to the offset containing the key of a node.
  (const $Node node)                                                             // NodeContent
  {const $ t = node.tree;
-  $Offset k = t ▷ offset((node ▷ content)->key.delta);
+  const $Offset k = t ▷ offset((node ▷ content)->key.delta);
   return  k ▷ pointer;
  }
 
@@ -238,7 +239,7 @@ static void get_$_data_size                                                     
   const size_t offset,                                                          // Offset to data in arena
   void * const data,                                                            // Pointer to the area into which the data is to be copied
   const size_t length)                                                          // Length of the data to be retrieved
- {void * const s = tree ▷ pointer(offset);                                      // Locate data
+ {const void * const s = tree ▷ pointer(offset);                                // Locate data
   memcpy(data, s, length);                                                      // Copy out data
  }
 
@@ -257,7 +258,7 @@ static void retrieve_$_$Offset_data_size                                        
   const $Offset offset,                                                         // Offset in the arena at which the data to be retrieved is stored.
   void * const  data,                                                           // Area into which the retrieved data is to be copied.
   const size_t  length)                                                         // Length of the data to be retrieved
- {void * const  s = tree ▷ pointer(offset.offset);                              // Address data
+ {const void * const  s = tree ▷ pointer(offset.offset);                        // Address data
   memcpy(data, s, length);                                                      // Copy out data
  }
 
@@ -405,33 +406,32 @@ static  $Node findFirst_$Node_string                                            
 static  $Node findFirst_$_string                                                // Find the first node with the specified key in a post-order traversal of the tree.
  (const $            tree,                                                      // Tree
   const char * const key)                                                       // Key to find
- {$Node r = tree ▷ root;                                                        // Root node of the tree
+ {const $Node r = tree ▷ root;                                                  // Root node of the tree
   return r ▷ findFirst(key);                                                    // Search the tree
  }
 
 static  $Node findFirstChild_$Node_string                                       // Find the first child of the specified parent with the specified key.
  (const $Node        parent,                                                    // Parent node
   const char * const key)                                                       // Key to find immediately under parent
- {$Node invalid = {};                                                           // An invalid node
+ {$fe(child, parent) if (child ▷ equalsString(key)) return child;               // Found matching child
 
-  $fe(child, parent) if (child ▷ equalsString(key)) return child;               // Found matching child
-
+  const $Node invalid = {};                                                     // An invalid node
   return invalid;                                                               // Failed - return an invalid node
  }
 
 static  $Node findFirstChild_$_string                                           // Find the first child immediately under the root with the specified key.
  (const $            tree,                                                      // Tree
   const char * const key)                                                       // Key to find
- {$Node  r = tree ▷ root;                                                       // Root node of the tree
+ {const $Node  r = tree ▷ root;                                                 // Root node of the tree
   return r ▷ findFirstChild(key);                                               // Search the tree
  }
 
 //D1 Location                                                                   // Verify the current location.
 
 static int context_$Node                                                        // Return true if the parent of the specified child has the specified key.
- (const $Node        child,                                                     // Child
-  $Node * const      parent,                                                    // Parent container
-  const char * const key)                                                       // Key
+ (const $Node         child,                                                    // Child
+        $Node * const parent,                                                   // Parent container
+  const char  * const key)                                                      // Key
  {if (child ▷ isRoot) return 0;                                                 // The root node has no context
   const $Node p = *parent = child ▷ parent;                                     // Get parent if it exists
   return(p ▷ valid && strcmp(p ▷ key, key) == 0);                               // Check key
@@ -573,7 +573,7 @@ static void by_$Node_sub                                                        
  }
 
 static void by_$_sub                                                            // Traverse a tree in post-order calling the specified function to process each child node.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
- ($ tree,                                                                       // Tree
+ (const $ tree,                                                                 // Tree
   void (* const function) (const $Node node))                                   // Function
  {const $Node n = tree ▷ root;                                                  // Start at the root
   n ▷ by(function);
@@ -786,9 +786,8 @@ static void write_void_$_$String                                                
 
 $ read$                                                                         // Read a tree from a file
  (const char * const file)                                                      // File
- {$ tree;
-  tree.arena = alloc(sizeof($Arena));
-  tree.proto = &ProtoTypes_$;                                                   // Initialize tree prototype
+ {$Arena * const arena = alloc(sizeof($Arena));                                 // Create arena
+  $ tree = new $(arena: arena);                                                 // Initialize tree
 
   const int i = open(file, 0, O_RDONLY);                                        // Open for input
   if (i < 0) printStackBackTrace("Cannot open file: %s for read\n", file);
@@ -798,16 +797,15 @@ $ read$                                                                         
    {printStackBackTrace("Cannot read header from file: %s\n", file);
    }
 
-  tree.arena->data = alloc(tree.arena->size = tree.arena->used = h.used);       // Allocate arena
+  tree.arena->data = alloc(arena->size = arena->used = h.used);                 // Allocate arena
 
-  const ssize_t r = read(i, tree.arena->data, tree.arena->used);                // Read arena
-  if (r < 0 || tree.arena->used != (size_t)r)
+  const ssize_t r = read(i, arena->data, arena->used);                          // Read arena
+  if (r < 0 || arena->used != (size_t)r)
    {printStackBackTrace("Cannot read $ from file: %s\n", file);
    }
 
   close(i);
-  tree.proto = &ProtoTypes_$;
-  tree.arena->root = h.root;                                                    // Offset to root in arena
+  arena->root = h.root;                                                         // Offset to root in arena
   return tree;
  }
 
