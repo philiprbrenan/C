@@ -220,7 +220,8 @@ static void free_ArenaRedBlackTree                                              
 static  ArenaRedBlackTreeFound makeArenaRedBlackTreeFound                                                       //P Create a new found description
  (const ArenaRedBlackTree      tree,                                                            // The tree being searched
   char * const key)                                                             // The key to find
- {return newArenaRedBlackTreeFound(({struct ArenaRedBlackTreeFound t = {tree: tree, key: key, last: newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {proto: &ProtoTypes_ArenaRedBlackTreeNode};   t;})), added: newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {proto: &ProtoTypes_ArenaRedBlackTreeNode};   t;})), node: newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {proto: &ProtoTypes_ArenaRedBlackTreeNode};   t;})), proto: &ProtoTypes_ArenaRedBlackTreeFound}; t;}));
+ {const ArenaRedBlackTreeNode n = newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {proto: &ProtoTypes_ArenaRedBlackTreeNode};   t;}));
+  return newArenaRedBlackTreeFound(({struct ArenaRedBlackTreeFound t = {tree: tree, key: key, last: n, added: n, node: n, proto: &ProtoTypes_ArenaRedBlackTreeFound}; t;}));
  }
 
 //D1 Attributes                                                                 // Get and set the attributes of a node
