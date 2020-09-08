@@ -29,7 +29,7 @@ static $ make$                                                                  
  (char  * const data,
   const size_t length,                                                          // Length of the byte sequence
   const enum $Allocator allocator)                                              // Allocation of memory so we know how to free it (or not to free it)
- {$ r = {data, length, allocator, &ProtoTypes_$};
+ {const $ r = {data, length, allocator, &ProtoTypes_$};
   return r;
  }
 
@@ -80,7 +80,7 @@ static $ make$Buffer                                                            
 static $ make$FromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
  (FileName file)                                                                // File to read
  {struct stat  s;
-  char * const f = file.name;
+  const char * const f = file.name;
   const  int   d = open(f, O_RDONLY);
   if (d < 0 || fstat(d, &s) < 0)                                                // Unsuccessful allocation
    {printStackBackTrace("Unable to open file: %s because: %m\n",  f);
@@ -155,8 +155,8 @@ static int equalsString_$_zeroString                                            
  }
 
 static int containsString_$_zeroString                                          // Check that a read only byte sequence contains the specified zero terminated string
- (const $     r,                                                                // Description of read only sequence of bytes
-  const char *s)                                                                // Zero terminated string
+ (const $            r,                                                         // Description of read only sequence of bytes
+  const char * const s)                                                         // Zero terminated string
  {return strstr(r.data, s) != NULL;
  }
 
