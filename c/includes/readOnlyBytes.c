@@ -15,9 +15,10 @@ typedef struct ReadOnlyBytes                                                    
  {char  *data;                                                                  // Address of the first byte in the read only sequence of bytes
   size_t length;                                                                // Length of the byte sequence
   enum   ReadOnlyBytesAllocator                                                             // Allocation of memory
-   {ReadOnlyBytesAllocator_none   = 0,                                                      // Stack
-    ReadOnlyBytesAllocator_malloc = 1,                                                      // malloc
-    ReadOnlyBytesAllocator_mmap   = 2} allocator;                                           // mmap
+   {ReadOnlyBytesAllocator_none    = 0,                                                     // Stack
+    ReadOnlyBytesAllocator_malloc  = 1,                                                     // malloc
+    ReadOnlyBytesAllocator_malloc1 = 2,                                                     // malloc with extra string terminating zero
+    ReadOnlyBytesAllocator_mmap    = 3} allocator;                                          // mmap
   const struct ProtoTypes_ReadOnlyBytes *proto;                                             // Prototypes for methods
  } ReadOnlyBytes;
 
@@ -48,14 +49,16 @@ static ReadOnlyBytes makeReadOnlyBytesFromStringN                               
 static ReadOnlyBytes makeReadOnlyBytesDup                                                               //C Create a new description of a read only sequence of bytes read from a specified string by duplicating it.
  (char * const string)                                                          // Zero terminated string
  {const size_t l = strlen(string);
-  return makeReadOnlyBytes(strndup(string, l), l, ReadOnlyBytesAllocator_malloc);
+  char * const s = alloc(l + 1); s[l] = 0;
+  return makeReadOnlyBytes(strncpy(s, string, l), l, ReadOnlyBytesAllocator_malloc1);
  }
 
 static ReadOnlyBytes makeReadOnlyBytesDupN                                                               //C Create a new description of a read only sequence of bytes read from a specified string of specified length by duplicating it.
  (char * const string,                                                          // String
   const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
  {const size_t l = length ? : strlen(string);
-  return makeReadOnlyBytes(strndup(string, l), l, ReadOnlyBytesAllocator_malloc);
+  char * const s = alloc(l + 1); s[l] = 0;
+  return makeReadOnlyBytes(strncpy(s, string, l), l, ReadOnlyBytesAllocator_malloc1);
  }
 
 static ReadOnlyBytes makeReadOnlyBytesFromFormat                                                        //C Create a new description of a read only sequence of bytes read from a formatted string
@@ -66,6 +69,13 @@ static ReadOnlyBytes makeReadOnlyBytesFromFormat                                
   va_end(va);
 
   return makeReadOnlyBytes(data, length, ReadOnlyBytesAllocator_malloc);                                // Successful allocation
+ }
+
+static ReadOnlyBytes makeReadOnlyBytesBuffer                                                            //C Create an empty read only sequence of bytes of the specified length which can be written into to load it.
+ (const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
+ {char * const s = alloc(length);
+  memset(s, 0, length);
+  return makeReadOnlyBytes(s, length, ReadOnlyBytesAllocator_malloc);
  }
 
 static ReadOnlyBytes makeReadOnlyBytesFromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
@@ -89,9 +99,10 @@ static ReadOnlyBytes makeReadOnlyBytesFromFile                                  
 static void free_ReadOnlyBytes                                                              //D Free any resources associated with a read only byte sequence
  (const ReadOnlyBytes r)                                                                    // Description of a read only sequence of bytes
  {switch(r.allocator)
-   {case ReadOnlyBytesAllocator_none:                             break;
-    case ReadOnlyBytesAllocator_malloc: free  ((void *)(r.data)); break;
-    case ReadOnlyBytesAllocator_mmap:   munmap((void *)(r.data), r.length + 1); break;      // Include the trailing zero used to delimit the file content.
+   {case ReadOnlyBytesAllocator_none:                                            break;
+    case ReadOnlyBytesAllocator_malloc:
+    case ReadOnlyBytesAllocator_malloc1: free  ((void *)(r.data));               break;
+    case ReadOnlyBytesAllocator_mmap:    munmap((void *)(r.data), r.length + 1); break;     // Include the trailing zero used to delimit the file content.
    }
  }
 
@@ -231,14 +242,17 @@ void test6()                                                                    
   s.proto->free(s);
  }
 
-void test7()                                                                    //TmakeReadOnlyBytesDup //TmakeReadOnlyBytesDupN //TmakeReadOnlyBytesFromString //TmakeReadOnlyBytesFromStringN //TmakeReadOnlyBytesFromFormat
+void test7()                                                                    //TmakeReadOnlyBytesDup //TmakeReadOnlyBytesDupN //TmakeReadOnlyBytesFromString //TmakeReadOnlyBytesFromStringN //TmakeReadOnlyBytesFromFormat //TmakeReadOnlyBytesBuffer
  {ReadOnlyBytes d = makeReadOnlyBytesDup       ("aaa"), D = makeReadOnlyBytesDupN       ("aaaa", 3),
     s = makeReadOnlyBytesFromString("aaa"), S = makeReadOnlyBytesFromStringN("aaaa", 3),
-    f = makeReadOnlyBytesFromFormat("%s", "aaa");
+    f = makeReadOnlyBytesFromFormat("%s", "aaa"), m = makeReadOnlyBytesBuffer(3);
+    memcpy(m.data, "aaaa", 3);
   assert(d.proto->equals(d, D)); assert(d.proto->length(d) == 3); assert(D.proto->length(D) == 3);
   assert(d.proto->equals(d, s)); assert(s.proto->length(s) == 3);
   assert(d.proto->equals(d, S)); assert(S.proto->length(S) == 3);
   assert(d.proto->equals(d, f)); assert(f.proto->length(f) == 3);
+
+  d.proto->free(d); D.proto->free(D); s.proto->free(s); S.proto->free(S); f.proto->free(f); m.proto->free(m);
  }
 
 void test8()                                                                    //TmakeReadOnlyBytesFromFile //TwriteReadOnlyBytesTemporaryFile
