@@ -188,8 +188,8 @@ static ArenaRedBlackTreeOffset saveString_ArenaRedBlackTreeOffset_ArenaRedBlackT
   const size_t  length)                                                         // String, or if zero I will call strlen
  {const size_t l = length ? : strlen(str);                                      // Length of string
   const ArenaRedBlackTreeOffset o = tree.proto->allocate(tree, l + 1);                                     // Allocate space for the string plus a terminating zero
-  const ArenaRedBlackTreeString t = o.proto->pointer(o);
-  strncpy(t, str, l);
+  char * const t = o.proto->pointer(o);
+  char * const T = stpncpy(t, str, l); *T = 0;
   return o;
  }
 #line 288 "/home/phil/c/z/arenaTree/arenaTree.c"
@@ -482,19 +482,19 @@ static  ArenaRedBlackTreeFound  add_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode
 static ReadOnlyBytes sprintRoot_string_rootArenaRedBlackTreeNode                                //P Print a tree, starting at the specified root node, as a string. We allocate a string large enough to hold the print. Freeing the allocated string containing the print is the responsibility fo the caller.
  (const ArenaRedBlackTreeNode root)                                                             // Root node of tree to be printed
  {const int W = 4;                                                              // Width of height field
-  if (!root.proto->valid(root)) return makeReadOnlyBytesFromString("");                    // The tree is empty - return a freeable empty string
+  if (!root.proto->valid(root)) return makeReadOnlyBytesFromString("");                    // The tree is empty
 
-  size_t l = 1;                                                                 // Length of buffer needed
+  size_t l = 1;                                                                 // Length of buffer needed - terminating 0
   void len(ArenaRedBlackTreeNode node, size_t depth)                                            // Get length of print
    {if (node.proto->valid(node))
      {len(node.proto->left(node), depth+1);
-      l += 1 + (1 + depth) * W;
+      l += 1 + depth * W + strlen(node.proto->key(node));                                  // newline(({struct line t = {proto: &ProtoTypes_line};   t;})), spacing, key
       len(node.proto->right(node), depth+1);
      }
    }
   len(root, 0);                                                                 // Set size of print
 
-  ReadOnlyBytes r = makeReadOnlyBytesDupN("", l);                               // Output area
+  ReadOnlyBytes r = makeReadOnlyBytesBuffer(l);                                 // Output area
   char *        p = r.data;
 
   void print(const ArenaRedBlackTreeNode node, size_t depth)                                    // Print to allocated string
@@ -641,10 +641,11 @@ void test3()
 
 void test4()                                                                    //Theight //Tfind //Troot
  {ArenaRedBlackTree t = makeArenaRedBlackTree();
+  char c[4]; memset(c, 0, sizeof(c));
 
   for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
    {for(size_t j = 0; j < TEST_TREE_SIZE; ++j)
-     {char c[4]; c[0] = '0' + i; c[1] = '0' + j;
+     {c[0] = '0' + i; c[1] = '0' + j;
       t.proto->add(t, c);
      }
    }
@@ -661,10 +662,11 @@ void test4()                                                                    
 
 void test5()
  {ArenaRedBlackTree t = makeArenaRedBlackTree();
+  char c[4]; memset(c, 0, sizeof(c));
 
   for  (size_t i = TEST_TREE_SIZE; i > 0; --i)
    {for(size_t j = TEST_TREE_SIZE; j > 0; --j)
-     {char c[4]; c[0] = '0' + i - 1; c[1] = '0' + j - 1;
+     {c[0] = '0' + i - 1; c[1] = '0' + j - 1;
       t.proto->add(t, c);
      }
    }
@@ -680,10 +682,11 @@ void test5()
 
 void test6()
  {ArenaRedBlackTree t = makeArenaRedBlackTree();
+  char c[4]; memset(c, 0, sizeof(c));
 
   for  (size_t i = 0; i < TEST_TREE_SIZE;        ++i)
    {for(size_t j =        TEST_TREE_SIZE; j > 0; --j)
-     {char c[4]; c[0] = '0' + i; c[1] = '0' + j - 1;
+     {c[0] = '0' + i; c[1] = '0' + j - 1;
       t.proto->add(t, c);
      }
    }
@@ -701,9 +704,10 @@ void test6()
 void test7()                                                                    //Tcheck //Tsprint
  {ArenaRedBlackTree t = makeArenaRedBlackTree();
   const size_t N = 10;
+  char c[128]; memset(c, 0, sizeof(c));
 
   for  (size_t i = 0; i < N; ++i)
-   {char c[128]; sprintf(c, "%lu", i);
+   {sprintf(c, "%lu", i);
     t.proto->add(t, c);
     sprintf(c, "%lu", 2*N - i);
     t.proto->add(t, c);
@@ -713,11 +717,11 @@ void test7()                                                                    
   ArenaRedBlackTreeNode r = t.proto->root(t);
   assert(!strcmp(r.proto->key(r), "19"));
   assert(r.proto->height(r) == 6);
-
   ReadOnlyBytes s = t.proto->sprint(t);
-  assert(s.proto->b2SumW8(s) == 111);
+//say("AAAA %lu\n", s.proto->b2SumW8(s));
+  assert(s.proto->b2SumW8(s) == 96);
 
-  t.proto->free(t);
+  t.proto->free(t); s.proto->free(s);
  }
 
 void test8()                                                                    //Tvalid
