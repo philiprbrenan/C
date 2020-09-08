@@ -214,7 +214,7 @@ struct ProtoTypes_ArenaRedBlackTreeNode {
     const ArenaRedBlackTreeNode right);                                         // Right child
   void  (*setTree)(                                                             // Set the other tree located by this node.
     const ArenaRedBlackTreeNode parent,                                         // Parent
-    const ArenaRedBlackTreeNode tree);                                          // Right child
+    const ArenaRedBlackTreeNode tree);                                          // Tree to be added to parent
   void  (*setUp)(                                                               // Set parent node of specified child node
     const ArenaRedBlackTreeNode child,                                          // Parent
     const ArenaRedBlackTreeNode parent);                                        // Child
