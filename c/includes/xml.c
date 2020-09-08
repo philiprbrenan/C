@@ -56,7 +56,7 @@ static XmlParse makeXmlParseFromFile                                            
  {XmlParse            x = newXmlParse(({struct XmlParse t = {proto: &ProtoTypes_XmlParse};   t;}));
   ArenaTree         t = x.tree       = makeArenaTree();                         // Parse tree,
   ArenaTree         e = x.errors     = makeArenaTree();                         // Errors list
-  ArenaRedBlackTree v = x.validation = makeArenaRedBlackTree();                 // Single Step Validation
+                        x.validation = makeArenaRedBlackTree();                 // Single Step Validation
   FileName          f = x.fileName   = fileName;                                // Name of file containing parse
   ReadOnlyBytes     b = x.data       = makeReadOnlyBytesFromFile(f);            // String to parse
   ArenaTreeNode     P = t.proto->root(t);                                               // Current parent node
@@ -420,10 +420,7 @@ void test2()                                                                    
       Xmlfe(hash, element)
        {Xmlfe(key, hash)
          {char * const name = key.proto->getTag(key);
-          if (strcmp(name, "text"))
-           {//say("%lu %s\n", i, key.proto->getTag(key));
-            //f.node.proto->add(f.node, key.proto->getTag(key));
-           }
+          if (strcmp(name, "text")) f.node.proto->add(f.node, key.proto->getTag(key));
          }
        }
       ++i;
@@ -434,7 +431,8 @@ void test2()                                                                    
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, 0};
+// {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test2, 0};
   run_tests("Xml", 1, tests);
   return 0;
  }
