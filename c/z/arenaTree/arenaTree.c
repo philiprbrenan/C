@@ -329,8 +329,9 @@ static void fromLetters_$_$String                                               
 
 static void free_$                                                              // Free an entire arena tree.
  (const $ tree)                                                                 // Arena tree to free
- {if (tree.arena->data) free(tree.arena->data);
-  free(tree.arena);
+ {$Arena *a = tree.arena;
+  if  (a->data) free(a->data);
+  free(a);
  }
 
 //D1 Navigation                                                                 // Navigate through a tree.
@@ -343,39 +344,14 @@ static int valid_$Node                                                          
 static  $Node parent_$Node_$Node                                                // Get the parent of a child
  (const $Node child)                                                            // Child
  {if (child ▷ isRoot) printStackBackTrace("The root node of a tree has no parent\n");
-  const $Content * const c = child ▷ content;
-  const $Delta p = c->parent;
-  const $      t = child.tree;
-  return       t ▷ nodeFromOffset(p.delta);
+  return child.tree ▷ nodeFromOffset(child ▷ content->parent.delta);
  }
 
 static  $Node first_$Node_$Node                                                 // Get the first child under a parent.
  (const $Node parent)                                                           // Parent
- {const $ t = parent.tree;
-  const $Content * const c = parent ▷ content;
-  return  t ▷ nodeFromOffset(c->first.delta);
+ {return  parent.tree ▷ nodeFromOffset(parent ▷ content->first.delta);
  }
-
-static  $Node last_$Node_$Node                                                  // Get the last child under a parent.
- (const $Node parent)                                                           // Parent
- {const $ t = parent.tree;
-  const $Content * const c = parent ▷ content;
-  return  t ▷ nodeFromOffset(c->last.delta);
- }
-
-static  $Node next_$Node_$Node                                                  // Get the next sibling of the specified child.
- (const $Node child)                                                            // Child
- {const $ t = child.tree;
-  const $Content * const c = child ▷ content;
-  return  t ▷ nodeFromOffset(c->next.delta);
- }
-
-static  $Node prev_$Node_$Node                                                  // Get the previous sibling of the specified child.
- (const $Node child)                                                            // Child
- {const $ t = child.tree;
-  const $Content * const c = child ▷ content;
-  return  t ▷ nodeFromOffset(c->prev.delta);
- }
+duplicate s/first/last/g s/first/next/g s/first/prev/g
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -442,12 +418,7 @@ static int isFirst_$Node                                                        
  {const $Node parent = child ▷ parent;
   return child ▷ equals(parent ▷ first);
  }
-
-static int isLast_$Node                                                         // Confirm a child is last under its parent
- (const $Node child)                                                            // Child
- {const $Node parent = child ▷ parent;
-  return child ▷ equals(parent ▷ last);
- }
+duplicate s/First/Last/,s/first/last/
 
 static int isEmpty_$Node                                                        // Confirm a node has no children.
  (const $Node node)                                                             // Node
@@ -468,7 +439,7 @@ static int isRoot_$Node                                                         
 
 //D1 Put                                                                        // Insert children into a tree.
 
-static  $Node putFirstLast_$Node_$Node_$Node                                    //P Put a child last under its parent
+static  $Node putFL_$Node_$Node_$Node                                           //P Put a child first or last under its parent
  (const int   first,                                                            // Put first if true, else last
   const $Node parent,                                                           // Parent
   const $Node child)                                                            // Child
@@ -496,27 +467,16 @@ static  $Node putTreeFirst_$Node_$Node                                          
   const $Node r = t ▷ root;
   return r ▷ putFirst(child);                                                   // Put the child first
  }
-
-static  $Node putTreeLast_$Node_$Node                                           // Put a child last in the tree containing the arena in which the child was allocated.
- (const $Node child)                                                            // Child
- {const $     t = child.tree;                                                   // Tree containing arena containing child
-  const $Node r = t ▷ root;
-  return r ▷ putLast(child);                                                    // Put the child first
- }
+duplicate s/First/Last/g,s/first/last/g,
 
 static  $Node putFirst_$Node_$Node_$Node                                        // Put a child first under its parent
  (const $Node parent,                                                           // Parent
   const $Node child)                                                            // Child
- {return putFirstLast_$Node_$Node_$Node(1, parent, child);                      // Put a child first under its parent
+ {return         putFL_$Node_$Node_$Node(1, parent, child);                     // Put a child first under its parent
  }
+duplicate s/First/Last/g,s/first/last/g,s/1/0/
 
-static  $Node putLast_$Node_$Node_$Node                                         // Put a child last under its parent
- (const $Node parent,                                                           // Parent
-  const $Node child)                                                            // Child
- {return putFirstLast_$Node_$Node_$Node(0, parent, child);                      // Put a child last under its parent
- }
-
-static  $Node putNextPrev_$Node_$Node_$Node                                     //P Put a child next or previous to the specified sibling
+static  $Node putNP_$Node_$Node_$Node                                           //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
   const $Node sibling,                                                          // Sibling
   const $Node child)                                                            // Child
@@ -548,14 +508,9 @@ static  $Node putNextPrev_$Node_$Node_$Node                                     
 static  $Node putNext_$Node_$Node_$Node                                         // Put a child next after the specified sibling
  (const $Node sibling,                                                          // Sibling
   const $Node child)                                                            // Child
- {return putNextPrev_$Node_$Node_$Node(1, sibling, child);                      // Put child next
+ {return        putNP_$Node_$Node_$Node(1, sibling, child);                     // Put child next
  }
-
-static  $Node putPrev_$Node_$Node_$Node                                         // Put a child before the specified sibling
- (const $Node sibling,                                                          // Sibling
-  const $Node child)                                                            // Child
- {return putNextPrev_$Node_$Node_$Node(0, sibling, child);                      // Put a child last under its parent
- }
+duplicate s/Next/Prev/g,s/next/previous/g,s/1/0/
 
 //D1 Traverse                                                                   // Traverse a tree.
 
