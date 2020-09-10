@@ -16,11 +16,15 @@ tree dependent from it with the same arena*/
 //D1 Structures                                                                 // Structures describing an Arena Red Black Tree.
 typedef char * ArenaRedBlackTreeString;                                                         // Arena Tree string
 
-#line 20 "/home/phil/c/z/arenaTree/arenaTree.c"
-typedef struct ArenaRedBlackTree                                                                //I Arena Tree.
+struct ArenaRedBlackTreeFound;                                                                  // Forward declare some of the structures used
+struct ArenaRedBlackTreeNode;
+
+typedef struct ArenaRedBlackTree                                                                // Arena Tree.
  {const struct ProtoTypes_ArenaRedBlackTree *proto;                                             // Methods associated with an arena tree
   struct ArenaRedBlackTreeArena *arena;                                                         // The arena for the arena tree
+  int (*different)(const struct ArenaRedBlackTreeFound *f, const struct ArenaRedBlackTreeNode *n);
  } ArenaRedBlackTree;
+
 #line 25 "/home/phil/c/z/arenaTree/arenaTree.c"
 typedef struct ArenaRedBlackTreeDelta                                                           //I The amount an item is offset within a tree.
  {unsigned int delta;
@@ -53,7 +57,7 @@ typedef struct ArenaRedBlackTreeDescription                                     
   const size_t root;                                                            // Offset to the root node
   const time_t created;                                                         // Time in seconds since the epoch when this tree was created
  } ArenaRedBlackTreeDescription;
-#line 19 "/home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree.c"
+#line 28 "/home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree.c"
 
 typedef struct ArenaRedBlackTreeContent                                                         // Content of a node in a red black tree
  {ArenaRedBlackTreeDelta left;                                                                  // Left child node offset
@@ -205,13 +209,13 @@ static void setData_ArenaRedBlackTreeNode_size                                  
   const size_t offset)                                                          // Value the data offset is to be set to
  {node.proto->content(node)->data.delta = offset;                                          // Record offset
  }
-#line 383 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 359 "/home/phil/c/z/arenaTree/arenaTree.c"
 static int equalsString_ArenaRedBlackTreeNode_string                                            //I Check that the key of a node
  (const ArenaRedBlackTreeNode        node,                                                      // Node
   const char * const key)                                                       // Key
  {return !strcmp(node.proto->key(node), key);
  }
-#line 53 "/home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree.c"
+#line 62 "/home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree.c"
 
 static void free_ArenaRedBlackTree                                                              // Free a tree in its entirety
  (const ArenaRedBlackTree tree)                                                                 // Tree
