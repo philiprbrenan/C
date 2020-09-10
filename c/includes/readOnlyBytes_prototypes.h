@@ -45,7 +45,7 @@ static int equalsString_ReadOnlyBytes_zeroString
  (const ReadOnlyBytes     r,
   const char *s);
 static int containsString_ReadOnlyBytes_zeroString
- (const ReadOnlyBytes     r,
+ (const ReadOnlyBytes            r,
   const char * const s);
 static size_t b2SumW8_ReadOnlyBytes
  (const ReadOnlyBytes r);
