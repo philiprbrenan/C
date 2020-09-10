@@ -15,7 +15,16 @@ tree dependent from it with the same arena*/
 //D1 Structures                                                                 // Structures describing an Arena Red Black Tree.
 typedef char * $String;                                                         // Arena Tree string
 
-include ../arenaTree/arenaTree.c :structs !$Content
+struct $Found;                                                                  // Forward declare some of the structures used
+struct $Node;
+
+typedef struct $                                                                // Arena Tree.
+ {const struct ProtoTypes_$ *proto;                                             // Methods associated with an arena tree
+  struct $Arena *arena;                                                         // The arena for the arena tree
+  int (*different)(const struct $Found *f, const struct $Node *n);
+ } $;
+
+include ../arenaTree/arenaTree.c :structs !$ !$Content
 
 typedef struct $Content                                                         // Content of a node in a red black tree
  {$Delta left;                                                                  // Left child node offset
