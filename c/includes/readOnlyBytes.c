@@ -156,8 +156,8 @@ static int equalsString_ReadOnlyBytes_zeroString                                
  }
 
 static int containsString_ReadOnlyBytes_zeroString                                          // Check that a read only byte sequence contains the specified zero terminated string
- (const ReadOnlyBytes     r,                                                                // Description of read only sequence of bytes
-  const char * const s)                                                                // Zero terminated string
+ (const ReadOnlyBytes            r,                                                         // Description of read only sequence of bytes
+  const char * const s)                                                         // Zero terminated string
  {return strstr(r.data, s) != NULL;
  }
 
