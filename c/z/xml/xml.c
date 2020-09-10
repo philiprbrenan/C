@@ -13,7 +13,7 @@
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
-char $tagName[256];                                                             // Tag name returned by getTag
+char $tagName[256];                                                             // Tag name returned by tag
 
 typedef struct $Parse                                                           // $ parse tree
  {const struct ProtoTypes_$Parse *proto;                                        // Prototypes for methods
@@ -21,6 +21,7 @@ typedef struct $Parse                                                           
   ReadOnlyBytes     data;                                                       // $ to be parsed
   ArenaTree         tree;                                                       // Parse tree created from $ being parsed
   ArenaTree         errors;                                                     // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is $Error
+  ArenaRedBlackTree validation;                                                 // Single Step Validation relationships
   ArenaRedBlackTree validation;                                                 // Single Step Validation relationships
  } $Parse;
 
@@ -87,14 +88,14 @@ static $Parse make$ParseFromFile                                                
    {const char * const o = strchr(p, $Open);                                    // Find next open
 
     if (o)                                                                      // Found next open
-     {if (o > p)                                                                // Save text preceding open if any and not all white space. We can recover the position of non whitespace from the offset saved in the data field of the node.
-       {int allBlank()
+     {if (o > p)
+       {int allBlank()                                                          // Check whether the text to be saved is all white space. We can recover the position of non whitespace from the offset saved in the data field of the node.
          {for(char * q = p; q < o; ++q) if (!isspace(*q)) return 0;
           return 1;
           }
 
-        if (!allBlank())                                                        // Save text
-         {ArenaTreeNode n = t ▷ noden(p, o - p);                                // Create node
+        if (!allBlank())                                                        // Save the  text as the key of the node
+         {const ArenaTreeNode n = t ▷ noden(p, o - p);                          // Create node
           P ▷ putLast(n);                                                       // Save node in parse tree
           P ▷ setData(p - textStart);                                           // Save text offset
          }
@@ -154,6 +155,8 @@ static $Parse make$ParseFromFile                                                
     *a = *b;
    }
 
+  b ▷ free;                                                                     // Free mapped input file as we can now reconstruct it from the parse tree
+
   return x;
  }
 
@@ -186,16 +189,28 @@ static char  * parse$TagName                                                    
   return strcpy($tagName, "text");                                              // In a text tag
  }
 
-static char * getTag_$Tag                                                       // Get the tag name from a node in the $ parse tree. The tag name is returned in a reused static buffer that the caller should not free.
+static char * tagName_$Tag                                                      // Get the tag name from a node in the $ parse tree. The tag name is returned in a reused static buffer that the caller should not free.
  (const $Tag tag)                                                               // Tag
  {const ArenaTreeNode n = tag ▷ node;                                           // Parse tree node defining tag
   return parse$TagName(n ▷ key);
  }
 
-static int tagNameIs_$Tag_string                                                // Check the name of a tag.
+static int tagNameEquals_$Tag_string                                            // Check the name of a tag.
  (const $Tag         tag,                                                       // Tag
   const char * const expected)                                                  // Expected name of tag
- {return !strcmp(tag ▷ getTag, expected);
+ {return !strcmp(tag ▷ tagName, expected);
+ }
+
+static char * tagString_$Tag                                                    //V Get the entire tag from a node in the $ parse tree.
+ (const $Tag tag)                                                               // Tag
+ {const ArenaTreeNode n = tag ▷ node;                                           // Parse tree node defining tag
+  return              n ▷ key;
+ }
+
+static int tagStringEquals_$Tag_string                                          // Check the string of a tag.
+ (const $Tag         tag,                                                       // Tag
+  const char * const expected)                                                  // Expected name of tag
+ {return !strcmp(tag ▷ tagString, expected);
  }
 
 //D1 Navigation                                                                 // Navigate through an $ parse tree.
@@ -210,7 +225,7 @@ static $Tag first_$Tag                                                          
 
 static $Tag last_$Tag                                                           // Return the last child tag under the specified parent tag.
  (const $Tag parent)                                                            // Parent tag
- {return new $Tag(xml: parent.xml, node: parent.node ▷ first);
+ {return new $Tag(xml: parent.xml, node: parent.node ▷ last);
  }
 
 static $Tag next_$Tag                                                           // Return the next sibling tag after this one.
@@ -234,7 +249,7 @@ static $Tag findFirstChild_$Tag_$Tag_string                                     
  (const $Tag   parent,                                                          // Parent
   const char * const key)                                                             // Name of the tag to find
  {$fe(child, parent)                                                            // Each child of the parent
-   {if (child ▷ tagNameIs(key)) return child;                                   // First child with matching tag
+   {if (child ▷ tagNameEquals(key)) return child;                                   // First child with matching tag
    }
   return new $Tag;
  }
@@ -253,7 +268,7 @@ static $Tag findFirstTag_$Tag_$Tag_string                                       
   $Tag T = new $Tag;                                                            // Tag found if any
 
   void find(const $Tag tag)                                                     // Check whether the name of the tag matches the specified key
-   {if (tag ▷ tagNameIs(key))
+   {if (tag ▷ tagNameEquals(key))
      {T = tag;                                                                  // Found
       longjmp(found, 1);
      }
@@ -280,6 +295,12 @@ static $Tag root_$Tag                                                           
  {return new $Tag(xml: tag.xml, node: tag.xml.tree ▷ root);
  }
 
+static int equals_$Tag_$Tag                                                     // Confirm that two tags refer to the same text location in the source document.
+ (const $Tag a,                                                                 // First tag
+  const $Tag b)                                                                 // Second tag
+ {return a.node.offset == b.node.offset;
+ }
+
 //D1 Traverse                                                                   // Traverse the $ parse tree.
 
 static void by_$Tag_sub                                                         // Traverse the $ parse tree rooted at the specified tag in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
@@ -298,7 +319,39 @@ static void by_$Parse_sub                                                       
   root ▷ by(function);
  }
 
-//D1 Print                                                                      // Print an $ parse tree starting at the specified tag.
+static  size_t countChildren_size_$Tag                                          // Count the number of child tags directly under a parent tag
+ (const $Tag parent)                                                            // Parent tag
+ {return parent.node ▷ countChildren;
+ }
+
+static  size_t count_size_$                                                     // Count the number of tags in an $ parse tree
+ (const $Parse x)                                                               // $ parse tree
+ {return x.tree ▷ count;
+ }
+
+
+//D1 Print                                                                        // Print an $ parse tree starting at the specified tag.
+//static ReadOnlyBytes print2_readOnlyBytes_$Tag                                  // Print the $ parse tree as a string starting at the specified tag.
+// (const $Tag tag)                                                               // Starting tag
+// {size_t  l = 0;                                                                // Length of output string
+//  void len(const $Tag parent)                                                   // Find the size of buffer we will need
+//   {l += 2 * strlen(parent ▷ tag);                                              // Parent tag
+//    $fe(child, parent) len(child);                                              // Each child
+//   }
+//
+//  $String p;
+//  void print(const $Node parent)                                                // Print the children of the specified parent
+//   {const $String k = parent ▷ key;
+//    p = stpcpy(p, k);
+//    $fe(child, parent) print(child);                                            // Each child
+//    *p = 0;                                                                     // End the string so far
+//   }
+//
+//  len(node);
+//  const $String s = p = alloc(l+1); *s = 0;
+//  print(node);
+//  return new ReadOnlyBytes(data:s, length: l, ReadOnlyBytesAllocator_malloc);
+// }
 
 static ReadOnlyBytes print_readOnlyBytes_$Tag                                   // Print the parse tree as a string starting at the specified tag.
  (const $Tag tag)                                                               // Starting tag
@@ -369,10 +422,18 @@ void test0()                                                                    
     assert(e ▷ printContains("Ignoring text at end"));
    }
 
-  $Tag b = x ▷ findFirstTag("b"), d = x ▷ findFirstTag("d");
+  $Tag b = x ▷ findFirstTag("b"); assert(b ▷ valid); assert(b ▷ tagNameEquals("b")); assert(!b ▷ tagNameEquals("B"));
+  $Tag c = x ▷ findFirstTag("c"); assert(c ▷ valid); assert(c ▷ tagNameEquals("c")); assert(!c ▷ tagNameEquals("C"));
+  $Tag d = x ▷ findFirstTag("d"); assert(d ▷ valid); assert(d ▷ tagNameEquals("d")); assert(!d ▷ tagNameEquals("D"));
+  $Tag e = d ▷ first;             assert(e ▷ valid); assert(e ▷ tagNameEquals("e")); assert(!e ▷ tagNameEquals("E"));
+  $Tag g = d ▷ last;              assert(g ▷ valid); assert(g ▷ tagNameEquals("g")); assert(!g ▷ tagNameEquals("G"));
+  $Tag f = g ▷ prev;              assert(f ▷ valid); assert(f ▷ tagNameEquals("f")); assert(!f ▷ tagNameEquals("F"));
+  $Tag h = x ▷ findFirstTag("h"); assert(h ▷ valid); assert(h ▷ tagNameEquals("h")); assert(!h ▷ tagNameEquals("H"));
+  $Tag i = x ▷ findFirstTag("i"); assert(i ▷ valid); assert(i ▷ tagNameEquals("i")); assert(!i ▷ tagNameEquals("I"));
 
-  assert( b ▷ valid);  assert(b ▷ tagNameIs("b"));
-  assert(!d ▷ valid);
+  assert(e ▷ equals(f ▷ prev));
+
+  $Tag B = b ▷ first;             assert(B ▷ valid); assert(B ▷ tagNameEquals("text")); assert(B ▷ tagStringEquals("bb"));
 
   x ▷ free;
  }
@@ -388,12 +449,12 @@ void test1()                                                                    
   assert( p ▷ valid);
   assert( p ▷ printContains("<p>DITA represents a fundamental shift"));
   assert(!p ▷ printContains("Define the markup that"));
-  assert( p ▷ tagNameIs("p"));
+  assert( p ▷ tagNameEquals("p"));
 
   assert( c ▷ valid);
   assert( c ▷ printContains("<p>DITA represents a fundamental shift"));
   assert( c ▷ printContains("Define the markup that"));
-  assert( c ▷ tagNameIs("conbody"));
+  assert( c ▷ tagNameEquals("conbody"));
 
   x ▷ free;
  }
@@ -402,26 +463,47 @@ void test2()                                                                    
  {char *file = "/home/phil/c/z/xml/validation/validation.xml";
   $Parse xml = make$ParseFromFile(makeFileName(file));
 
-  $Tag possibilities = xml ▷ findFirstChild("possibilities");
+  $Tag possibilities = xml ▷ findFirstChild("possibilities");                   // The possibilities possibilitiesArray assigns a number to each set of possible tags
   assert(possibilities ▷ valid);
 
-  $Tag array = possibilities ▷ findFirstTag("array");
-  assert(array ▷ valid);
+  $Tag possibilitiesArray = possibilities ▷ findFirstTag("array");
+  assert(possibilitiesArray ▷ valid);
+  const size_t possibilitiesCount = possibilitiesArray ▷ countChildren;
+  assert(possibilitiesCount == 383);
 
-  if (1)                                                                        // Possibilities array
+  $Tag first = xml ▷ findFirstTag("first");                                     // The tags that can come first under a specified parent tag
+  assert(first ▷ valid);
+
+  $Tag firstHash = first ▷ findFirstTag("hash");
+  assert(firstHash ▷ valid);
+  assert(firstHash ▷ countChildren == 374);
+
+  if (1)                                                                        // Possibilities possibilitiesArray
    {char buffer[256];
+    ArenaRedBlackTreeNode pa[possibilitiesCount];
     size_t i = 0;
-    $fe(element, array)
-     {sprintf(buffer, "%lu", i);
-      ArenaRedBlackTreeFound f = xml.validation ▷ add(buffer);
+
+    $fe(element, possibilitiesArray)                                            // Load possibilities
+     {sprintf(buffer, "%lu", i);                                                // Offset as string for use as a key
+      const ArenaRedBlackTreeFound f = xml.possibilities ▷ add(buffer);
+      pa[i] = f.node;
 
       $fe(hash, element)
        {$fe(key, hash)
-         {char * const name = key ▷ getTag;
-          if (strcmp(name, "text")) f.node ▷ add(key ▷ getTag);
+         {char * const name = key ▷ tagName;
+          if (strcmp(name, "text")) f.node ▷ add(key ▷ tagName);
          }
        }
       ++i;
+     }
+
+    $fe(key, firstHash)                                                         // Load first tags
+     {const $Tag value = key ▷ first;
+      const char * t = value ▷ tagString;
+      const size_t a = strtol(t, 0, 0);
+      say("AAAA %s %s %lu\n", key ▷ tagName, t, a);
+
+
      }
    }
 
@@ -429,8 +511,8 @@ void test2()                                                                    
  }
 
 int main(void)                                                                  // Run tests
-// {void (*tests[])(void) = {test0, test1, test2, 0};
- {void (*tests[])(void) = {test2, 0};
+ {void (*tests[])(void) = {test0, test1, test2, 0};
+// {void (*tests[])(void) = {test0, 0};
   run_tests("$", 1, tests);
   return 0;
  }
