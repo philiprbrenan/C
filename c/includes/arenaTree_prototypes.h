@@ -94,9 +94,9 @@ static  ArenaTreeNode first_ArenaTreeNode_ArenaTreeNode
 static  ArenaTreeNode last_ArenaTreeNode_ArenaTreeNode
  (const ArenaTreeNode parent);
 static  ArenaTreeNode next_ArenaTreeNode_ArenaTreeNode
- (const ArenaTreeNode child);
+ (const ArenaTreeNode parent);
 static  ArenaTreeNode prev_ArenaTreeNode_ArenaTreeNode
- (const ArenaTreeNode child);
+ (const ArenaTreeNode parent);
 static int equalsString_ArenaTreeNode_string
  (const ArenaTreeNode        node,
   const char * const key);
@@ -126,7 +126,7 @@ static int isOnlyChild_ArenaTreeNode
  (const ArenaTreeNode child);
 static int isRoot_ArenaTreeNode
  (const ArenaTreeNode node);
-static  ArenaTreeNode putFirstLast_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode
+static  ArenaTreeNode putFL_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode
  (const int   first,
   const ArenaTreeNode parent,
   const ArenaTreeNode child);
@@ -140,7 +140,7 @@ static  ArenaTreeNode putFirst_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode
 static  ArenaTreeNode putLast_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode
  (const ArenaTreeNode parent,
   const ArenaTreeNode child);
-static  ArenaTreeNode putNextPrev_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode
+static  ArenaTreeNode putNP_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode
  (const int   next,
   const ArenaTreeNode sibling,
   const ArenaTreeNode child);
@@ -334,12 +334,12 @@ struct ProtoTypes_ArenaTreeNode {
     const ArenaTreeNode node);                                                  // NodeContent
   ArenaTreeNode  (*last)(                                                       // Get the last child under a parent.
     const ArenaTreeNode parent);                                                // Parent
-  ArenaTreeNode  (*next)(                                                       // Get the next sibling of the specified child.
-    const ArenaTreeNode child);                                                 // Child
+  ArenaTreeNode  (*next)(                                                       // Get the next child under a parent.
+    const ArenaTreeNode parent);                                                // Parent
   ArenaTreeNode  (*parent)(                                                     // Get the parent of a child
     const ArenaTreeNode child);                                                 // Child
-  ArenaTreeNode  (*prev)(                                                       // Get the previous sibling of the specified child.
-    const ArenaTreeNode child);                                                 // Child
+  ArenaTreeNode  (*prev)(                                                       // Get the prev child under a parent.
+    const ArenaTreeNode parent);                                                // Parent
   int  (*printContains)(                                                        // Check the print of an ArenaTree starting at the specified tag contains the expected string.
     const ArenaTreeNode node,                                                   // Starting node
     const char * expected);                                                     // Expected string
@@ -362,7 +362,7 @@ struct ProtoTypes_ArenaTreeNode {
   ArenaTreeNode  (*putNext)(                                                    // Put a child next after the specified sibling
     const ArenaTreeNode sibling,                                                // Sibling
     const ArenaTreeNode child);                                                 // Child
-  ArenaTreeNode  (*putPrev)(                                                    // Put a child before the specified sibling
+  ArenaTreeNode  (*putPrev)(                                                    // Put a child previous after the specified sibling
     const ArenaTreeNode sibling,                                                // Sibling
     const ArenaTreeNode child);                                                 // Child
   ArenaTreeNode  (*putTreeFirst)(                                               // Put a child first in the tree containing the arena in which the child was allocated.
