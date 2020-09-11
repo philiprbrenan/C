@@ -50,7 +50,7 @@ jobs:
     - name: Run xml
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes
-        # valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/xml/xml
+         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/xml/xml
 
     - name: Run utilities
       run: |
