@@ -558,9 +558,7 @@ void test2()                                                                    
    }
 
   if (1)                                                                        // Check that 'dd' can follow child 'dt' under parent 'dlentry'.
-   {ArenaRedBlackTreeNode f = xml.next.proto->locate(xml.next, "dlentry");                     // Parent
-                   assert(f.proto->valid(f));
-    ArenaRedBlackTreeNode F = f.proto->locate(f, "dt");                                 // Child
+   {ArenaRedBlackTreeNode F = xml.next.proto->ll(xml.next, "dlentry", "dt", 0);                // Parent + child
                    assert(F.proto->valid(F));
     ArenaRedBlackTreeNode n = xml.possibilities.proto->nodeFromOffset(xml.possibilities, F.proto->getData(F));  // Next child possibilities under parent
     ArenaRedBlackTreeNode p = n.proto->locate(n, "dd");
