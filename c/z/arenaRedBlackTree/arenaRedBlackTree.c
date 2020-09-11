@@ -41,8 +41,6 @@ typedef struct $Found                                                           
   char *key;                                                                    // Key to find
   $     tree;                                                                   // Tree being processed
   $Node last;                                                                   // Last node found during find.
-  $Node added;                                                                  // Last node added during add if valid.
-  $Node node;                                                                   // Matching node.
   int   different;                                                              // The compare result on the last node found. If zero, the last node found was a match
  } $Found;
 
@@ -70,7 +68,7 @@ static  $Found make$Found                                                       
  (const $      tree,                                                            // The tree being searched
   char * const key)                                                             // The key to find
  {const $Node n = new $Node(tree: tree);                                        // Sample node within tree
-  return new$Found(tree: tree, key: key, last: n, added: n, node: n);
+  return new$Found(tree: tree, key: key, last: n);
  }
 
 //D1 Attributes                                                                 // Get and set the attributes of a node
@@ -158,16 +156,52 @@ static $Found find_$Found_$Found_$Node_string                                   
     const char * const k = p ▷ key;                                             // Key of current parent node
     const int i = found.different = strcmp(key, k);                             // Compare key sought with current key
 
-    if (!i)                                                                     // Found
-     {found.node = p;
-      return found;
-     }
+    if (!i) return found;                                                       // Found
 
     $Content * const c = p ▷ content;                                           // Continue
     p = tree ▷ nodeFromOffset(i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
    }
 
   return found;                                                                 // Found
+ }
+
+static $Node locate_$Node_string                                                // Locate the node with the specified key if it exists within the tree owned by the specified node.
+ (const $Node        node,                                                      // Node
+  const char * const key)                                                       // Key to find
+ {const $ tree = node.tree;                                                     // $ containing node
+  $Node p = node ▷ ownedTreeRoot;                                               // Root node
+  if (!p ▷ valid) return p;                                                     // Empty tree
+  for(;;)                                                                       // Search down through tree
+   {const char * const k = p ▷ key;                                             // Key of current parent node
+    const int i = strcmp(key, k);                                               // Compare key sought with current key
+
+    if (!i) return p;                                                           // Found
+
+    $Content * const c = p ▷ content;                                           // Continue
+    p = tree ▷ nodeFromOffset(i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
+    if (!p ▷ valid) return p;                                                   // Not found
+   }
+
+  printStackBackTrace("Should not be able to reach here\n");
+ }
+
+static $Node locate_$_string                                                    // Locate the node with the specified key if it exists within the specified tree.
+ (const $            tree,                                                      // $
+  const char * const key)                                                       // Key to find
+ {$Node p = tree ▷ root;                                                        // Root node
+  if (!p ▷ valid) return p;                                                     // Empty tree
+  for(;;)                                                                       // Search down through tree
+   {const char * const k = p ▷ key;                                             // Key of current parent node
+    const int i = strcmp(key, k);                                               // Compare key sought with current key
+
+    if (!i) return p;                                                           // Found
+
+    $Content * const c = p ▷ content;                                           // Continue
+    p = tree ▷ nodeFromOffset(i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
+    if (!p ▷ valid) return p;                                                   // Not found
+   }
+
+  printStackBackTrace("Should not be able to reach here\n");
  }
 
 static void check_$                                                             // Check the integrity of the tree
@@ -225,18 +259,21 @@ static $FindList find_$FindList_$                                               
 
 //D1 Add                                                                        // Add a new key if not already present in a base tree or a tree owned by a node.
 
-static $Found add_$Found_$Found_$Node_string                                    // Add a new key if not already present in the tree root at the specified node.
- ($Found f)                                                                     // Found status for the tree to which the specified key is being added.
- {if (!f.different) return f;                                                   // Key already present
+static $Node add_$Node_$Found_$Node_string                                      // Add a new key if not already present in the tree root at the specified node.
+ ($Found f,                                                                     // Found status for the key being added.
+  $Node owner)                                                                  // Invalid - the base tree. Valid - the node that owns the tree being added to.
+ {const $Node invalid = new $Node;                                              // Return an invalid  node if the node already exists in the tree
+  if (!f.different) return invalid;                                             // Key already present
 
   const char * const key = f.key;                                               // The key to add
   const $           tree = f.last.tree;                                         // The base tree
-  const $Node          n = f.added = f.node = tree ▷ node(key), p = f.last;     // Create new node under parent
+  const $Node          n = tree ▷ node(key), p = f.last;                        // Create new node under parent
 
   if (f.different < 0) p ▷ setLeft(n); else p ▷ setRight(n);                    // Insert node
 
   n ▷ setUp(p);                                                                 // Set parent of inserted node
 
+//?for(; p ▷ valid; p = p ▷ up)                                                 // Balance nodes along path back to root
   for($Node p = n; p ▷ valid; p = p ▷ up)                                       // Balance nodes along path back to root
    {size_t height($Node p)                                                      // Height of a node
      {return p ▷ valid ? p ▷ height : 0;
@@ -252,7 +289,8 @@ static $Found add_$Found_$Found_$Node_string                                    
      {const $Node q = p ▷ up, l = p ▷ left, r = p ▷ right, rl = d ? r : l;
 
       if (!q ▷ valid)                                                           // Balance the root node
-       {tree.arena->root = rl.offset;                                           // New root node
+       {if (!owner ▷ valid) tree.arena->root = rl.offset;                       // New root node in base tree
+        else owner ▷ setTree(rl);                                               // New root node in owned tree
         if (d)
          {p ▷ setRight   (r ▷ left);     r ▷ setLeft         (p);
           const $Node R = p ▷ right; if (R ▷ valid) R ▷ setUp(p);
@@ -293,33 +331,34 @@ static $Found add_$Found_$Found_$Node_string                                    
     else     setHeight(p);                                                      // Balanced: propogate height
    }
 
-  return f;
+  return n;                                                                     // The node added
  }
 
-static  $Found  add_$Found_$_string                                             // Add a new key if not already present in the specified base tree.
+static  $Node   add_$Node_$_string                                              // Add a new key if not already present in the specified base tree.
  (const $       tree,                                                           // The tree to search
   char  * const key)                                                            // The key to add
  {$Found f =    tree ▷ find(key);                                               // Try to find the key
 
   if (!f.last ▷ valid)                                                          // Empty tree
-   {const $Node root = f.added = f.node = tree ▷ node(key);                     // Add new key in a node
+   {const $Node root = tree ▷ node(key);                                        // Add new key in a node
     tree.arena->root = root.offset;                                             // Make the new node the root node
-    return f;                                                                   // Find status
+    return root;                                                                // Create node
    }
-  return f ▷ add;                                                               // Non empty tree - add the node below the root node
+  const $Node invalid = new $Node;
+  return f ▷ add(invalid);                                                      // Non empty tree - add the node below the root node
  }
 
-static  $Found  add_$Found_$Node_string                                         // Add a new key if not already present in the tree owned by the specified node.
+static  $Node   add_$Node_$Node_string                                          // Add a new key if not already present in the tree owned by the specified node.
  (const $Node   node,                                                           // The tree to search
   char  * const key)                                                            // The key to add
  {const $ tree  = node.tree;                                                    // Tree to search
   $Found f = node ▷ find(key);                                                  // Try to find the key
   if (!f.last ▷ valid)                                                          // Empty tree
-   {const $Node root = f.added = f.node = tree ▷ node(key);                     // Add new key in a node
+   {const $Node root = tree ▷ node(key);                                        // Add new key in a node
     node ▷ setTree(root);                                                       // Make the new node the root node
-    return f;                                                                   // Find status
+    return root;                                                                // Create node
    }
-  return f ▷ add;                                                               // Non empty tree - add the node below the root node
+  return f ▷ add(node);                                                         // Non empty tree - add the node below the root node
  }
 
 //D1 Traverse                                                                   // Traverse the $
@@ -393,6 +432,22 @@ static void print_$                                                             
  {const ReadOnlyBytes p = tree ▷ sprint;
   fprintf(stderr, "%s\n", p.data);
   p ▷ free;
+ }
+
+static size_t b2SumW8_size_$                                                    // Digest for a tree
+ (const $ tree)                                                                 // Tree
+ {const ReadOnlyBytes s = tree ▷ sprint;
+  const size_t d = s ▷ b2SumW8;
+  s ▷ free;
+  return d;
+ }
+
+static size_t b2SumW8_size_$Node                                                // Digest for the tree owned by a node
+ (const $Node node)                                                             // Owning node
+ {const ReadOnlyBytes s = node ▷ sprint;
+  const size_t d = s ▷ b2SumW8;
+  s ▷ free;
+  return d;
  }
 
 //D1 Tests                                                                      // Tests
@@ -471,8 +526,8 @@ void test2()                                                                    
    }
   assert(t ▷ count == N);
 
-  $Found f28 = t ▷ find("28");
-  $Node    r = t ▷ root, n27 = f28.node ▷ up, n25 = n27 ▷ up, n23 = n25 ▷ up;
+  $Node r = t ▷ root,
+      n28 = t ▷ locate("28"), n27 = n28 ▷ up, n25 = n27 ▷ up, n23 = n25 ▷ up;
 
   assert(r   ▷ equalsString("3"));
   assert(r   ▷ height == 11);
@@ -503,6 +558,8 @@ void test3()
 
 void test4()                                                                    //Theight //Tfind //Troot
  {$ t = make$();
+  $Node n = t ▷ locate("0"); assert(!n ▷ valid);                                // Empty tree
+
   char c[4]; memset(c, 0, sizeof(c));
 
   for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
@@ -523,21 +580,30 @@ void test4()                                                                    
  }
 
 void test5()
- {$ t = make$();
-  char c[4]; memset(c, 0, sizeof(c));
+ {size_t N = 20;
+  $ t = make$();
+  char c[16]; memset(c, 0, sizeof(c));
 
-  for  (size_t i = TEST_TREE_SIZE; i > 0; --i)
-   {for(size_t j = TEST_TREE_SIZE; j > 0; --j)
-     {c[0] = '0' + i - 1; c[1] = '0' + j - 1;
-      t ▷ add(c);
+  for(size_t i = 0; i < N; ++i)
+   {sprintf(c, "%lu", i);
+    const $Node n = t ▷ add(c), e = n ▷ locate("0"); assert(!e ▷ valid);        // Empty owned tree
+    for(size_t j = 0; j < N; ++j)
+     {sprintf(c, "%lu-%lu", i, j);
+      n ▷ add(c);
      }
    }
-  $Node r = t ▷ root;
-  assert(!strcmp(r ▷ key, "68"));
-  assert(r ▷ height == 11);
 
-  $Found f = t ▷ find("86");
-  assert(!f.different && ({$Node F = f.last; F ▷ height;}) == 2);
+  assert(t ▷ b2SumW8 == 9);
+  $Node n0 = t ▷ locate("0"); assert(n0 ▷ b2SumW8 ==  70);
+  $Node n1 = t ▷ locate("1"); assert(n1 ▷ b2SumW8 ==   9);
+  $Node n2 = t ▷ locate("2"); assert(n2 ▷ b2SumW8 ==  90);
+  $Node n3 = t ▷ locate("3"); assert(n3 ▷ b2SumW8 ==  56);
+  $Node n4 = t ▷ locate("4"); assert(n4 ▷ b2SumW8 == 250);
+  $Node n5 = t ▷ locate("5"); assert(n5 ▷ b2SumW8 == 172);
+  $Node n6 = t ▷ locate("6"); assert(n6 ▷ b2SumW8 == 212);
+  $Node n7 = t ▷ locate("7"); assert(n7 ▷ b2SumW8 == 115);
+  $Node n8 = t ▷ locate("8"); assert(n8 ▷ b2SumW8 == 200);
+  $Node n9 = t ▷ locate("9"); assert(n9 ▷ b2SumW8 ==  81);
 
   t ▷ free;
  }
@@ -556,8 +622,8 @@ void test6()
   assert(!strcmp(r ▷ key, "16"));
   assert(r ▷ height == 13);
 
-  $Found f = t ▷ find("86");
-  $Node  n76 = f.node ▷ up, n66 = n76 ▷ up, n56 = n66 ▷ up, n46 = n56 ▷ up;
+  $Node n86 = t ▷ locate("86"),
+        n76 = n86 ▷ up, n66 = n76 ▷ up, n56 = n66 ▷ up, n46 = n56 ▷ up;
   assert(n46 ▷ equalsString("46"));
 
   t ▷ free;
@@ -579,11 +645,9 @@ void test7()                                                                    
   $Node r = t ▷ root;
   assert(!strcmp(r ▷ key, "19"));
   assert(r ▷ height == 6);
-  ReadOnlyBytes s = t ▷ sprint;
-//say("AAAA %lu\n", s ▷ b2SumW8);
-  assert(s ▷ b2SumW8 == 96);
+  assert(t ▷ b2SumW8 == 223);
 
-  t ▷ free; s ▷ free;
+  t ▷ free;
  }
 
 void test8()                                                                    //Tvalid
@@ -595,9 +659,9 @@ void test9()
   char c[4]; memset(c, 0, sizeof(c));
   for  (size_t i = 0; i < 2; ++i)
    {sprintf(c, "%lu", i);
-    $Found f =  t ▷ add(c);
-    assert(f.node ▷ valid);
-    assert(f.node ▷ equalsString(c));
+    $Node n = t ▷ add(c);
+    assert(n ▷ valid);
+    assert(n ▷ equalsString(c));
    }
   assert(t ▷ count == 2);
   t ▷ check;
@@ -607,7 +671,7 @@ void test9()
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0, test1, test2, test3, test4, test5, test6, test7, test8, test9, 0};
-//void (*tests[])(void) = {test9, 0};
+//void (*tests[])(void) = {test5, 0};
   run_tests("$", repetitions, tests);
   return 0;
  }
