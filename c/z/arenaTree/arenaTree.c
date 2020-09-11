@@ -12,7 +12,7 @@
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
 exports structs $ $Delta $Node $Offset $Arena $Description
-exports arena   pointer_$_size allocate_offset_$_size pointer_$Offset saveString_$Offset_$_$String node_$Node_$_$String noden_$Node_$_$String nodeFromOffset_$_size content_$Node offset_$_size make$ new$Offset setData_$Node_size getData_size_$Node equals_int_$Node_$Node equalsString_$Node_string
+exports arena   pointer_$_size allocate_offset_$_size pointer_$Offset size_$ used_$ saveString_$Offset_$_$String node_$Node_$_$String noden_$Node_$_$String nodeFromOffset_$_size content_$Node offset_$_size make$ new$Offset setData_$Node_size getData_size_$Node equals_int_$Node_$Node equalsString_$Node_string
 
 typedef char * $String;                                                         // Arena Tree string
 
