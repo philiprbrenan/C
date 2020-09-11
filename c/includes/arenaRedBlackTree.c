@@ -388,7 +388,7 @@ static ArenaRedBlackTreeFound add_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_
 
   const char * const key = f.key;                                               // The key to add
   const ArenaRedBlackTree           tree = f.last.tree;                                         // The base tree
-  const ArenaRedBlackTreeNode          n = f.added = tree.proto->node(tree, key), p = f.last;              // Create new node under parent
+  const ArenaRedBlackTreeNode          n = f.added = f.node = tree.proto->node(tree, key), p = f.last;     // Create new node under parent
 
   if (f.different < 0) p.proto->setLeft(p, n); else p.proto->setRight(p, n);                    // Insert node
 
@@ -477,6 +477,19 @@ static  ArenaRedBlackTreeFound  add_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode
     return f;                                                                   // Find status
    }
   return f.proto->add(f);                                                               // Non empty tree - add the node below the root node
+ }
+
+//D1 Traverse                                                                   // Traverse the ArenaRedBlackTree
+
+static  size_t count_size_ArenaRedBlackTree                                                     // Count the number of nodes in a ArenaRedBlackTree
+ (const ArenaRedBlackTree tree)                                                                 // ArenaRedBlackTree
+ {size_t l = 0;
+  void count(const ArenaRedBlackTreeNode parent)                                                // Count the nodes in a sub tree
+   {if (!parent.proto->valid(parent)) return;
+    l++; count(parent.proto->left(parent)); count(parent.proto->right(parent));
+   }
+  count(tree.proto->root(tree));                                                           // Start at the root
+  return l;                                                                     // Return count
  }
 
 //D1 Print                                                                      // Print a tree.
@@ -605,13 +618,15 @@ void test1()
   t.proto->free(t);
  }
 
-void test2()
- {ArenaRedBlackTree t = makeArenaRedBlackTree();
+void test2()                                                                    //Tcount
+ {size_t N = 100;
+  ArenaRedBlackTree t = makeArenaRedBlackTree();
 
-  for  (int i = 0; i < 100; ++i)
-   {char c[256]; sprintf(c, "%d", i);
+  for(size_t i = 0; i < N; ++i)
+   {char c[256]; sprintf(c, "%lu", i);
     t.proto->add(t, c);
    }
+  assert(t.proto->count(t) == N);
 
   ArenaRedBlackTreeFound f28 = t.proto->find(t, "28");
   ArenaRedBlackTreeNode    r = t.proto->root(t), n27 = f28.node.proto->up(f28.node), n25 = n27.proto->up(n27), n23 = n25.proto->up(n25);
@@ -625,12 +640,14 @@ void test2()
  }
 
 void test3()
- {ArenaRedBlackTree t = makeArenaRedBlackTree();
+ {int N = 256*256;
+  ArenaRedBlackTree t = makeArenaRedBlackTree();
 
-  for  (int i = 0; i < 256*256; ++i)
+  for  (int i = 0; i < N; ++i)
    {char c[256]; sprintf(c, "%x", i);
     t.proto->add(t, c);
    }
+  assert(t.proto->count(t) == (size_t)N);
 
   t.proto->check(t);
 
@@ -730,10 +747,24 @@ void test8()                                                                    
  {ArenaRedBlackTreeNode n = newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {proto: &ProtoTypes_ArenaRedBlackTreeNode};   t;})); assert(!n.proto->valid(n));
  }
 
+void test9()
+ {ArenaRedBlackTree t = makeArenaRedBlackTree();
+  char c[4]; memset(c, 0, sizeof(c));
+  for  (size_t i = 0; i < 2; ++i)
+   {sprintf(c, "%lu", i);
+    ArenaRedBlackTreeFound f =  t.proto->add(t, c);
+    assert(f.node.proto->valid(f.node));
+    assert(f.node.proto->equalsString(f.node, c));
+   }
+  assert(t.proto->count(t) == 2);
+  t.proto->check(t);
+  t.proto->free(t);
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
-  void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7, test8, 0};
+  void (*tests[])(void) = {test0, test1, test2, test3, test4, test5, test6, test7, test8, test9, 0};
+//void (*tests[])(void) = {test9, 0};
   run_tests("ArenaRedBlackTree", repetitions, tests);
   return 0;
  }
