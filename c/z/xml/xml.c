@@ -498,14 +498,14 @@ void test2()                                                                    
 
     $fe(element, possibilitiesArray)                                            // Load possibilities
      {sprintf(buffer, "%lu", i);                                                // Offset as string for use as a key
-      ArenaRedBlackTreeFound f = xml.possibilities ▷ add(buffer);               // Possibility set number
-      assert(f.node ▷ valid);
-      pa[i] = f.node;                                                           // Cache node offset
+      ArenaRedBlackTreeNode f = xml.possibilities ▷ add(buffer);                // Possibility set number
+      assert(f ▷ valid);
+      pa[i] = f;                                                                // Cache node offset
 
       $fe(hash, element)                                                        // Array of hashes
        {$fe(hashKey, hash)                                                      // Keys in each hash
          {char * name = hashKey ▷ tagName;
-          if (strcmp(name, "text")) f.node ▷ add(hashKey ▷ tagName);
+          if (strcmp(name, "text")) f ▷ add(hashKey ▷ tagName);
          }
        }
       ++i;
@@ -515,23 +515,56 @@ void test2()                                                                    
      {$Tag value = firstTag ▷ first;                                            // Value tag
       char * t = value ▷ tagString;                                             // Possibility number as string
       size_t a = strtol(t, 0, 0);                                               // Possibility number
-      ArenaRedBlackTreeFound f = xml.first ▷ add(firstTag ▷ tagName);           // First possibilities for this tag
-      f.node ▷ setData(pa[a].offset);                                           // The first sub tag possibilities for this tag
+      ArenaRedBlackTreeNode f = xml.first ▷ add(firstTag ▷ tagName);            // First possibilities for this tag
+      f ▷ setData(pa[a].offset);                                                // The first sub tag possibilities for this tag
+     }
+
+    $fe(nextParentTag, nextParentHash)                                          // Load next parents
+     {char * tag = nextParentTag ▷ tagName;                                     // Next parent tag
+      ArenaRedBlackTreeNode f = xml.next ▷ add(tag);                            // Add next parent tag to next tree
+      assert(f ▷ valid);
+
+      $Tag nextChildHash = nextParentTag ▷ findFirstChild("hash");
+
+      $fe(nextChildTag, nextChildHash)                                          // Load next children
+       {$Tag value = nextChildTag ▷ first;                                      // Value tag
+        char * t = value ▷ tagString;                                           // Possibility number as string
+        size_t a = strtol(t, 0, 0);                                             // Possibility number
+        ArenaRedBlackTreeNode F = f ▷ add(nextChildTag ▷ tagName);              // Next possibilities for the child tag
+        assert(F ▷ valid);
+        F ▷ setData(pa[a].offset);                                              // The next possibilities for this child under this parent
+       }
      }
    }
-say("AAAA possibilities: %lu\n", xml.possibilities.arena->used);
-say("BBBB first        : %lu\n", xml.first.arena->used);
-say("CCCC next         : %lu\n", xml.next.arena->used);
+  assert(xml.possibilities ▷ b2SumW8 == 199);
+  assert(xml.first         ▷ b2SumW8 ==  19);
+  assert(xml.next          ▷ b2SumW8 ==  19);
 
-  if (1)
-  {ArenaRedBlackTreeFound f = xml.first ▷ find("appendices");
-                   assert(f.node ▷ valid);
-   assert(f.node ▷ getData == 4771);                                            // Offset to set of first possibilities for Appendices tag
-   ArenaRedBlackTreeNode  n = xml.possibilities ▷ nodeFromOffset(f.node ▷ getData); // Create a node representing the Appendices Tag first possibilities set
-   assert(n ▷ equalsString("8"));                                               // Appendices is tag 8
-   ArenaRedBlackTreeFound p = n ▷ find("appendix");                             // Check whether Appendix is in the set of first tag possibilities for Appendices
-   assert(p.node ▷ valid);                                                      // Appendix is in the first tag set of Appendices
-  }
+  assert(xml.possibilities ▷ used    == 192344);
+  assert(xml.first         ▷ used    ==  14128);
+  assert(xml.next          ▷ used    == 330562);
+
+
+  if (1)                                                                        // Check that 'appendix' is a possible first element of 'appendices'.
+   {ArenaRedBlackTreeNode f = xml.first ▷ locate("appendices");
+                   assert(f ▷ valid);
+                   assert(f ▷ getData == 4771);                                 // Offset to set of first possibilities for Appendices tag
+
+    ArenaRedBlackTreeNode  n = xml.possibilities ▷ nodeFromOffset(f ▷ getData); // Create a node representing the Appendices Tag first possibilities set
+    assert(n ▷ equalsString("8"));                                              // Appendices is tag 8
+    ArenaRedBlackTreeNode p = n ▷ locate("appendix");                           // Check whether Appendix is in the set of first tag possibilities for Appendices
+                   assert(p ▷ valid);                                           // Appendix is in the first tag set of Appendices
+   }
+
+  if (1)                                                                        // Check that 'dd' can follow child 'dt' under parent 'dlentry'.
+   {ArenaRedBlackTreeNode f = xml.next ▷ locate("dlentry");                     // Parent
+                   assert(f ▷ valid);
+    ArenaRedBlackTreeNode F = f ▷ locate("dt");                                 // Child
+                   assert(F ▷ valid);
+    ArenaRedBlackTreeNode n = xml.possibilities ▷ nodeFromOffset(F ▷ getData);  // Next child possibilities under parent
+    ArenaRedBlackTreeNode p = n ▷ locate("dd");
+                   assert(p ▷ valid);                                           // Check whether 'dd' can follow 'dt' under 'dlentry'
+   }
 
   xml ▷ free;
  }
