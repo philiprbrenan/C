@@ -93,9 +93,10 @@ static  ArenaRedBlackTreeFound find_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode
 static  ArenaRedBlackTreeFound find_ArenaRedBlackTreeFound_ArenaRedBlackTree_string
  (const ArenaRedBlackTree      tree,
   char * const key);
-static ArenaRedBlackTreeFindList find_ArenaRedBlackTreeFindList_ArenaRedBlackTree
- (ArenaRedBlackTreeFindList findList,
-  const ArenaRedBlackTree   tree);
+static ArenaRedBlackTreeNode ll_ArenaRedBlackTreeNode_ArenaRedBlackTree_strings
+ (const ArenaRedBlackTree   tree,
+  const char * const keys,
+  ...);
 static ArenaRedBlackTreeNode add_ArenaRedBlackTreeNode_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string
  (ArenaRedBlackTreeFound f,
   ArenaRedBlackTreeNode owner);
@@ -139,6 +140,10 @@ struct ProtoTypes_ArenaRedBlackTree {
     char * const key);                                                          // The key to find
   void  (*free)(                                                                // Free a tree in its entirety
     const ArenaRedBlackTree tree);                                              // Tree
+  ArenaRedBlackTreeNode  (*ll)(                                                 // Search through a series of owned trees starting at the base tree as directed by the specified keys
+    const ArenaRedBlackTree tree,                                               // The base tree to search from
+    const char * const keys,                                                    // Zero terminated list of keys
+     ...);                                                                      // Following keys
   ArenaRedBlackTreeNode  (*locate)(                                             // Locate the node with the specified key if it exists within the specified tree.
     const ArenaRedBlackTree tree,                                               // ArenaRedBlackTree
     const char * const key);                                                    // Key to find
@@ -174,16 +179,8 @@ struct ProtoTypes_ArenaRedBlackTree {
   size_t  (*used)(                                                              // Amount of space currently being used within the arena of a tree.
     const ArenaRedBlackTree tree);                                              // Tree
  } const ProtoTypes_ArenaRedBlackTree =
-{add_ArenaRedBlackTreeNode_ArenaRedBlackTree_string, allocate_offset_ArenaRedBlackTree_size, b2SumW8_size_ArenaRedBlackTree, check_ArenaRedBlackTree, count_size_ArenaRedBlackTree, find_ArenaRedBlackTreeFound_ArenaRedBlackTree_string, free_ArenaRedBlackTree, locate_ArenaRedBlackTree_string, makeArenaRedBlackTreeFound, nodeFromOffset_ArenaRedBlackTree_size, node_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, noden_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, offset_ArenaRedBlackTree_size, pointer_ArenaRedBlackTree_size, print_ArenaRedBlackTree, root_ArenaRedBlackTree, saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString, sprint_string_ArenaRedBlackTree, used_ArenaRedBlackTree};
+{add_ArenaRedBlackTreeNode_ArenaRedBlackTree_string, allocate_offset_ArenaRedBlackTree_size, b2SumW8_size_ArenaRedBlackTree, check_ArenaRedBlackTree, count_size_ArenaRedBlackTree, find_ArenaRedBlackTreeFound_ArenaRedBlackTree_string, free_ArenaRedBlackTree, ll_ArenaRedBlackTreeNode_ArenaRedBlackTree_strings, locate_ArenaRedBlackTree_string, makeArenaRedBlackTreeFound, nodeFromOffset_ArenaRedBlackTree_size, node_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, noden_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, offset_ArenaRedBlackTree_size, pointer_ArenaRedBlackTree_size, print_ArenaRedBlackTree, root_ArenaRedBlackTree, saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString, sprint_string_ArenaRedBlackTree, used_ArenaRedBlackTree};
 ArenaRedBlackTree newArenaRedBlackTree(ArenaRedBlackTree allocator) {return allocator;}
-
-struct ProtoTypes_ArenaRedBlackTreeFindList {
-  ArenaRedBlackTreeFindList  (*find)(                                           // Find a list of keys starting at the base tree. Return true if all the keys were found.
-    ArenaRedBlackTreeFindList findList,                                         // The list of keys to search for
-    const ArenaRedBlackTree tree);                                              // The base tree to search
- } const ProtoTypes_ArenaRedBlackTreeFindList =
-{find_ArenaRedBlackTreeFindList_ArenaRedBlackTree};
-ArenaRedBlackTreeFindList newArenaRedBlackTreeFindList(ArenaRedBlackTreeFindList allocator) {return allocator;}
 
 struct ProtoTypes_ArenaRedBlackTreeFound {
   ArenaRedBlackTreeNode  (*add)(                                                // Add a new key if not already present in the tree root at the specified node.
