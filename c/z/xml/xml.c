@@ -464,7 +464,8 @@ void test1()                                                                    
  }
 
 void test2()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
- {char *file = "/home/phil/c/z/xml/validation/validation.xml";
+ {char *file =       "/home/phil/c/z/xml/validation/validation.xml";
+  if (!develop()) strcpy(file,  "c/z/xml/validation/validation.xml");
   $Parse xml = make$ParseFromFile(makeFileName(file));
 
   $Tag possibilities = xml ▷ findFirstChild("possibilities");                   // The possibilities possibilitiesArray assigns a number to each set of possible tags
