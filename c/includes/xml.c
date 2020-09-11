@@ -22,8 +22,8 @@ typedef struct XmlParse                                                         
   ReadOnlyBytes     data;                                                       // Xml to be parsed
   ArenaTree         tree;                                                       // Parse tree created from Xml being parsed
   ArenaTree         errors;                                                     // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is XmlError
-  ArenaRedBlackTree validation;                                                 // Single Step Validation relationships
-  ArenaRedBlackTree validation;                                                 // Single Step Validation relationships
+  ArenaRedBlackTree possibilities;                                              // Possibility sets for each Dita tag
+  ArenaRedBlackTree first;                                                      // First set of possibilities for each Dita tag
  } XmlParse;
 
 typedef struct XmlTag                                                             // Tag in an Xml parse tree
@@ -55,11 +55,12 @@ static ArenaTreeNode node_XmlTag                                                
 static XmlParse makeXmlParseFromFile                                                // Parse Xml held in a file
  (FileName            fileName)                                                 // Name of file holding Xml
  {XmlParse              x = newXmlParse(({struct XmlParse t = {proto: &ProtoTypes_XmlParse};   t;}));
-  const ArenaTree     t = x.tree     = makeArenaTree();                         // Parse tree,
-  const ArenaTree     e = x.errors   = makeArenaTree();                         // Errors list
-                      x.validation   = makeArenaRedBlackTree();                 // Single Step Validation
-  const FileName      f = x.fileName = fileName;                                // Name of file containing parse
-  const ReadOnlyBytes b = x.data     = makeReadOnlyBytesFromFile(f);            // String to parse
+  const ArenaTree     t = x.tree      = makeArenaTree();                        // Parse tree,
+  const ArenaTree     e = x.errors    = makeArenaTree();                        // Errors list
+                      x.possibilities = makeArenaRedBlackTree();                // Single Step Validation
+                      x.first         = makeArenaRedBlackTree();                // First set of possibilities for each tag
+  const FileName      f = x.fileName  = fileName;                               // Name of file containing parse
+  const ReadOnlyBytes b = x.data      = makeReadOnlyBytesFromFile(f);           // String to parse
   ArenaTreeNode       P = t.proto->root(t);                                             // Current parent node
 
   XmlParse error                                                                  // Report an error
@@ -469,7 +470,7 @@ void test2()                                                                    
 
   XmlTag possibilitiesArray = possibilities.proto->findFirstTag(possibilities, "array");
   assert(possibilitiesArray.proto->valid(possibilitiesArray));
-  const size_t possibilitiesCount = possibilitiesArray.proto->countChildren(possibilitiesArray);
+  size_t possibilitiesCount = possibilitiesArray.proto->countChildren(possibilitiesArray);
   assert(possibilitiesCount == 383);
 
   XmlTag first = xml.proto->findFirstTag(xml, "first");                                     // The tags that can come first under a specified parent tag
@@ -482,31 +483,42 @@ void test2()                                                                    
   if (1)                                                                        // Possibilities possibilitiesArray
    {char buffer[256];
     ArenaRedBlackTreeNode pa[possibilitiesCount];
+    assert(xml.possibilities.proto->count(xml.possibilities) == 0);
     size_t i = 0;
 
     Xmlfe(element, possibilitiesArray)                                            // Load possibilities
      {sprintf(buffer, "%lu", i);                                                // Offset as string for use as a key
-      const ArenaRedBlackTreeFound f = xml.possibilities.proto->add(xml.possibilities, buffer);
-      pa[i] = f.node;
+      ArenaRedBlackTreeFound f = xml.possibilities.proto->add(xml.possibilities, buffer);               // Possibility set number
+      assert(f.node.proto->valid(f.node));
+      pa[i] = f.node;                                                           // Cache node offset
 
-      Xmlfe(hash, element)
-       {Xmlfe(key, hash)
-         {char * const name = key.proto->tagName(key);
-          if (strcmp(name, "text")) f.node.proto->add(f.node, key.proto->tagName(key));
+      Xmlfe(hash, element)                                                        // Array of hashes
+       {Xmlfe(hashKey, hash)                                                      // Keys in each hash
+         {char * name = hashKey.proto->tagName(hashKey);
+          if (strcmp(name, "text")) f.node.proto->add(f.node, hashKey.proto->tagName(hashKey));
          }
        }
       ++i;
      }
 
-    Xmlfe(key, firstHash)                                                         // Load first tags
-     {const XmlTag value = key.proto->first(key);
-      const char * t = value.proto->tagString(value);
-      const size_t a = strtol(t, 0, 0);
-      say("AAAA %s %s %lu\n", key.proto->tagName(key), t, a);
-
-
+    Xmlfe(tag, firstHash)                                                         // Load first tags
+     {XmlTag value = tag.proto->first(tag);                                                 // Value tag
+      char * t = value.proto->tagString(value);                                             // Possibility number as string
+      size_t a = strtol(t, 0, 0);                                               // Possibility number
+      ArenaRedBlackTreeFound f = xml.first.proto->add(xml.first, tag.proto->tagName(tag));                // First possibilities for this tag
+      f.node.proto->setData(f.node, pa[a].offset);                                           // The first sub tag possibilities for this tag
      }
    }
+
+  if (1)
+  {ArenaRedBlackTreeFound f = xml.first.proto->find(xml.first, "appendices");
+                   assert(f.node.proto->valid(f.node));
+   assert(f.node.proto->getData(f.node) == 4771);                                            // Offset to set of first possibilities for Appendices tag
+   ArenaRedBlackTreeNode  n = xml.possibilities.proto->nodeFromOffset(xml.possibilities, f.node.proto->getData(f.node)); // Create a node representing the Appendices Tag first possibilities set
+   assert(n.proto->equalsString(n, "8"));                                               // Appendices is tag 8
+   ArenaRedBlackTreeFound p = n.proto->find(n, "appendix");                             // Check whether Appendix is in the set of first tag possibilities for Appendices
+   assert(p.node.proto->valid(p.node));                                                      // Appendix is in the first tag set of Appendices
+  }
 
   xml.proto->free(xml);
  }
