@@ -98,8 +98,6 @@ if ($run and $file =~ m(((make|run)WithPerl).pl\Z)s)                            
   confess "Installed";
  }
 
-#say STDERR qx(ssh-add -qt 1000000 /home/phil/.ssh/id_rsa 2>/dev/null);          # Add identity
-
 if ($doc)                                                                       # Documentation
  {if ($file =~ m((pl|pm)\Z)s)                                                   # Document perl
    {say STDERR "Document perl $file";
@@ -212,7 +210,9 @@ if ($perl)                                                                      
    }
  }
 elsif ($c)                                                                      # GCC
- {my $lp = '-L/usr/lib/x86_64-linux-gnu/libperl.so.5.26 ';
+ {say STDERR "AAAA MakeWith Perl at 2020.09.11 08:14:08";
+
+  my $lp = '-L/usr/lib/x86_64-linux-gnu/libperl.so.5.26 ';
   my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8);
 
 #  for my $lib(qw(gtk+-3.0 glib-2.0))
