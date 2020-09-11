@@ -499,14 +499,14 @@ void test2()                                                                    
 
     Xmlfe(element, possibilitiesArray)                                            // Load possibilities
      {sprintf(buffer, "%lu", i);                                                // Offset as string for use as a key
-      ArenaRedBlackTreeFound f = xml.possibilities.proto->add(xml.possibilities, buffer);               // Possibility set number
-      assert(f.node.proto->valid(f.node));
-      pa[i] = f.node;                                                           // Cache node offset
+      ArenaRedBlackTreeNode f = xml.possibilities.proto->add(xml.possibilities, buffer);                // Possibility set number
+      assert(f.proto->valid(f));
+      pa[i] = f;                                                                // Cache node offset
 
       Xmlfe(hash, element)                                                        // Array of hashes
        {Xmlfe(hashKey, hash)                                                      // Keys in each hash
          {char * name = hashKey.proto->tagName(hashKey);
-          if (strcmp(name, "text")) f.node.proto->add(f.node, hashKey.proto->tagName(hashKey));
+          if (strcmp(name, "text")) f.proto->add(f, hashKey.proto->tagName(hashKey));
          }
        }
       ++i;
@@ -516,23 +516,56 @@ void test2()                                                                    
      {XmlTag value = firstTag.proto->first(firstTag);                                            // Value tag
       char * t = value.proto->tagString(value);                                             // Possibility number as string
       size_t a = strtol(t, 0, 0);                                               // Possibility number
-      ArenaRedBlackTreeFound f = xml.first.proto->add(xml.first, firstTag.proto->tagName(firstTag));           // First possibilities for this tag
-      f.node.proto->setData(f.node, pa[a].offset);                                           // The first sub tag possibilities for this tag
+      ArenaRedBlackTreeNode f = xml.first.proto->add(xml.first, firstTag.proto->tagName(firstTag));            // First possibilities for this tag
+      f.proto->setData(f, pa[a].offset);                                                // The first sub tag possibilities for this tag
+     }
+
+    Xmlfe(nextParentTag, nextParentHash)                                          // Load next parents
+     {char * tag = nextParentTag.proto->tagName(nextParentTag);                                     // Next parent tag
+      ArenaRedBlackTreeNode f = xml.next.proto->add(xml.next, tag);                            // Add next parent tag to next tree
+      assert(f.proto->valid(f));
+
+      XmlTag nextChildHash = nextParentTag.proto->findFirstChild(nextParentTag, "hash");
+
+      Xmlfe(nextChildTag, nextChildHash)                                          // Load next children
+       {XmlTag value = nextChildTag.proto->first(nextChildTag);                                      // Value tag
+        char * t = value.proto->tagString(value);                                           // Possibility number as string
+        size_t a = strtol(t, 0, 0);                                             // Possibility number
+        ArenaRedBlackTreeNode F = f.proto->add(f, nextChildTag.proto->tagName(nextChildTag));              // Next possibilities for the child tag
+        assert(F.proto->valid(F));
+        F.proto->setData(F, pa[a].offset);                                              // The next possibilities for this child under this parent
+       }
      }
    }
-say("AAAA possibilities: %lu\n", xml.possibilities.arena->used);
-say("BBBB first        : %lu\n", xml.first.arena->used);
-say("CCCC next         : %lu\n", xml.next.arena->used);
+  assert(xml.possibilities.proto->b2SumW8(xml.possibilities) == 199);
+  assert(xml.first.proto->b2SumW8(xml.first) ==  19);
+  assert(xml.next.proto->b2SumW8(xml.next) ==  19);
 
-  if (1)
-  {ArenaRedBlackTreeFound f = xml.first.proto->find(xml.first, "appendices");
-                   assert(f.node.proto->valid(f.node));
-   assert(f.node.proto->getData(f.node) == 4771);                                            // Offset to set of first possibilities for Appendices tag
-   ArenaRedBlackTreeNode  n = xml.possibilities.proto->nodeFromOffset(xml.possibilities, f.node.proto->getData(f.node)); // Create a node representing the Appendices Tag first possibilities set
-   assert(n.proto->equalsString(n, "8"));                                               // Appendices is tag 8
-   ArenaRedBlackTreeFound p = n.proto->find(n, "appendix");                             // Check whether Appendix is in the set of first tag possibilities for Appendices
-   assert(p.node.proto->valid(p.node));                                                      // Appendix is in the first tag set of Appendices
-  }
+  assert(xml.possibilities.proto->used(xml.possibilities)    == 192344);
+  assert(xml.first.proto->used(xml.first)    ==  14128);
+  assert(xml.next.proto->used(xml.next)    == 330562);
+
+
+  if (1)                                                                        // Check that 'appendix' is a possible first element of 'appendices'.
+   {ArenaRedBlackTreeNode f = xml.first.proto->locate(xml.first, "appendices");
+                   assert(f.proto->valid(f));
+                   assert(f.proto->getData(f) == 4771);                                 // Offset to set of first possibilities for Appendices tag
+
+    ArenaRedBlackTreeNode  n = xml.possibilities.proto->nodeFromOffset(xml.possibilities, f.proto->getData(f)); // Create a node representing the Appendices Tag first possibilities set
+    assert(n.proto->equalsString(n, "8"));                                              // Appendices is tag 8
+    ArenaRedBlackTreeNode p = n.proto->locate(n, "appendix");                           // Check whether Appendix is in the set of first tag possibilities for Appendices
+                   assert(p.proto->valid(p));                                           // Appendix is in the first tag set of Appendices
+   }
+
+  if (1)                                                                        // Check that 'dd' can follow child 'dt' under parent 'dlentry'.
+   {ArenaRedBlackTreeNode f = xml.next.proto->locate(xml.next, "dlentry");                     // Parent
+                   assert(f.proto->valid(f));
+    ArenaRedBlackTreeNode F = f.proto->locate(f, "dt");                                 // Child
+                   assert(F.proto->valid(F));
+    ArenaRedBlackTreeNode n = xml.possibilities.proto->nodeFromOffset(xml.possibilities, F.proto->getData(F));  // Next child possibilities under parent
+    ArenaRedBlackTreeNode p = n.proto->locate(n, "dd");
+                   assert(p.proto->valid(p));                                           // Check whether 'dd' can follow 'dt' under 'dlentry'
+   }
 
   xml.proto->free(xml);
  }
