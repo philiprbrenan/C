@@ -21,8 +21,8 @@ typedef struct $Parse                                                           
   ReadOnlyBytes     data;                                                       // $ to be parsed
   ArenaTree         tree;                                                       // Parse tree created from $ being parsed
   ArenaTree         errors;                                                     // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is $Error
-  ArenaRedBlackTree validation;                                                 // Single Step Validation relationships
-  ArenaRedBlackTree validation;                                                 // Single Step Validation relationships
+  ArenaRedBlackTree possibilities;                                              // Possibility sets for each Dita tag
+  ArenaRedBlackTree first;                                                      // First set of possibilities for each Dita tag
  } $Parse;
 
 typedef struct $Tag                                                             // Tag in an $ parse tree
@@ -54,11 +54,12 @@ static ArenaTreeNode node_$Tag                                                  
 static $Parse make$ParseFromFile                                                // Parse $ held in a file
  (FileName            fileName)                                                 // Name of file holding $
  {$Parse              x = new$Parse;
-  const ArenaTree     t = x.tree     = makeArenaTree();                         // Parse tree,
-  const ArenaTree     e = x.errors   = makeArenaTree();                         // Errors list
-                      x.validation   = makeArenaRedBlackTree();                 // Single Step Validation
-  const FileName      f = x.fileName = fileName;                                // Name of file containing parse
-  const ReadOnlyBytes b = x.data     = makeReadOnlyBytesFromFile(f);            // String to parse
+  const ArenaTree     t = x.tree      = makeArenaTree();                        // Parse tree,
+  const ArenaTree     e = x.errors    = makeArenaTree();                        // Errors list
+                      x.possibilities = makeArenaRedBlackTree();                // Single Step Validation
+                      x.first         = makeArenaRedBlackTree();                // First set of possibilities for each tag
+  const FileName      f = x.fileName  = fileName;                               // Name of file containing parse
+  const ReadOnlyBytes b = x.data      = makeReadOnlyBytesFromFile(f);           // String to parse
   ArenaTreeNode       P = t ▷ root;                                             // Current parent node
 
   $Parse error                                                                  // Report an error
@@ -468,7 +469,7 @@ void test2()                                                                    
 
   $Tag possibilitiesArray = possibilities ▷ findFirstTag("array");
   assert(possibilitiesArray ▷ valid);
-  const size_t possibilitiesCount = possibilitiesArray ▷ countChildren;
+  size_t possibilitiesCount = possibilitiesArray ▷ countChildren;
   assert(possibilitiesCount == 383);
 
   $Tag first = xml ▷ findFirstTag("first");                                     // The tags that can come first under a specified parent tag
@@ -481,31 +482,42 @@ void test2()                                                                    
   if (1)                                                                        // Possibilities possibilitiesArray
    {char buffer[256];
     ArenaRedBlackTreeNode pa[possibilitiesCount];
+    assert(xml.possibilities ▷ count == 0);
     size_t i = 0;
 
     $fe(element, possibilitiesArray)                                            // Load possibilities
      {sprintf(buffer, "%lu", i);                                                // Offset as string for use as a key
-      const ArenaRedBlackTreeFound f = xml.possibilities ▷ add(buffer);
-      pa[i] = f.node;
+      ArenaRedBlackTreeFound f = xml.possibilities ▷ add(buffer);               // Possibility set number
+      assert(f.node ▷ valid);
+      pa[i] = f.node;                                                           // Cache node offset
 
-      $fe(hash, element)
-       {$fe(key, hash)
-         {char * const name = key ▷ tagName;
-          if (strcmp(name, "text")) f.node ▷ add(key ▷ tagName);
+      $fe(hash, element)                                                        // Array of hashes
+       {$fe(hashKey, hash)                                                      // Keys in each hash
+         {char * name = hashKey ▷ tagName;
+          if (strcmp(name, "text")) f.node ▷ add(hashKey ▷ tagName);
          }
        }
       ++i;
      }
 
-    $fe(key, firstHash)                                                         // Load first tags
-     {const $Tag value = key ▷ first;
-      const char * t = value ▷ tagString;
-      const size_t a = strtol(t, 0, 0);
-      say("AAAA %s %s %lu\n", key ▷ tagName, t, a);
-
-
+    $fe(tag, firstHash)                                                         // Load first tags
+     {$Tag value = tag ▷ first;                                                 // Value tag
+      char * t = value ▷ tagString;                                             // Possibility number as string
+      size_t a = strtol(t, 0, 0);                                               // Possibility number
+      ArenaRedBlackTreeFound f = xml.first ▷ add(tag ▷ tagName);                // First possibilities for this tag
+      f.node ▷ setData(pa[a].offset);                                           // The first sub tag possibilities for this tag
      }
    }
+
+  if (1)
+  {ArenaRedBlackTreeFound f = xml.first ▷ find("appendices");
+                   assert(f.node ▷ valid);
+   assert(f.node ▷ getData == 4771);                                            // Offset to set of first possibilities for Appendices tag
+   ArenaRedBlackTreeNode  n = xml.possibilities ▷ nodeFromOffset(f.node ▷ getData); // Create a node representing the Appendices Tag first possibilities set
+   assert(n ▷ equalsString("8"));                                               // Appendices is tag 8
+   ArenaRedBlackTreeFound p = n ▷ find("appendix");                             // Check whether Appendix is in the set of first tag possibilities for Appendices
+   assert(p.node ▷ valid);                                                      // Appendix is in the first tag set of Appendices
+  }
 
   xml ▷ free;
  }
