@@ -74,8 +74,6 @@ typedef struct ArenaRedBlackTreeFound                                           
   char *key;                                                                    // Key to find
   ArenaRedBlackTree     tree;                                                                   // Tree being processed
   ArenaRedBlackTreeNode last;                                                                   // Last node found during find.
-  ArenaRedBlackTreeNode added;                                                                  // Last node added during add if valid.
-  ArenaRedBlackTreeNode node;                                                                   // Matching node.
   int   different;                                                              // The compare result on the last node found. If zero, the last node found was a match
  } ArenaRedBlackTreeFound;
 
@@ -128,6 +126,11 @@ static int equals_int_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode               
  (const ArenaRedBlackTreeNode a,                                                                // First offset
   const ArenaRedBlackTreeNode b)                                                                // Second offset
  {return a.tree.arena == b.tree.arena && a.offset == b.offset;
+ }
+#line 164 "/home/phil/c/z/arenaTree/arenaTree.c"
+static size_t used_ArenaRedBlackTree                                                            //I Amount of space currently being used within the arena of a tree.
+ (const ArenaRedBlackTree tree)                                                                 // Tree
+ {return tree.arena->used;
  }
 #line 169 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeOffset  offset_ArenaRedBlackTree_size                                                   //IP Create an offset to locate an item within the tree.
@@ -215,7 +218,7 @@ static int equalsString_ArenaRedBlackTreeNode_string                            
   const char * const key)                                                       // Key
  {return !strcmp(node.proto->key(node), key);
  }
-#line 62 "/home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree.c"
+#line 60 "/home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree.c"
 
 static void free_ArenaRedBlackTree                                                              // Free a tree in its entirety
  (const ArenaRedBlackTree tree)                                                                 // Tree
@@ -227,7 +230,7 @@ static  ArenaRedBlackTreeFound makeArenaRedBlackTreeFound                       
  (const ArenaRedBlackTree      tree,                                                            // The tree being searched
   char * const key)                                                             // The key to find
  {const ArenaRedBlackTreeNode n = newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {tree: tree, proto: &ProtoTypes_ArenaRedBlackTreeNode}; t;}));                                        // Sample node within tree
-  return newArenaRedBlackTreeFound(({struct ArenaRedBlackTreeFound t = {tree: tree, key: key, last: n, added: n, node: n, proto: &ProtoTypes_ArenaRedBlackTreeFound}; t;}));
+  return newArenaRedBlackTreeFound(({struct ArenaRedBlackTreeFound t = {tree: tree, key: key, last: n, proto: &ProtoTypes_ArenaRedBlackTreeFound}; t;}));
  }
 
 //D1 Attributes                                                                 // Get and set the attributes of a node
@@ -315,16 +318,52 @@ static ArenaRedBlackTreeFound find_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound
     const char * const k = p.proto->key(p);                                             // Key of current parent node
     const int i = found.different = strcmp(key, k);                             // Compare key sought with current key
 
-    if (!i)                                                                     // Found
-     {found.node = p;
-      return found;
-     }
+    if (!i) return found;                                                       // Found
 
     ArenaRedBlackTreeContent * const c = p.proto->content(p);                                           // Continue
     p = tree.proto->nodeFromOffset(tree, i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
    }
 
   return found;                                                                 // Found
+ }
+
+static ArenaRedBlackTreeNode locate_ArenaRedBlackTreeNode_string                                                // Locate the node with the specified key if it exists within the tree owned by the specified node.
+ (const ArenaRedBlackTreeNode        node,                                                      // Node
+  const char * const key)                                                       // Key to find
+ {const ArenaRedBlackTree tree = node.tree;                                                     // ArenaRedBlackTree containing node
+  ArenaRedBlackTreeNode p = node.proto->ownedTreeRoot(node);                                               // Root node
+  if (!p.proto->valid(p)) return p;                                                     // Empty tree
+  for(;;)                                                                       // Search down through tree
+   {const char * const k = p.proto->key(p);                                             // Key of current parent node
+    const int i = strcmp(key, k);                                               // Compare key sought with current key
+
+    if (!i) return p;                                                           // Found
+
+    ArenaRedBlackTreeContent * const c = p.proto->content(p);                                           // Continue
+    p = tree.proto->nodeFromOffset(tree, i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
+    if (!p.proto->valid(p)) return p;                                                   // Not found
+   }
+
+  printStackBackTrace("Should not be able to reach here\n");
+ }
+
+static ArenaRedBlackTreeNode locate_ArenaRedBlackTree_string                                                    // Locate the node with the specified key if it exists within the specified tree.
+ (const ArenaRedBlackTree            tree,                                                      // ArenaRedBlackTree
+  const char * const key)                                                       // Key to find
+ {ArenaRedBlackTreeNode p = tree.proto->root(tree);                                                        // Root node
+  if (!p.proto->valid(p)) return p;                                                     // Empty tree
+  for(;;)                                                                       // Search down through tree
+   {const char * const k = p.proto->key(p);                                             // Key of current parent node
+    const int i = strcmp(key, k);                                               // Compare key sought with current key
+
+    if (!i) return p;                                                           // Found
+
+    ArenaRedBlackTreeContent * const c = p.proto->content(p);                                           // Continue
+    p = tree.proto->nodeFromOffset(tree, i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
+    if (!p.proto->valid(p)) return p;                                                   // Not found
+   }
+
+  printStackBackTrace("Should not be able to reach here\n");
  }
 
 static void check_ArenaRedBlackTree                                                             // Check the integrity of the tree
@@ -382,18 +421,21 @@ static ArenaRedBlackTreeFindList find_ArenaRedBlackTreeFindList_ArenaRedBlackTre
 
 //D1 Add                                                                        // Add a new key if not already present in a base tree or a tree owned by a node.
 
-static ArenaRedBlackTreeFound add_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string                                    // Add a new key if not already present in the tree root at the specified node.
- (ArenaRedBlackTreeFound f)                                                                     // Found status for the tree to which the specified key is being added.
- {if (!f.different) return f;                                                   // Key already present
+static ArenaRedBlackTreeNode add_ArenaRedBlackTreeNode_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string                                      // Add a new key if not already present in the tree root at the specified node.
+ (ArenaRedBlackTreeFound f,                                                                     // Found status for the key being added.
+  ArenaRedBlackTreeNode owner)                                                                  // Invalid - the base tree. Valid - the node that owns the tree being added to.
+ {const ArenaRedBlackTreeNode invalid = newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {proto: &ProtoTypes_ArenaRedBlackTreeNode};   t;}));                                              // Return an invalid  node if the node already exists in the tree
+  if (!f.different) return invalid;                                             // Key already present
 
   const char * const key = f.key;                                               // The key to add
   const ArenaRedBlackTree           tree = f.last.tree;                                         // The base tree
-  const ArenaRedBlackTreeNode          n = f.added = f.node = tree.proto->node(tree, key), p = f.last;     // Create new node under parent
+  const ArenaRedBlackTreeNode          n = tree.proto->node(tree, key), p = f.last;                        // Create new node under parent
 
   if (f.different < 0) p.proto->setLeft(p, n); else p.proto->setRight(p, n);                    // Insert node
 
   n.proto->setUp(n, p);                                                                 // Set parent of inserted node
 
+//?for(; p.proto->valid(p); p = p.proto->up(p))                                                 // Balance nodes along path back to root
   for(ArenaRedBlackTreeNode p = n; p.proto->valid(p); p = p.proto->up(p))                                       // Balance nodes along path back to root
    {size_t height(ArenaRedBlackTreeNode p)                                                      // Height of a node
      {return p.proto->valid(p) ? p.proto->height(p) : 0;
@@ -409,7 +451,8 @@ static ArenaRedBlackTreeFound add_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_
      {const ArenaRedBlackTreeNode q = p.proto->up(p), l = p.proto->left(p), r = p.proto->right(p), rl = d ? r : l;
 
       if (!q.proto->valid(q))                                                           // Balance the root node
-       {tree.arena->root = rl.offset;                                           // New root node
+       {if (!owner.proto->valid(owner)) tree.arena->root = rl.offset;                       // New root node in base tree
+        else owner.proto->setTree(owner, rl);                                               // New root node in owned tree
         if (d)
          {p.proto->setRight(p, r.proto->left(r));     r.proto->setLeft(r, p);
           const ArenaRedBlackTreeNode R = p.proto->right(p); if (R.proto->valid(R)) R.proto->setUp(R, p);
@@ -450,33 +493,34 @@ static ArenaRedBlackTreeFound add_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_
     else     setHeight(p);                                                      // Balanced: propogate height
    }
 
-  return f;
+  return n;                                                                     // The node added
  }
 
-static  ArenaRedBlackTreeFound  add_ArenaRedBlackTreeFound_ArenaRedBlackTree_string                                             // Add a new key if not already present in the specified base tree.
+static  ArenaRedBlackTreeNode   add_ArenaRedBlackTreeNode_ArenaRedBlackTree_string                                              // Add a new key if not already present in the specified base tree.
  (const ArenaRedBlackTree       tree,                                                           // The tree to search
   char  * const key)                                                            // The key to add
  {ArenaRedBlackTreeFound f =    tree.proto->find(tree, key);                                               // Try to find the key
 
   if (!f.last.proto->valid(f.last))                                                          // Empty tree
-   {const ArenaRedBlackTreeNode root = f.added = f.node = tree.proto->node(tree, key);                     // Add new key in a node
+   {const ArenaRedBlackTreeNode root = tree.proto->node(tree, key);                                        // Add new key in a node
     tree.arena->root = root.offset;                                             // Make the new node the root node
-    return f;                                                                   // Find status
+    return root;                                                                // Create node
    }
-  return f.proto->add(f);                                                               // Non empty tree - add the node below the root node
+  const ArenaRedBlackTreeNode invalid = newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {proto: &ProtoTypes_ArenaRedBlackTreeNode};   t;}));
+  return f.proto->add(f, invalid);                                                      // Non empty tree - add the node below the root node
  }
 
-static  ArenaRedBlackTreeFound  add_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string                                         // Add a new key if not already present in the tree owned by the specified node.
+static  ArenaRedBlackTreeNode   add_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode_string                                          // Add a new key if not already present in the tree owned by the specified node.
  (const ArenaRedBlackTreeNode   node,                                                           // The tree to search
   char  * const key)                                                            // The key to add
  {const ArenaRedBlackTree tree  = node.tree;                                                    // Tree to search
   ArenaRedBlackTreeFound f = node.proto->find(node, key);                                                  // Try to find the key
   if (!f.last.proto->valid(f.last))                                                          // Empty tree
-   {const ArenaRedBlackTreeNode root = f.added = f.node = tree.proto->node(tree, key);                     // Add new key in a node
+   {const ArenaRedBlackTreeNode root = tree.proto->node(tree, key);                                        // Add new key in a node
     node.proto->setTree(node, root);                                                       // Make the new node the root node
-    return f;                                                                   // Find status
+    return root;                                                                // Create node
    }
-  return f.proto->add(f);                                                               // Non empty tree - add the node below the root node
+  return f.proto->add(f, node);                                                         // Non empty tree - add the node below the root node
  }
 
 //D1 Traverse                                                                   // Traverse the ArenaRedBlackTree
@@ -550,6 +594,22 @@ static void print_ArenaRedBlackTree                                             
  {const ReadOnlyBytes p = tree.proto->sprint(tree);
   fprintf(stderr, "%s\n", p.data);
   p.proto->free(p);
+ }
+
+static size_t b2SumW8_size_ArenaRedBlackTree                                                    // Digest for a tree
+ (const ArenaRedBlackTree tree)                                                                 // Tree
+ {const ReadOnlyBytes s = tree.proto->sprint(tree);
+  const size_t d = s.proto->b2SumW8(s);
+  s.proto->free(s);
+  return d;
+ }
+
+static size_t b2SumW8_size_ArenaRedBlackTreeNode                                                // Digest for the tree owned by a node
+ (const ArenaRedBlackTreeNode node)                                                             // Owning node
+ {const ReadOnlyBytes s = node.proto->sprint(node);
+  const size_t d = s.proto->b2SumW8(s);
+  s.proto->free(s);
+  return d;
  }
 
 //D1 Tests                                                                      // Tests
@@ -628,8 +688,8 @@ void test2()                                                                    
    }
   assert(t.proto->count(t) == N);
 
-  ArenaRedBlackTreeFound f28 = t.proto->find(t, "28");
-  ArenaRedBlackTreeNode    r = t.proto->root(t), n27 = f28.node.proto->up(f28.node), n25 = n27.proto->up(n27), n23 = n25.proto->up(n25);
+  ArenaRedBlackTreeNode r = t.proto->root(t),
+      n28 = t.proto->locate(t, "28"), n27 = n28.proto->up(n28), n25 = n27.proto->up(n27), n23 = n25.proto->up(n25);
 
   assert(r.proto->equalsString(r, "3"));
   assert(r.proto->height(r) == 11);
@@ -660,6 +720,8 @@ void test3()
 
 void test4()                                                                    //Theight //Tfind //Troot
  {ArenaRedBlackTree t = makeArenaRedBlackTree();
+  ArenaRedBlackTreeNode n = t.proto->locate(t, "0"); assert(!n.proto->valid(n));                                // Empty tree
+
   char c[4]; memset(c, 0, sizeof(c));
 
   for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
@@ -680,21 +742,30 @@ void test4()                                                                    
  }
 
 void test5()
- {ArenaRedBlackTree t = makeArenaRedBlackTree();
-  char c[4]; memset(c, 0, sizeof(c));
+ {size_t N = 20;
+  ArenaRedBlackTree t = makeArenaRedBlackTree();
+  char c[16]; memset(c, 0, sizeof(c));
 
-  for  (size_t i = TEST_TREE_SIZE; i > 0; --i)
-   {for(size_t j = TEST_TREE_SIZE; j > 0; --j)
-     {c[0] = '0' + i - 1; c[1] = '0' + j - 1;
-      t.proto->add(t, c);
+  for(size_t i = 0; i < N; ++i)
+   {sprintf(c, "%lu", i);
+    const ArenaRedBlackTreeNode n = t.proto->add(t, c), e = n.proto->locate(n, "0"); assert(!e.proto->valid(e));        // Empty owned tree
+    for(size_t j = 0; j < N; ++j)
+     {sprintf(c, "%lu-%lu", i, j);
+      n.proto->add(n, c);
      }
    }
-  ArenaRedBlackTreeNode r = t.proto->root(t);
-  assert(!strcmp(r.proto->key(r), "68"));
-  assert(r.proto->height(r) == 11);
 
-  ArenaRedBlackTreeFound f = t.proto->find(t, "86");
-  assert(!f.different && ({ArenaRedBlackTreeNode F = f.last; F.proto->height(F);}) == 2);
+  assert(t.proto->b2SumW8(t) == 9);
+  ArenaRedBlackTreeNode n0 = t.proto->locate(t, "0"); assert(n0.proto->b2SumW8(n0) ==  70);
+  ArenaRedBlackTreeNode n1 = t.proto->locate(t, "1"); assert(n1.proto->b2SumW8(n1) ==   9);
+  ArenaRedBlackTreeNode n2 = t.proto->locate(t, "2"); assert(n2.proto->b2SumW8(n2) ==  90);
+  ArenaRedBlackTreeNode n3 = t.proto->locate(t, "3"); assert(n3.proto->b2SumW8(n3) ==  56);
+  ArenaRedBlackTreeNode n4 = t.proto->locate(t, "4"); assert(n4.proto->b2SumW8(n4) == 250);
+  ArenaRedBlackTreeNode n5 = t.proto->locate(t, "5"); assert(n5.proto->b2SumW8(n5) == 172);
+  ArenaRedBlackTreeNode n6 = t.proto->locate(t, "6"); assert(n6.proto->b2SumW8(n6) == 212);
+  ArenaRedBlackTreeNode n7 = t.proto->locate(t, "7"); assert(n7.proto->b2SumW8(n7) == 115);
+  ArenaRedBlackTreeNode n8 = t.proto->locate(t, "8"); assert(n8.proto->b2SumW8(n8) == 200);
+  ArenaRedBlackTreeNode n9 = t.proto->locate(t, "9"); assert(n9.proto->b2SumW8(n9) ==  81);
 
   t.proto->free(t);
  }
@@ -713,8 +784,8 @@ void test6()
   assert(!strcmp(r.proto->key(r), "16"));
   assert(r.proto->height(r) == 13);
 
-  ArenaRedBlackTreeFound f = t.proto->find(t, "86");
-  ArenaRedBlackTreeNode  n76 = f.node.proto->up(f.node), n66 = n76.proto->up(n76), n56 = n66.proto->up(n66), n46 = n56.proto->up(n56);
+  ArenaRedBlackTreeNode n86 = t.proto->locate(t, "86"),
+        n76 = n86.proto->up(n86), n66 = n76.proto->up(n76), n56 = n66.proto->up(n66), n46 = n56.proto->up(n56);
   assert(n46.proto->equalsString(n46, "46"));
 
   t.proto->free(t);
@@ -736,11 +807,9 @@ void test7()                                                                    
   ArenaRedBlackTreeNode r = t.proto->root(t);
   assert(!strcmp(r.proto->key(r), "19"));
   assert(r.proto->height(r) == 6);
-  ReadOnlyBytes s = t.proto->sprint(t);
-//say("AAAA %lu\n", s.proto->b2SumW8(s));
-  assert(s.proto->b2SumW8(s) == 96);
+  assert(t.proto->b2SumW8(t) == 223);
 
-  t.proto->free(t); s.proto->free(s);
+  t.proto->free(t);
  }
 
 void test8()                                                                    //Tvalid
@@ -752,9 +821,9 @@ void test9()
   char c[4]; memset(c, 0, sizeof(c));
   for  (size_t i = 0; i < 2; ++i)
    {sprintf(c, "%lu", i);
-    ArenaRedBlackTreeFound f =  t.proto->add(t, c);
-    assert(f.node.proto->valid(f.node));
-    assert(f.node.proto->equalsString(f.node, c));
+    ArenaRedBlackTreeNode n = t.proto->add(t, c);
+    assert(n.proto->valid(n));
+    assert(n.proto->equalsString(n, c));
    }
   assert(t.proto->count(t) == 2);
   t.proto->check(t);
@@ -764,7 +833,7 @@ void test9()
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0, test1, test2, test3, test4, test5, test6, test7, test8, test9, 0};
-//void (*tests[])(void) = {test9, 0};
+//void (*tests[])(void) = {test5, 0};
   run_tests("ArenaRedBlackTree", repetitions, tests);
   return 0;
  }
