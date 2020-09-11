@@ -44,14 +44,6 @@ typedef struct $Found                                                           
   int   different;                                                              // The compare result on the last node found. If zero, the last node found was a match
  } $Found;
 
-typedef struct $FindList                                                        // Find a concatenated key in a base tree
- {const struct ProtoTypes_$FindList *proto;                                     // Methods
-  char *(keys[17]);                                                             // Zero terminated array of keys to find
-  $Found found;                                                                 // Found results on last tree searched.
-  int    count;                                                                 // The number of levels at which we were able to find a matching node.
-  int    all;                                                                   // Found all the keys if true
- } $FindList;
-
 #include <$$_prototypes.h>                                                      // Arena tree prototypes now that the relevant structures have been declared
 
 //D1 Pointers, offsets and allocations                                          // Locate items allocated in the arena
@@ -222,7 +214,7 @@ static void check_$                                                             
   check(tree ▷ root);
  }
 
-static  $Found find_$Found_$Node_string                                         // Find a key if it exists within the tree owned by the specified node.
+static  $Found find_$Found_$Node_string                                         //P Find a key if it exists within the tree owned by the specified node.
  (const $Node  node,                                                            // The node owning the tree to search
   char * const key)                                                             // The key to find
  {const $Found f = make$Found(node.tree, key);                                  // Status of find
@@ -231,7 +223,7 @@ static  $Found find_$Found_$Node_string                                         
   return f ▷ find(r);                                                           // Search the non empty owned tree starting at the specified node.
  }
 
-static  $Found find_$Found_$_string                                             // Find a key if it exists within the base tree.
+static  $Found find_$Found_$_string                                             //P Find a key if it exists within the base tree.
  (const $      tree,                                                            // The base tree to search
   char * const key)                                                             // The key to find
  {const $Found f = make$Found(tree, key);                                       // Status of find
@@ -239,22 +231,20 @@ static  $Found find_$Found_$_string                                             
   return f ▷ find(tree ▷ nodeFromOffset(tree.arena->root));                     // Search the non empty base tree starting at the specified node.
  }
 
-static $FindList find_$FindList_$                                               // Find a list of keys starting at the base tree. Return true if all the keys were found.
- ($FindList findList,                                                           // The list of keys to search for
-  const $   tree)                                                               // The base tree to search
- {findList.count = 0;                                                           // Number of keys found
-  char * const * keys = findList.keys;                                          // Zero terminated array of keys to find.
-  if (!*keys) {findList.all = 1; return findList;}                              // No keys to find - so we found all of them because we cannot show a key that we did not find.
-  $Found f = findList.found = tree ▷ find(*keys);                               // Status of find of first key in base tree
-  if (f.different) return findList;                                             // Cannot find first key in base tree
-  findList.count++;                                                             // Found the first key
-  for(++keys; *keys; ++keys, ++findList.count)                                  // Each following find request for a following tree owned by the last found node
-   {const $Node node = f.last;                                                  // Last node found
-    f = findList.found = node ▷ find(*keys);                                    // Status of find of current key in tree owned by last found node
-    if (f.different) return findList;                                           // Failed to find the next key
+static $Node ll_$Node_$_strings                                                 // Search through a series of owned trees starting at the base tree as directed by the specified keys
+ (const $   tree,                                                               // The base tree to search from
+  const char * const keys,                                                      // Zero terminated list of keys
+  ...)                                                                          // Following keys
+ {va_list va;
+  va_start(va, keys);
+  $Node p = tree ▷ locate(keys);
+  for(;p ▷ valid;)
+   {const char * const k = va_arg(va, char *);
+    if (!k) break;
+    p = p ▷ locate(k);
    }
-  findList.all = 1;                                                             // Successfully found all keys
-  return findList;
+  va_end(va);
+  return p;
  }
 
 //D1 Add                                                                        // Add a new key if not already present in a base tree or a tree owned by a node.
@@ -480,7 +470,7 @@ void test0()                                                                    
   t ▷ free;
  }
 
-void test1()
+void test1()                                                                    //Tll
  {$ t = make$();
     t ▷ add("a"); t ▷ add("b");
   $Node a = t ▷ root, b = a ▷ right;
@@ -490,28 +480,26 @@ void test1()
 
   $Node b4 = b  ▷ ownedTreeRoot, b2 = b4 ▷ left, b6 = b4 ▷ right,
         b1 = b2 ▷ left, b3 = b2 ▷ right, b5 = b6 ▷ left, b7 = b6 ▷ right;
-  assert(!strcmp("4",  b4 ▷ key));
-  assert(!strcmp("2",  b2 ▷ key));
-  assert(!strcmp("6",  b6 ▷ key));
-  assert(!strcmp("1",  b1 ▷ key));
-  assert(!strcmp("3",  b3 ▷ key));
-  assert(!strcmp("5",  b5 ▷ key));
-  assert(!strcmp("7",  b7 ▷ key));
-  assert((b4 ▷ up).offset == 0);
-  assert((b2 ▷ up).offset == b4.offset);
-  assert((b6 ▷ up).offset == b4.offset);
-  assert((b1 ▷ up).offset == b2.offset);
-  assert((b3 ▷ up).offset == b2.offset);
-  assert((b5 ▷ up).offset == b6.offset);
-  assert((b7 ▷ up).offset == b6.offset);
+  assert(b4 ▷ equalsString("4"));
+  assert(b2 ▷ equalsString("2"));
+  assert(b6 ▷ equalsString("6"));
+  assert(b1 ▷ equalsString("1"));
+  assert(b3 ▷ equalsString("3"));
+  assert(b5 ▷ equalsString("5"));
+  assert(b7 ▷ equalsString("7"));
+  assert(b4 ▷ up.offset == 0);
+  assert(b2 ▷ up.offset == b4.offset);
+  assert(b6 ▷ up.offset == b4.offset);
+  assert(b1 ▷ up.offset == b2.offset);
+  assert(b3 ▷ up.offset == b2.offset);
+  assert(b5 ▷ up.offset == b6.offset);
+  assert(b7 ▷ up.offset == b6.offset);
 
   assert(!b ▷ find("7").different);
   assert( b ▷ find("8").different);
 
-  $FindList l = new$FindList(keys: {"b", "7", 0});
-  $FindList L = l ▷ find(t);
-  assert(L.count == 2);
-  assert(L.found.last.offset == b7.offset);
+  $Node f = t ▷ ll("b", "7", 0);
+  assert(f.offset == b7.offset);
 
   t ▷ free;
  }
@@ -556,7 +544,7 @@ void test3()
   t ▷ free;
  }
 
-void test4()                                                                    //Theight //Tfind //Troot
+void test4()                                                                    //Theight //Tlocate //Troot
  {$ t = make$();
   $Node n = t ▷ locate("0"); assert(!n ▷ valid);                                // Empty tree
 
@@ -570,16 +558,17 @@ void test4()                                                                    
    }
 
   $Node r = t ▷ root;
-  assert(!strcmp(r ▷ key, "31"));
+  assert(r ▷ equalsString("31"));
   assert(r ▷ height == 11);
 
-  $Found f = t ▷ find("85");
-  assert(!f.different && ({$Node F = f.last; F ▷ height;}) == 2);
+  $Node f = t ▷ locate("85");
+  assert(f ▷ valid);
+  assert(f ▷ height == 2);
 
   t ▷ free;
  }
 
-void test5()
+void test5()                                                                    //Tb2SumW8
  {size_t N = 20;
   $ t = make$();
   char c[16]; memset(c, 0, sizeof(c));
