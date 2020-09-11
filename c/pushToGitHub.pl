@@ -37,10 +37,10 @@ END
 if (1)                                                                          # Upload files
  {my @files;
   push @files, grep {!-d $_ and !m(/backup/|/z/z/)}
-    searchDirectoryTreesForMatchingFiles(qw(/home/phil/c/ .h .c .pl .md .xml)),
+    searchDirectoryTreesForMatchingFiles(qw(/home/phil/c/ .h .c .pl .md)),
     q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);
 
-  my %files = map {$_=>1} grep {1 or /makeWithPerl|xml\.c|\.xml/} @files;
+  my %files = map {$_=>1} grep {1 or /makeWithPerl/} @files;
 
   for my $f(sort keys %files)
    {my $t = swapFilePrefix($f, $home);
