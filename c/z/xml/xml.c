@@ -557,9 +557,7 @@ void test2()                                                                    
    }
 
   if (1)                                                                        // Check that 'dd' can follow child 'dt' under parent 'dlentry'.
-   {ArenaRedBlackTreeNode f = xml.next ▷ locate("dlentry");                     // Parent
-                   assert(f ▷ valid);
-    ArenaRedBlackTreeNode F = f ▷ locate("dt");                                 // Child
+   {ArenaRedBlackTreeNode F = xml.next ▷ ll("dlentry", "dt", 0);                // Parent + child
                    assert(F ▷ valid);
     ArenaRedBlackTreeNode n = xml.possibilities ▷ nodeFromOffset(F ▷ getData);  // Next child possibilities under parent
     ArenaRedBlackTreeNode p = n ▷ locate("dd");
