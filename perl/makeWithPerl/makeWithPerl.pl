@@ -210,9 +210,7 @@ if ($perl)                                                                      
    }
  }
 elsif ($c)                                                                      # GCC
- {say STDERR "AAAA MakeWith Perl at 2020.09.11 08:14:08";
-
-  my $lp = '-L/usr/lib/x86_64-linux-gnu/libperl.so.5.26 ';
+ {my $lp = '-L/usr/lib/x86_64-linux-gnu/libperl.so.5.26 ';
   my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8);
 
 #  for my $lib(qw(gtk+-3.0 glib-2.0))
