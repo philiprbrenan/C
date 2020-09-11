@@ -23,6 +23,7 @@ typedef struct $Parse                                                           
   ArenaTree         errors;                                                     // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is $Error
   ArenaRedBlackTree possibilities;                                              // Possibility sets for each Dita tag
   ArenaRedBlackTree first;                                                      // First set of possibilities for each Dita tag
+  ArenaRedBlackTree next;                                                       // Next set of possibilities for each Dita child tag under a given parent tag
  } $Parse;
 
 typedef struct $Tag                                                             // Tag in an $ parse tree
@@ -58,6 +59,7 @@ static $Parse make$ParseFromFile                                                
   const ArenaTree     e = x.errors    = makeArenaTree();                        // Errors list
                       x.possibilities = makeArenaRedBlackTree();                // Single Step Validation
                       x.first         = makeArenaRedBlackTree();                // First set of possibilities for each tag
+                      x.next          = makeArenaRedBlackTree();                // Next set of possibilities for each Dita child tag under a given parent tag
   const FileName      f = x.fileName  = fileName;                               // Name of file containing parse
   const ReadOnlyBytes b = x.data      = makeReadOnlyBytesFromFile(f);           // String to parse
   ArenaTreeNode       P = t ▷ root;                                             // Current parent node
@@ -164,8 +166,8 @@ static $Parse make$ParseFromFile                                                
 static void free_$Parse                                                         // Free an xml parse
  (const $Parse x)                                                               // $ descriptor
  {const ArenaTree t = x.tree, e = x.errors;
-  const ArenaRedBlackTree p = x.possibilities, f = x.first;
-  t ▷ free; e ▷ free; p ▷ free; f ▷ free;
+  const ArenaRedBlackTree p = x.possibilities, f = x.first, n = x.next;
+  t ▷ free; e ▷ free; p ▷ free; f ▷ free; n ▷ free;
  }
 
 static size_t errors_$Parse                                                     // Number of errors encountered while creating an $ parse tree.
@@ -468,17 +470,24 @@ void test2()                                                                    
   $Tag possibilities = xml ▷ findFirstChild("possibilities");                   // The possibilities possibilitiesArray assigns a number to each set of possible tags
   assert(possibilities ▷ valid);
 
-  $Tag possibilitiesArray = possibilities ▷ findFirstTag("array");
+  $Tag possibilitiesArray = possibilities ▷ findFirstChild("array");
   assert(possibilitiesArray ▷ valid);
   size_t possibilitiesCount = possibilitiesArray ▷ countChildren;
   assert(possibilitiesCount == 383);
 
-  $Tag first = xml ▷ findFirstTag("first");                                     // The tags that can come first under a specified parent tag
+  $Tag first = xml ▷ findFirstChild("first");                                   // The tags that can come first under a specified parent tag
   assert(first ▷ valid);
 
-  $Tag firstHash = first ▷ findFirstTag("hash");
+  $Tag firstHash = first ▷ findFirstChild("hash");
   assert(firstHash ▷ valid);
   assert(firstHash ▷ countChildren == 374);
+
+  $Tag next = xml ▷ findFirstChild("next");                                     // The tags that can come next under a specified parent tag
+  assert(next ▷ valid);
+
+  $Tag nextParentHash = next ▷ findFirstChild("hash");
+  assert(nextParentHash ▷ valid);
+  assert(nextParentHash ▷ countChildren == 374);
 
   if (1)                                                                        // Possibilities possibilitiesArray
    {char buffer[256];
@@ -501,14 +510,17 @@ void test2()                                                                    
       ++i;
      }
 
-    $fe(tag, firstHash)                                                         // Load first tags
-     {$Tag value = tag ▷ first;                                                 // Value tag
+    $fe(firstTag, firstHash)                                                    // Load first tags
+     {$Tag value = firstTag ▷ first;                                            // Value tag
       char * t = value ▷ tagString;                                             // Possibility number as string
       size_t a = strtol(t, 0, 0);                                               // Possibility number
-      ArenaRedBlackTreeFound f = xml.first ▷ add(tag ▷ tagName);                // First possibilities for this tag
+      ArenaRedBlackTreeFound f = xml.first ▷ add(firstTag ▷ tagName);           // First possibilities for this tag
       f.node ▷ setData(pa[a].offset);                                           // The first sub tag possibilities for this tag
      }
    }
+say("AAAA possibilities: %lu\n", xml.possibilities.arena->used);
+say("BBBB first        : %lu\n", xml.first.arena->used);
+say("CCCC next         : %lu\n", xml.next.arena->used);
 
   if (1)
   {ArenaRedBlackTreeFound f = xml.first ▷ find("appendices");
