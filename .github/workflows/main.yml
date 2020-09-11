@@ -47,6 +47,11 @@ jobs:
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/readOnlyBytes/readOnlyBytes.c --cIncludes c/includes
          valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/readOnlyBytes/readOnlyBytes
 
+    - name: Run xml
+      run: |
+        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes
+        # valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/xml/xml
+
     - name: Run utilities
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/utilities/utilities.c --cIncludes c/includes
