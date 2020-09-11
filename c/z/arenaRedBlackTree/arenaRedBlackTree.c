@@ -231,7 +231,7 @@ static $Found add_$Found_$Found_$Node_string                                    
 
   const char * const key = f.key;                                               // The key to add
   const $           tree = f.last.tree;                                         // The base tree
-  const $Node          n = f.added = tree ▷ node(key), p = f.last;              // Create new node under parent
+  const $Node          n = f.added = f.node = tree ▷ node(key), p = f.last;     // Create new node under parent
 
   if (f.different < 0) p ▷ setLeft(n); else p ▷ setRight(n);                    // Insert node
 
@@ -320,6 +320,19 @@ static  $Found  add_$Found_$Node_string                                         
     return f;                                                                   // Find status
    }
   return f ▷ add;                                                               // Non empty tree - add the node below the root node
+ }
+
+//D1 Traverse                                                                   // Traverse the $
+
+static  size_t count_size_$                                                     // Count the number of nodes in a $
+ (const $ tree)                                                                 // $
+ {size_t l = 0;
+  void count(const $Node parent)                                                // Count the nodes in a sub tree
+   {if (!parent ▷ valid) return;
+    l++; count(parent ▷ left); count(parent ▷ right);
+   }
+  count(tree ▷ root);                                                           // Start at the root
+  return l;                                                                     // Return count
  }
 
 //D1 Print                                                                      // Print a tree.
@@ -448,13 +461,15 @@ void test1()
   t ▷ free;
  }
 
-void test2()
- {$ t = make$();
+void test2()                                                                    //Tcount
+ {size_t N = 100;
+  $ t = make$();
 
-  for  (int i = 0; i < 100; ++i)
-   {char c[256]; sprintf(c, "%d", i);
+  for(size_t i = 0; i < N; ++i)
+   {char c[256]; sprintf(c, "%lu", i);
     t ▷ add(c);
    }
+  assert(t ▷ count == N);
 
   $Found f28 = t ▷ find("28");
   $Node    r = t ▷ root, n27 = f28.node ▷ up, n25 = n27 ▷ up, n23 = n25 ▷ up;
@@ -468,12 +483,14 @@ void test2()
  }
 
 void test3()
- {$ t = make$();
+ {int N = 256*256;
+  $ t = make$();
 
-  for  (int i = 0; i < 256*256; ++i)
+  for  (int i = 0; i < N; ++i)
    {char c[256]; sprintf(c, "%x", i);
     t ▷ add(c);
    }
+  assert(t ▷ count == (size_t)N);
 
   t ▷ check;
 
@@ -573,10 +590,24 @@ void test8()                                                                    
  {$Node n = new $Node; assert(!n ▷ valid);
  }
 
+void test9()
+ {$ t = make$();
+  char c[4]; memset(c, 0, sizeof(c));
+  for  (size_t i = 0; i < 2; ++i)
+   {sprintf(c, "%lu", i);
+    $Found f =  t ▷ add(c);
+    assert(f.node ▷ valid);
+    assert(f.node ▷ equalsString(c));
+   }
+  assert(t ▷ count == 2);
+  t ▷ check;
+  t ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
-  void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7, test8, 0};
+  void (*tests[])(void) = {test0, test1, test2, test3, test4, test5, test6, test7, test8, test9, 0};
+//void (*tests[])(void) = {test9, 0};
   run_tests("$", repetitions, tests);
   return 0;
  }
