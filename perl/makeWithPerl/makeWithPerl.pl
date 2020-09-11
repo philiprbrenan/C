@@ -211,6 +211,57 @@ if ($perl)                                                                      
     updatePerlModuleDocumentation($file);
    }
  }
+elsif ($c)                                                                      # GCC
+ {my $lp = '-L/usr/lib/x86_64-linux-gnu/libperl.so.5.26 ';
+  my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8);
+
+#  for my $lib(qw(gtk+-3.0 glib-2.0))
+#   {$cp .= ' '.trim(qx(pkg-config --cflags $lib));
+#    $lp .= ' '.trim(qx(pkg-config --libs $lib));
+#   }
+
+  my $optimize = 0;                                                             # Whether to optimize or not
+# my $opt = 0 ? '-O3' : '-fprofile-arcs -ftest-coverage -aux-info /tmp/aux-info.data';
+  my $opt = $compile ? '' : $optimize ? '-O3' : '--coverage -Wno-unused-function';
+
+
+  my $I    = $cIncludes;                                                        # Includes folders
+  my $gcc  = "gcc $opt  -fmax-errors=132 -g -rdynamic -Wall -Wextra $cp";         # Options
+     $gcc .= " -I$I";                                                           # Includes
+
+  my $cFile = fpe($I, fn($file), q(c));                                         # Preprocess output
+  my $hFile = fpe($I, fn($file).q(_prototypes), q(h));                          # Prototypes
+
+  Preprocess::Ops::c($file, $cFile, $hFile);                                    # Preprocess
+
+  if ($compile)
+   {my $cmd = qq($gcc -c "$cFile" -o /dev/null);                                # Syntax check
+    say STDERR $cmd;
+    print STDERR $_ for qx($cmd);
+   }
+  else
+   {my $e = $file =~ s(\.cp?p?\Z) ()gsr;                                        # Execute
+    my $o = fpe($e, q(o));                                                      # Object file
+    my $a = fpe($e, q(gcda));                                                   # Coverage file
+    my $g = owf(undef, "run\n");                                                # Gdb command file
+    my $c = qq(rm $e $o $a 2>/dev/null; $gcc -o "$e" "$cFile" $lp; gdb -batch-silent -x $g $e 2>&1);
+    lll qq($c);
+    my $result = qx($c);
+    say STDERR $result;
+    unlink $o, $g;
+    exit(1) unless $result =~ m(SUCCESS);                                       # Confirm successful
+    if (!$optimize)                                                             # Place coverage files in a sub folder
+     {my $c = qq(gcov $a);
+      lll qq($c);
+      say STDERR qx($c);
+      my $d = fp($file);
+      my $g = fpd($d, q(gcov));
+      makePath($g);
+      my @files = searchDirectoryTreesForMatchingFiles(fp($file), qw(.gcda .gcno .gcov));
+      moveFileWithClobber $_, swapFilePrefix($_, $d, $g) for @files;
+     }
+   }
+ }
 elsif ($javascript)                                                             # Javascript
  {if ($compile)
    {say STDERR "Compile javascript $file";
@@ -273,54 +324,6 @@ elsif ($java)                                                                   
      }
    }
   &removeClasses;
- }
-elsif ($c)                                                                      # C
- {my $lp = '-L/usr/lib/x86_64-linux-gnu/libperl.so.5.26 ';
-  my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8);
-
-#  for my $lib(qw(gtk+-3.0 glib-2.0))
-#   {$cp .= ' '.trim(qx(pkg-config --cflags $lib));
-#    $lp .= ' '.trim(qx(pkg-config --libs $lib));
-#   }
-
-  my $optimize = 0;                                                             # Whether to optimize or not
-# my $opt = 0 ? '-O3' : '-fprofile-arcs -ftest-coverage -aux-info /tmp/aux-info.data';
-  my $opt = $compile ? '' : $optimize ? '-O3' : '--coverage -Wno-unused-function';
-
-
-  my $I    = $cIncludes;                                                        # Includes folders
-  my $gcc  = "gcc $opt  -fmax-errors=132 -g -rdynamic -Wall -Wextra $cp";         # Options
-     $gcc .= " -I$I";                                                           # Includes
-
-  my $cFile = fpe($I, fn($file), q(c));                                         # Preprocess output
-  my $hFile = fpe($I, fn($file).q(_prototypes), q(h));                          # Prototypes
-
-  Preprocess::Ops::c($file, $cFile, $hFile);                                    # Preprocess
-
-  if ($compile)
-   {my $cmd = qq($gcc -c "$cFile" -o /dev/null);                                # Syntax check
-    say STDERR $cmd;
-    print STDERR $_ for qx($cmd);
-   }
-  else
-   {my $e = $file =~ s(\.cp?p?\Z) ()gsr;                                        # Execute
-    my $o = fpe($e, q(o));                                                      # Object file
-    my $a = fpe($e, q(gcda));                                                   # Coverage file
-    my $G = $optimize ? '' : qq(gcov $a);                                       # Gcov if not optimzing
-    my $g = owf(undef, "run\n");                                                # Gdb command file
-    my $c = qq(rm $e $o $a 2>/dev/null; $gcc -o "$e" "$cFile" $lp; gdb -batch-silent -x $g $e; $G);
-    say STDERR qq($c);
-    say STDERR qx($c);
-#   unlink $e, $o;
-    unlink $o, $g;
-    if (1)                                                                      # Place coverage files in a sub folder
-     {my $d = fp($file);
-      my $g = fpd($d, q(gcov));
-      makePath($g);
-      my @files = searchDirectoryTreesForMatchingFiles(fp($file), qw(.gcda .gcno .gcov));
-      moveFileWithClobber $_, swapFilePrefix($_, $d, $g) for @files;
-     }
-   }
  }
 elsif ($html)                                                                   # html
  {if (-e $file)
