@@ -37,10 +37,10 @@ END
 if (1)                                                                          # Upload files
  {my @files;
   push @files, grep {!-d $_ and !m(/backup/|/z/z/)}
-    searchDirectoryTreesForMatchingFiles(qw(/home/phil/c/ .h .c .pl .md)),
+    searchDirectoryTreesForMatchingFiles(qw(/home/phil/c/ .h .c .pl .md .xml)),
     q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);
 
-  my %files = map {$_=>1} grep {1 or /makeWithPerl/} @files;
+  my %files = map {$_=>1} grep {1 or /makeWithPerl|xml\.c|\.xml/} @files;
 
   for my $f(sort keys %files)
    {my $t = swapFilePrefix($f, $home);
@@ -53,7 +53,7 @@ if (1)                                                                          
 my $tests = sub                                                                 # Commands to run tests
  {my @t;
   for my $c(@c)
-   {my $v = $c =~ m(xml) ? '#' : '';
+   {my $v = $c =~ m(xml) && 0 ? '#' : '';
     push @t, <<END;
     - name: Run $c
       run: |
