@@ -165,7 +165,8 @@ static XmlParse makeXmlParseFromFile                                            
 static void free_XmlParse                                                         // Free an xml parse
  (const XmlParse x)                                                               // Xml descriptor
  {const ArenaTree t = x.tree, e = x.errors;
-  t.proto->free(t); e.proto->free(e);
+  const ArenaRedBlackTree p = x.possibilities, f = x.first;
+  t.proto->free(t); e.proto->free(e); p.proto->free(p); f.proto->free(f);
  }
 
 static size_t errors_XmlParse                                                     // Number of errors encountered while creating an Xml parse tree.
