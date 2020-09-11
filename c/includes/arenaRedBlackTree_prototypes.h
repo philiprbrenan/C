@@ -96,6 +96,8 @@ static  ArenaRedBlackTreeFound  add_ArenaRedBlackTreeFound_ArenaRedBlackTree_str
 static  ArenaRedBlackTreeFound  add_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string
  (const ArenaRedBlackTreeNode   node,
   char  * const key);
+static  size_t count_size_ArenaRedBlackTree
+ (const ArenaRedBlackTree tree);
 static ReadOnlyBytes sprintRoot_string_rootArenaRedBlackTreeNode
  (const ArenaRedBlackTreeNode root);
 static ReadOnlyBytes sprint_string_ArenaRedBlackTreeNode
@@ -115,6 +117,8 @@ struct ProtoTypes_ArenaRedBlackTree {
     const size_t size);                                                         // Amount of memory required
   void  (*check)(                                                               // Check the integrity of the tree
     const ArenaRedBlackTree tree);                                              // Tree to check
+  size_t  (*count)(                                                             // Count the number of nodes in a ArenaRedBlackTree
+    const ArenaRedBlackTree tree);                                              // ArenaRedBlackTree
   ArenaRedBlackTreeFound  (*find)(                                              // Find a key if it exists within the base tree.
     const ArenaRedBlackTree tree,                                               // The base tree to search
     char * const key);                                                          // The key to find
@@ -150,7 +154,7 @@ struct ProtoTypes_ArenaRedBlackTree {
   ReadOnlyBytes  (*sprint)(                                                     // Print a tree  as ReadOnlyBytes.
     const ArenaRedBlackTree tree);                                              // Tree to print
  } const ProtoTypes_ArenaRedBlackTree =
-{add_ArenaRedBlackTreeFound_ArenaRedBlackTree_string, allocate_offset_ArenaRedBlackTree_size, check_ArenaRedBlackTree, find_ArenaRedBlackTreeFound_ArenaRedBlackTree_string, free_ArenaRedBlackTree, makeArenaRedBlackTreeFound, nodeFromOffset_ArenaRedBlackTree_size, node_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, noden_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, offset_ArenaRedBlackTree_size, pointer_ArenaRedBlackTree_size, print_ArenaRedBlackTree, root_ArenaRedBlackTree, saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString, sprint_string_ArenaRedBlackTree};
+{add_ArenaRedBlackTreeFound_ArenaRedBlackTree_string, allocate_offset_ArenaRedBlackTree_size, check_ArenaRedBlackTree, count_size_ArenaRedBlackTree, find_ArenaRedBlackTreeFound_ArenaRedBlackTree_string, free_ArenaRedBlackTree, makeArenaRedBlackTreeFound, nodeFromOffset_ArenaRedBlackTree_size, node_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, noden_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString, offset_ArenaRedBlackTree_size, pointer_ArenaRedBlackTree_size, print_ArenaRedBlackTree, root_ArenaRedBlackTree, saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString, sprint_string_ArenaRedBlackTree};
 ArenaRedBlackTree newArenaRedBlackTree(ArenaRedBlackTree allocator) {return allocator;}
 
 struct ProtoTypes_ArenaRedBlackTreeFindList {
