@@ -24,6 +24,7 @@ typedef struct XmlParse                                                         
   ArenaTree         errors;                                                     // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is XmlError
   ArenaRedBlackTree possibilities;                                              // Possibility sets for each Dita tag
   ArenaRedBlackTree first;                                                      // First set of possibilities for each Dita tag
+  ArenaRedBlackTree next;                                                       // Next set of possibilities for each Dita child tag under a given parent tag
  } XmlParse;
 
 typedef struct XmlTag                                                             // Tag in an Xml parse tree
@@ -59,6 +60,7 @@ static XmlParse makeXmlParseFromFile                                            
   const ArenaTree     e = x.errors    = makeArenaTree();                        // Errors list
                       x.possibilities = makeArenaRedBlackTree();                // Single Step Validation
                       x.first         = makeArenaRedBlackTree();                // First set of possibilities for each tag
+                      x.next          = makeArenaRedBlackTree();                // Next set of possibilities for each Dita child tag under a given parent tag
   const FileName      f = x.fileName  = fileName;                               // Name of file containing parse
   const ReadOnlyBytes b = x.data      = makeReadOnlyBytesFromFile(f);           // String to parse
   ArenaTreeNode       P = t.proto->root(t);                                             // Current parent node
@@ -165,8 +167,8 @@ static XmlParse makeXmlParseFromFile                                            
 static void free_XmlParse                                                         // Free an xml parse
  (const XmlParse x)                                                               // Xml descriptor
  {const ArenaTree t = x.tree, e = x.errors;
-  const ArenaRedBlackTree p = x.possibilities, f = x.first;
-  t.proto->free(t); e.proto->free(e); p.proto->free(p); f.proto->free(f);
+  const ArenaRedBlackTree p = x.possibilities, f = x.first, n = x.next;
+  t.proto->free(t); e.proto->free(e); p.proto->free(p); f.proto->free(f); n.proto->free(n);
  }
 
 static size_t errors_XmlParse                                                     // Number of errors encountered while creating an Xml parse tree.
@@ -469,17 +471,24 @@ void test2()                                                                    
   XmlTag possibilities = xml.proto->findFirstChild(xml, "possibilities");                   // The possibilities possibilitiesArray assigns a number to each set of possible tags
   assert(possibilities.proto->valid(possibilities));
 
-  XmlTag possibilitiesArray = possibilities.proto->findFirstTag(possibilities, "array");
+  XmlTag possibilitiesArray = possibilities.proto->findFirstChild(possibilities, "array");
   assert(possibilitiesArray.proto->valid(possibilitiesArray));
   size_t possibilitiesCount = possibilitiesArray.proto->countChildren(possibilitiesArray);
   assert(possibilitiesCount == 383);
 
-  XmlTag first = xml.proto->findFirstTag(xml, "first");                                     // The tags that can come first under a specified parent tag
+  XmlTag first = xml.proto->findFirstChild(xml, "first");                                   // The tags that can come first under a specified parent tag
   assert(first.proto->valid(first));
 
-  XmlTag firstHash = first.proto->findFirstTag(first, "hash");
+  XmlTag firstHash = first.proto->findFirstChild(first, "hash");
   assert(firstHash.proto->valid(firstHash));
   assert(firstHash.proto->countChildren(firstHash) == 374);
+
+  XmlTag next = xml.proto->findFirstChild(xml, "next");                                     // The tags that can come next under a specified parent tag
+  assert(next.proto->valid(next));
+
+  XmlTag nextParentHash = next.proto->findFirstChild(next, "hash");
+  assert(nextParentHash.proto->valid(nextParentHash));
+  assert(nextParentHash.proto->countChildren(nextParentHash) == 374);
 
   if (1)                                                                        // Possibilities possibilitiesArray
    {char buffer[256];
@@ -502,14 +511,17 @@ void test2()                                                                    
       ++i;
      }
 
-    Xmlfe(tag, firstHash)                                                         // Load first tags
-     {XmlTag value = tag.proto->first(tag);                                                 // Value tag
+    Xmlfe(firstTag, firstHash)                                                    // Load first tags
+     {XmlTag value = firstTag.proto->first(firstTag);                                            // Value tag
       char * t = value.proto->tagString(value);                                             // Possibility number as string
       size_t a = strtol(t, 0, 0);                                               // Possibility number
-      ArenaRedBlackTreeFound f = xml.first.proto->add(xml.first, tag.proto->tagName(tag));                // First possibilities for this tag
+      ArenaRedBlackTreeFound f = xml.first.proto->add(xml.first, firstTag.proto->tagName(firstTag));           // First possibilities for this tag
       f.node.proto->setData(f.node, pa[a].offset);                                           // The first sub tag possibilities for this tag
      }
    }
+say("AAAA possibilities: %lu\n", xml.possibilities.arena->used);
+say("BBBB first        : %lu\n", xml.first.arena->used);
+say("CCCC next         : %lu\n", xml.next.arena->used);
 
   if (1)
   {ArenaRedBlackTreeFound f = xml.first.proto->find(xml.first, "appendices");
