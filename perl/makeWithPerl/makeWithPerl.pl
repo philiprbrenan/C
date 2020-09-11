@@ -241,8 +241,9 @@ elsif ($c)                                                                      
    {my $e = $file =~ s(\.cp?p?\Z) ()gsr;                                        # Execute
     my $o = fpe($e, q(o));                                                      # Object file
     my $a = fpe($e, q(gcda));                                                   # Coverage file
-    my $g = owf(undef, "run\n");                                                # Gdb command file
-    my $c = qq(rm $e $o $a 2>/dev/null; $gcc -o "$e" "$cFile" $lp; gdb -batch-silent -x $g $e 2>&1);
+    my $g = owf(undef, "run\nbacktrace\n");                                     # Gdb command file
+#   my $c = qq(rm $e $o $a 2>/dev/null; $gcc -o "$e" "$cFile" $lp; gdb -batch-silent -x $g $e 2>&1);
+    my $c = qq(rm $e $o $a 2>/dev/null; $gcc -o "$e" "$cFile" $lp && $e 2>&1);
     lll qq($c);
     my $result = qx($c);
     say STDERR $result;
