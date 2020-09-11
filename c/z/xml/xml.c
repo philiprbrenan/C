@@ -164,7 +164,8 @@ static $Parse make$ParseFromFile                                                
 static void free_$Parse                                                         // Free an xml parse
  (const $Parse x)                                                               // $ descriptor
  {const ArenaTree t = x.tree, e = x.errors;
-  t ▷ free; e ▷ free;
+  const ArenaRedBlackTree p = x.possibilities, f = x.first;
+  t ▷ free; e ▷ free; p ▷ free; f ▷ free;
  }
 
 static size_t errors_$Parse                                                     // Number of errors encountered while creating an $ parse tree.
