@@ -227,8 +227,8 @@ static int tagStringEquals_$Tag_string                                          
 
 //D1 Navigation                                                                 // Navigate through an $ parse tree.
 
-#define $fe( child, parent) for($Tag child = parent ▷ first; child.node.offset; child = child ▷ next) // Each child in a parent from first to last
-#define $fer(child, parent) for($Tag child = parent ▷ last;  child.node.offset; child = child ▷ prev)) // Each child in a parent from last to first
+#define $fe( child, parent) for($Tag child = parent ▷ first; child ▷ valid; child = child ▷ next)  // Each child in a parent from first to last
+#define $fer(child, parent) for($Tag child = parent ▷ last;  child ▷ valid; child = child ▷ prev)) // Each child in a parent from last to first
 
 static $Tag first_$Tag                                                          // Return the first child tag under the specified parent tag.
  (const $Tag parent)                                                            // Parent tag
@@ -259,9 +259,9 @@ static int valid_$Tag                                                           
 
 static $Tag findFirstChild_$Tag_$Tag_string                                     // Find the first child tag with the specified name under the specified parent tag.
  (const $Tag   parent,                                                          // Parent
-  const char * const key)                                                             // Name of the tag to find
+  const char * const key)                                                       // Name of the tag to find
  {$fe(child, parent)                                                            // Each child of the parent
-   {if (child ▷ tagNameEquals(key)) return child;                                   // First child with matching tag
+   {if (child ▷ tagNameEquals(key)) return child;                               // First child with matching tag
    }
   return new $Tag;
  }
