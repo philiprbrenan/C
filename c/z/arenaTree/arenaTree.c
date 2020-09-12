@@ -512,6 +512,12 @@ static  $Node putNP_$Node_$Node_$Node                                           
   return child;
  }
 
+static void setUp_$Node_$Node                                                   //P Make the specified parent node the parent of the specified child node
+ (const $Node child,                                                            // Child
+  const $Node parent)                                                           // Child
+ {child ▷ content->parent.delta = parent.offset;                                // Set parent of child
+ }
+
 static  $Node putNext_$Node_$Node_$Node                                         // Put a child next after the specified sibling
  (const $Node sibling,                                                          // Sibling
   const $Node child)                                                            // Child
@@ -544,13 +550,9 @@ static void by_$_sub                                                            
 static  size_t countChildren_size_$                                             // Count the number of children directly under a parent.
  (const $ tree)                                                                 // $
  {size_t l = 0;
-say("BBBB 111\n");
   const $Node root = tree ▷ root;
-say("BBBB 111\n");
   if (!root ▷ valid) return 0;
-say("BBBB 222\n");
   $fe(child, root) ++l;
-say("BBBB 333\n");
   return l;                                                                     // Return count
  }
 
