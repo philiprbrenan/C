@@ -254,7 +254,7 @@ void test7()                                                                    
   d ▷ free; D ▷ free; s ▷ free; S ▷ free; f ▷ free; m ▷ free;
  }
 
-void test8()                                                                    //Tmake$FromFile //Twrite$TemporaryFile
+void test8()                                                                    //Tmake$FromFile //TwriteTemporaryFile
  {$ s = make$FromStringN("aaa", 2);
   FileName f = s ▷ writeTemporaryFile("test.data");
   $ t = make$FromFile(f);
