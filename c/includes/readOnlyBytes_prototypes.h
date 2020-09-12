@@ -9,16 +9,17 @@ static ReadOnlyBytes makeReadOnlyBytesFromStringN
  (char * const string,
   const size_t length);
 static ReadOnlyBytes makeReadOnlyBytesDup
- (char * const string);
+ (const char * const string);
 static ReadOnlyBytes makeReadOnlyBytesDupN
  (char * const string,
   const size_t length);
 static ReadOnlyBytes makeReadOnlyBytesFromFormat
- (const char * format, ...);
+ (const char * const format,
+  ...);
 static ReadOnlyBytes makeReadOnlyBytesBuffer
  (const size_t length);
 static ReadOnlyBytes makeReadOnlyBytesFromFile
- (FileName file);
+ (const FileName file);
 static void free_ReadOnlyBytes
  (const ReadOnlyBytes r);
 static size_t length_ReadOnlyBytes
@@ -30,20 +31,20 @@ static ReadOnlyBytes substring_string_ReadOnlyBytes_sizet_sizet
   const size_t start,
   const size_t length);
 static FileName writeTemporaryFile_ReadOnlyBytes_string
- (const ReadOnlyBytes      r,
-  const char * fileName);
+ (const ReadOnlyBytes            r,
+  const char * const fileName);
 static void writeFile_ReadOnlyBytes_string
  (const ReadOnlyBytes        r,
   const FileName fileName);
 static int writeOpenFile_ReadOnlyBytes_string
- (const ReadOnlyBytes r,
-  FILE   *f);
+ (const  ReadOnlyBytes       r,
+  FILE   * const f);
 static int equals_ReadOnlyBytes_ReadOnlyBytes
  (const ReadOnlyBytes p,
   const ReadOnlyBytes q);
 static int equalsString_ReadOnlyBytes_zeroString
- (const ReadOnlyBytes     r,
-  const char *s);
+ (const ReadOnlyBytes            r,
+  const char * const s);
 static int containsString_ReadOnlyBytes_zeroString
  (const ReadOnlyBytes            r,
   const char * const s);
@@ -59,7 +60,7 @@ struct ProtoTypes_ReadOnlyBytes {
     const ReadOnlyBytes r);                                                     // Description of a sequence of read only bytes
   int  (*equalsString)(                                                         // Compare a read only byte sequence with a zero terminated string
     const ReadOnlyBytes r,                                                      // Description of read only sequence of bytes
-    const char * s);                                                            // Zero terminated string
+    const char * const s);                                                      // Zero terminated string
   int  (*equals)(                                                               // Compare two read only byte sequences
     const ReadOnlyBytes p,                                                      // Description of first read only sequence of bytes
     const ReadOnlyBytes q);                                                     // Description second read only sequence of bytes
@@ -75,11 +76,11 @@ struct ProtoTypes_ReadOnlyBytes {
     const ReadOnlyBytes r,                                                      // Description of a read only sequence of bytes
     const FileName fileName);                                                   // Name of the file
   int  (*writeOpenFile)(                                                        // Write a read only byte sequence to the specified file descriptor.
-    const ReadOnlyBytes r,                                                      // Description of a read only sequence of bytes
-    FILE   * f);                                                                // File descriptor
+    const  ReadOnlyBytes r,                                                     // Description of a read only sequence of bytes
+    FILE   * const f);                                                          // File descriptor
   FileName  (*writeTemporaryFile)(                                              // Write a read only byte sequence to a temporary file with the specified base name.
     const ReadOnlyBytes r,                                                      // Description of a read only sequence of bytes
-    const char * fileName);                                                     // Base name of the file
+    const char * const fileName);                                               // Base name of the file
  } const ProtoTypes_ReadOnlyBytes =
 {b2SumW8_ReadOnlyBytes, containsString_ReadOnlyBytes_zeroString, data_ReadOnlyBytes, equalsString_ReadOnlyBytes_zeroString, equals_ReadOnlyBytes_ReadOnlyBytes, free_ReadOnlyBytes, length_ReadOnlyBytes, substring_string_ReadOnlyBytes_sizet_sizet, writeFile_ReadOnlyBytes_string, writeOpenFile_ReadOnlyBytes_string, writeTemporaryFile_ReadOnlyBytes_string};
 ReadOnlyBytes newReadOnlyBytes(ReadOnlyBytes allocator) {return allocator;}
