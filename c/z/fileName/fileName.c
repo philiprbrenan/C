@@ -36,7 +36,7 @@ static size_t size                                                              
 static void writeContentToOpenFile                                              //P Write content to an open file descriptor unti it is either all written or an error occurs.
  (const $   file,                                                               // Name of the file
   const int desc,                                                               // Open file descriptor to write to
-  const char *content,                                                          // Content for the file
+  const char * const content,                                                   // Content for the file
   const size_t length)                                                          // Length of content, or zero for a zero terminated string
  {if (content)                                                                  // Write content if any
    {size_t l = length ? : strlen(content);                                      // Content length
@@ -52,8 +52,8 @@ static void writeContentToOpenFile                                              
  }
 
 static $ make$TemporaryWithContent                                              //C Create a temporary file with the specified base name and extension preloaded with the specified content.
- (const char *fileName,                                                         // Base name and extension of the file
-  const char *content,                                                          // Content for the file
+ (const char * const fileName,                                                  // Base name and extension of the file
+  const char * const content,                                                   // Content for the file
   const size_t length)                                                          // Length of content, or zero for a zero terminated string
  {$ f = make$("");                                                              // Create file name with a yet to be determined name
 
@@ -82,7 +82,7 @@ static $ make$TemporaryWithContent                                              
  }
 
 static $ make$Temporary                                                         //C Create an empty temporary file with the specified base name and extension .
- (const char *fileName)                                                         // Base name and extension of the file
+ (const char * const fileName)                                                  // Base name and extension of the file
  {return make$TemporaryWithContent(fileName, "", 0);
  }
 
@@ -90,23 +90,23 @@ static char * readFile_$                                                        
  (const $ file)                                                                 // File name to read
  {const ssize_t l = file ▷ size;
   if (l < 0) return 0; else if (l == 0) return strdup("");                      // Unsuccessful allocation or empty file
-  const int   d = open(file.name, O_RDONLY);
-  const char *s = mmap(NULL, l + 1, PROT_READ, MAP_PRIVATE, d, 0);              // Add space for a terminating zero byte - mmap sets unused bytes beyond the file to zero giving us a zero terminated string.
+  const int          d = open(file.name, O_RDONLY);                             // Open file
+  const char * const s = mmap(NULL, l + 1, PROT_READ, MAP_PRIVATE, d, 0);       // Add space for a terminating zero byte - mmap sets unused bytes beyond the file to zero giving us a zero terminated string.
 
   if (!s)                                                                       // Unsuccessful map
    {close(d);
     return 0;
    }
 
-  char *r = strndup(s, l);                                                      // Place the string on the heap
+  char * const r = strndup(s, l);                                               // Place the string on the heap
   close(d);                                                                     // Close the file: the map is private so we no long need the underlying file
 
   return r;
  }
 
 static void writeFile_$_string_ssize                                            // Write the specified content to the named file.
- (const $      file,                                                            // File name to read
-  const char * content,                                                         // Content for the file
+ (const $            file,                                                      // File name to read
+  const char * const content,                                                   // Content for the file
   const size_t length)                                                          // Length of content, or zero for a zero terminated string
  {const int o = open(file.name, O_WRONLY | O_CREAT, S_IRWXU);                   // Open file for write, creating it if necessary
   file ▷ writeContentToOpenFile(o, content, length);
@@ -114,7 +114,7 @@ static void writeFile_$_string_ssize                                            
  }
 
 static void unlink_$                                                            // Unlink - delete - the specified file
- (const $      file)                                                            // File name to delete
+ (const $ file)                                                                 // File name to delete
  {unlink(file.name);
  }
 
@@ -128,6 +128,20 @@ static size_t b2SumW8_$                                                         
   return d;                                                                     // Return digest
  }
 
+static int equalsString_int_$_string                                            // Check that the content of the specified file is equal to the specified zero terminated string.
+ (const $      file,                                                            // File
+  const char * const expected)                                                  // Zero terminated string of expected content
+ {char * const r = file ▷ readFile;                                             // Read results
+  return !strcmp(r, expected);                                                  // Check results
+ }
+
+static int containsString_int_$_string                                          // Check that the content of the specified file contains the specified zero terminated string.
+ (const $      file,                                                            // File
+  const char * const expected)                                                  // Zero terminated string of expected content
+ {char * const r = file ▷ readFile;                                             // Read results
+  return !!strstr(r, expected);                                                 // Check results
+ }
+
 static size_t maxFileNameSize_$FileName                                         // Maximum size of a file name
  (const $ file)                                                                 // File description
  {return sizeof(file.name) - 1;                                                 // Room for terminating zero
@@ -135,15 +149,15 @@ static size_t maxFileNameSize_$FileName                                         
 #endif
 
 #if __INCLUDE_LEVEL__ == 0
-void test0()                                                                    //Tb2SumW8 //Tnew$TemporaryWithContent //Tnew$Temporary //TreadFile //TmaxFileNameSize //TnewFileName //Tsize //TwriteFile //Tunlink
+void test0()                                                                    //Tb2SumW8 //Tmake$TemporaryWithContent  //TreadFile //TmaxFileNameSize //Tsize //TwriteFile //Tunlink //Tmake$
  {$ f = make$TemporaryWithContent("aaa.c", "aaaa", 0);
   assert(f ▷ maxFileNameSize == 255);
   assert(f ▷ b2SumW8 == 0x8f);
 
-  char *s = f ▷ readFile;
+  char          *s = f ▷ readFile;
   assert(!strcmp(s, "aaaa"));
-  assert(f ▷ size == 4);
-  free(s);
+  assert(            f ▷ size == 4);
+  free  (        s);
 
   const $ F = make$(f.name);
           F ▷ writeFile("bbbb", 0);
@@ -151,10 +165,19 @@ void test0()                                                                    
   assert( F ▷ b2SumW8 == 0x12);
           F ▷ unlink;
   assert(!F ▷ size);
+          f ▷ unlink;
+ }
+
+void test1()                                                                    //Tmake$Temporary //TequalsString //TcontainsString
+ {$      f = make$Temporary("abcd.c");
+         f ▷ writeFile("abcd", 0);
+  assert(f ▷ equalsString("abcd"));
+  assert(f ▷ containsString("cd"));
+         f ▷ unlink;
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, 0};
+ {void (*tests[])(void) = {test0, test1, 0};
   run_tests("$", 1, tests);
   return 0;
  }
