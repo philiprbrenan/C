@@ -353,6 +353,13 @@ static  $Node first_$Node_$Node                                                 
  }
 duplicate s/first/last/g s/first/next/g s/first/prev/g
 
+static  $Node first_$Node_$                                                     // Get the first child in the specified $.
+ (const $ tree)                                                                 // Parent
+ {const $Node root = tree ▷ root;
+  return root ▷ first;
+ }
+duplicate s/first/last/g s/first/next/g s/first/prev/g
+
 //D1 Search                                                                     // Search for nodes.
 
 static int equalsString_$Node_string                                            // Check that the key of a node
@@ -534,22 +541,43 @@ static void by_$_sub                                                            
   n ▷ by(function);
  }
 
-static  size_t countChildren_size_$NodeOffset                                   // Count the number of children directly under a parent.
+static  size_t countChildren_size_$                                             // Count the number of children directly under a parent.
+ (const $ tree)                                                                 // $
+ {size_t l = 0;
+say("BBBB 111\n");
+  const $Node root = tree ▷ root;
+say("BBBB 111\n");
+  if (!root ▷ valid) return 0;
+say("BBBB 222\n");
+  $fe(child, root) ++l;
+say("BBBB 333\n");
+  return l;                                                                     // Return count
+ }
+
+static  size_t countChildren_size_$Node                                         // Count the number of children directly under a node.
  (const $Node parent)                                                           // Parent
  {size_t l = 0;
   $fe(child, parent) ++l;
   return l;                                                                     // Return count
  }
 
-static  size_t count_size_$                                                     // Count the number of nodes in a tree
- (const $ tree)                                                                 // Tree
+static  size_t count_size_$Node                                                 // Count the number of nodes under a specified node.
+ (const $Node node)                                                             // Node
  {size_t l = 0;
+
   void count(const $Node parent)                                                // Process the children of the specified parent
    {l++; $fe(child, parent) count(child);                                       // Each child
-    if (l > 99) printStackBackTrace("Too many\n");
    }
-  count(tree ▷ root);                                                           // Start at the root
-  return l;                                                                     // Return count
+
+  count(node);                                                                  // Start at the specified node
+  return l - 1;                                                                 // Return count without counting the root node
+ }
+
+
+static  size_t count_size_$                                                     // Count the number of nodes in a tree
+ (const $ tree)                                                                 // Tree
+ {const $Node root = tree ▷ root;
+  return root ▷ count;
  }
 
 //D1 Print                                                                      // Print Arena Trees in various ways
@@ -918,18 +946,18 @@ void test5()                                                                    
 void test6()                                                                    //Tunwrap //Twrap //Tcount
  {$ t = make$();    t ▷ fromLetters("bce");
   assert(t ▷ printsWithBracketsAs("a(bce)"));
-  assert(t ▷ count == 4);
+  assert(t ▷ count == 3);
 
   $Node c = t ▷ findFirst("c");
   assert(c ▷ valid);
 
   $Node d = c ▷ wrap("d");
   assert(t ▷ printsWithBracketsAs("a(bd(c)e)"));
-  assert(t ▷ count == 5);
+  assert(t ▷ count == 4);
 
   d ▷ unwrap;
   assert(t ▷ printsWithBracketsAs("a(bce)"));
-  assert(t ▷ count == 4);
+  assert(t ▷ count == 3);
          t ▷ free;
  }
 
