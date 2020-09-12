@@ -30,6 +30,7 @@ arenaTree
 fileName
 #redBlackTree
 readOnlyBytes
+stringBuffer
 xml
 utilities
 END
