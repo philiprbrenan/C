@@ -152,6 +152,9 @@ static  ArenaTreeNode putNP_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode
  (const int   next,
   const ArenaTreeNode sibling,
   const ArenaTreeNode child);
+static void setUp_ArenaTreeNode_ArenaTreeNode
+ (const ArenaTreeNode child,
+  const ArenaTreeNode parent);
 static  ArenaTreeNode putNext_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode
  (const ArenaTreeNode sibling,
   const ArenaTreeNode child);
@@ -401,6 +404,9 @@ struct ProtoTypes_ArenaTreeNode {
   ArenaTreeNode  (*setKey)(                                                     // Copy a string into the key field of a node
     const ArenaTreeNode node,                                                   // Node
     const char * const key);                                                    // Key - it will be copied into the tree
+  void  (*setUp)(                                                               // Make the specified parent node the parent of the specified child node
+    const ArenaTreeNode child,                                                  // Child
+    const ArenaTreeNode parent);                                                // Child
   void  (*set)(                                                                 // Save a copy of the specified data in the arena of the tree and return the offset of the data.
     const ArenaTreeNode node,                                                   // Node in an arena tree to associate with the data
     const void * const data,                                                    // Pointer to the data to be saved
@@ -413,7 +419,7 @@ struct ProtoTypes_ArenaTreeNode {
     const ArenaTreeNode child,                                                  // Child to wrap
     const char * const key);                                                    // Key for new parent
  } const ProtoTypes_ArenaTreeNode =
-{by_ArenaTreeNode_sub, checkKey_int_ArenaTreeNode_string_size, content_ArenaTreeNode, context_ArenaTreeNode, copyData_ArenaTreeNode_ArenaTreeNode, countChildren_size_ArenaTreeNode, count_size_ArenaTreeNode, cut_ArenaTreeNode_ArenaTreeNode, equalsString_ArenaTreeNode_string, equals_int_ArenaTreeNode_ArenaTreeNode, findFirstChild_ArenaTreeNode_string, findFirst_ArenaTreeNode_string, first_ArenaTreeNode_ArenaTreeNode, getData_size_ArenaTreeNode, get_ArenaTreeNode_data_size, isEmpty_ArenaTreeNode, isFirst_ArenaTreeNode, isLast_ArenaTreeNode, isOnlyChild_ArenaTreeNode, isRoot_ArenaTreeNode, key_string_ArenaTreeNode, last_ArenaTreeNode_ArenaTreeNode, next_ArenaTreeNode_ArenaTreeNode, parent_ArenaTreeNode_ArenaTreeNode, prev_ArenaTreeNode_ArenaTreeNode, printContains_ArenaTreeNode, printWithBrackets_string_ArenaTreeNode, print_string_ArenaTreeNode, printsAs_int_ArenaTreeNode_string, printsWithBracketsAs_int_ArenaTreeNode_string, putFirst_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putLast_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putNext_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putPrev_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putTreeFirst_ArenaTreeNode_ArenaTreeNode, putTreeLast_ArenaTreeNode_ArenaTreeNode, root_ArenaTreeNodeOffset_ArenaTreeNodeOffset, setData_ArenaTreeNode_size, setKey_ArenaTreeNode_ArenaTreeNode_ArenaTreeString, set_ArenaTreeNode_data_size, unwrap_ArenaTreeNode_ArenaTreeNode, valid_ArenaTreeNode, wrap_ArenaTreeNode_ArenaTreeString};
+{by_ArenaTreeNode_sub, checkKey_int_ArenaTreeNode_string_size, content_ArenaTreeNode, context_ArenaTreeNode, copyData_ArenaTreeNode_ArenaTreeNode, countChildren_size_ArenaTreeNode, count_size_ArenaTreeNode, cut_ArenaTreeNode_ArenaTreeNode, equalsString_ArenaTreeNode_string, equals_int_ArenaTreeNode_ArenaTreeNode, findFirstChild_ArenaTreeNode_string, findFirst_ArenaTreeNode_string, first_ArenaTreeNode_ArenaTreeNode, getData_size_ArenaTreeNode, get_ArenaTreeNode_data_size, isEmpty_ArenaTreeNode, isFirst_ArenaTreeNode, isLast_ArenaTreeNode, isOnlyChild_ArenaTreeNode, isRoot_ArenaTreeNode, key_string_ArenaTreeNode, last_ArenaTreeNode_ArenaTreeNode, next_ArenaTreeNode_ArenaTreeNode, parent_ArenaTreeNode_ArenaTreeNode, prev_ArenaTreeNode_ArenaTreeNode, printContains_ArenaTreeNode, printWithBrackets_string_ArenaTreeNode, print_string_ArenaTreeNode, printsAs_int_ArenaTreeNode_string, printsWithBracketsAs_int_ArenaTreeNode_string, putFirst_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putLast_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putNext_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putPrev_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putTreeFirst_ArenaTreeNode_ArenaTreeNode, putTreeLast_ArenaTreeNode_ArenaTreeNode, root_ArenaTreeNodeOffset_ArenaTreeNodeOffset, setData_ArenaTreeNode_size, setKey_ArenaTreeNode_ArenaTreeNode_ArenaTreeString, setUp_ArenaTreeNode_ArenaTreeNode, set_ArenaTreeNode_data_size, unwrap_ArenaTreeNode_ArenaTreeNode, valid_ArenaTreeNode, wrap_ArenaTreeNode_ArenaTreeString};
 ArenaTreeNode newArenaTreeNode(ArenaTreeNode allocator) {return allocator;}
 
 struct ProtoTypes_ArenaTreeOffset {
