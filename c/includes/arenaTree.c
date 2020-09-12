@@ -570,7 +570,7 @@ static void by_ArenaTree_sub                                                    
   n.proto->by(n, function);
  }
 
-static  size_t countChildren_size_ArenaTreeNodeOffset                                   // Count the number of children in a parent
+static  size_t countChildren_size_ArenaTreeNodeOffset                                   // Count the number of children directly under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
  {size_t l = 0;
   ArenaTreefe(child, parent) ++l;
@@ -857,13 +857,16 @@ void test1()                                                                    
   t.proto->free(t);
  }
 
-void test2()                                                                    //Tby
+void test2()                                                                    //Tby //TprintsWithBracketsAs //TprintContains
  {ArenaTree t = makeArenaTree();    t.proto->fromLetters(t, "b(c(de)f)g(hi)j");
   assert(t.proto->printsWithBracketsAs(t, "a(b(c(de)f)g(hi)j)"));
+  assert(t.proto->printContains(t, "def"));
 
   char l[t.proto->count(t) + 1]; *l = 0;
+
   void process(ArenaTreeNode n) {strcat(l, n.proto->key(n));}
   t.proto->by(t, process);
+
   assert(strcmp(l, "decfbhigja") == 0);
 
   t.proto->free(t);
@@ -901,15 +904,21 @@ void test3()                                                                    
   t.proto->free(t);
  }
 
-void test4()                                                                    //Tcut //TfindFirstKey
+void test4()                                                                    //Tcut //TfindFirst //TcountChildren //TequalsString //TfindFirstChild
  {ArenaTree t = makeArenaTree();    t.proto->fromLetters(t, "b(c(de(f)gh)i)j");
   assert(t.proto->printsWithBracketsAs(t, "a(b(c(de(f)gh)i)j)"));
+
+  ArenaTreeNode c = t.proto->findFirst(t, "c");
   ArenaTreeNode d = t.proto->findFirst(t, "d");
   assert(d.proto->equalsString(d, "d"));
   ArenaTreeNode e = t.proto->findFirst(t, "e"); assert(e.proto->equalsString(e, "e"));
   ArenaTreeNode f = t.proto->findFirst(t, "f"); assert(f.proto->equalsString(f, "f"));
   ArenaTreeNode g = t.proto->findFirst(t, "g"); assert(g.proto->equalsString(g, "g"));
   ArenaTreeNode h = t.proto->findFirst(t, "h"); assert(h.proto->equalsString(h, "h"));
+
+  assert(g.proto->equals(g, c.proto->findFirstChild(c, "g")));
+  assert(c.proto->countChildren(c) == 4);
+  assert(e.proto->countChildren(e) == 1);
 
   f.proto->cut(f);           assert(t.proto->printsWithBracketsAs(t, "a(b(c(degh)i)j)"));
   e.proto->putFirst(e, f);   assert(t.proto->printsWithBracketsAs(t, "a(b(c(de(f)gh)i)j)"));
