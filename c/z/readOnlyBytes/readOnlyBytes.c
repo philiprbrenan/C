@@ -11,8 +11,8 @@
 //D1 Read Only Bytes                                                            // Extract information from a buffer containing a read only sequence of bytes
 
 typedef struct $                                                                //s Description of a read only sequence of bytes
- {char  * const data;                                                           // Address of the first byte in the read only sequence of bytes
-  const size_t length;                                                          // Length of the byte sequence
+ {char * data;                                                                  // Address of the first byte in the read only sequence of bytes
+  size_t length;                                                                // Length of the byte sequence
   enum   $Allocator                                                             // Allocation of memory
    {$Allocator_none    = 0,                                                     // Stack
     $Allocator_malloc  = 1,                                                     // malloc
