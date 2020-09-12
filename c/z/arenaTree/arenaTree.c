@@ -534,7 +534,7 @@ static void by_$_sub                                                            
   n ▷ by(function);
  }
 
-static  size_t countChildren_size_$NodeOffset                                   // Count the number of children in a parent
+static  size_t countChildren_size_$NodeOffset                                   // Count the number of children directly under a parent.
  (const $Node parent)                                                           // Parent
  {size_t l = 0;
   $fe(child, parent) ++l;
@@ -821,13 +821,16 @@ void test1()                                                                    
   t ▷ free;
  }
 
-void test2()                                                                    //Tby
+void test2()                                                                    //Tby //TprintsWithBracketsAs //TprintContains
  {$ t = make$();    t ▷ fromLetters("b(c(de)f)g(hi)j");
   assert(t ▷ printsWithBracketsAs("a(b(c(de)f)g(hi)j)"));
+  assert(t ▷ printContains("def"));
 
   char l[t ▷ count + 1]; *l = 0;
+
   void process($Node n) {strcat(l, n ▷ key);}
   t ▷ by(process);
+
   assert(strcmp(l, "decfbhigja") == 0);
 
   t ▷ free;
@@ -865,15 +868,21 @@ void test3()                                                                    
   t ▷ free;
  }
 
-void test4()                                                                    //Tcut //TfindFirstKey
+void test4()                                                                    //Tcut //TfindFirst //TcountChildren //TequalsString //TfindFirstChild
  {$ t = make$();    t ▷ fromLetters("b(c(de(f)gh)i)j");
   assert(t ▷ printsWithBracketsAs("a(b(c(de(f)gh)i)j)"));
+
+  $Node c = t ▷ findFirst("c");
   $Node d = t ▷ findFirst("d");
   assert(d ▷ equalsString("d"));
   $Node e = t ▷ findFirst("e"); assert(e ▷ equalsString("e"));
   $Node f = t ▷ findFirst("f"); assert(f ▷ equalsString("f"));
   $Node g = t ▷ findFirst("g"); assert(g ▷ equalsString("g"));
   $Node h = t ▷ findFirst("h"); assert(h ▷ equalsString("h"));
+
+  assert(g ▷ equals(c ▷ findFirstChild("g")));
+  assert(c ▷ countChildren == 4);
+  assert(e ▷ countChildren == 1);
 
   f ▷ cut;           assert(t ▷ printsWithBracketsAs("a(b(c(degh)i)j)"));
   e ▷ putFirst(f);   assert(t ▷ printsWithBracketsAs("a(b(c(de(f)gh)i)j)"));
