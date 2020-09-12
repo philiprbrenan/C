@@ -97,6 +97,14 @@ static  ArenaTreeNode next_ArenaTreeNode_ArenaTreeNode
  (const ArenaTreeNode parent);
 static  ArenaTreeNode prev_ArenaTreeNode_ArenaTreeNode
  (const ArenaTreeNode parent);
+static  ArenaTreeNode first_ArenaTreeNode_ArenaTree
+ (const ArenaTree tree);
+static  ArenaTreeNode last_ArenaTreeNode_ArenaTree
+ (const ArenaTree tree);
+static  ArenaTreeNode next_ArenaTreeNode_ArenaTree
+ (const ArenaTree tree);
+static  ArenaTreeNode prev_ArenaTreeNode_ArenaTree
+ (const ArenaTree tree);
 static int equalsString_ArenaTreeNode_string
  (const ArenaTreeNode        node,
   const char * const key);
@@ -156,8 +164,12 @@ static void by_ArenaTreeNode_sub
 static void by_ArenaTree_sub
  (const ArenaTree tree,
   void (* const function) (const ArenaTreeNode node));
-static  size_t countChildren_size_ArenaTreeNodeOffset
+static  size_t countChildren_size_ArenaTree
+ (const ArenaTree tree);
+static  size_t countChildren_size_ArenaTreeNode
  (const ArenaTreeNode parent);
+static  size_t count_size_ArenaTreeNode
+ (const ArenaTreeNode node);
 static  size_t count_size_ArenaTree
  (const ArenaTree tree);
 static  ArenaTreeString printWithBrackets_string_ArenaTreeNode
@@ -205,6 +217,8 @@ struct ProtoTypes_ArenaTree {
     void (* const function) (const ArenaTreeNode node));                        // Function
   char *  (*check)(                                                             // Return a string describing the structure
     const ArenaTree tree);                                                      // Tree
+  size_t  (*countChildren)(                                                     // Count the number of children directly under a parent.
+    const ArenaTree tree);                                                      // ArenaTree
   size_t  (*count)(                                                             // Count the number of nodes in a tree
     const ArenaTree tree);                                                      // Tree
   ArenaTreeNode  (*findFirstChild)(                                             // Find the first child immediately under the root with the specified key.
@@ -213,6 +227,8 @@ struct ProtoTypes_ArenaTree {
   ArenaTreeNode  (*findFirst)(                                                  // Find the first node with the specified key in a post-order traversal of the tree.
     const ArenaTree tree,                                                       // Tree
     const char * const key);                                                    // Key to find
+  ArenaTreeNode  (*first)(                                                      // Get the first child in the specified ArenaTree.
+    const ArenaTree tree);                                                      // Parent
   void  (*free)(                                                                // Free an entire arena tree.
     const ArenaTree tree);                                                      // Arena tree to free
   void  (*fromLetters)(                                                         // Load tree from a string of letters and brackets.  The root node of the tree so constructed is always given the letter 'a'.
@@ -223,6 +239,10 @@ struct ProtoTypes_ArenaTree {
     const size_t offset,                                                        // Offset to data in arena
     void * const data,                                                          // Pointer to the area into which the data is to be copied
     const size_t length);                                                       // Length of the data to be retrieved
+  ArenaTreeNode  (*last)(                                                       // Get the last child in the specified ArenaTree.
+    const ArenaTree tree);                                                      // Parent
+  ArenaTreeNode  (*next)(                                                       // Get the next child in the specified ArenaTree.
+    const ArenaTree tree);                                                      // Parent
   ArenaTreeNode    (*nodeFromOffset)(                                           // Create a node to locate an allocation within the arena of a tree.
     const ArenaTree tree,                                                       // Tree
     const size_t delta);                                                        // Delta within arena. A delta of zero represents no such node.
@@ -242,6 +262,8 @@ struct ProtoTypes_ArenaTree {
   void *  (*pointer)(                                                           // Return a temporary pointer to an offset in a tree.
     const ArenaTree tree,                                                       // Tree
     const size_t delta);                                                        // Delta
+  ArenaTreeNode  (*prev)(                                                       // Get the prev child in the specified ArenaTree.
+    const ArenaTree tree);                                                      // Parent
   int  (*printContains)(                                                        // Check the print of an ArenaTree contains the expected string.
     const ArenaTree tree,                                                       // ArenaTree parse tree
     const char * expected);                                                     // Expected string
@@ -276,7 +298,7 @@ struct ProtoTypes_ArenaTree {
     const ArenaTree tree,                                                       // Tree
     const char * const file);                                                   // File
  } const ProtoTypes_ArenaTree =
-{allocate_offset_ArenaTree_size, by_ArenaTree_sub, check_ArenaTree, count_size_ArenaTree, findFirstChild_ArenaTree_string, findFirst_ArenaTree_string, free_ArenaTree, fromLetters_ArenaTree_ArenaTreeString, get_ArenaTree_data_size, nodeFromOffset_ArenaTree_size, node_ArenaTreeNode_ArenaTree_ArenaTreeString, noden_ArenaTreeNode_ArenaTree_ArenaTreeString, offsetTo_ArenaTree_pointer, offset_ArenaTree_size, pointer_ArenaTree_size, printContains_ArenaTree, printWithBrackets_ArenaTreeString_ArenaTree, print_string_ArenaTree, printsAs_int_ArenaTree_string, printsWithBracketsAs_int_ArenaTree_string, retrieve_ArenaTree_ArenaTreeOffset_data_size, root_ArenaTreeNodeOffset_ArenaTree, saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString, store_offset_ArenaTree_data_size, used_ArenaTree, write_void_ArenaTree_ArenaTreeString};
+{allocate_offset_ArenaTree_size, by_ArenaTree_sub, check_ArenaTree, countChildren_size_ArenaTree, count_size_ArenaTree, findFirstChild_ArenaTree_string, findFirst_ArenaTree_string, first_ArenaTreeNode_ArenaTree, free_ArenaTree, fromLetters_ArenaTree_ArenaTreeString, get_ArenaTree_data_size, last_ArenaTreeNode_ArenaTree, next_ArenaTreeNode_ArenaTree, nodeFromOffset_ArenaTree_size, node_ArenaTreeNode_ArenaTree_ArenaTreeString, noden_ArenaTreeNode_ArenaTree_ArenaTreeString, offsetTo_ArenaTree_pointer, offset_ArenaTree_size, pointer_ArenaTree_size, prev_ArenaTreeNode_ArenaTree, printContains_ArenaTree, printWithBrackets_ArenaTreeString_ArenaTree, print_string_ArenaTree, printsAs_int_ArenaTree_string, printsWithBracketsAs_int_ArenaTree_string, retrieve_ArenaTree_ArenaTreeOffset_data_size, root_ArenaTreeNodeOffset_ArenaTree, saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString, store_offset_ArenaTree_data_size, used_ArenaTree, write_void_ArenaTree_ArenaTreeString};
 ArenaTree newArenaTree(ArenaTree allocator) {return allocator;}
 
 struct ProtoTypes_ArenaTreeNode {
@@ -296,8 +318,10 @@ struct ProtoTypes_ArenaTreeNode {
   void  (*copyData)(                                                            // Copy the data associated with the sourtce node to the target node by copying the offset to the data held in the source node to the target node.
     const ArenaTreeNode target,                                                 // Target node
     const ArenaTreeNode source);                                                // Source node
-  size_t  (*countChildren)(                                                     // Count the number of children directly under a parent.
+  size_t  (*countChildren)(                                                     // Count the number of children directly under a node.
     const ArenaTreeNode parent);                                                // Parent
+  size_t  (*count)(                                                             // Count the number of nodes under a specified node.
+    const ArenaTreeNode node);                                                  // Node
   ArenaTreeNode  (*cut)(                                                        // Cut out a child.
     const ArenaTreeNode child);                                                 // Child to cut out
   int  (*equalsString)(                                                         // Check that the key of a node
@@ -389,7 +413,7 @@ struct ProtoTypes_ArenaTreeNode {
     const ArenaTreeNode child,                                                  // Child to wrap
     const char * const key);                                                    // Key for new parent
  } const ProtoTypes_ArenaTreeNode =
-{by_ArenaTreeNode_sub, checkKey_int_ArenaTreeNode_string_size, content_ArenaTreeNode, context_ArenaTreeNode, copyData_ArenaTreeNode_ArenaTreeNode, countChildren_size_ArenaTreeNodeOffset, cut_ArenaTreeNode_ArenaTreeNode, equalsString_ArenaTreeNode_string, equals_int_ArenaTreeNode_ArenaTreeNode, findFirstChild_ArenaTreeNode_string, findFirst_ArenaTreeNode_string, first_ArenaTreeNode_ArenaTreeNode, getData_size_ArenaTreeNode, get_ArenaTreeNode_data_size, isEmpty_ArenaTreeNode, isFirst_ArenaTreeNode, isLast_ArenaTreeNode, isOnlyChild_ArenaTreeNode, isRoot_ArenaTreeNode, key_string_ArenaTreeNode, last_ArenaTreeNode_ArenaTreeNode, next_ArenaTreeNode_ArenaTreeNode, parent_ArenaTreeNode_ArenaTreeNode, prev_ArenaTreeNode_ArenaTreeNode, printContains_ArenaTreeNode, printWithBrackets_string_ArenaTreeNode, print_string_ArenaTreeNode, printsAs_int_ArenaTreeNode_string, printsWithBracketsAs_int_ArenaTreeNode_string, putFirst_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putLast_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putNext_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putPrev_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putTreeFirst_ArenaTreeNode_ArenaTreeNode, putTreeLast_ArenaTreeNode_ArenaTreeNode, root_ArenaTreeNodeOffset_ArenaTreeNodeOffset, setData_ArenaTreeNode_size, setKey_ArenaTreeNode_ArenaTreeNode_ArenaTreeString, set_ArenaTreeNode_data_size, unwrap_ArenaTreeNode_ArenaTreeNode, valid_ArenaTreeNode, wrap_ArenaTreeNode_ArenaTreeString};
+{by_ArenaTreeNode_sub, checkKey_int_ArenaTreeNode_string_size, content_ArenaTreeNode, context_ArenaTreeNode, copyData_ArenaTreeNode_ArenaTreeNode, countChildren_size_ArenaTreeNode, count_size_ArenaTreeNode, cut_ArenaTreeNode_ArenaTreeNode, equalsString_ArenaTreeNode_string, equals_int_ArenaTreeNode_ArenaTreeNode, findFirstChild_ArenaTreeNode_string, findFirst_ArenaTreeNode_string, first_ArenaTreeNode_ArenaTreeNode, getData_size_ArenaTreeNode, get_ArenaTreeNode_data_size, isEmpty_ArenaTreeNode, isFirst_ArenaTreeNode, isLast_ArenaTreeNode, isOnlyChild_ArenaTreeNode, isRoot_ArenaTreeNode, key_string_ArenaTreeNode, last_ArenaTreeNode_ArenaTreeNode, next_ArenaTreeNode_ArenaTreeNode, parent_ArenaTreeNode_ArenaTreeNode, prev_ArenaTreeNode_ArenaTreeNode, printContains_ArenaTreeNode, printWithBrackets_string_ArenaTreeNode, print_string_ArenaTreeNode, printsAs_int_ArenaTreeNode_string, printsWithBracketsAs_int_ArenaTreeNode_string, putFirst_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putLast_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putNext_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putPrev_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode, putTreeFirst_ArenaTreeNode_ArenaTreeNode, putTreeLast_ArenaTreeNode_ArenaTreeNode, root_ArenaTreeNodeOffset_ArenaTreeNodeOffset, setData_ArenaTreeNode_size, setKey_ArenaTreeNode_ArenaTreeNode_ArenaTreeString, set_ArenaTreeNode_data_size, unwrap_ArenaTreeNode_ArenaTreeNode, valid_ArenaTreeNode, wrap_ArenaTreeNode_ArenaTreeString};
 ArenaTreeNode newArenaTreeNode(ArenaTreeNode allocator) {return allocator;}
 
 struct ProtoTypes_ArenaTreeOffset {
