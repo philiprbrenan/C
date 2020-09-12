@@ -220,11 +220,11 @@ elsif ($c)                                                                      
 
   my $optimize = 0;                                                             # Whether to optimize or not
 # my $opt = 0 ? '-O3' : '-fprofile-arcs -ftest-coverage -aux-info /tmp/aux-info.data';
-  my $opt = $compile ? '' : $optimize ? '-O3' : '--coverage -Wno-unused-function';
+  my $opt = $compile ? '' : $optimize ? '-O3' : '--coverage -Wno-unused-function -ggdb';
 
 
   my $I    = $cIncludes;                                                        # Includes folders
-  my $gcc  = "gcc $opt  -fmax-errors=132 -g -rdynamic -Wall -Wextra $cp";         # Options
+  my $gcc  = "gcc $opt  -fmax-errors=132 -rdynamic -Wall -Wextra $cp";          # Options: rdynamic required for printStackBackTrace
      $gcc .= " -I$I";                                                           # Includes
 
   my $cFile = fpe($I, fn($file), q(c));                                         # Preprocess output
