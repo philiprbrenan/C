@@ -47,6 +47,11 @@ jobs:
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/readOnlyBytes/readOnlyBytes.c --cIncludes c/includes
          valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/readOnlyBytes/readOnlyBytes
 
+    - name: Run stringBuffer
+      run: |
+        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/stringBuffer/stringBuffer.c --cIncludes c/includes
+         valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/stringBuffer/stringBuffer
+
     - name: Run xml
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes
