@@ -5,6 +5,8 @@ static ArenaTreeNode node_XmlTag
  (const XmlTag tag);
 static XmlParse makeXmlParseFromFile
  (FileName            fileName);
+static XmlParse makeXmlParseFromString
+ (const char * const string);
 static void free_XmlParse
  (const XmlParse x);
 static size_t errors_XmlParse
