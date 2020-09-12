@@ -11,8 +11,8 @@
 //D1 Read Only Bytes                                                            // Extract information from a buffer containing a read only sequence of bytes
 
 typedef struct $                                                                //s Description of a read only sequence of bytes
- {char  *data;                                                                  // Address of the first byte in the read only sequence of bytes
-  size_t length;                                                                // Length of the byte sequence
+ {char  * const data;                                                           // Address of the first byte in the read only sequence of bytes
+  const size_t length;                                                          // Length of the byte sequence
   enum   $Allocator                                                             // Allocation of memory
    {$Allocator_none    = 0,                                                     // Stack
     $Allocator_malloc  = 1,                                                     // malloc
@@ -46,7 +46,7 @@ static $ make$FromStringN                                                       
  }
 
 static $ make$Dup                                                               //C Create a new description of a read only sequence of bytes read from a specified string by duplicating it.
- (char * const string)                                                          // Zero terminated string
+ (const char * const string)                                                    // Zero terminated string
  {const size_t l = strlen(string);
   char * const s = alloc(l + 1); s[l] = 0;
   return make$(strncpy(s, string, l), l, $Allocator_malloc1);
@@ -61,10 +61,11 @@ static $ make$DupN                                                              
  }
 
 static $ make$FromFormat                                                        //C Create a new description of a read only sequence of bytes read from a formatted string
- (const char * format, ...)                                                     // Format followed by strings
+ (const char * const format,                                                    // Format
+  ...)                                                                          // Strings
  {va_list va;
   va_start(va, format);
-  char *data; const int length = vasprintf(&data, format, va);                  // Allocate and format output string
+  char * data; const int length = vasprintf(&data, format, va);                 // Allocate and format output string
   va_end(va);
 
   return make$(data, length, $Allocator_malloc);                                // Successful allocation
@@ -78,7 +79,7 @@ static $ make$Buffer                                                            
  }
 
 static $ make$FromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
- (FileName file)                                                                // File to read
+ (const FileName file)                                                          // File to read
  {struct stat  s;
   const char * const f = file.name;
   const  int   d = open(f, O_RDONLY);
@@ -125,8 +126,8 @@ static $ substring_string_$_sizet_sizet                                         
  }
 
 static FileName writeTemporaryFile_$_string                                     // Write a read only byte sequence to a temporary file with the specified base name.
- (const $      r,                                                               // Description of a read only sequence of bytes
-  const char * fileName)                                                        // Base name of the file
+ (const $            r,                                                         // Description of a read only sequence of bytes
+  const char * const fileName)                                                  // Base name of the file
  {return makeFileNameTemporaryWithContent(fileName, r.data, r.length);
  }
 
@@ -137,8 +138,8 @@ static void writeFile_$_string                                                  
  }
 
 static int writeOpenFile_$_string                                               // Write a read only byte sequence to the specified file descriptor.
- (const $ r,                                                                    // Description of a read only sequence of bytes
-  FILE   *f)                                                                    // File descriptor
+ (const  $       r,                                                             // Description of a read only sequence of bytes
+  FILE   * const f)                                                             // File descriptor
  {return write(fileno(f), r.data, r.length);                                    // Write content
  }
 
@@ -149,8 +150,8 @@ static int equals_$_$                                                           
  }
 
 static int equalsString_$_zeroString                                            // Compare a read only byte sequence with a zero terminated string
- (const $     r,                                                                // Description of read only sequence of bytes
-  const char *s)                                                                // Zero terminated string
+ (const $            r,                                                         // Description of read only sequence of bytes
+  const char * const s)                                                         // Zero terminated string
  {return r.length == strlen(s) && strncmp(r.data, s, r.length) == 0;
  }
 
