@@ -560,6 +560,12 @@ static  ArenaTreeNode putNP_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode           
   return child;
  }
 
+static void setUp_ArenaTreeNode_ArenaTreeNode                                                   //P Make the specified parent node the parent of the specified child node
+ (const ArenaTreeNode child,                                                            // Child
+  const ArenaTreeNode parent)                                                           // Child
+ {child.proto->content(child)->parent.delta = parent.offset;                                // Set parent of child
+ }
+
 static  ArenaTreeNode putNext_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode                                         // Put a child next after the specified sibling
  (const ArenaTreeNode sibling,                                                          // Sibling
   const ArenaTreeNode child)                                                            // Child
@@ -570,7 +576,7 @@ static  ArenaTreeNode putPrev_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode         
   const ArenaTreeNode child)                                                            // Child
  {return        putNP_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode(0, sibling, child);                     // Put child previous
  }
-#line 520 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 526 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 //D1 Traverse                                                                   // Traverse a tree.
 
@@ -597,13 +603,9 @@ static void by_ArenaTree_sub                                                    
 static  size_t countChildren_size_ArenaTree                                             // Count the number of children directly under a parent.
  (const ArenaTree tree)                                                                 // ArenaTree
  {size_t l = 0;
-say("BBBB 111\n");
   const ArenaTreeNode root = tree.proto->root(tree);
-say("BBBB 111\n");
   if (!root.proto->valid(root)) return 0;
-say("BBBB 222\n");
   ArenaTreefe(child, root) ++l;
-say("BBBB 333\n");
   return l;                                                                     // Return count
  }
 
