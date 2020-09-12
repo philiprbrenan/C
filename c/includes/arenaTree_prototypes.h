@@ -296,7 +296,7 @@ struct ProtoTypes_ArenaTreeNode {
   void  (*copyData)(                                                            // Copy the data associated with the sourtce node to the target node by copying the offset to the data held in the source node to the target node.
     const ArenaTreeNode target,                                                 // Target node
     const ArenaTreeNode source);                                                // Source node
-  size_t  (*countChildren)(                                                     // Count the number of children in a parent
+  size_t  (*countChildren)(                                                     // Count the number of children directly under a parent.
     const ArenaTreeNode parent);                                                // Parent
   ArenaTreeNode  (*cut)(                                                        // Cut out a child.
     const ArenaTreeNode child);                                                 // Child to cut out
