@@ -228,8 +228,8 @@ static int tagStringEquals_XmlTag_string                                        
 
 //D1 Navigation                                                                 // Navigate through an Xml parse tree.
 
-#define Xmlfe( child, parent) for(XmlTag child = parent.proto->first(parent); child.node.offset; child = child.proto->next(child)) // Each child in a parent from first to last
-#define Xmlfer(child, parent) for(XmlTag child = parent.proto->last(parent);  child.node.offset; child = child.proto->prev(child))) // Each child in a parent from last to first
+#define Xmlfe( child, parent) for(XmlTag child = parent.proto->first(parent); child.proto->valid(child); child = child.proto->next(child))  // Each child in a parent from first to last
+#define Xmlfer(child, parent) for(XmlTag child = parent.proto->last(parent);  child.proto->valid(child); child = child.proto->prev(child))) // Each child in a parent from last to first
 
 static XmlTag first_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
@@ -260,9 +260,9 @@ static int valid_XmlTag                                                         
 
 static XmlTag findFirstChild_XmlTag_XmlTag_string                                     // Find the first child tag with the specified name under the specified parent tag.
  (const XmlTag   parent,                                                          // Parent
-  const char * const key)                                                             // Name of the tag to find
+  const char * const key)                                                       // Name of the tag to find
  {Xmlfe(child, parent)                                                            // Each child of the parent
-   {if (child.proto->tagNameEquals(child, key)) return child;                                   // First child with matching tag
+   {if (child.proto->tagNameEquals(child, key)) return child;                               // First child with matching tag
    }
   return newXmlTag(({struct XmlTag t = {proto: &ProtoTypes_XmlTag};   t;}));
  }
