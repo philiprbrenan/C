@@ -204,7 +204,7 @@ static void setData_ArenaRedBlackTreeNode_size                                  
   const size_t offset)                                                          // Value the data offset is to be set to
  {node.proto->content(node)->data.delta = offset;                                          // Record offset
  }
-#line 359 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 366 "/home/phil/c/z/arenaTree/arenaTree.c"
 static int equalsString_ArenaRedBlackTreeNode_string                                            //I Check that the key of a node
  (const ArenaRedBlackTreeNode        node,                                                      // Node
   const char * const key)                                                       // Key
