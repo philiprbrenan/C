@@ -52,7 +52,7 @@ static ArenaTreeNode node_$Tag                                                  
  {return tag.node;
  }
 
-static $Parse make$ParseFromFile                                                // Parse $ held in a file
+static $Parse make$ParseFromFile                                                // Make a parse $ from the contents of a file
  (FileName            fileName)                                                 // Name of file holding $
  {$Parse              x = new$Parse;
   const ArenaTree     t = x.tree      = makeArenaTree();                        // Parse tree,
@@ -160,6 +160,14 @@ static $Parse make$ParseFromFile                                                
 
   b ▷ free;                                                                     // Free mapped input file as we can now reconstruct it from the parse tree
 
+  return x;
+ } // make$ParseFromFile
+
+static $Parse make$ParseFromString                                              // Make a parse $ from a string.
+ (const char * const string)                                                    // String of xml
+ {const FileName f = makeFileNameTemporaryWithContent("zzz.xml", string, 0);    // Create a temporary file
+  const $Parse   x = make$ParseFromFile(f);                                     // Parse
+  f ▷ unlink;
   return x;
  }
 
