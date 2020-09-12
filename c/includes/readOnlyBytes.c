@@ -12,8 +12,8 @@
 //D1 Read Only Bytes                                                            // Extract information from a buffer containing a read only sequence of bytes
 
 typedef struct ReadOnlyBytes                                                                //s Description of a read only sequence of bytes
- {char  *data;                                                                  // Address of the first byte in the read only sequence of bytes
-  size_t length;                                                                // Length of the byte sequence
+ {char  * const data;                                                           // Address of the first byte in the read only sequence of bytes
+  const size_t length;                                                          // Length of the byte sequence
   enum   ReadOnlyBytesAllocator                                                             // Allocation of memory
    {ReadOnlyBytesAllocator_none    = 0,                                                     // Stack
     ReadOnlyBytesAllocator_malloc  = 1,                                                     // malloc
@@ -47,7 +47,7 @@ static ReadOnlyBytes makeReadOnlyBytesFromStringN                               
  }
 
 static ReadOnlyBytes makeReadOnlyBytesDup                                                               //C Create a new description of a read only sequence of bytes read from a specified string by duplicating it.
- (char * const string)                                                          // Zero terminated string
+ (const char * const string)                                                    // Zero terminated string
  {const size_t l = strlen(string);
   char * const s = alloc(l + 1); s[l] = 0;
   return makeReadOnlyBytes(strncpy(s, string, l), l, ReadOnlyBytesAllocator_malloc1);
@@ -62,10 +62,11 @@ static ReadOnlyBytes makeReadOnlyBytesDupN                                      
  }
 
 static ReadOnlyBytes makeReadOnlyBytesFromFormat                                                        //C Create a new description of a read only sequence of bytes read from a formatted string
- (const char * format, ...)                                                     // Format followed by strings
+ (const char * const format,                                                    // Format
+  ...)                                                                          // Strings
  {va_list va;
   va_start(va, format);
-  char *data; const int length = vasprintf(&data, format, va);                  // Allocate and format output string
+  char * data; const int length = vasprintf(&data, format, va);                 // Allocate and format output string
   va_end(va);
 
   return makeReadOnlyBytes(data, length, ReadOnlyBytesAllocator_malloc);                                // Successful allocation
@@ -79,7 +80,7 @@ static ReadOnlyBytes makeReadOnlyBytesBuffer                                    
  }
 
 static ReadOnlyBytes makeReadOnlyBytesFromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
- (FileName file)                                                                // File to read
+ (const FileName file)                                                          // File to read
  {struct stat  s;
   const char * const f = file.name;
   const  int   d = open(f, O_RDONLY);
@@ -126,8 +127,8 @@ static ReadOnlyBytes substring_string_ReadOnlyBytes_sizet_sizet                 
  }
 
 static FileName writeTemporaryFile_ReadOnlyBytes_string                                     // Write a read only byte sequence to a temporary file with the specified base name.
- (const ReadOnlyBytes      r,                                                               // Description of a read only sequence of bytes
-  const char * fileName)                                                        // Base name of the file
+ (const ReadOnlyBytes            r,                                                         // Description of a read only sequence of bytes
+  const char * const fileName)                                                  // Base name of the file
  {return makeFileNameTemporaryWithContent(fileName, r.data, r.length);
  }
 
@@ -138,8 +139,8 @@ static void writeFile_ReadOnlyBytes_string                                      
  }
 
 static int writeOpenFile_ReadOnlyBytes_string                                               // Write a read only byte sequence to the specified file descriptor.
- (const ReadOnlyBytes r,                                                                    // Description of a read only sequence of bytes
-  FILE   *f)                                                                    // File descriptor
+ (const  ReadOnlyBytes       r,                                                             // Description of a read only sequence of bytes
+  FILE   * const f)                                                             // File descriptor
  {return write(fileno(f), r.data, r.length);                                    // Write content
  }
 
@@ -150,8 +151,8 @@ static int equals_ReadOnlyBytes_ReadOnlyBytes                                   
  }
 
 static int equalsString_ReadOnlyBytes_zeroString                                            // Compare a read only byte sequence with a zero terminated string
- (const ReadOnlyBytes     r,                                                                // Description of read only sequence of bytes
-  const char *s)                                                                // Zero terminated string
+ (const ReadOnlyBytes            r,                                                         // Description of read only sequence of bytes
+  const char * const s)                                                         // Zero terminated string
  {return r.length == strlen(s) && strncmp(r.data, s, r.length) == 0;
  }
 
