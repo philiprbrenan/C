@@ -53,7 +53,7 @@ static ArenaTreeNode node_XmlTag                                                
  {return tag.node;
  }
 
-static XmlParse makeXmlParseFromFile                                                // Parse Xml held in a file
+static XmlParse makeXmlParseFromFile                                                // Make a parse Xml from the contents of a file
  (FileName            fileName)                                                 // Name of file holding Xml
  {XmlParse              x = newXmlParse(({struct XmlParse t = {proto: &ProtoTypes_XmlParse};   t;}));
   const ArenaTree     t = x.tree      = makeArenaTree();                        // Parse tree,
@@ -161,6 +161,14 @@ static XmlParse makeXmlParseFromFile                                            
 
   b.proto->free(b);                                                                     // Free mapped input file as we can now reconstruct it from the parse tree
 
+  return x;
+ } // makeXmlParseFromFile
+
+static XmlParse makeXmlParseFromString                                              // Make a parse Xml from a string.
+ (const char * const string)                                                    // String of xml
+ {const FileName f = makeFileNameTemporaryWithContent("zzz.xml", string, 0);    // Create a temporary file
+  const XmlParse   x = makeXmlParseFromFile(f);                                     // Parse
+  f.proto->unlink(f);
   return x;
  }
 
