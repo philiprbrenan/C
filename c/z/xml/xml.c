@@ -180,7 +180,7 @@ static void free_$Parse                                                         
 
 static size_t errors_$Parse                                                     // Number of errors encountered while creating an $ parse tree.
  (const $Parse x)                                                               // $ descriptor
- {return x.errors ▷ count - 1;                                                  // The root node is included in the count but does not containg an error message - so we discount it
+ {return x.errors ▷ count;
  }
 
 static char  * parse$TagName                                                    // Get the tag name from an $ tag
@@ -234,21 +234,13 @@ static $Tag first_$Tag                                                          
  (const $Tag parent)                                                            // Parent tag
  {return new $Tag(xml: parent.xml, node: parent.node ▷ first);
  }
+duplicate s/first/last/  s/first/next/ s/first/prev/ s/first/parent/
 
-static $Tag last_$Tag                                                           // Return the last child tag under the specified parent tag.
- (const $Tag parent)                                                            // Parent tag
- {return new $Tag(xml: parent.xml, node: parent.node ▷ last);
+static $Tag first_$Parse                                                        // Return the first child tag in the specified $ parse tree.
+ (const $Parse xml)                                                             // Parent tag
+ {return new $Tag(xml: xml, node: xml.tree ▷ first);
  }
-
-static $Tag next_$Tag                                                           // Return the next sibling tag after this one.
- (const $Tag sibling)                                                           // Sibling tag
- {return new $Tag(xml: sibling.xml, node: sibling.node ▷ next);
- }
-
-static $Tag prev_$Tag                                                           // Return the previous sibling tag before this one.
- (const $Tag sibling)                                                           // Sibling tag
- {return new $Tag(xml: sibling.xml, node: sibling.node ▷ prev);
- }
+duplicate s/first/last/
 
 //D1 Search                                                                     // Search the $ parse tree
 
@@ -331,6 +323,12 @@ static void by_$Parse_sub                                                       
   root ▷ by(function);
  }
 
+static  size_t countChildren_size_$                                             // Count the number of tags at the first level in an xml parse tree.
+ (const $Parse xml)                                                             // $ parse
+ {const ArenaTreeNode root = xml.tree ▷ root;
+  return root ▷ countChildren - 1;                                              // Count the level immediately below the root tag of which there is always just one
+ }
+
 static  size_t countChildren_size_$Tag                                          // Count the number of child tags directly under a parent tag
  (const $Tag parent)                                                            // Parent tag
  {return parent.node ▷ countChildren;
@@ -339,6 +337,11 @@ static  size_t countChildren_size_$Tag                                          
 static  size_t count_size_$                                                     // Count the number of tags in an $ parse tree
  (const $Parse x)                                                               // $ parse tree
  {return x.tree ▷ count;
+ }
+
+static  size_t count_size_$Tag                                                  // Count the number of tags under the specified tag in an $ parse tree
+ (const $Tag t)                                                                 // Parent tag
+ {return t.node ▷ count;
  }
 
 
@@ -422,10 +425,7 @@ static int develop()                                                            
  }
 
 void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors
- {char file[128] =   "/home/phil/c/z/xml/test.xml";
-  if (!develop()) strcpy(file,  "c/z/xml/test.xml");
-
-  $Parse x = make$ParseFromFile(makeFileName(file));
+ {$Parse x = make$ParseFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f/><g/></d><h/><i/></A>h");
 
   if (1)
    {ArenaTree e = x.errors;
@@ -450,7 +450,49 @@ void test0()                                                                    
   x ▷ free;
  }
 
-void test1()                                                                    //Tprint
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren
+ {$Parse x = make$ParseFromString(
+"<a>"
+"  <b>"
+"    <c/>"
+"    <d><e/>e<f/>f"
+"      <g>g</g>"
+"    </d>"
+"    <h>h</h>"
+"  </b>"
+"  <i/>i<j></j>"
+"</a>");
+
+  assert(!x.errors ▷ count);
+
+  $Tag b = x ▷ findFirstTag("b"); assert(b ▷ valid); assert(b ▷ tagNameEquals("b"));
+  $Tag c = x ▷ findFirstTag("c"); assert(c ▷ valid); assert(c ▷ tagNameEquals("c"));
+  $Tag d = x ▷ findFirstTag("d"); assert(d ▷ valid); assert(d ▷ tagNameEquals("d"));
+  $Tag e = x ▷ findFirstTag("e"); assert(e ▷ valid); assert(e ▷ tagNameEquals("e"));
+  $Tag f = x ▷ findFirstTag("f"); assert(f ▷ valid); assert(f ▷ tagNameEquals("f"));
+  $Tag g = x ▷ findFirstTag("g"); assert(g ▷ valid); assert(g ▷ tagNameEquals("g"));
+  $Tag h = x ▷ findFirstTag("h"); assert(h ▷ valid); assert(h ▷ tagNameEquals("h"));
+  $Tag i = x ▷ findFirstTag("i"); assert(i ▷ valid); assert(i ▷ tagNameEquals("i"));
+  $Tag j = x ▷ findFirstTag("j"); assert(j ▷ valid); assert(j ▷ tagNameEquals("j"));
+
+  assert(b ▷ equals(x ▷ first));
+  assert(c ▷ equals(b ▷ first));
+  assert(h ▷ equals(b ▷ last));
+  assert(j ▷ equals(x ▷ last));
+
+  assert(h ▷ equals(d ▷ next));
+  assert(c ▷ equals(d ▷ prev));
+
+  assert(x ▷ count         == 14);
+  assert(x ▷ countChildren == 3);
+
+  assert(b ▷ count         == 10);
+  assert(b ▷ countChildren == 3);
+
+  x ▷ free;
+ }
+
+void test2()                                                                    //Tprint
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
   if (!develop()) strcpy(file, "c/z/xml/samples/foreword.dita");
 
@@ -471,7 +513,7 @@ void test1()                                                                    
   x ▷ free;
  }
 
-void test2()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
+void test3()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {char *file =       "/home/phil/c/z/xml/validation/validation.xml";
   if (!develop()) return;                                                       // Does not work on gitHub - possibly out of memory or Cpu?
   $Parse xml = make$ParseFromFile(makeFileName(file));
@@ -576,7 +618,7 @@ void test2()                                                                    
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, 0};
 // {void (*tests[])(void) = {test0, 0};
   run_tests("$", 1, tests);
   return 0;
