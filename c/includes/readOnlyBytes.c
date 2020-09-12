@@ -255,7 +255,7 @@ void test7()                                                                    
   d.proto->free(d); D.proto->free(D); s.proto->free(s); S.proto->free(S); f.proto->free(f); m.proto->free(m);
  }
 
-void test8()                                                                    //TmakeReadOnlyBytesFromFile //TwriteReadOnlyBytesTemporaryFile
+void test8()                                                                    //TmakeReadOnlyBytesFromFile //TwriteTemporaryFile
  {ReadOnlyBytes s = makeReadOnlyBytesFromStringN("aaa", 2);
   FileName f = s.proto->writeTemporaryFile(s, "test.data");
   ReadOnlyBytes t = makeReadOnlyBytesFromFile(f);
