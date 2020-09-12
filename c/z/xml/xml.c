@@ -148,9 +148,10 @@ static $Parse make$ParseFromFile                                                
    }
 
   if (1)                                                                        // Make the single root xml tag the root of the parse tree
-   {const ArenaTreeNode r = t ▷ root, f = r ▷ first;
+   {const ArenaTreeNode r = t ▷ root,     f = r ▷ first;
     ArenaTreeContent *  a = r ▷ content, *b = f ▷ content;
     *a = *b;
+    ArenaTreefe(c, r) c ▷ setUp(r);
    }
 
   b ▷ free;                                                                     // Free mapped input file as we can now reconstruct it from the parse tree
@@ -443,7 +444,7 @@ void test0()                                                                    
   x ▷ free;
  }
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot
  {$Parse x = make$ParseFromString(
 "<a>"
 "  <b>"
@@ -458,15 +459,16 @@ void test1()                                                                    
 
   assert(!x.errors ▷ count);
 
-  $Tag b = x ▷ findFirstTag  ("b"); assert(b ▷ valid); assert(b ▷ tagNameEquals("b"));
-  $Tag c = x ▷ findFirstTag  ("c"); assert(c ▷ valid); assert(c ▷ tagNameEquals("c"));
-  $Tag d = b ▷ findFirstChild("d"); assert(d ▷ valid); assert(d ▷ tagNameEquals("d"));
-  $Tag e = d ▷ findFirstChild("e"); assert(e ▷ valid); assert(e ▷ tagNameEquals("e"));
-  $Tag f = d ▷ findFirstChild("f"); assert(f ▷ valid); assert(f ▷ tagNameEquals("f"));
-  $Tag g = d ▷ findFirstChild("g"); assert(g ▷ valid); assert(g ▷ tagNameEquals("g"));
-  $Tag h = b ▷ findFirstChild("h"); assert(h ▷ valid); assert(h ▷ tagNameEquals("h"));
-  $Tag i = x ▷ findFirstTag  ("i"); assert(i ▷ valid); assert(i ▷ tagNameEquals("i"));
-  $Tag j = x ▷ findFirstTag  ("j"); assert(j ▷ valid); assert(j ▷ tagNameEquals("j"));
+  $Tag a = x ▷ root;                assert(!a ▷ valid); assert(a ▷ tagNameEquals("a"));
+  $Tag b = x ▷ findFirstTag  ("b"); assert( b ▷ valid); assert(b ▷ tagNameEquals("b")); assert(a ▷ equals(b ▷ parent));
+  $Tag c = x ▷ findFirstTag  ("c"); assert( c ▷ valid); assert(c ▷ tagNameEquals("c")); assert(b ▷ equals(c ▷ parent));
+  $Tag d = b ▷ findFirstChild("d"); assert( d ▷ valid); assert(d ▷ tagNameEquals("d")); assert(b ▷ equals(d ▷ parent));
+  $Tag e = d ▷ findFirstChild("e"); assert( e ▷ valid); assert(e ▷ tagNameEquals("e")); assert(d ▷ equals(e ▷ parent));
+  $Tag f = d ▷ findFirstChild("f"); assert( f ▷ valid); assert(f ▷ tagNameEquals("f")); assert(d ▷ equals(f ▷ parent));
+  $Tag g = d ▷ findFirstChild("g"); assert( g ▷ valid); assert(g ▷ tagNameEquals("g")); assert(d ▷ equals(g ▷ parent));
+  $Tag h = b ▷ findFirstChild("h"); assert( h ▷ valid); assert(h ▷ tagNameEquals("h")); assert(b ▷ equals(h ▷ parent));
+  $Tag i = x ▷ findFirstTag  ("i"); assert( i ▷ valid); assert(i ▷ tagNameEquals("i")); assert(a ▷ equals(i ▷ parent));
+  $Tag j = x ▷ findFirstTag  ("j"); assert( j ▷ valid); assert(j ▷ tagNameEquals("j")); assert(a ▷ equals(j ▷ parent));
 
   assert(b ▷ equals(x ▷ first));
   assert(c ▷ equals(b ▷ first));
@@ -496,6 +498,8 @@ void test1()                                                                    
 
   assert(!strcmp(  H ▷ tagString,         "h" ));
   assert(          H ▷ tagStringEquals(   "h"));
+
+  assert(a ▷ equals(b ▷ parent));
 
   x ▷ free;
  }
