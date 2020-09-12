@@ -40,6 +40,26 @@ static void add                                                                 
   s.proto->putTreeLast(s);
  }
 
+static void addReadOnlyBytes                                                    // Concatenate a read only bytes
+ (const StringBuffer             buffer,                                                   // StringBuffer
+  const ReadOnlyBytes string)                                                   // Read only bytes
+ {const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, string.data, string.length);
+  s.proto->putTreeLast(s);
+ }
+
+static void addFormat                                                           // Add a formatted string
+ (const StringBuffer buffer,                                                               // StringBuffer
+  const char * const format,                                                    // Format
+  ...)                                                                          // Strings
+ {va_list va;
+  va_start(va, format);
+  char * data; const int length = vasprintf(&data, format, va);                 // Allocate and format output string
+  va_end(va);
+  const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, data, length);
+  s.proto->putTreeLast(s);
+  free(data);
+ }
+
 //D1 Statistics                                                                 // Statistics on the contents of the StringBuffer.
 
 static size_t length                                                              // Length of the string held in the buffer
@@ -47,6 +67,48 @@ static size_t length                                                            
  {size_t length = 0;
   ArenaTreefe(c, buffer.string) length += strlen(c.proto->key(c));
   return length;
+ }
+
+static int equals_StringBuffer_StringBuffer                                                           // Checks whether two StringBuffer are equal.
+ (const StringBuffer a,                                                                    // First StringBuffer
+  const StringBuffer b)                                                                    // Second StringBuffer
+ {if (a.proto->length(a) != b.proto->length(b)) return 0;
+  const ReadOnlyBytes A = a.proto->string(a), B = b.proto->string(b);
+  const int r = A.proto->equals(A, B);
+  A.proto->free(A); B.proto->free(B);
+  return r;
+ }
+
+static int equalsString_StringBuffer_string                                                // Checks whether a StringBuffer is equal to a specified zero terminated string.
+ (const StringBuffer            buffer,                                                    // StringBuffer
+  const char * const string)                                                    // String
+ {const size_t l = strlen(string);
+  if (buffer.proto->length(buffer) != l) return 0;
+  const ReadOnlyBytes b = buffer.proto->string(buffer);
+  const int r = !strncmp(b.data, string, l);
+  b.proto->free(b);
+  return r;
+ }
+
+static int contains_StringBuffer_StringBuffer                                                         // Checks whether the first StringBuffer contains the second StringBuffer
+ (const StringBuffer a,                                                                    // First StringBuffer
+  const StringBuffer b)                                                                    // Second StringBuffer
+ {if (a.proto->length(a) < b.proto->length(b)) return 0;
+  const ReadOnlyBytes A = a.proto->string(a), B = b.proto->string(b);
+  const int r = !!strstr(A.data, B.data);
+  A.proto->free(A); B.proto->free(B);
+  return r;
+ }
+
+static int containsString_StringBuffer_StringBuffer                                                   // Checks whether a StringBuffer contains a specified zero terminated string.
+ (const StringBuffer            buffer,                                                    // StringBuffer
+  const char * const string)                                                    // String
+ {const size_t l = strlen(string);
+  if (buffer.proto->length(buffer) < l) return 0;
+  const ReadOnlyBytes b = buffer.proto->string(buffer);
+  const int r = !!strstr(b.data, string);
+  b.proto->free(b);
+  return r;
  }
 
 //D1 String                                                                     // Make into a string
@@ -63,19 +125,39 @@ static ReadOnlyBytes string_StringBuffer                                        
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
 
-void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //TmakeStringBufferParseFromFile
+void test0()                                                                    //TmakeStringBuffer //Tadd //TaddFormat //TaddReadOnlyBytes //Tlength //Tstring //Tfree
  {StringBuffer s = makeStringBuffer();
     s.proto->add(s, "Hello");
     s.proto->add(s, " ");
     s.proto->add(s, "world");
   ReadOnlyBytes r = s.proto->string(s);
   assert(r.proto->equalsString(r, "Hello world"));
-    r.proto->free(r);
-    s.proto->free(s);
+  int i = 0;
+    s.proto->addFormat(s, " - %d ", ++i);
+    s.proto->addReadOnlyBytes(s, r);
+    s.proto->addFormat(s, " - %d",   ++i);
+  ReadOnlyBytes p = s.proto->string(s);
+  assert(p.proto->equalsString(p, "Hello world - 1 Hello world - 2"));
+  p.proto->free(p); r.proto->free(r); s.proto->free(s);
+ }
+
+void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString
+ {StringBuffer a = makeStringBuffer();   StringBuffer b = makeStringBuffer(); StringBuffer c = makeStringBuffer();
+    a.proto->add(a, "ab");   b.proto->add(b, "a");  c.proto->add(c, "aba");
+    a.proto->add(a, "c");    b.proto->add(b, "bc"); c.proto->add(c, "bc");
+
+  assert( a.proto->equals(a, b));
+  assert( a.proto->equalsString(a, "abc"));
+  assert(!a.proto->equals(a, c));
+  assert( c.proto->contains(c, a));
+  assert(!a.proto->contains(a, c));
+  assert( c.proto->containsString(c, "bab"));
+
+  a.proto->free(a); b.proto->free(b); c.proto->free(c);
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, 0};
+ {void (*tests[])(void) = {test0, test1, 0};
   run_tests("StringBuffer", 1, tests);
   return 0;
  }
