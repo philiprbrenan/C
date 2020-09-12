@@ -149,9 +149,10 @@ static XmlParse makeXmlParseFromFile                                            
    }
 
   if (1)                                                                        // Make the single root xml tag the root of the parse tree
-   {const ArenaTreeNode r = t.proto->root(t), f = r.proto->first(r);
+   {const ArenaTreeNode r = t.proto->root(t),     f = r.proto->first(r);
     ArenaTreeContent *  a = r.proto->content(r), *b = f.proto->content(f);
     *a = *b;
+    ArenaTreefe(c, r) c.proto->setUp(c, r);
    }
 
   b.proto->free(b);                                                                     // Free mapped input file as we can now reconstruct it from the parse tree
@@ -232,22 +233,22 @@ static XmlTag last_XmlTag                                                       
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->last(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 230 "/home/phil/c/z/xml/xml.c"
+#line 231 "/home/phil/c/z/xml/xml.c"
 static XmlTag next_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->next(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 230 "/home/phil/c/z/xml/xml.c"
+#line 231 "/home/phil/c/z/xml/xml.c"
 static XmlTag prev_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->prev(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 230 "/home/phil/c/z/xml/xml.c"
+#line 231 "/home/phil/c/z/xml/xml.c"
 static XmlTag parent_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->parent(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 230 "/home/phil/c/z/xml/xml.c"
+#line 231 "/home/phil/c/z/xml/xml.c"
 
 static XmlTag first_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
  (const XmlParse xml)                                                             // Parent tag
@@ -257,7 +258,7 @@ static XmlTag last_XmlParse                                                     
  (const XmlParse xml)                                                             // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: xml, node: xml.tree.proto->last(xml.tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 236 "/home/phil/c/z/xml/xml.c"
+#line 237 "/home/phil/c/z/xml/xml.c"
 
 //D1 Search                                                                     // Search the Xml parse tree
 
@@ -467,7 +468,7 @@ void test0()                                                                    
   x.proto->free(x);
  }
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TmakeXmlParseFromString //TparseXmlTagName //TtagName //TtagNameEquals
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TmakeXmlParseFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot
  {XmlParse x = makeXmlParseFromString(
 "<a>"
 "  <b>"
@@ -482,15 +483,16 @@ void test1()                                                                    
 
   assert(!x.errors.proto->count(x.errors));
 
-  XmlTag b = x.proto->findFirstTag(x, "b"); assert(b.proto->valid(b)); assert(b.proto->tagNameEquals(b, "b"));
-  XmlTag c = x.proto->findFirstTag(x, "c"); assert(c.proto->valid(c)); assert(c.proto->tagNameEquals(c, "c"));
-  XmlTag d = b.proto->findFirstChild(b, "d"); assert(d.proto->valid(d)); assert(d.proto->tagNameEquals(d, "d"));
-  XmlTag e = d.proto->findFirstChild(d, "e"); assert(e.proto->valid(e)); assert(e.proto->tagNameEquals(e, "e"));
-  XmlTag f = d.proto->findFirstChild(d, "f"); assert(f.proto->valid(f)); assert(f.proto->tagNameEquals(f, "f"));
-  XmlTag g = d.proto->findFirstChild(d, "g"); assert(g.proto->valid(g)); assert(g.proto->tagNameEquals(g, "g"));
-  XmlTag h = b.proto->findFirstChild(b, "h"); assert(h.proto->valid(h)); assert(h.proto->tagNameEquals(h, "h"));
-  XmlTag i = x.proto->findFirstTag(x, "i"); assert(i.proto->valid(i)); assert(i.proto->tagNameEquals(i, "i"));
-  XmlTag j = x.proto->findFirstTag(x, "j"); assert(j.proto->valid(j)); assert(j.proto->tagNameEquals(j, "j"));
+  XmlTag a = x.proto->root(x);                assert(!a.proto->valid(a)); assert(a.proto->tagNameEquals(a, "a"));
+  XmlTag b = x.proto->findFirstTag(x, "b"); assert( b.proto->valid(b)); assert(b.proto->tagNameEquals(b, "b")); assert(a.proto->equals(a, b.proto->parent(b)));
+  XmlTag c = x.proto->findFirstTag(x, "c"); assert( c.proto->valid(c)); assert(c.proto->tagNameEquals(c, "c")); assert(b.proto->equals(b, c.proto->parent(c)));
+  XmlTag d = b.proto->findFirstChild(b, "d"); assert( d.proto->valid(d)); assert(d.proto->tagNameEquals(d, "d")); assert(b.proto->equals(b, d.proto->parent(d)));
+  XmlTag e = d.proto->findFirstChild(d, "e"); assert( e.proto->valid(e)); assert(e.proto->tagNameEquals(e, "e")); assert(d.proto->equals(d, e.proto->parent(e)));
+  XmlTag f = d.proto->findFirstChild(d, "f"); assert( f.proto->valid(f)); assert(f.proto->tagNameEquals(f, "f")); assert(d.proto->equals(d, f.proto->parent(f)));
+  XmlTag g = d.proto->findFirstChild(d, "g"); assert( g.proto->valid(g)); assert(g.proto->tagNameEquals(g, "g")); assert(d.proto->equals(d, g.proto->parent(g)));
+  XmlTag h = b.proto->findFirstChild(b, "h"); assert( h.proto->valid(h)); assert(h.proto->tagNameEquals(h, "h")); assert(b.proto->equals(b, h.proto->parent(h)));
+  XmlTag i = x.proto->findFirstTag(x, "i"); assert( i.proto->valid(i)); assert(i.proto->tagNameEquals(i, "i")); assert(a.proto->equals(a, i.proto->parent(i)));
+  XmlTag j = x.proto->findFirstTag(x, "j"); assert( j.proto->valid(j)); assert(j.proto->tagNameEquals(j, "j")); assert(a.proto->equals(a, j.proto->parent(j)));
 
   assert(b.proto->equals(b, x.proto->first(x)));
   assert(c.proto->equals(c, b.proto->first(b)));
@@ -520,6 +522,8 @@ void test1()                                                                    
 
   assert(!strcmp(  H.proto->tagString(H),         "h" ));
   assert(          H.proto->tagStringEquals(H,    "h"));
+
+  assert(a.proto->equals(a, b.proto->parent(b)));
 
   x.proto->free(x);
  }
