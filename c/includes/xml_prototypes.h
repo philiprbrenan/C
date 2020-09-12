@@ -1,8 +1,6 @@
 static XmlTag makeXmlTag_XmlParse_ArenaTreeNode
  (const XmlParse        xml,
   const ArenaTreeNode node);
-static ArenaTreeNode node_XmlTag
- (const XmlTag tag);
 static XmlParse makeXmlParseFromFile
  (FileName            fileName);
 static XmlParse makeXmlParseFromString
@@ -150,8 +148,6 @@ struct ProtoTypes_XmlTag {
     const XmlTag parent);                                                       // Parent tag
   XmlTag  (*next)(                                                              // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
-  ArenaTreeNode  (*node)(                                                       // Get a node from a tag
-    const XmlTag tag);                                                          // Tag
   XmlTag  (*parent)(                                                            // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
   XmlTag  (*prev)(                                                              // Return the first child tag under the specified parent tag.
@@ -179,6 +175,6 @@ struct ProtoTypes_XmlTag {
   int  (*valid)(                                                                // Check that a tag is valid.
     const XmlTag tag);                                                          // Tag
  } const ProtoTypes_XmlTag =
-{by_XmlTag_sub, countChildren_size_XmlTag, count_size_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, last_XmlTag, next_XmlTag, node_XmlTag, parent_XmlTag, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, valid_XmlTag};
+{by_XmlTag_sub, countChildren_size_XmlTag, count_size_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, last_XmlTag, next_XmlTag, parent_XmlTag, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, valid_XmlTag};
 XmlTag newXmlTag(XmlTag allocator) {return allocator;}
 
