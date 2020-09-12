@@ -40,16 +40,11 @@ typedef struct $Tag                                                             
 #define $Question '?'
 #define $Exclaim  '!'
 
-static $Tag make$Tag_$Parse_ArenaTreeNode                                       // Make a tag descriptor from a parse tree node holding the tag
+static $Tag make$Tag_$Parse_ArenaTreeNode                                       //P Make a tag descriptor from a parse tree node holding the tag
  (const $Parse        xml,                                                      // Xml parse tree
   const ArenaTreeNode node)                                                     // Node holding tag
  {$Tag t = new$Tag(xml: xml, node: node);
   return t;
- }
-
-static ArenaTreeNode node_$Tag                                                  // Get a node from a tag
- (const $Tag tag)                                                               // Tag
- {return tag.node;
  }
 
 static $Parse make$ParseFromFile                                                // Make a parse $ from the contents of a file
@@ -203,8 +198,7 @@ static char  * parse$TagName                                                    
 
 static char * tagName_$Tag                                                      // Get the tag name from a node in the $ parse tree. The tag name is returned in a reused static buffer that the caller should not free.
  (const $Tag tag)                                                               // Tag
- {const ArenaTreeNode n = tag ▷ node;                                           // Parse tree node defining tag
-  return parse$TagName(n ▷ key);
+ {return parse$TagName(tag.node ▷ key);
  }
 
 static int tagNameEquals_$Tag_string                                            // Check the name of a tag.
@@ -215,8 +209,7 @@ static int tagNameEquals_$Tag_string                                            
 
 static char * tagString_$Tag                                                    //V Get the entire tag from a node in the $ parse tree.
  (const $Tag tag)                                                               // Tag
- {const ArenaTreeNode n = tag ▷ node;                                           // Parse tree node defining tag
-  return              n ▷ key;
+ {return tag.node ▷ key;
  }
 
 static int tagStringEquals_$Tag_string                                          // Check the string of a tag.
@@ -424,7 +417,7 @@ static int develop()                                                            
  {return !strcmp(getenv("HOME"), "/home/phil");
  }
 
-void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors
+void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //Tmake$ParseFromFile
  {$Parse x = make$ParseFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f/><g/></d><h/><i/></A>h");
 
   if (1)
@@ -450,7 +443,7 @@ void test0()                                                                    
   x ▷ free;
  }
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals
  {$Parse x = make$ParseFromString(
 "<a>"
 "  <b>"
@@ -465,15 +458,15 @@ void test1()                                                                    
 
   assert(!x.errors ▷ count);
 
-  $Tag b = x ▷ findFirstTag("b"); assert(b ▷ valid); assert(b ▷ tagNameEquals("b"));
-  $Tag c = x ▷ findFirstTag("c"); assert(c ▷ valid); assert(c ▷ tagNameEquals("c"));
-  $Tag d = x ▷ findFirstTag("d"); assert(d ▷ valid); assert(d ▷ tagNameEquals("d"));
-  $Tag e = x ▷ findFirstTag("e"); assert(e ▷ valid); assert(e ▷ tagNameEquals("e"));
-  $Tag f = x ▷ findFirstTag("f"); assert(f ▷ valid); assert(f ▷ tagNameEquals("f"));
-  $Tag g = x ▷ findFirstTag("g"); assert(g ▷ valid); assert(g ▷ tagNameEquals("g"));
-  $Tag h = x ▷ findFirstTag("h"); assert(h ▷ valid); assert(h ▷ tagNameEquals("h"));
-  $Tag i = x ▷ findFirstTag("i"); assert(i ▷ valid); assert(i ▷ tagNameEquals("i"));
-  $Tag j = x ▷ findFirstTag("j"); assert(j ▷ valid); assert(j ▷ tagNameEquals("j"));
+  $Tag b = x ▷ findFirstTag  ("b"); assert(b ▷ valid); assert(b ▷ tagNameEquals("b"));
+  $Tag c = x ▷ findFirstTag  ("c"); assert(c ▷ valid); assert(c ▷ tagNameEquals("c"));
+  $Tag d = b ▷ findFirstChild("d"); assert(d ▷ valid); assert(d ▷ tagNameEquals("d"));
+  $Tag e = d ▷ findFirstChild("e"); assert(e ▷ valid); assert(e ▷ tagNameEquals("e"));
+  $Tag f = d ▷ findFirstChild("f"); assert(f ▷ valid); assert(f ▷ tagNameEquals("f"));
+  $Tag g = d ▷ findFirstChild("g"); assert(g ▷ valid); assert(g ▷ tagNameEquals("g"));
+  $Tag h = b ▷ findFirstChild("h"); assert(h ▷ valid); assert(h ▷ tagNameEquals("h"));
+  $Tag i = x ▷ findFirstTag  ("i"); assert(i ▷ valid); assert(i ▷ tagNameEquals("i"));
+  $Tag j = x ▷ findFirstTag  ("j"); assert(j ▷ valid); assert(j ▷ tagNameEquals("j"));
 
   assert(b ▷ equals(x ▷ first));
   assert(c ▷ equals(b ▷ first));
@@ -488,6 +481,21 @@ void test1()                                                                    
 
   assert(b ▷ count         == 10);
   assert(b ▷ countChildren == 3);
+
+  assert(!strcmp(parse$TagName(b.node ▷ key), "b"));
+  assert(!strcmp(b ▷ tagName,                 "b"));
+
+  assert(!strcmp(b ▷ tagString, "<b>" ));
+  assert(!strcmp(c ▷ tagString, "<c/>"));
+  assert(b ▷ tagStringEquals(   "<b>" ));
+  assert(c ▷ tagStringEquals(   "<c/>"));
+
+  $Tag H = h ▷ first;
+  assert(!strcmp(H.node ▷ key,     "h"));
+  assert(!strcmp(H      ▷ tagName, "text"));
+
+  assert(!strcmp(  H ▷ tagString,         "h" ));
+  assert(          H ▷ tagStringEquals(   "h"));
 
   x ▷ free;
  }
