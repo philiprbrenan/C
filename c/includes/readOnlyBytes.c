@@ -174,11 +174,11 @@ static size_t b2SumW8_ReadOnlyBytes                                             
 static ArenaTree splitNewLine                                                   // Split the specified ReadOnlyBytes on any new line characters
  (const ReadOnlyBytes r)                                                                    // Description of read only sequence of bytes
  {const ArenaTree t = makeArenaTree();                                          // Results are held in an arena tree
-  size_t i = 0, j = -1;
+  size_t i = 0, j = 0;
   void save()                                                                   // Save a string
-   {const ArenaTreeNode n = t.proto->noden(t, r.data+j+1, i - j);
+   {const ArenaTreeNode n = t.proto->noden(t, r.data+j, i - j + 1);
                             n.proto->putTreeLast(n);
-    j = i;
+    j = i+1;
    }
   for(; i < r.length; ++i) if (*(r.data + i) == '\n') save();
   if (  i > j) save();
@@ -294,33 +294,67 @@ void test8()                                                                    
  }
 
 void test9()                                                                    //TsplitNewLine //TsplitSpaces
- {ReadOnlyBytes l = makeReadOnlyBytesFromString("\na\nbb\nccc\ndddd");
-  ArenaTree L = l.proto->splitNewLine(l);
-  ArenaTreeNode l1 = L.proto->first(L), l2 = l1.proto->next(l1), l3 = l2.proto->next(l2),
-                                l4 = l3.proto->next(l3), l5 = l4.proto->next(l4);
-  assert(l1.proto->equalsString(l1, "\n"));
-  assert(l2.proto->equalsString(l2, "a\n"));
-  assert(l3.proto->equalsString(l3, "bb\n"));
-  assert(l4.proto->equalsString(l4, "ccc\n"));
-  assert(l5.proto->equalsString(l5, "dddd"));
+ {if (1)
+   {ReadOnlyBytes l = makeReadOnlyBytesFromString("\na\nbb\nccc\ndddd");
+    ArenaTree L = l.proto->splitNewLine(l);
+    ArenaTreeNode l1 = L.proto->first(L), l2 = l1.proto->next(l1), l3 = l2.proto->next(l2),
+                                  l4 = l3.proto->next(l3), l5 = l4.proto->next(l4);
+    assert(l1.proto->equalsString(l1, "\n"));
+    assert(l2.proto->equalsString(l2, "a\n"));
+    assert(l3.proto->equalsString(l3, "bb\n"));
+    assert(l4.proto->equalsString(l4, "ccc\n"));
+    assert(l5.proto->equalsString(l5, "dddd"));
 
-  l.proto->free(l); L.proto->free(L);
+    l.proto->free(l); L.proto->free(L);
+   }
 
-  ReadOnlyBytes s = makeReadOnlyBytesFromString(" \na bb   ccc dddd  ");
-  ArenaTree S = s.proto->splitSpaces(s);
-  ArenaTreeNode s1 = S.proto->first(S), s2 = s1.proto->next(s1), s3 = s2.proto->next(s2),
-                                s4 = s3.proto->next(s3);
-  assert(s1.proto->equalsString(s1, "a"));
-  assert(s2.proto->equalsString(s2, "bb"));
-  assert(s3.proto->equalsString(s3, "ccc"));
-  assert(s4.proto->equalsString(s4, "dddd"));
+  if (1)
+   {ReadOnlyBytes l = makeReadOnlyBytesFromString("\n\n\n");
+    ArenaTree L = l.proto->splitNewLine(l);
+    ArenaTreeNode l1 = L.proto->first(L), l2 = l1.proto->next(l1), l3 = l2.proto->next(l2);
+    assert(l1.proto->equalsString(l1, "\n"));
+    assert(l2.proto->equalsString(l2, "\n"));
+    assert(l3.proto->equalsString(l3, "\n"));
 
-  s.proto->free(s); S.proto->free(S);
+    l.proto->free(l); L.proto->free(L);
+   }
+
+  if (1)
+   {ReadOnlyBytes l = makeReadOnlyBytesFromString(" ");
+    ArenaTree L = l.proto->splitNewLine(l);
+    ArenaTreeNode l1 = L.proto->first(L);
+    assert(l1.proto->equalsString(l1, " "));
+
+    l.proto->free(l); L.proto->free(L);
+   }
+
+  if (1)
+   {ReadOnlyBytes l = makeReadOnlyBytesFromString("");
+    ArenaTree L = l.proto->splitNewLine(l);
+    ArenaTreeNode l1 = L.proto->first(L);
+    assert(l1.proto->equalsString(l1, ""));
+
+    l.proto->free(l); L.proto->free(L);
+   }
+
+  if (1)
+   {ReadOnlyBytes s = makeReadOnlyBytesFromString(" \na bb   ccc dddd  ");
+    ArenaTree S = s.proto->splitSpaces(s);
+    ArenaTreeNode s1 = S.proto->first(S), s2 = s1.proto->next(s1), s3 = s2.proto->next(s2),
+                                  s4 = s3.proto->next(s3);
+    assert(s1.proto->equalsString(s1, "a"));
+    assert(s2.proto->equalsString(s2, "bb"));
+    assert(s3.proto->equalsString(s3, "ccc"));
+    assert(s4.proto->equalsString(s4, "dddd"));
+
+    s.proto->free(s); S.proto->free(S);
+   }
  }
 
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
                            test6, test7, test8, test9, 0};
+// {void (*tests[])(void) = {test9, 0};
   run_tests("ReadOnlyBytes", 1, tests);
   return 0;
  }
