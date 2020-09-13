@@ -12,6 +12,11 @@ static void addFormat
  (const StringBuffer buffer,
   const char * const format,
   ...);
+static void addChar_StringBuffer
+ (const StringBuffer    buffer,
+  const char c);
+static void addNewLine
+ (const StringBuffer buffer);
 static size_t length_StringBuffer
  (const StringBuffer buffer);
 static int equals_StringBuffer_StringBuffer
@@ -45,10 +50,15 @@ struct ProtoTypes_StringBuffer {
   void  (*add)(                                                                 // Concatenate a string
     const StringBuffer buffer,                                                  // StringBuffer
     const char * const string);                                                 // Zero terminated string
+  void  (*addChar)(                                                             // Add the specified character
+    const StringBuffer buffer,                                                  // StringBuffer
+    const char c);                                                              // Character to add
   void  (*addFormat)(                                                           // Add a formatted string
     const StringBuffer buffer,                                                  // StringBuffer
     const char * const format,                                                  // Format
      ...);                                                                      // Strings
+  void  (*addNewLine)(                                                          // Add a new line
+    const StringBuffer buffer);                                                 // StringBuffer
   void  (*addReadOnlyBytes)(                                                    // Concatenate a read only bytes
     const StringBuffer buffer,                                                  // StringBuffer
     const ReadOnlyBytes string);                                                // Read only bytes
@@ -84,6 +94,6 @@ struct ProtoTypes_StringBuffer {
     const size_t length,                                                        // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
     char * const string);                                                       // String to load with enough space for the string and its terminating zero
  } const ProtoTypes_StringBuffer =
-{add, addFormat, addReadOnlyBytes, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, length_StringBuffer, readOnlyBytes_StringBuffer, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string};
+{add, addChar_StringBuffer, addFormat, addNewLine, addReadOnlyBytes, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, length_StringBuffer, readOnlyBytes_StringBuffer, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string};
 StringBuffer newStringBuffer(StringBuffer allocator) {return allocator;}
 
