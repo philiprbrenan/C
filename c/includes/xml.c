@@ -409,6 +409,22 @@ static  size_t count_size_XmlTag                                                
  {return t.node.proto->count(t.node);
  }
 
+//D1 Edit                                                                       // Change the structure of an Xml parse tree.
+
+static void changeName_XmlTag                                                     // Change the name of the specified tag.
+ (const XmlTag         tag,                                                       // Tag
+  const char * const newName)                                                   // New name                                                                               //vconst XmlTag t)                                                                 // Tag
+ {const char * const oldName = tag.proto->tagName(tag);                                   // Old name
+  const char * const string  = tag.proto->tagString(tag);                                 // Tag string
+  const size_t o = strlen(oldName), n = strlen(newName), l = strlen(string);
+
+  char key[l + n + 1], *p = key, *q = strstr(string, oldName);
+  p = stpncpy(p, string, q - string);
+  p = stpcpy (p, newName);
+  p = stpcpy (p, q + o);
+  tag.node.proto->setKey(tag.node, key);
+ }
+
 //D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
 
 static XmlTag wrap_XmlTag_string                                                    // Wrap a specified tag with a new tag and return the newly createdf wraping tag.
@@ -514,7 +530,7 @@ static int prettyPrintsAs_int_XmlTag_string                                     
   r.proto->free(r);
   return 1;
  }
-#line 466 "/home/phil/c/z/xml/xml.c"
+#line 482 "/home/phil/c/z/xml/xml.c"
 
 static void prettyPrintAssert_XmlTag                                              // Pretty print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
@@ -637,7 +653,7 @@ void test0()                                                                    
   x.proto->free(x);
  } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TmakeXmlParseFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TmakeXmlParseFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName
  {XmlParse x = makeXmlParseFromString
    ("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>");
 
@@ -697,11 +713,19 @@ void test1()                                                                    
 
   assert(a.proto->equals(a, b.proto->parent(b)));
 
-  XmlTag F = f.proto->wrap(f, "F id='1'");
+  XmlTag F = f.proto->wrap(f, "FFFF id='1'");
 //d.proto->prettyPrintAssert(d, "d");
   assert(prettyPrintsAs_int_XmlTag_string(d,
 "\n"
-"<d><e/>e<F id='1'><f/></F>f<g>g</g>\n"
+"<d><e/>e<FFFF id='1'><f/></FFFF>f<g>g</g>\n"
+"</d>\n"
+));
+
+  F.proto->changeName(F, "NNNN");
+//d.proto->prettyPrintAssert(d, "d");
+  assert(prettyPrintsAs_int_XmlTag_string(d,
+"\n"
+"<d><e/>e<NNNN id='1'><f/></NNNN>f<g>g</g>\n"
 "</d>\n"
 ));
 
