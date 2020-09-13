@@ -455,7 +455,9 @@ static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag                           
    }
 
   print(tag, 0);
-  return p.proto->readOnlyBytes(p);
+  const ReadOnlyBytes r = p.proto->readOnlyBytes(p);
+  p.proto->free(p);
+  return r;
  }
 
 static ReadOnlyBytes prettyPrint_readOnlyBytes_Xml                                // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
@@ -469,6 +471,7 @@ static int prettyPrintsAs_int_Xml_string                                        
   const char * const expected)                                                  // Expected pretty print
  {const ReadOnlyBytes r = xml.proto->prettyPrint(xml);
   const int result =  r.proto->equalsString(r, expected);
+
   if (!result)                                                                   // Strings match
    {for(size_t i = 0; i < r.length; ++i)
      {char a = *(r.data+i), b = *(expected+i);
@@ -480,6 +483,7 @@ static int prettyPrintsAs_int_Xml_string                                        
        }
      }
    }
+
   r.proto->free(r);
   return 1;
  }
@@ -809,7 +813,7 @@ void test3()                                                                    
 
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, 0};
-// {void (*tests[])(void) = {test0, 0};
+//{void (*tests[])(void) = {test0, 0};
   run_tests("Xml", 1, tests);
   return 0;
  }
