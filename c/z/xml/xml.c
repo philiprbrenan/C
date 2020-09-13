@@ -9,6 +9,7 @@
 #include <arenaRedBlackTree.c>
 #include <arenaTree.c>
 #include <readOnlyBytes.c>
+#include <stringBuffer.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
@@ -134,8 +135,8 @@ static $Parse make$ParseFromFile                                                
       else return error(o, "Cannot find closing: %c\n", $Close);                // No closing > present
      }
     else                                                                        // Check that trailing text is all spaces
-     {if (remainderIsWhiteSpace(p)) return x;                                   // End of $ text with just trailing white space
-      return error(p, "Ignoring text at end\n");
+     {if (!remainderIsWhiteSpace(p)) error(p, "Ignoring text at end\n");
+      break;
      }
    }
 
@@ -235,6 +236,46 @@ static $Tag first_$Parse                                                        
  {return new $Tag(xml: xml, node: xml.tree ▷ first);
  }
 duplicate s/first/last/
+
+//D1 Location                                                                   // Check the current location in the $ parse tre
+
+static int isFirst_$Tag                                                         // Check that the specified tag is first under its parent
+ (const $Tag tag)                                                               // Tag
+ {if (!tag ▷ valid) return 1;                                                   // The root tag is always first
+  const $Tag parent = tag ▷ parent, f = parent ▷ first;
+  return f ▷ equals(tag);
+ }
+duplicate s/first/last/g,s/First/Last/g
+
+//D1 Text methods                                                               // Methods that operate on text tags
+
+static char * text_string_$Tag                                                  // Return the text of a text tag if we are on a text tag.
+ (const $Tag tag)                                                               // Tag
+ {char * const k = tag ▷ tagString;
+  return *k == $Open ? 0 : k;                                                   // If the start of the key is not < then it must be text
+ }
+
+static int onlyText_$Tag                                                        // Return true if a tag contains just one text element and nothing else
+ (const $Tag parent)                                                            // Tag
+ {const size_t n = parent ▷ countChildren;
+  if (n != 1) return 0;                                                         // If there is more than one tag than there must be a non text tag present to separate the text
+  const $Tag first = parent ▷ first;
+  return !!first ▷ text;
+ }
+
+//D1 Statistics                                                                 // Counts on the tag
+
+static int empty_$Tag                                                           // Check whether the specified parent tag is empty
+ (const $Tag parent)                                                            // Parent tag
+ {return !parent ▷ countChildren;
+ }
+
+static size_t openChildren_$Tag                                                 // Count the nunber of child tags that are open tags
+ (const $Tag parent)                                                            // Parent tag
+ {size_t n = 0;
+  $fe(child, parent) if (child ▷ countChildren > 0) ++n;
+  return n;
+ }
 
 //D1 Search                                                                     // Search the $ parse tree
 
@@ -339,28 +380,77 @@ static  size_t count_size_$Tag                                                  
  }
 
 
-//D1 Print                                                                        // Print an $ parse tree starting at the specified tag.
-//static ReadOnlyBytes print2_readOnlyBytes_$Tag                                  // Print the $ parse tree as a string starting at the specified tag.
-// (const $Tag tag)                                                               // Starting tag
-// {size_t  l = 0;                                                                // Length of output string
-//  void len(const $Tag parent)                                                   // Find the size of buffer we will need
-//   {l += 2 * strlen(parent ▷ tag);                                              // Parent tag
-//    $fe(child, parent) len(child);                                              // Each child
-//   }
-//
-//  $String p;
-//  void print(const $Node parent)                                                // Print the children of the specified parent
-//   {const $String k = parent ▷ key;
-//    p = stpcpy(p, k);
-//    $fe(child, parent) print(child);                                            // Each child
-//    *p = 0;                                                                     // End the string so far
-//   }
-//
-//  len(node);
-//  const $String s = p = alloc(l+1); *s = 0;
-//  print(node);
-//  return new ReadOnlyBytes(data:s, length: l, ReadOnlyBytesAllocator_malloc);
-// }
+//D1 Print                                                                      // Print an $ parse tree starting at the specified tag.
+
+static ReadOnlyBytes prettyPrint_readOnlyBytes_$Tag                             // Print the $ parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
+ ($Tag tag)                                                                     // Starting tag
+ {StringBuffer p = makeStringBuffer();
+
+  void print(const $Tag parent, int depth)                                      // Print the specified parent and its children
+   {void space()                                                                // Format with white space
+     {p ▷ add("\n");
+      for(int i = 0; i < depth; ++i) p ▷ add(" ");
+     }
+    void open()                                                                 // Add close tag
+     {p ▷ add(parent ▷ tagString);
+     }
+    void close()                                                                // Add close tag
+     {p ▷ addFormat("%c%c%s%c", $Open, $Slash, parent ▷ tagName, $Close);
+     }
+    if (parent ▷ empty) open();                                                 // Parent is empty
+    else if (!parent ▷ openChildren)                                            // Parent contains only text and singletons
+     {open();
+      $fe(child, parent) p ▷ add(child ▷ tagString);
+      close();
+     }
+    else                                                                        // Parent contains open tags
+     {space(); open();
+      $fe(child, parent) print(child, depth+1);
+      space(); close();
+      if (!parent ▷ isLast) space();                                              // If we are last the next end tag will be offset anyway
+     }
+   }
+
+  print(tag, 0);
+  return p ▷ readOnlyBytes;
+ }
+
+static ReadOnlyBytes prettyPrint_readOnlyBytes_$                                // Print the $ parse tree with additional spacing between tags to make the tree easier to read.
+ ($Parse xml)                                                                   // $ parse tree
+ {const $Tag root = xml ▷ root;
+  return root ▷ prettyPrint;
+ }
+
+static int prettyPrintsAs_int_$_string                                          // Check that the $ parse tree prints as expected
+ ($Parse xml,                                                                   // $ parse tree
+  const char * const expected)                                                  // Expected pretty print
+ {const ReadOnlyBytes r = xml ▷ prettyPrint;
+  const int result =  r ▷ equalsString(expected);
+  if (!result)                                                                   // Strings match
+   {for(size_t i = 0; i < r.length; ++i)
+     {char a = *(r.data+i), b = *(expected+i);
+      if (a != b)
+       {say("Strings differ in prettyPrintsAs"
+            " at position: %lu on characters:  %c and %c\n", i, a, b);
+        r ▷ free;
+        return 0;
+       }
+     }
+   }
+  r ▷ free;
+  return 1;
+ }
+
+static void prettyPrintAssert_$Tag_int                                          // Pretty print the $ parse tree as an assert statement
+ (const $Tag tag,                                                               // Starting tag
+  const int  print)                                                             // Print if true
+ {if (!print) return;
+  const FileName f = makeFileName("/home/phil/c/z/z/zzz.txt");
+  if (! f ▷ size) return;                                                       // File does not exist - create it by hand to make this function work
+  const ReadOnlyBytes r = tag ▷ prettyPrint;
+  r ▷ writeFile(f);
+  f ▷ free; r ▷  free;
+ }
 
 static ReadOnlyBytes print_readOnlyBytes_$Tag                                   // Print the parse tree as a string starting at the specified tag.
  (const $Tag tag)                                                               // Starting tag
@@ -419,7 +509,14 @@ static int develop()                                                            
  }
 
 void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //Tmake$ParseFromFile
- {$Parse x = make$ParseFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f/><g/></d><h/><i/></A>h");
+ {$Parse x = make$ParseFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h");
+
+  assert(x ▷ prettyPrintsAs("\n"
+"<a>aa<b>bb<c/>cc</b>dd\n"
+" <d><e/><f>F</f><g/>\n"
+" </d>\n"
+" <h/><i/>\n"
+"</a>\n"));
 
   if (1)
    {ArenaTree e = x.errors;
