@@ -21,6 +21,8 @@ static void addSingleQuote
  (const StringBuffer buffer);
 static void addDoubleQuote
  (const StringBuffer buffer);
+static void addQuotedNewLine
+ (const StringBuffer buffer);
 static size_t length_StringBuffer
  (const StringBuffer buffer);
 static int equals_StringBuffer_StringBuffer
@@ -65,6 +67,8 @@ struct ProtoTypes_StringBuffer {
      ...);                                                                      // Strings
   void  (*addNewLine)(                                                          // Add a new line
     const StringBuffer buffer);                                                 // StringBuffer
+  void  (*addQuotedNewLine)(                                                    // Add a quoted new line
+    const StringBuffer buffer);                                                 // StringBuffer
   void  (*addReadOnlyBytes)(                                                    // Concatenate a read only bytes
     const StringBuffer buffer,                                                  // StringBuffer
     const ReadOnlyBytes string);                                                // Read only bytes
@@ -102,6 +106,6 @@ struct ProtoTypes_StringBuffer {
     const size_t length,                                                        // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
     char * const string);                                                       // String to load with enough space for the string and its terminating zero
  } const ProtoTypes_StringBuffer =
-{add, addChar_StringBuffer, addDoubleQuote, addFormat, addNewLine, addReadOnlyBytes, addSingleQuote, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, length_StringBuffer, readOnlyBytes_StringBuffer, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string};
+{add, addChar_StringBuffer, addDoubleQuote, addFormat, addNewLine, addQuotedNewLine, addReadOnlyBytes, addSingleQuote, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, length_StringBuffer, readOnlyBytes_StringBuffer, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string};
 StringBuffer newStringBuffer(StringBuffer allocator) {return allocator;}
 
