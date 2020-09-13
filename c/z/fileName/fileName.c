@@ -113,7 +113,7 @@ static void writeFile_$_string_ssize                                            
  (const $            file,                                                      // File name to read
   const char * const content,                                                   // Content for the file
   const size_t length)                                                          // Length of content, or zero for a zero terminated string
- {const int o = open(file.name, O_WRONLY | O_CREAT, S_IRWXU);                   // Open file for write, creating it if necessary
+ {const int o = open(file.name, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);         // Open file for write clobbering any existing content, creating it if necessary
   file ▷ writeContentToOpenFile(o, content, length);
   close(o);                                                                     // Close the file: the map is private so we no long need the underlying file
  }
