@@ -56,11 +56,13 @@ my $tests = sub                                                                 
   for my $c(@c)
    {push @t, <<END;
     - name: Run $c
-      continue-on-error: true
+      if: always()
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/$c/$c.c --cIncludes c/includes
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/$c/$c.c --cIncludes c/includes --valgrind
 END
+#     continue-on-error: true
+
    }
   join "\n", @t;
  }->();
