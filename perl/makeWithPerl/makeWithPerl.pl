@@ -250,7 +250,7 @@ elsif ($c)                                                                      
     my $result = qx($c);
     say STDERR $result;
     unlink $o, $g;
-    exit(1) unless $result =~ m(SUCCESS);                                       # Confirm successful
+    exit(1);# unless $result =~ m(SUCCESS);                                       # Confirm successful
     if (!$optimize)                                                             # Place coverage files in a sub folder
      {my $c = qq(gcov $a);
       lll qq($c);
