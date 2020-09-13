@@ -35,6 +35,18 @@ static XmlTag first_XmlParse
  (const XmlParse xml);
 static XmlTag last_XmlParse
  (const XmlParse xml);
+static int isFirst_XmlTag
+ (const XmlTag tag);
+static int isLast_XmlTag
+ (const XmlTag tag);
+static char * text_string_XmlTag
+ (const XmlTag tag);
+static int onlyText_XmlTag
+ (const XmlTag parent);
+static int empty_XmlTag
+ (const XmlTag parent);
+static size_t openChildren_XmlTag
+ (const XmlTag parent);
 static int valid_XmlTag
  (const XmlTag tag);
 static XmlTag findFirstChild_XmlTag_XmlTag_string
@@ -70,6 +82,16 @@ static  size_t count_size_Xml
  (const XmlParse x);
 static  size_t count_size_XmlTag
  (const XmlTag t);
+static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag
+ (XmlTag tag);
+static ReadOnlyBytes prettyPrint_readOnlyBytes_Xml
+ (XmlParse xml);
+static int prettyPrintsAs_int_Xml_string
+ (XmlParse xml,
+  const char * const expected);
+static void prettyPrintAssert_XmlTag_int
+ (const XmlTag tag,
+  const int  print);
 static ReadOnlyBytes print_readOnlyBytes_XmlTag
  (const XmlTag tag);
 static ReadOnlyBytes print_ReadOnlyBytes_XmlParse
@@ -111,6 +133,11 @@ struct ProtoTypes_XmlParse {
   XmlTag  (*makeXmlTag)(                                                        // Make a tag descriptor from a parse tree node holding the tag
     const XmlParse xml,                                                         // Xml parse tree
     const ArenaTreeNode node);                                                  // Node holding tag
+  ReadOnlyBytes  (*prettyPrint)(                                                // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
+    XmlParse xml);                                                              // Xml parse tree
+  int  (*prettyPrintsAs)(                                                       // Check that the Xml parse tree prints as expected
+    XmlParse xml,                                                               // Xml parse tree
+    const char * const expected);                                               // Expected pretty print
   int  (*printContains)(                                                        // Check the print of an Xml parse tree contains the expected string.
     const XmlParse xml,                                                         // Xml parse tree
     const char * expected);                                                     // Expected string
@@ -122,7 +149,7 @@ struct ProtoTypes_XmlParse {
   XmlTag  (*root)(                                                              // Return the root tag of the specified Xml parse tree
     const XmlParse xml);                                                        // Xml parse tree
  } const ProtoTypes_XmlParse =
-{by_XmlParse_sub, countChildren_size_Xml, count_size_Xml, errors_XmlParse, findFirstChild_XmlTag_XmlParse_string, findFirstTag_XmlTag_XmlParse_string, first_XmlParse, free_XmlParse, last_XmlParse, makeXmlTag_XmlParse_ArenaTreeNode, printContains_XmlParse, print_ReadOnlyBytes_XmlParse, printsAs_XmlParse, root_XmlParse};
+{by_XmlParse_sub, countChildren_size_Xml, count_size_Xml, errors_XmlParse, findFirstChild_XmlTag_XmlParse_string, findFirstTag_XmlTag_XmlParse_string, first_XmlParse, free_XmlParse, last_XmlParse, makeXmlTag_XmlParse_ArenaTreeNode, prettyPrint_readOnlyBytes_Xml, prettyPrintsAs_int_Xml_string, printContains_XmlParse, print_ReadOnlyBytes_XmlParse, printsAs_XmlParse, root_XmlParse};
 XmlParse newXmlParse(XmlParse allocator) {return allocator;}
 
 struct ProtoTypes_XmlTag {
@@ -133,6 +160,8 @@ struct ProtoTypes_XmlTag {
     const XmlTag parent);                                                       // Parent tag
   size_t  (*count)(                                                             // Count the number of tags under the specified tag in an Xml parse tree
     const XmlTag t);                                                            // Parent tag
+  int  (*empty)(                                                                // Check whether the specified parent tag is empty
+    const XmlTag parent);                                                       // Parent tag
   int  (*equals)(                                                               // Confirm that two tags refer to the same text location in the source document.
     const XmlTag a,                                                             // First tag
     const XmlTag b);                                                            // Second tag
@@ -144,12 +173,25 @@ struct ProtoTypes_XmlTag {
     const char * const key);                                                    // Name of the tag to find
   XmlTag  (*first)(                                                             // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
+  int  (*isFirst)(                                                              // Check that the specified tag is first under its parent
+    const XmlTag tag);                                                          // Tag
+  int  (*isLast)(                                                               // Check that the specified tag is last under its parent
+    const XmlTag tag);                                                          // Tag
   XmlTag  (*last)(                                                              // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
   XmlTag  (*next)(                                                              // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
+  int  (*onlyText)(                                                             // Return true if a tag contains just one text element and nothing else
+    const XmlTag parent);                                                       // Tag
+  size_t  (*openChildren)(                                                      // Count the nunber of child tags that are open tags
+    const XmlTag parent);                                                       // Parent tag
   XmlTag  (*parent)(                                                            // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
+  void  (*prettyPrintAssert)(                                                   // Pretty print the Xml parse tree as an assert statement
+    const XmlTag tag,                                                           // Starting tag
+    const int print);                                                           // Print if true
+  ReadOnlyBytes  (*prettyPrint)(                                                // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
+    XmlTag tag);                                                                // Starting tag
   XmlTag  (*prev)(                                                              // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
   int  (*printContains)(                                                        // Check the print of an Xml parse tree starting at the specified tag contains the expected string
@@ -172,9 +214,11 @@ struct ProtoTypes_XmlTag {
     const char * const expected);                                               // Expected name of tag
   char *  (*tagString)(                                                         // Get the entire tag from a node in the Xml parse tree.
     const XmlTag tag);                                                          // Tag
+  char *  (*text)(                                                              // Return the text of a text tag if we are on a text tag.
+    const XmlTag tag);                                                          // Tag
   int  (*valid)(                                                                // Check that a tag is valid.
     const XmlTag tag);                                                          // Tag
  } const ProtoTypes_XmlTag =
-{by_XmlTag_sub, countChildren_size_XmlTag, count_size_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, last_XmlTag, next_XmlTag, parent_XmlTag, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, valid_XmlTag};
+{by_XmlTag_sub, countChildren_size_XmlTag, count_size_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, isFirst_XmlTag, isLast_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, openChildren_XmlTag, parent_XmlTag, prettyPrintAssert_XmlTag_int, prettyPrint_readOnlyBytes_XmlTag, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, text_string_XmlTag, valid_XmlTag};
 XmlTag newXmlTag(XmlTag allocator) {return allocator;}
 
