@@ -1070,3 +1070,4 @@ int main(void)                                                                  
  }
 #endif
 #endif
+// valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/arenaTree/arenaTree
