@@ -10,6 +10,7 @@
 #include <arenaRedBlackTree.c>
 #include <arenaTree.c>
 #include <readOnlyBytes.c>
+#include <stringBuffer.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
@@ -135,8 +136,8 @@ static XmlParse makeXmlParseFromFile                                            
       else return error(o, "Cannot find closing: %c\n", XmlClose);                // No closing > present
      }
     else                                                                        // Check that trailing text is all spaces
-     {if (remainderIsWhiteSpace(p)) return x;                                   // End of Xml text with just trailing white space
-      return error(p, "Ignoring text at end\n");
+     {if (!remainderIsWhiteSpace(p)) error(p, "Ignoring text at end\n");
+      break;
      }
    }
 
@@ -233,22 +234,22 @@ static XmlTag last_XmlTag                                                       
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->last(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 231 "/home/phil/c/z/xml/xml.c"
+#line 232 "/home/phil/c/z/xml/xml.c"
 static XmlTag next_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->next(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 231 "/home/phil/c/z/xml/xml.c"
+#line 232 "/home/phil/c/z/xml/xml.c"
 static XmlTag prev_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->prev(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 231 "/home/phil/c/z/xml/xml.c"
+#line 232 "/home/phil/c/z/xml/xml.c"
 static XmlTag parent_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->parent(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 231 "/home/phil/c/z/xml/xml.c"
+#line 232 "/home/phil/c/z/xml/xml.c"
 
 static XmlTag first_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
  (const XmlParse xml)                                                             // Parent tag
@@ -258,7 +259,53 @@ static XmlTag last_XmlParse                                                     
  (const XmlParse xml)                                                             // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: xml, node: xml.tree.proto->last(xml.tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 237 "/home/phil/c/z/xml/xml.c"
+#line 238 "/home/phil/c/z/xml/xml.c"
+
+//D1 Location                                                                   // Check the current location in the Xml parse tre
+
+static int isFirst_XmlTag                                                         // Check that the specified tag is first under its parent
+ (const XmlTag tag)                                                               // Tag
+ {if (!tag.proto->valid(tag)) return 1;                                                   // The root tag is always first
+  const XmlTag parent = tag.proto->parent(tag), f = parent.proto->first(parent);
+  return f.proto->equals(f, tag);
+ }
+static int isLast_XmlTag                                                         // Check that the specified tag is last under its parent
+ (const XmlTag tag)                                                               // Tag
+ {if (!tag.proto->valid(tag)) return 1;                                                   // The root tag is always last
+  const XmlTag parent = tag.proto->parent(tag), f = parent.proto->last(parent);
+  return f.proto->equals(f, tag);
+ }
+#line 248 "/home/phil/c/z/xml/xml.c"
+
+//D1 Text methods                                                               // Methods that operate on text tags
+
+static char * text_string_XmlTag                                                  // Return the text of a text tag if we are on a text tag.
+ (const XmlTag tag)                                                               // Tag
+ {char * const k = tag.proto->tagString(tag);
+  return *k == XmlOpen ? 0 : k;                                                   // If the start of the key is not < then it must be text
+ }
+
+static int onlyText_XmlTag                                                        // Return true if a tag contains just one text element and nothing else
+ (const XmlTag parent)                                                            // Tag
+ {const size_t n = parent.proto->countChildren(parent);
+  if (n != 1) return 0;                                                         // If there is more than one tag than there must be a non text tag present to separate the text
+  const XmlTag first = parent.proto->first(parent);
+  return !!first.proto->text(first);
+ }
+
+//D1 Statistics                                                                 // Counts on the tag
+
+static int empty_XmlTag                                                           // Check whether the specified parent tag is empty
+ (const XmlTag parent)                                                            // Parent tag
+ {return !parent.proto->countChildren(parent);
+ }
+
+static size_t openChildren_XmlTag                                                 // Count the nunber of child tags that are open tags
+ (const XmlTag parent)                                                            // Parent tag
+ {size_t n = 0;
+  Xmlfe(child, parent) if (child.proto->countChildren(child) > 0) ++n;
+  return n;
+ }
 
 //D1 Search                                                                     // Search the Xml parse tree
 
@@ -363,28 +410,77 @@ static  size_t count_size_XmlTag                                                
  }
 
 
-//D1 Print                                                                        // Print an Xml parse tree starting at the specified tag.
-//static ReadOnlyBytes print2_readOnlyBytes_XmlTag                                  // Print the Xml parse tree as a string starting at the specified tag.
-// (const XmlTag tag)                                                               // Starting tag
-// {size_t  l = 0;                                                                // Length of output string
-//  void len(const XmlTag parent)                                                   // Find the size of buffer we will need
-//   {l += 2 * strlen(parent.proto->tag(parent));                                              // Parent tag
-//    Xmlfe(child, parent) len(child);                                              // Each child
-//   }
-//
-//  XmlString p;
-//  void print(const XmlNode parent)                                                // Print the children of the specified parent
-//   {const XmlString k = parent.proto->key(parent);
-//    p = stpcpy(p, k);
-//    Xmlfe(child, parent) print(child);                                            // Each child
-//    *p = 0;                                                                     // End the string so far
-//   }
-//
-//  len(node);
-//  const XmlString s = p = alloc(l+1); *s = 0;
-//  print(node);
-//  return newReadOnlyBytes(({struct ReadOnlyBytes t = {data:s, length: l, ReadOnlyBytesAllocator_malloc, proto: &ProtoTypes_ReadOnlyBytes}; t;}));
-// }
+//D1 Print                                                                      // Print an Xml parse tree starting at the specified tag.
+
+static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag                             // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
+ (XmlTag tag)                                                                     // Starting tag
+ {StringBuffer p = makeStringBuffer();
+
+  void print(const XmlTag parent, int depth)                                      // Print the specified parent and its children
+   {void space()                                                                // Format with white space
+     {p.proto->add(p, "\n");
+      for(int i = 0; i < depth; ++i) p.proto->add(p, " ");
+     }
+    void open()                                                                 // Add close tag
+     {p.proto->add(p, parent.proto->tagString(parent));
+     }
+    void close()                                                                // Add close tag
+     {p.proto->addFormat(p, "%c%c%s%c", XmlOpen, XmlSlash, parent.proto->tagName(parent), XmlClose);
+     }
+    if (parent.proto->empty(parent)) open();                                                 // Parent is empty
+    else if (!parent.proto->openChildren(parent))                                            // Parent contains only text and singletons
+     {open();
+      Xmlfe(child, parent) p.proto->add(p, child.proto->tagString(child));
+      close();
+     }
+    else                                                                        // Parent contains open tags
+     {space(); open();
+      Xmlfe(child, parent) print(child, depth+1);
+      space(); close();
+      if (!parent.proto->isLast(parent)) space();                                              // If we are last the next end tag will be offset anyway
+     }
+   }
+
+  print(tag, 0);
+  return p.proto->readOnlyBytes(p);
+ }
+
+static ReadOnlyBytes prettyPrint_readOnlyBytes_Xml                                // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
+ (XmlParse xml)                                                                   // Xml parse tree
+ {const XmlTag root = xml.proto->root(xml);
+  return root.proto->prettyPrint(root);
+ }
+
+static int prettyPrintsAs_int_Xml_string                                          // Check that the Xml parse tree prints as expected
+ (XmlParse xml,                                                                   // Xml parse tree
+  const char * const expected)                                                  // Expected pretty print
+ {const ReadOnlyBytes r = xml.proto->prettyPrint(xml);
+  const int result =  r.proto->equalsString(r, expected);
+  if (!result)                                                                   // Strings match
+   {for(size_t i = 0; i < r.length; ++i)
+     {char a = *(r.data+i), b = *(expected+i);
+      if (a != b)
+       {say("Strings differ in prettyPrintsAs"
+            " at position: %lu on characters:  %c and %c\n", i, a, b);
+        r.proto->free(r);
+        return 0;
+       }
+     }
+   }
+  r.proto->free(r);
+  return 1;
+ }
+
+static void prettyPrintAssert_XmlTag_int                                          // Pretty print the Xml parse tree as an assert statement
+ (const XmlTag tag,                                                               // Starting tag
+  const int  print)                                                             // Print if true
+ {if (!print) return;
+  const FileName f = makeFileName("/home/phil/c/z/z/zzz.txt");
+  if (! f.proto->size(f)) return;                                                       // File does not exist - create it by hand to make this function work
+  const ReadOnlyBytes r = tag.proto->prettyPrint(tag);
+  r.proto->writeFile(r, f);
+  f.proto->free(f); r.proto->free(r);
+ }
 
 static ReadOnlyBytes print_readOnlyBytes_XmlTag                                   // Print the parse tree as a string starting at the specified tag.
  (const XmlTag tag)                                                               // Starting tag
@@ -443,7 +539,14 @@ static int develop()                                                            
  }
 
 void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //TmakeXmlParseFromFile
- {XmlParse x = makeXmlParseFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f/><g/></d><h/><i/></A>h");
+ {XmlParse x = makeXmlParseFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h");
+
+  assert(x.proto->prettyPrintsAs(x, "\n"
+"<a>aa<b>bb<c/>cc</b>dd\n"
+" <d><e/><f>F</f><g/>\n"
+" </d>\n"
+" <h/><i/>\n"
+"</a>\n"));
 
   if (1)
    {ArenaTree e = x.errors;
