@@ -82,6 +82,9 @@ static  size_t count_size_Xml
  (const XmlParse x);
 static  size_t count_size_XmlTag
  (const XmlTag t);
+static void wrap_XmlTag_string
+ (const XmlTag         tag,
+  const char * const string);
 static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag
  (XmlTag tag);
 static ReadOnlyBytes prettyPrint_readOnlyBytes_Xml
@@ -224,7 +227,10 @@ struct ProtoTypes_XmlTag {
     const XmlTag tag);                                                          // Tag
   int  (*valid)(                                                                // Check that a tag is valid.
     const XmlTag tag);                                                          // Tag
+  void  (*wrap)(                                                                // Wrap a specified tag with a new tag
+    const XmlTag tag,                                                           // Tag
+    const char * const string);                                                 // Wrapper without the leading < or trailing or >                                                                              //const char * void (* const function) (const XmlTag tag))
  } const ProtoTypes_XmlTag =
-{by_XmlTag_sub, countChildren_size_XmlTag, count_size_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, isFirst_XmlTag, isLast_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, openChildren_XmlTag, parent_XmlTag, prettyPrintAssert_XmlTag, prettyPrint_readOnlyBytes_XmlTag, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, text_string_XmlTag, valid_XmlTag};
+{by_XmlTag_sub, countChildren_size_XmlTag, count_size_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, isFirst_XmlTag, isLast_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, openChildren_XmlTag, parent_XmlTag, prettyPrintAssert_XmlTag, prettyPrint_readOnlyBytes_XmlTag, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, text_string_XmlTag, valid_XmlTag, wrap_XmlTag_string};
 XmlTag newXmlTag(XmlTag allocator) {return allocator;}
 
