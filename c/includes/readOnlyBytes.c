@@ -310,7 +310,6 @@ void test9()                                                                    
   ArenaTree S = s.proto->splitSpaces(s);
   ArenaTreeNode s1 = S.proto->first(S), s2 = s1.proto->next(s1), s3 = s2.proto->next(s2),
                                 s4 = s3.proto->next(s3);
-say("AAAA =%s=\n", s1.proto->key(s1));
   assert(s1.proto->equalsString(s1, "a"));
   assert(s2.proto->equalsString(s2, "bb"));
   assert(s3.proto->equalsString(s3, "ccc"));
