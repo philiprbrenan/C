@@ -81,6 +81,11 @@ static void addDoubleQuote                                                      
  {buffer.proto->add(buffer, "\"");
  }
 
+static void addQuotedNewLine                                                    // Add a quoted new line
+ (const StringBuffer buffer)                                                               // StringBuffer
+ {buffer.proto->add(buffer, "\\n");
+ }
+
 //D1 Statistics                                                                 // Statistics on the contents of the StringBuffer.
 
 static size_t length_StringBuffer                                                          // Length of the string held in the buffer
