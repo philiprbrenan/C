@@ -59,6 +59,7 @@ my $java;                                                                       
 my $javascript;                                                                 # Javascript
 my $bash;                                                                       # Bash
 my $vala;                                                                       # Vala
+my $valgrind;                                                                   # Run with valgrind to check for memory leaks
 my $androidLog;                                                                 # Android log
 my $xmlCatalog  = q(/home/phil/z/r/dita/dita-ot-3.1/catalog-dita.xml);          # Standard xml catalog
 my $xmlHPE      = q(/home/phil/r/hp/dtd/Dtd_2016_07_12/catalog-hpe.xml);        # HPE catalog
@@ -79,6 +80,7 @@ GetOptions
   'javascript'  =>\$javascript,
   'androidLog'  =>\$androidLog,
   'cIncludes=s' =>\$cIncludes,
+  'valgrind'    =>\$$valgrind,
  );
 
 unless($compile or $run or $doc or $html or $androidLog)                        # Check action
@@ -258,6 +260,12 @@ elsif ($c)                                                                      
       makePath($g);
       my @files = searchDirectoryTreesForMatchingFiles(fp($file), qw(.gcda .gcno .gcov));
       moveFileWithClobber $_, swapFilePrefix($_, $d, $g) for @files;
+     }
+    if ($valgrind)                                                              # Valgrind requested
+     {my $c = qq(valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes $e 2>&1);
+      lll qq($c);
+      my $result = qx($c);
+      exit(1) unless $result =~ m(ERROR SUMMARY: 0 errors from 0 contexts)
      }
    }
  }
