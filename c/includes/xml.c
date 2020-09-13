@@ -471,24 +471,36 @@ static int prettyPrintsAs_int_Xml_string                                        
   return 1;
  }
 
-static void prettyPrintAssert_XmlTag_int                                          // Pretty print the Xml parse tree as an assert statement
- (const XmlTag tag,                                                               // Starting tag
-  const int  print)                                                             // Print if true
- {if (!print) return;
-  const FileName f = makeFileName("/home/phil/c/z/z/zzz.txt");
+static void prettyPrintAssert_XmlTag                                              // Pretty print the Xml parse tree starting at the specified tag as an assert statement
+ (const XmlTag         tag,                                                       // Starting tag
+  const char * const variable)                                                  // The name of the variable preceding this call
+ {const FileName f = makeFileName("/home/phil/c/z/z/zzz.txt");
   if (! f.proto->size(f)) return;                                                       // File does not exist - create it by hand to make this function work
   const ReadOnlyBytes r = tag.proto->prettyPrint(tag);
   StringBuffer        s = makeStringBuffer();
   ArenaTree           t = r.proto->splitNewLine(r);
-  s.proto->add(s, "assert(xml.proto->prettyPrintsAs(xml, \"\\n\",");
+  s.proto->addFormat(s, "assert(prettyPrintsAs_int_Xml_string(%s,\n", variable);
   ArenaTreefe(line, t)
    {const char * const k = line.proto->key(line);
     const size_t N = strlen(k);
-    char l[N]; strncpy(l, k, N); l[N-1] = 0;                                    // Remove end of line
-    s.proto->add(s, "\"");
+    char l[N]; strncpy(l, k, N); if (l[N-1] == '\n') l[N-1] = 0;                // Remove any end of line
+    s.proto->addDoubleQuote(s);
+    s.proto->add(s, l);
+    s.proto->addQuotedNewLine(s);
+    s.proto->addDoubleQuote(s);
+    s.proto->addNewLine(s);
    }
-  r.proto->writeFile(r, f);
-  f.proto->free(f); r.proto->free(r);
+  s.proto->add(s, "));\n\n");
+  ReadOnlyBytes R = s.proto->readOnlyBytes(s);
+  R.proto->writeFile(R, f);
+  f.proto->free(f); r.proto->free(r); R.proto->free(R); t.proto->free(t);
+ }
+
+static void prettyPrintAssert_Xml_string                                          // Pretty print the Xml parse tree as an assert statement
+ (const XmlParse       xml,                                                       // Xml
+  const char * const variable)                                                  // The name of the variable preceding this call
+ {const XmlTag t = xml.proto->root(xml);
+  t.proto->prettyPrintAssert(t, variable);
  }
 
 static ReadOnlyBytes print_readOnlyBytes_XmlTag                                   // Print the parse tree as a string starting at the specified tag.
@@ -581,19 +593,22 @@ void test0()                                                                    
  }
 
 void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TmakeXmlParseFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot
- {XmlParse x = makeXmlParseFromString(
-"<a>"
-"  <b>"
-"    <c/>"
-"    <d><e/>e<f/>f"
-"      <g>g</g>"
-"    </d>"
-"    <h>h</h>"
-"  </b>"
-"  <i/>i<j></j>"
-"</a>");
+ {XmlParse x = makeXmlParseFromString
+   ("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>");
 
-  assert(!x.errors.proto->count(x.errors));
+  assert(!x.proto->errors(x));
+          x.proto->prettyPrintAssert(x, "x");
+  assert(prettyPrintsAs_int_Xml_string(x,
+"\n"
+"<a>\n"
+" <b><c/>\n"
+"  <d><e/>e<f/>f<g>g</g>\n"
+"  </d>\n"
+"  <h>h</h>\n"
+" </b>\n"
+" <i/>i<j>\n"
+"</a>\n"
+));
 
   XmlTag a = x.proto->root(x);                assert(!a.proto->valid(a)); assert(a.proto->tagNameEquals(a, "a"));
   XmlTag b = x.proto->findFirstTag(x, "b"); assert( b.proto->valid(b)); assert(b.proto->tagNameEquals(b, "b")); assert(a.proto->equals(a, b.proto->parent(b)));
