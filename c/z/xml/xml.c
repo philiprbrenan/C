@@ -441,24 +441,36 @@ static int prettyPrintsAs_int_$_string                                          
   return 1;
  }
 
-static void prettyPrintAssert_$Tag_int                                          // Pretty print the $ parse tree as an assert statement
- (const $Tag tag,                                                               // Starting tag
-  const int  print)                                                             // Print if true
- {if (!print) return;
-  const FileName f = makeFileName("/home/phil/c/z/z/zzz.txt");
+static void prettyPrintAssert_$Tag                                              // Pretty print the $ parse tree starting at the specified tag as an assert statement
+ (const $Tag         tag,                                                       // Starting tag
+  const char * const variable)                                                  // The name of the variable preceding this call
+ {const FileName f = makeFileName("/home/phil/c/z/z/zzz.txt");
   if (! f ▷ size) return;                                                       // File does not exist - create it by hand to make this function work
   const ReadOnlyBytes r = tag ▷ prettyPrint;
   StringBuffer        s = makeStringBuffer();
   ArenaTree           t = r ▷ splitNewLine;
-  s ▷ add("assert(xml ▷ prettyPrintsAs(\"\\n\",");
+  s ▷ addFormat("assert(prettyPrintsAs_int_$_string(%s,\n", variable);
   ArenaTreefe(line, t)
    {const char * const k = line ▷ key;
     const size_t N = strlen(k);
-    char l[N]; strncpy(l, k, N); l[N-1] = 0;                                    // Remove end of line
-    s ▷ add("\"");
+    char l[N]; strncpy(l, k, N); if (l[N-1] == '\n') l[N-1] = 0;                // Remove any end of line
+    s ▷ addDoubleQuote;
+    s ▷ add(l);
+    s ▷ addQuotedNewLine;
+    s ▷ addDoubleQuote;
+    s ▷ addNewLine;
    }
-  r ▷ writeFile(f);
-  f ▷ free; r ▷  free;
+  s ▷ add("));\n\n");
+  ReadOnlyBytes R = s ▷ readOnlyBytes;
+  R ▷ writeFile(f);
+  f ▷ free; r ▷ free; R ▷ free; t ▷ free;
+ }
+
+static void prettyPrintAssert_$_string                                          // Pretty print the $ parse tree as an assert statement
+ (const $Parse       xml,                                                       // $
+  const char * const variable)                                                  // The name of the variable preceding this call
+ {const $Tag t = xml ▷ root;
+  t ▷ prettyPrintAssert(variable);
  }
 
 static ReadOnlyBytes print_readOnlyBytes_$Tag                                   // Print the parse tree as a string starting at the specified tag.
@@ -551,19 +563,22 @@ void test0()                                                                    
  }
 
 void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot
- {$Parse x = make$ParseFromString(
-"<a>"
-"  <b>"
-"    <c/>"
-"    <d><e/>e<f/>f"
-"      <g>g</g>"
-"    </d>"
-"    <h>h</h>"
-"  </b>"
-"  <i/>i<j></j>"
-"</a>");
+ {$Parse x = make$ParseFromString
+   ("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>");
 
-  assert(!x.errors ▷ count);
+  assert(!x ▷ errors);
+          x ▷ prettyPrintAssert("x");
+  assert(prettyPrintsAs_int_Xml_string(x,
+"\n"
+"<a>\n"
+" <b><c/>\n"
+"  <d><e/>e<f/>f<g>g</g>\n"
+"  </d>\n"
+"  <h>h</h>\n"
+" </b>\n"
+" <i/>i<j>\n"
+"</a>\n"
+));
 
   $Tag a = x ▷ root;                assert(!a ▷ valid); assert(a ▷ tagNameEquals("a"));
   $Tag b = x ▷ findFirstTag  ("b"); assert( b ▷ valid); assert(b ▷ tagNameEquals("b")); assert(a ▷ equals(b ▷ parent));
