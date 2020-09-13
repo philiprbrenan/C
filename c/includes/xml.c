@@ -478,6 +478,15 @@ static void prettyPrintAssert_XmlTag_int                                        
   const FileName f = makeFileName("/home/phil/c/z/z/zzz.txt");
   if (! f.proto->size(f)) return;                                                       // File does not exist - create it by hand to make this function work
   const ReadOnlyBytes r = tag.proto->prettyPrint(tag);
+  StringBuffer        s = makeStringBuffer();
+  ArenaTree           t = r.proto->splitNewLines(r);
+  s.proto->add(s, "assert(xml.proto->prettyPrintsAs(xml, \"\\n\",");
+  ArenaTreefe(line, t)
+   {const char * const k = line.proto->key(line);
+   {const size_t N = strlen(k);
+    char l[N]; strncpy(l, k, N); l[N-1] = 0;                                    // Remove end of line
+    s.proto->add(s, "\"
+   }
   r.proto->writeFile(r, f);
   f.proto->free(f); r.proto->free(r);
  }
