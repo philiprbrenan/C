@@ -173,11 +173,11 @@ static size_t b2SumW8_$                                                         
 static ArenaTree splitNewLine                                                   // Split the specified $ on any new line characters
  (const $ r)                                                                    // Description of read only sequence of bytes
  {const ArenaTree t = makeArenaTree();                                          // Results are held in an arena tree
-  size_t i = 0, j = -1;
+  size_t i = 0, j = 0;
   void save()                                                                   // Save a string
-   {const ArenaTreeNode n = t ▷ noden(r.data+j+1, i - j);
+   {const ArenaTreeNode n = t ▷ noden(r.data+j, i - j + 1);
                             n ▷ putTreeLast;
-    j = i;
+    j = i+1;
    }
   for(; i < r.length; ++i) if (*(r.data + i) == '\n') save();
   if (  i > j) save();
@@ -293,33 +293,67 @@ void test8()                                                                    
  }
 
 void test9()                                                                    //TsplitNewLine //TsplitSpaces
- {$ l = make$FromString("\na\nbb\nccc\ndddd");
-  ArenaTree L = l ▷ splitNewLine;
-  ArenaTreeNode l1 = L ▷ first, l2 = l1 ▷ next, l3 = l2 ▷ next,
-                                l4 = l3 ▷ next, l5 = l4 ▷ next;
-  assert(l1 ▷ equalsString("\n"));
-  assert(l2 ▷ equalsString("a\n"));
-  assert(l3 ▷ equalsString("bb\n"));
-  assert(l4 ▷ equalsString("ccc\n"));
-  assert(l5 ▷ equalsString("dddd"));
+ {if (1)
+   {$ l = make$FromString("\na\nbb\nccc\ndddd");
+    ArenaTree L = l ▷ splitNewLine;
+    ArenaTreeNode l1 = L ▷ first, l2 = l1 ▷ next, l3 = l2 ▷ next,
+                                  l4 = l3 ▷ next, l5 = l4 ▷ next;
+    assert(l1 ▷ equalsString("\n"));
+    assert(l2 ▷ equalsString("a\n"));
+    assert(l3 ▷ equalsString("bb\n"));
+    assert(l4 ▷ equalsString("ccc\n"));
+    assert(l5 ▷ equalsString("dddd"));
 
-  l ▷ free; L ▷ free;
+    l ▷ free; L ▷ free;
+   }
 
-  $ s = make$FromString(" \na bb   ccc dddd  ");
-  ArenaTree S = s ▷ splitSpaces;
-  ArenaTreeNode s1 = S ▷ first, s2 = s1 ▷ next, s3 = s2 ▷ next,
-                                s4 = s3 ▷ next;
-  assert(s1 ▷ equalsString("a"));
-  assert(s2 ▷ equalsString("bb"));
-  assert(s3 ▷ equalsString("ccc"));
-  assert(s4 ▷ equalsString("dddd"));
+  if (1)
+   {$ l = make$FromString("\n\n\n");
+    ArenaTree L = l ▷ splitNewLine;
+    ArenaTreeNode l1 = L ▷ first, l2 = l1 ▷ next, l3 = l2 ▷ next;
+    assert(l1 ▷ equalsString("\n"));
+    assert(l2 ▷ equalsString("\n"));
+    assert(l3 ▷ equalsString("\n"));
 
-  s ▷ free; S ▷ free;
+    l ▷ free; L ▷ free;
+   }
+
+  if (1)
+   {$ l = make$FromString(" ");
+    ArenaTree L = l ▷ splitNewLine;
+    ArenaTreeNode l1 = L ▷ first;
+    assert(l1 ▷ equalsString(" "));
+
+    l ▷ free; L ▷ free;
+   }
+
+  if (1)
+   {$ l = make$FromString("");
+    ArenaTree L = l ▷ splitNewLine;
+    ArenaTreeNode l1 = L ▷ first;
+    assert(l1 ▷ equalsString(""));
+
+    l ▷ free; L ▷ free;
+   }
+
+  if (1)
+   {$ s = make$FromString(" \na bb   ccc dddd  ");
+    ArenaTree S = s ▷ splitSpaces;
+    ArenaTreeNode s1 = S ▷ first, s2 = s1 ▷ next, s3 = s2 ▷ next,
+                                  s4 = s3 ▷ next;
+    assert(s1 ▷ equalsString("a"));
+    assert(s2 ▷ equalsString("bb"));
+    assert(s3 ▷ equalsString("ccc"));
+    assert(s4 ▷ equalsString("dddd"));
+
+    s ▷ free; S ▷ free;
+   }
  }
 
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
                            test6, test7, test8, test9, 0};
+// {void (*tests[])(void) = {test9, 0};
   run_tests("$", 1, tests);
   return 0;
  }
