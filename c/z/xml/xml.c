@@ -448,6 +448,15 @@ static void prettyPrintAssert_$Tag_int                                          
   const FileName f = makeFileName("/home/phil/c/z/z/zzz.txt");
   if (! f ▷ size) return;                                                       // File does not exist - create it by hand to make this function work
   const ReadOnlyBytes r = tag ▷ prettyPrint;
+  StringBuffer        s = makeStringBuffer();
+  ArenaTree           t = r ▷ splitNewLines;
+  s ▷ add("assert(xml ▷ prettyPrintsAs(\"\\n\",");
+  ArenaTreefe(line, t)
+   {const char * const k = line ▷ key;
+   {const size_t N = strlen(k);
+    char l[N]; strncpy(l, k, N); l[N-1] = 0;                                    // Remove end of line
+    s ▷ add("\"
+   }
   r ▷ writeFile(f);
   f ▷ free; r ▷  free;
  }
