@@ -56,7 +56,7 @@ my $tests = sub                                                                 
   for my $c(@c)
    {push @t, <<END;
     - name: Run $c
-      if: always()
+      continue-on-error: true
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/$c/$c.c --cIncludes c/includes
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/$c/$c.c --cIncludes c/includes --valgrind
