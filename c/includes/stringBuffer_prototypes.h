@@ -12,7 +12,7 @@ static void addFormat
  (const StringBuffer buffer,
   const char * const format,
   ...);
-static size_t length
+static size_t length_StringBuffer
  (const StringBuffer buffer);
 static int equals_StringBuffer_StringBuffer
  (const StringBuffer a,
@@ -26,7 +26,20 @@ static int contains_StringBuffer_StringBuffer
 static int containsString_StringBuffer_StringBuffer
  (const StringBuffer            buffer,
   const char * const string);
-static ReadOnlyBytes string_StringBuffer
+static int substringEquals_int_StringBuffer_int_int_string
+ (const StringBuffer            buffer,
+  const size_t       start,
+  const size_t       length,
+  const char * const string);
+static void string_StringBuffer_string
+ (const StringBuffer        buffer,
+  char  * const  string);
+static size_t substring_size_StringBuffer_int_int_string
+ (const StringBuffer      buffer,
+  const size_t start,
+  const size_t length,
+  char * const string);
+static ReadOnlyBytes readOnlyBytes_StringBuffer
  (const StringBuffer buffer);
 struct ProtoTypes_StringBuffer {
   void  (*add)(                                                                 // Concatenate a string
@@ -55,9 +68,22 @@ struct ProtoTypes_StringBuffer {
     const StringBuffer buffer);                                                 // StringBuffer
   size_t  (*length)(                                                            // Length of the string held in the buffer
     const StringBuffer buffer);                                                 // StringBuffer
-  ReadOnlyBytes  (*string)(                                                     // Create a read only bytes string from the StringBuffer.
+  ReadOnlyBytes  (*readOnlyBytes)(                                              // Create a read only bytes string from the StringBuffer.
     const StringBuffer buffer);                                                 // StringBuffer
+  void  (*string)(                                                              // Load a zero terminated string from a StringBuffer.
+    const StringBuffer buffer,                                                  // StringBuffer
+    char  * const string);                                                      // String to load with enough space for the string and its terminating zero
+  int  (*substringEquals)(                                                      // Checks whether a sub string of the specified StringBuffer is equal to the specified zero terminated string.
+    const StringBuffer buffer,                                                  // StringBuffer
+    const size_t start,                                                         // Offset to start of string
+    const size_t length,                                                        // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
+    const char * const string);                                                 // Zero terminated string expected
+  size_t  (*substring)(                                                         // Load a zero terminates string with a sub string of a StringBuffer and return the number of bytes loaded.
+    const StringBuffer buffer,                                                  // StringBuffer
+    const size_t start,                                                         // Offset to start of string
+    const size_t length,                                                        // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
+    char * const string);                                                       // String to load with enough space for the string and its terminating zero
  } const ProtoTypes_StringBuffer =
-{add, addFormat, addReadOnlyBytes, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, length, string_StringBuffer};
+{add, addFormat, addReadOnlyBytes, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, length_StringBuffer, readOnlyBytes_StringBuffer, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string};
 StringBuffer newStringBuffer(StringBuffer allocator) {return allocator;}
 
