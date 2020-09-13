@@ -82,15 +82,20 @@ static  size_t count_size_Xml
  (const XmlParse x);
 static  size_t count_size_XmlTag
  (const XmlTag t);
-static void wrap_XmlTag_string
+static XmlTag wrap_XmlTag_string
  (const XmlTag         tag,
   const char * const string);
+static void unwrap_XmlTag
+ (const XmlTag         tag);
 static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag
  (XmlTag tag);
 static ReadOnlyBytes prettyPrint_readOnlyBytes_Xml
  (XmlParse xml);
 static int prettyPrintsAs_int_Xml_string
  (XmlParse xml,
+  const char * const expected);
+static int prettyPrintsAs_int_XmlTag_string
+ (XmlTag tag,
   const char * const expected);
 static void prettyPrintAssert_XmlTag
  (const XmlTag         tag,
@@ -201,6 +206,9 @@ struct ProtoTypes_XmlTag {
     const char * const variable);                                               // The name of the variable preceding this call
   ReadOnlyBytes  (*prettyPrint)(                                                // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
     XmlTag tag);                                                                // Starting tag
+  int  (*prettyPrintsAs)(                                                       // Check that the Xml parse tree prints as expected
+    XmlTag tag,                                                                 // Xml parse tree
+    const char * const expected);                                               // Expected pretty print
   XmlTag  (*prev)(                                                              // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
   int  (*printContains)(                                                        // Check the print of an Xml parse tree starting at the specified tag contains the expected string
@@ -225,12 +233,14 @@ struct ProtoTypes_XmlTag {
     const XmlTag tag);                                                          // Tag
   char *  (*text)(                                                              // Return the text of a text tag if we are on a text tag.
     const XmlTag tag);                                                          // Tag
+  void  (*unwrap)(                                                              // Unwrap the specified tag.
+    const XmlTag tag);                                                          // Tag
   int  (*valid)(                                                                // Check that a tag is valid.
     const XmlTag tag);                                                          // Tag
-  void  (*wrap)(                                                                // Wrap a specified tag with a new tag
+  XmlTag  (*wrap)(                                                              // Wrap a specified tag with a new tag and return the newly createdf wraping tag.
     const XmlTag tag,                                                           // Tag
-    const char * const string);                                                 // Wrapper without the leading < or trailing or >                                                                              //const char * void (* const function) (const XmlTag tag))
+    const char * const string);                                                 // Wrapper without the leading < or trailing or >
  } const ProtoTypes_XmlTag =
-{by_XmlTag_sub, countChildren_size_XmlTag, count_size_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, isFirst_XmlTag, isLast_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, openChildren_XmlTag, parent_XmlTag, prettyPrintAssert_XmlTag, prettyPrint_readOnlyBytes_XmlTag, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, text_string_XmlTag, valid_XmlTag, wrap_XmlTag_string};
+{by_XmlTag_sub, countChildren_size_XmlTag, count_size_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, isFirst_XmlTag, isLast_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, openChildren_XmlTag, parent_XmlTag, prettyPrintAssert_XmlTag, prettyPrint_readOnlyBytes_XmlTag, prettyPrintsAs_int_XmlTag_string, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, text_string_XmlTag, unwrap_XmlTag, valid_XmlTag, wrap_XmlTag_string};
 XmlTag newXmlTag(XmlTag allocator) {return allocator;}
 
