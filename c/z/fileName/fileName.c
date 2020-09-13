@@ -86,6 +86,11 @@ static $ make$Temporary                                                         
  {return make$TemporaryWithContent(fileName, "", 0);
  }
 
+static void free_$                                                              // Free a file name - does nothing at the moment as $ are allocated on the stack with a fixed size but here for completeness if we decide to change this in the future.
+ ($ fileName)                                                                   // $
+ {if (0) memset(fileName.name, 0, sizeof(fileName.name));                       // Do nothing
+ }
+
 static char * readFile_$                                                        // Return the content of a specified file as a string.
  (const $ file)                                                                 // File name to read
  {const ssize_t l = file ▷ size;
@@ -149,7 +154,7 @@ static size_t maxFileNameSize_$FileName                                         
 #endif
 
 #if __INCLUDE_LEVEL__ == 0
-void test0()                                                                    //Tb2SumW8 //Tmake$TemporaryWithContent  //TreadFile //TmaxFileNameSize //Tsize //TwriteFile //Tunlink //Tmake$
+void test0()                                                                    //Tb2SumW8 //Tmake$TemporaryWithContent  //TreadFile //TmaxFileNameSize //Tsize //TwriteFile //Tunlink //Tmake$ //Tfree
  {$ f = make$TemporaryWithContent("aaa.c", "aaaa", 0);
   assert(f ▷ maxFileNameSize == 255);
   assert(f ▷ b2SumW8 == 0x8f);
@@ -166,6 +171,7 @@ void test0()                                                                    
           F ▷ unlink;
   assert(!F ▷ size);
           f ▷ unlink;
+  f ▷ free;
  }
 
 void test1()                                                                    //Tmake$Temporary //TequalsString //TcontainsString
@@ -174,6 +180,7 @@ void test1()                                                                    
   assert(f ▷ equalsString("abcd"));
   assert(f ▷ containsString("cd"));
          f ▷ unlink;
+  f ▷ free;
  }
 
 int main(void)                                                                  // Run tests
