@@ -80,6 +80,11 @@ static void addDoubleQuote                                                      
  {buffer ▷ add("\"");
  }
 
+static void addQuotedNewLine                                                    // Add a quoted new line
+ (const $ buffer)                                                               // $
+ {buffer ▷ add("\\n");
+ }
+
 //D1 Statistics                                                                 // Statistics on the contents of the $.
 
 static size_t length_$                                                          // Length of the string held in the buffer
