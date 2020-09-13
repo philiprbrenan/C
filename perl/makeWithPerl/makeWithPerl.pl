@@ -80,7 +80,7 @@ GetOptions
   'javascript'  =>\$javascript,
   'androidLog'  =>\$androidLog,
   'cIncludes=s' =>\$cIncludes,
-  'valgrind'    =>\$$valgrind,
+  'valgrind'    =>\$valgrind,
  );
 
 unless($compile or $run or $doc or $html or $androidLog)                        # Check action
