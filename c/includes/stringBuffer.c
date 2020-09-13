@@ -59,6 +59,18 @@ static void addFormat                                                           
   free(data);
  }
 
+static void addChar_StringBuffer                                                           // Add the specified character
+ (const StringBuffer    buffer,                                                            // StringBuffer
+  const char c)                                                                 // Character to add
+ {const char s[2] = {c, 0};
+  buffer.proto->add(buffer, s);
+ }
+
+static void addNewLine                                                          // Add a new line
+ (const StringBuffer buffer)                                                               // StringBuffer
+ {buffer.proto->add(buffer, "\n");
+ }
+
 //D1 Statistics                                                                 // Statistics on the contents of the StringBuffer.
 
 static size_t length_StringBuffer                                                          // Length of the string held in the buffer
@@ -202,8 +214,17 @@ void test1()                                                                    
   a.proto->free(a); b.proto->free(b); c.proto->free(c); A.proto->free(A); B.proto->free(B);
  }
 
+void test2()                                                                    //TaddChar //TaddNewLine
+ {StringBuffer a = makeStringBuffer();
+    a.proto->addChar(a, 'a');
+    a.proto->addNewLine(a);
+  assert( a.proto->equalsString(a, "a\n"));
+
+  a.proto->free(a);
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, 0};
+ {void (*tests[])(void) = {test0, test1, test2, 0};
   run_tests("StringBuffer", 1, tests);
   return 0;
  }
