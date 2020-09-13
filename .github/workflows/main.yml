@@ -11,7 +11,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - continue-on-error: true
 
     - name: Install
       run: |
@@ -29,36 +28,43 @@ jobs:
         tree
 
     - name: Run arenaRedBlackTree
+      continue-on-error: true
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaRedBlackTree/arenaRedBlackTree.c --cIncludes c/includes
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaRedBlackTree/arenaRedBlackTree.c --cIncludes c/includes --valgrind
 
     - name: Run arenaTree
+      continue-on-error: true
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaTree/arenaTree.c --cIncludes c/includes
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaTree/arenaTree.c --cIncludes c/includes --valgrind
 
     - name: Run fileName
+      continue-on-error: true
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/fileName/fileName.c --cIncludes c/includes
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/fileName/fileName.c --cIncludes c/includes --valgrind
 
     - name: Run readOnlyBytes
+      continue-on-error: true
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/readOnlyBytes/readOnlyBytes.c --cIncludes c/includes
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/readOnlyBytes/readOnlyBytes.c --cIncludes c/includes --valgrind
 
     - name: Run stringBuffer
+      continue-on-error: true
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/stringBuffer/stringBuffer.c --cIncludes c/includes
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/stringBuffer/stringBuffer.c --cIncludes c/includes --valgrind
 
     - name: Run xml
+      continue-on-error: true
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes --valgrind
 
     - name: Run utilities
+      continue-on-error: true
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/utilities/utilities.c --cIncludes c/includes
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/utilities/utilities.c --cIncludes c/includes --valgrind
