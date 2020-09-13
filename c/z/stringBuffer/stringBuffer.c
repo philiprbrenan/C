@@ -58,6 +58,18 @@ static void addFormat                                                           
   free(data);
  }
 
+static void addChar_$                                                           // Add the specified character
+ (const $    buffer,                                                            // $
+  const char c)                                                                 // Character to add
+ {const char s[2] = {c, 0};
+  buffer ▷ add(s);
+ }
+
+static void addNewLine                                                          // Add a new line
+ (const $ buffer)                                                               // $
+ {buffer ▷ add("\n");
+ }
+
 //D1 Statistics                                                                 // Statistics on the contents of the $.
 
 static size_t length_$                                                          // Length of the string held in the buffer
@@ -201,8 +213,17 @@ void test1()                                                                    
   a ▷ free; b ▷ free; c ▷ free; A ▷ free; B ▷ free;
  }
 
+void test2()                                                                    //TaddChar //TaddNewLine
+ {$ a = make$();
+    a ▷ addChar('a');
+    a ▷ addNewLine;
+  assert( a ▷ equalsString   ("a\n"));
+
+  a ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, 0};
+ {void (*tests[])(void) = {test0, test1, test2, 0};
   run_tests("$", 1, tests);
   return 0;
  }
