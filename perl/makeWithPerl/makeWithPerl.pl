@@ -250,7 +250,7 @@ elsif ($c)                                                                      
     my $result = qx($c);
     say STDERR $result;
     unlink $o, $g;
-    exit(1);# unless $result =~ m(SUCCESS);                                       # Confirm successful
+    exit(1) unless $result =~ m(SUCCESS);                                       # Confirm successful
     if (!$optimize)                                                             # Place coverage files in a sub folder
      {my $c = qq(gcov $a);
       lll qq($c);
@@ -265,6 +265,7 @@ elsif ($c)                                                                      
      {my $c = qq(valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes $e 2>&1);
       lll qq($c);
       my $result = qx($c);
+      lll $result;
       exit(1) unless $result =~ m(ERROR SUMMARY: 0 errors from 0 contexts)
      }
    }
