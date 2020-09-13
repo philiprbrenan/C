@@ -82,6 +82,9 @@ static  size_t count_size_Xml
  (const XmlParse x);
 static  size_t count_size_XmlTag
  (const XmlTag t);
+static void changeName_XmlTag
+ (const XmlTag         tag,
+  const char * const newName);
 static XmlTag wrap_XmlTag_string
  (const XmlTag         tag,
   const char * const string);
@@ -170,6 +173,9 @@ struct ProtoTypes_XmlTag {
   void  (*by)(                                                                  // Traverse the Xml parse tree rooted at the specified tag in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
     const XmlTag tag,                                                           // Starting tag
     void (* const function) (const XmlTag tag));                                // Function to call on each tag
+  void  (*changeName)(                                                          // Change the name of the specified tag.
+    const XmlTag tag,                                                           // Tag
+    const char * const newName);                                                // New name                                                                               //vconst XmlTag t)                                                                 // Tag
   size_t  (*countChildren)(                                                     // Count the number of child tags directly under a parent tag
     const XmlTag parent);                                                       // Parent tag
   size_t  (*count)(                                                             // Count the number of tags under the specified tag in an Xml parse tree
@@ -241,6 +247,6 @@ struct ProtoTypes_XmlTag {
     const XmlTag tag,                                                           // Tag
     const char * const string);                                                 // Wrapper without the leading < or trailing or >
  } const ProtoTypes_XmlTag =
-{by_XmlTag_sub, countChildren_size_XmlTag, count_size_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, isFirst_XmlTag, isLast_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, openChildren_XmlTag, parent_XmlTag, prettyPrintAssert_XmlTag, prettyPrint_readOnlyBytes_XmlTag, prettyPrintsAs_int_XmlTag_string, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, text_string_XmlTag, unwrap_XmlTag, valid_XmlTag, wrap_XmlTag_string};
+{by_XmlTag_sub, changeName_XmlTag, countChildren_size_XmlTag, count_size_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, isFirst_XmlTag, isLast_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, openChildren_XmlTag, parent_XmlTag, prettyPrintAssert_XmlTag, prettyPrint_readOnlyBytes_XmlTag, prettyPrintsAs_int_XmlTag_string, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, text_string_XmlTag, unwrap_XmlTag, valid_XmlTag, wrap_XmlTag_string};
 XmlTag newXmlTag(XmlTag allocator) {return allocator;}
 
