@@ -183,7 +183,7 @@ static size_t errors_$Parse                                                     
 static char  * parse$TagName                                                    // Get the tag name from an $ tag
  (const char * const tagString)                                                 // String representation of a tag
  {const char * const p = tagString;
-  if (*p == XmlOpen)                                                            // Tag
+  if (*p == $Open)                                                              // Tag
    {const size_t s = strspn(p, "< /?!"), f = strcspn(p+s, "> /?!");             // Start and finish of tag
     if (f > 0)
      {if (f < sizeof($tagName))                                                 // Return tag name
@@ -379,6 +379,19 @@ static  size_t count_size_$Tag                                                  
  {return t.node ▷ count;
  }
 
+//D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
+
+static void wrap_$Tag_string                                                    // Wrap a specified tag with a new tag
+ (const $Tag         tag,                                                       // Tag
+  const char * const string)                                                    // Wrapper without the leading < or trailing or >                                                                              //const char * void (* const function) (const $Tag tag))
+ {char s[strlen(string)+4], *p = s;
+  *p++ = $Open;
+   p   = stpcpy(p, string);
+  *p++ = $Close;
+  *p   = 0;
+
+  tag.node ▷ wrap(s);
+ }
 
 //D1 Print                                                                      // Print an $ parse tree starting at the specified tag.
 
@@ -562,12 +575,12 @@ void test0()                                                                    
   x ▷ free;
  }
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap
  {$Parse x = make$ParseFromString
    ("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>");
 
   assert(!x ▷ errors);
-          x ▷ prettyPrintAssert("x");
+//        x ▷ prettyPrintAssert("x");
   assert(prettyPrintsAs_int_Xml_string(x,
 "\n"
 "<a>\n"
@@ -621,6 +634,20 @@ void test1()                                                                    
   assert(          H ▷ tagStringEquals(   "h"));
 
   assert(a ▷ equals(b ▷ parent));
+
+  f ▷ wrap("F id='1'");
+//x ▷ prettyPrintAssert("x");
+assert(prettyPrintsAs_int_Xml_string(x,
+"\n"
+"<a>\n"
+" <b><c/>\n"
+"  <d><e/>e<F id='1'><f/></F>f<g>g</g>\n"
+"  </d>\n"
+"  <h>h</h>\n"
+" </b>\n"
+" <i/>i<j>\n"
+"</a>\n"
+));
 
   x ▷ free;
  }
