@@ -379,6 +379,22 @@ static  size_t count_size_$Tag                                                  
  {return t.node ▷ count;
  }
 
+//D1 Edit                                                                       // Change the structure of an $ parse tree.
+
+static void changeName_$Tag                                                     // Change the name of the specified tag.
+ (const $Tag         tag,                                                       // Tag
+  const char * const newName)                                                   // New name                                                                               //vconst $Tag t)                                                                 // Tag
+ {const char * const oldName = tag ▷ tagName;                                   // Old name
+  const char * const string  = tag ▷ tagString;                                 // Tag string
+  const size_t o = strlen(oldName), n = strlen(newName), l = strlen(string);
+
+  char key[l + n + 1], *p = key, *q = strstr(string, oldName);
+  p = stpncpy(p, string, q - string);
+  p = stpcpy (p, newName);
+  p = stpcpy (p, q + o);
+  tag.node ▷ setKey(key);
+ }
+
 //D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
 
 static $Tag wrap_$Tag_string                                                    // Wrap a specified tag with a new tag and return the newly createdf wraping tag.
@@ -586,7 +602,7 @@ void test0()                                                                    
   x ▷ free;
  } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName
  {$Parse x = make$ParseFromString
    ("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>");
 
@@ -646,11 +662,19 @@ void test1()                                                                    
 
   assert(a ▷ equals(b ▷ parent));
 
-  $Tag F = f ▷ wrap("F id='1'");
+  $Tag F = f ▷ wrap("FFFF id='1'");
 //d ▷ prettyPrintAssert("d");
   assert(prettyPrintsAs_int_$Tag_string(d,
 "\n"
-"<d><e/>e<F id='1'><f/></F>f<g>g</g>\n"
+"<d><e/>e<FFFF id='1'><f/></FFFF>f<g>g</g>\n"
+"</d>\n"
+));
+
+  F ▷ changeName("NNNN");
+//d ▷ prettyPrintAssert("d");
+  assert(prettyPrintsAs_int_$Tag_string(d,
+"\n"
+"<d><e/>e<NNNN id='1'><f/></NNNN>f<g>g</g>\n"
 "</d>\n"
 ));
 
