@@ -155,9 +155,14 @@ static $String key_string_$Node                                                 
 static void setKey_$Node_$String                                                // Copy a string into the key field of a node
  (const $Node        node,                                                      // Node
   const char * const key)                                                       // Key - it will be copied into the tree
- {const $   t  = node.tree;
-  $Content * const c = node ▷ content;
-  c->key.delta = t ▷ saveString(key, 0).offset;
+ {      char * const k = node ▷ key;                                            // Existing key                                                                               //
+  const size_t       l = strlen(k), m = strlen(key);
+  if (k && m <= l)                                                              // There is enough room in the existing key for the new key
+   {strcpy(k, key);
+    return;
+   }
+  $Content   * const c = node ▷ content;                                        // Node content
+  c->key.delta         = node.tree ▷ saveString(key, m).offset;                 // Allocate new (longer) key
  };
 
 static size_t used_$                                                            // Amount of space currently being used within the arena of a tree.
