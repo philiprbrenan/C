@@ -11,6 +11,8 @@ static FileName makeFileNameTemporaryWithContent
   const size_t length);
 static FileName makeFileNameTemporary
  (const char * const fileName);
+static void free_FileName
+ (FileName fileName);
 static char * readFile_FileName
  (const FileName file);
 static void writeFile_FileName_string_ssize
@@ -38,6 +40,8 @@ struct ProtoTypes_FileName {
   int  (*equalsString)(                                                         // Check that the content of the specified file is equal to the specified zero terminated string.
     const FileName file,                                                        // File
     const char * const expected);                                               // Zero terminated string of expected content
+  void  (*free)(                                                                // Free a file name - does nothing at the moment as FileName are allocated on the stack with a fixed size but here for completeness if we decide to change this in the future.
+    FileName fileName);                                                         // FileName
   size_t  (*maxFileNameSize)(                                                   // Maximum size of a file name
     const FileName file);                                                       // File description
   char *  (*readFile)(                                                          // Return the content of a specified file as a string.
@@ -56,6 +60,6 @@ struct ProtoTypes_FileName {
     const char * const content,                                                 // Content for the file
     const size_t length);                                                       // Length of content, or zero for a zero terminated string
  } const ProtoTypes_FileName =
-{b2SumW8_FileName, containsString_int_FileName_string, equalsString_int_FileName_string, maxFileNameSize_FileNameFileName, readFile_FileName, size, unlink_FileName, writeContentToOpenFile, writeFile_FileName_string_ssize};
+{b2SumW8_FileName, containsString_int_FileName_string, equalsString_int_FileName_string, free_FileName, maxFileNameSize_FileNameFileName, readFile_FileName, size, unlink_FileName, writeContentToOpenFile, writeFile_FileName_string_ssize};
 FileName newFileName(FileName allocator) {return allocator;}
 
