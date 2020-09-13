@@ -137,14 +137,18 @@ static int equalsString_int_$_string                                            
  (const $      file,                                                            // File
   const char * const expected)                                                  // Zero terminated string of expected content
  {char * const r = file ▷ readFile;                                             // Read results
-  return !strcmp(r, expected);                                                  // Check results
+  const int R = !strcmp(r, expected);                                                  // Check results
+  free(r);
+  return R;
  }
 
 static int containsString_int_$_string                                          // Check that the content of the specified file contains the specified zero terminated string.
  (const $      file,                                                            // File
   const char * const expected)                                                  // Zero terminated string of expected content
  {char * const r = file ▷ readFile;                                             // Read results
-  return !!strstr(r, expected);                                                 // Check results
+  const int R = !!strstr(r, expected);                                                 // Check results
+  free(r);
+  return R;
  }
 
 static size_t maxFileNameSize_$FileName                                         // Maximum size of a file name
