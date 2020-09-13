@@ -87,6 +87,11 @@ static FileName makeFileNameTemporary                                           
  {return makeFileNameTemporaryWithContent(fileName, "", 0);
  }
 
+static void free_FileName                                                              // Free a file name - does nothing at the moment as FileName are allocated on the stack with a fixed size but here for completeness if we decide to change this in the future.
+ (FileName fileName)                                                                   // FileName
+ {if (0) memset(fileName.name, 0, sizeof(fileName.name));                       // Do nothing
+ }
+
 static char * readFile_FileName                                                        // Return the content of a specified file as a string.
  (const FileName file)                                                                 // File name to read
  {const ssize_t l = file.proto->size(file);
@@ -150,7 +155,7 @@ static size_t maxFileNameSize_FileNameFileName                                  
 #endif
 
 #if __INCLUDE_LEVEL__ == 0
-void test0()                                                                    //Tb2SumW8 //TmakeFileNameTemporaryWithContent  //TreadFile //TmaxFileNameSize //Tsize //TwriteFile //Tunlink //TmakeFileName
+void test0()                                                                    //Tb2SumW8 //TmakeFileNameTemporaryWithContent  //TreadFile //TmaxFileNameSize //Tsize //TwriteFile //Tunlink //TmakeFileName //Tfree
  {FileName f = makeFileNameTemporaryWithContent("aaa.c", "aaaa", 0);
   assert(f.proto->maxFileNameSize(f) == 255);
   assert(f.proto->b2SumW8(f) == 0x8f);
@@ -167,6 +172,7 @@ void test0()                                                                    
           F.proto->unlink(F);
   assert(!F.proto->size(F));
           f.proto->unlink(f);
+  f.proto->free(f);
  }
 
 void test1()                                                                    //TmakeFileNameTemporary //TequalsString //TcontainsString
@@ -175,6 +181,7 @@ void test1()                                                                    
   assert(f.proto->equalsString(f, "abcd"));
   assert(f.proto->containsString(f, "cd"));
          f.proto->unlink(f);
+  f.proto->free(f);
  }
 
 int main(void)                                                                  // Run tests
