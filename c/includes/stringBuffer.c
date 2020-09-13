@@ -22,8 +22,7 @@ typedef struct StringBuffer                                                     
 static StringBuffer makeStringBuffer                                                                  // Make a StringBuffer
  ()                                                                             //
  {ArenaTree string = makeArenaTree();
-  StringBuffer buffer = newStringBuffer(({struct StringBuffer t = {string: string, proto: &ProtoTypes_StringBuffer}; t;}));
-  return buffer;
+  return newStringBuffer(({struct StringBuffer t = {string: string, proto: &ProtoTypes_StringBuffer}; t;}));
  }
 
 static void free_StringBuffer                                                              // Free a StringBuffer
@@ -62,7 +61,7 @@ static void addFormat                                                           
 
 //D1 Statistics                                                                 // Statistics on the contents of the StringBuffer.
 
-static size_t length                                                              // Length of the string held in the buffer
+static size_t length_StringBuffer                                                          // Length of the string held in the buffer
  (const StringBuffer buffer)                                                               // StringBuffer
  {size_t length = 0;
   ArenaTreefe(c, buffer.string) length += strlen(c.proto->key(c));
@@ -72,11 +71,10 @@ static size_t length                                                            
 static int equals_StringBuffer_StringBuffer                                                           // Checks whether two StringBuffer are equal.
  (const StringBuffer a,                                                                    // First StringBuffer
   const StringBuffer b)                                                                    // Second StringBuffer
- {if (a.proto->length(a) != b.proto->length(b)) return 0;
-  const ReadOnlyBytes A = a.proto->string(a), B = b.proto->string(b);
-  const int r = A.proto->equals(A, B);
-  A.proto->free(A); B.proto->free(B);
-  return r;
+ {const size_t la = a.proto->length(a), lb = b.proto->length(b);
+  if (la != lb) return 0;                                                       // Cannot be equal if they do not have the same length
+  char A[la+1], B[lb+1]; a.proto->string(a, A); b.proto->string(b, B);                          // Use space on the stack to hold copies of the strings to be compared
+  return !strcmp(A, B);
  }
 
 static int equalsString_StringBuffer_string                                                // Checks whether a StringBuffer is equal to a specified zero terminated string.
@@ -84,36 +82,65 @@ static int equalsString_StringBuffer_string                                     
   const char * const string)                                                    // String
  {const size_t l = strlen(string);
   if (buffer.proto->length(buffer) != l) return 0;
-  const ReadOnlyBytes b = buffer.proto->string(buffer);
-  const int r = !strncmp(b.data, string, l);
-  b.proto->free(b);
-  return r;
+  char B[l+1]; buffer.proto->string(buffer, B);
+  return !strcmp(B, string);
  }
 
 static int contains_StringBuffer_StringBuffer                                                         // Checks whether the first StringBuffer contains the second StringBuffer
  (const StringBuffer a,                                                                    // First StringBuffer
   const StringBuffer b)                                                                    // Second StringBuffer
- {if (a.proto->length(a) < b.proto->length(b)) return 0;
-  const ReadOnlyBytes A = a.proto->string(a), B = b.proto->string(b);
-  const int r = !!strstr(A.data, B.data);
-  A.proto->free(A); B.proto->free(B);
-  return r;
+ {const size_t la = a.proto->length(a), lb = b.proto->length(b);
+  if (la < lb) return 0;                                                        // Cannot be contained in a shorter string
+  char A[la+1], B[lb+1]; a.proto->string(a, A); b.proto->string(b, B);
+  return !!strstr(A, B);
  }
 
 static int containsString_StringBuffer_StringBuffer                                                   // Checks whether a StringBuffer contains a specified zero terminated string.
  (const StringBuffer            buffer,                                                    // StringBuffer
   const char * const string)                                                    // String
- {const size_t l = strlen(string);
-  if (buffer.proto->length(buffer) < l) return 0;
-  const ReadOnlyBytes b = buffer.proto->string(buffer);
-  const int r = !!strstr(b.data, string);
-  b.proto->free(b);
-  return r;
+ {const size_t l = strlen(string), lb = buffer.proto->length(buffer);
+  if (lb < l) return 0;                                                         // Cannot be contained in a shorter string
+  char B[lb+1]; buffer.proto->string(buffer, B);
+  return !!strstr(B, string);
+ }
+
+static int substringEquals_int_StringBuffer_int_int_string                                 // Checks whether a sub string of the specified StringBuffer is equal to the specified zero terminated string.
+ (const StringBuffer            buffer,                                                    // StringBuffer
+  const size_t       start,                                                     // Offset to start of string
+  const size_t       length,                                                    // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
+  const char * const string)                                                    // Zero terminated string expected
+ {const size_t l =   strlen(string), lb = buffer.proto->length(buffer);
+  if (lb < l) return 0;                                                         // Cannot be contained in a shorter string
+  char s[length+1]; buffer.proto->substring(buffer, start, length, s);
+  return !strcmp(s, string);
  }
 
 //D1 String                                                                     // Make into a string
 
-static ReadOnlyBytes string_StringBuffer                                                   // Create a read only bytes string from the StringBuffer.
+static void string_StringBuffer_string                                                     // Load a zero terminated string from a StringBuffer.
+ (const StringBuffer        buffer,                                                        // StringBuffer
+  char  * const  string)                                                        // String to load with enough space for the string and its terminating zero
+ {char  * p =    string;
+  ArenaTreefe(c, buffer.string) p = stpcpy(p, c.proto->key(c));
+  *p = 0;
+ }
+
+static size_t substring_size_StringBuffer_int_int_string                                   // Load a zero terminates string with a sub string of a StringBuffer and return the number of bytes loaded.
+ (const StringBuffer      buffer,                                                          // StringBuffer
+  const size_t start,                                                           // Offset to start of string
+  const size_t length,                                                          // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
+  char * const string)                                                          // String to load with enough space for the string and its terminating zero
+ {const size_t l = buffer.proto->length(buffer);                                             // Length of source string
+  *string        = 0;                                                           // Start with an empty output string
+  if (start >= l) return 0;                                                     // Substring starts beyond the end of the string
+  char s[l+1]; buffer.proto->string(buffer, s);                                              // Buffer as a single string
+  const size_t n = start + length < l ? length : l - start;                     // Amount we can copy
+  strncpy(string, s + start, n);                                                // Copy out as much of the sub string as we can
+  string[n] = 0;                                                                // Zero terminate sub string
+  return n;                                                                     // Actual length of sub string
+ }
+
+static ReadOnlyBytes readOnlyBytes_StringBuffer                                            // Create a read only bytes string from the StringBuffer.
  (const StringBuffer buffer)                                                               // StringBuffer
  {const size_t l = buffer.proto->length(buffer);
   const ReadOnlyBytes r = makeReadOnlyBytesBuffer(l);
@@ -127,21 +154,21 @@ static ReadOnlyBytes string_StringBuffer                                        
 
 void test0()                                                                    //TmakeStringBuffer //Tadd //TaddFormat //TaddReadOnlyBytes //Tlength //Tstring //Tfree
  {StringBuffer s = makeStringBuffer();
-    s.proto->add(s, "Hello");
+    s.proto->add(s, "Hello"); assert(s.proto->length(s) == 5);
     s.proto->add(s, " ");
     s.proto->add(s, "world");
-  ReadOnlyBytes r = s.proto->string(s);
+  ReadOnlyBytes r = s.proto->readOnlyBytes(s);
   assert(r.proto->equalsString(r, "Hello world"));
   int i = 0;
     s.proto->addFormat(s, " - %d ", ++i);
     s.proto->addReadOnlyBytes(s, r);
     s.proto->addFormat(s, " - %d",   ++i);
-  ReadOnlyBytes p = s.proto->string(s);
+  ReadOnlyBytes p = s.proto->readOnlyBytes(s);
   assert(p.proto->equalsString(p, "Hello world - 1 Hello world - 2"));
   p.proto->free(p); r.proto->free(r); s.proto->free(s);
  }
 
-void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString
+void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //TreadOnlyBytes //Tsubstring //TsubstringEquals
  {StringBuffer a = makeStringBuffer();   StringBuffer b = makeStringBuffer(); StringBuffer c = makeStringBuffer();
     a.proto->add(a, "ab");   b.proto->add(b, "a");  c.proto->add(c, "aba");
     a.proto->add(a, "c");    b.proto->add(b, "bc"); c.proto->add(c, "bc");
@@ -153,7 +180,26 @@ void test1()                                                                    
   assert(!a.proto->contains(a, c));
   assert( c.proto->containsString(c, "bab"));
 
-  a.proto->free(a); b.proto->free(b); c.proto->free(c);
+  assert( c.proto->substringEquals(c, 1, 0, ""));
+  assert( c.proto->substringEquals(c, 1, 1, "b"));
+  assert( c.proto->substringEquals(c, 1, 2, "ba"));
+  assert( c.proto->substringEquals(c, 1, 3, "bab"));
+  assert( c.proto->substringEquals(c, 1, 4, "babc"));
+  assert( c.proto->substringEquals(c, 1, 5, "babc"));
+
+  assert( c.proto->substringEquals(c, 5, 0, ""));
+  assert( c.proto->substringEquals(c, 5, 1, ""));
+
+  if (1)
+   {char buffer[16];
+    c.proto->substring(c, 1, 3, buffer);
+    assert(!strcmp(buffer, "bab"));
+   }
+
+  ReadOnlyBytes A = a.proto->readOnlyBytes(a), B = b.proto->readOnlyBytes(b);
+  assert(A.proto->equals(A, B));
+
+  a.proto->free(a); b.proto->free(b); c.proto->free(c); A.proto->free(A); B.proto->free(B);
  }
 
 int main(void)                                                                  // Run tests
