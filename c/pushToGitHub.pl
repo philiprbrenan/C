@@ -54,12 +54,12 @@ if (1)                                                                          
 my $tests = sub                                                                 # Commands to run tests
  {my @t;
   for my $c(@c)
-   {my $v = $c =~ m(xml) && 0 ? '#' : '';
-    push @t, <<END;
+   {push @t, <<END;
     - name: Run $c
+      if: always()
       run: |
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/$c/$c.c --cIncludes c/includes
-        $v valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes c/z/$c/$c
+        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/$c/$c.c --cIncludes c/includes --valgrind
 END
    }
   join "\n", @t;
