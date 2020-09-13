@@ -49,6 +49,10 @@ static int containsString_ReadOnlyBytes_zeroString
   const char * const s);
 static size_t b2SumW8_ReadOnlyBytes
  (const ReadOnlyBytes r);
+static ArenaTree splitNewLine
+ (const ReadOnlyBytes r);
+static ArenaTree splitSpaces
+ (const ReadOnlyBytes r);
 struct ProtoTypes_ReadOnlyBytes {
   size_t  (*b2SumW8)(                                                           // Get a BLAKE2 digest for a file represented as two hex digits.
     const ReadOnlyBytes r);                                                     // Description of read only sequence of bytes
@@ -67,6 +71,10 @@ struct ProtoTypes_ReadOnlyBytes {
     const ReadOnlyBytes r);                                                     // Description of a read only sequence of bytes
   size_t  (*length)(                                                            // Length of the sequence
     const ReadOnlyBytes r);                                                     // Description of a sequence of read only bytes
+  ArenaTree  (*splitNewLine)(                                                   // Split the specified ReadOnlyBytes on any new line characters
+    const ReadOnlyBytes r);                                                     // Description of read only sequence of bytes
+  ArenaTree  (*splitSpaces)(                                                    // Split the specified ReadOnlyBytes on any sequence of white space, removing the white space from the results
+    const ReadOnlyBytes r);                                                     // Description of read only sequence of bytes
   ReadOnlyBytes  (*substring)(                                                  // Describe a sub-string of the specified sequence
     const ReadOnlyBytes r,                                                      // Description of a sequence of read only bytes
     const size_t start,                                                         // Start position of the sub-string
@@ -81,6 +89,6 @@ struct ProtoTypes_ReadOnlyBytes {
     const ReadOnlyBytes r,                                                      // Description of a read only sequence of bytes
     const char * const fileName);                                               // Base name of the file
  } const ProtoTypes_ReadOnlyBytes =
-{b2SumW8_ReadOnlyBytes, containsString_ReadOnlyBytes_zeroString, data_ReadOnlyBytes, equalsString_ReadOnlyBytes_zeroString, equals_ReadOnlyBytes_ReadOnlyBytes, free_ReadOnlyBytes, length_ReadOnlyBytes, substring_string_ReadOnlyBytes_sizet_sizet, writeFile_ReadOnlyBytes_string, writeOpenFile_ReadOnlyBytes_string, writeTemporaryFile_ReadOnlyBytes_string};
+{b2SumW8_ReadOnlyBytes, containsString_ReadOnlyBytes_zeroString, data_ReadOnlyBytes, equalsString_ReadOnlyBytes_zeroString, equals_ReadOnlyBytes_ReadOnlyBytes, free_ReadOnlyBytes, length_ReadOnlyBytes, splitNewLine, splitSpaces, substring_string_ReadOnlyBytes_sizet_sizet, writeFile_ReadOnlyBytes_string, writeOpenFile_ReadOnlyBytes_string, writeTemporaryFile_ReadOnlyBytes_string};
 ReadOnlyBytes newReadOnlyBytes(ReadOnlyBytes allocator) {return allocator;}
 
