@@ -119,26 +119,26 @@ static int equals_int_ArenaRedBlackTreeNode_ArenaRedBlackTreeNode               
   const ArenaRedBlackTreeNode b)                                                                // Second offset
  {return a.tree.arena == b.tree.arena && a.offset == b.offset;
  }
-#line 165 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 164 "/home/phil/c/z/arenaTree/arenaTree.c"
 static size_t used_ArenaRedBlackTree                                                            //I Amount of space currently being used within the arena of a tree.
  (const ArenaRedBlackTree tree)                                                                 // Tree
  {return tree.arena->used;
  }
-#line 170 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 169 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeOffset  offset_ArenaRedBlackTree_size                                                   //IP Create an offset to locate an item within the tree.
  (const ArenaRedBlackTree       tree,                                                           // Tree
   const size_t  delta)                                                          // Delta within arena
  {const ArenaRedBlackTreeOffset o = {tree, delta, &ProtoTypes_ArenaRedBlackTreeOffset};                         // Create offset locally
   return        o;
  }
-#line 177 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 176 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeNode   nodeFromOffset_ArenaRedBlackTree_size                                            //IP Create a node to locate an allocation within the arena of a tree.
  (const ArenaRedBlackTree      tree,                                                            // Tree
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
  {const ArenaRedBlackTreeNode  n = {tree, delta, &ProtoTypes_ArenaRedBlackTreeNode};                            // Create node
   return       n;
  }
-#line 184 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 183 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeOffset allocate_offset_ArenaRedBlackTree_size                                           //IP Allocate memory within the arena of a tree and clear the allocated memory
  (const ArenaRedBlackTree      tree,                                                            // ArenaTree in which to allocate
   const size_t size)                                                            // Amount of memory required
@@ -165,7 +165,7 @@ static ArenaRedBlackTreeOffset allocate_offset_ArenaRedBlackTree_size           
    }
   printStackBackTrace("Arena too large\n");                                     // The arena has become too large for the chosen size of offsets.
  }
-#line 211 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 210 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeNode noden_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString                                              //I Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
  (const ArenaRedBlackTree       tree,                                                           // Arena tree in which to create the node
   const char * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
@@ -176,13 +176,13 @@ static ArenaRedBlackTreeNode noden_ArenaRedBlackTreeNode_ArenaRedBlackTree_Arena
   a->key.delta = k.offset;                                                      // Save key offset
   return tree.proto->nodeFromOffset(tree, c.offset);                                       // Return node
  }
-#line 222 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 221 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeNode node_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString                                               //I Create a new tree node keyed by a zero terminated string.
  (const ArenaRedBlackTree             tree,                                                     // Arena tree in which to create the node
   const char * const  key)                                                      // Key for this node.  Note: we do not order nodes automatically.
  {return tree.proto->noden(tree, key, 0);
  }
-#line 228 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 227 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeOffset saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString                                     //IP Save a copy of a zero terminated string in a tree and return the offset of the string.
  (const ArenaRedBlackTree       tree,                                                           // Arena tree in which to create the node
   const char * const str,                                                       // String
@@ -193,18 +193,18 @@ static ArenaRedBlackTreeOffset saveString_ArenaRedBlackTreeOffset_ArenaRedBlackT
   char * const T = stpncpy(t, str, l); *T = 0;
   return o;
  }
-#line 291 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 290 "/home/phil/c/z/arenaTree/arenaTree.c"
 static size_t getData_size_ArenaRedBlackTreeNode                                                //I Get the value of the data offset associated with a node.
  (const ArenaRedBlackTreeNode  node)                                                            // Node in an arena tree associated with the data
  {return node.proto->content(node)->data.delta;                                            // Value of the data offset field
  }
-#line 296 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 295 "/home/phil/c/z/arenaTree/arenaTree.c"
 static void setData_ArenaRedBlackTreeNode_size                                                  //I Set the value of the data offset associated with a node.
  (const ArenaRedBlackTreeNode  node,                                                            // Node in an arena tree to associate with the data
   const size_t offset)                                                          // Value the data offset is to be set to
  {node.proto->content(node)->data.delta = offset;                                          // Record offset
  }
-#line 367 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 366 "/home/phil/c/z/arenaTree/arenaTree.c"
 static int equalsString_ArenaRedBlackTreeNode_string                                            //I Check that the key of a node
  (const ArenaRedBlackTreeNode        node,                                                      // Node
   const char * const key)                                                       // Key
