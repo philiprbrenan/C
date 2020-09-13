@@ -425,7 +425,9 @@ static ReadOnlyBytes prettyPrint_readOnlyBytes_$Tag                             
    }
 
   print(tag, 0);
-  return p ▷ readOnlyBytes;
+  const ReadOnlyBytes r = p ▷ readOnlyBytes;
+  p ▷ free;
+  return r;
  }
 
 static ReadOnlyBytes prettyPrint_readOnlyBytes_$                                // Print the $ parse tree with additional spacing between tags to make the tree easier to read.
@@ -439,6 +441,7 @@ static int prettyPrintsAs_int_$_string                                          
   const char * const expected)                                                  // Expected pretty print
  {const ReadOnlyBytes r = xml ▷ prettyPrint;
   const int result =  r ▷ equalsString(expected);
+
   if (!result)                                                                   // Strings match
    {for(size_t i = 0; i < r.length; ++i)
      {char a = *(r.data+i), b = *(expected+i);
@@ -450,6 +453,7 @@ static int prettyPrintsAs_int_$_string                                          
        }
      }
    }
+
   r ▷ free;
   return 1;
  }
@@ -779,7 +783,7 @@ void test3()                                                                    
 
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, 0};
-// {void (*tests[])(void) = {test0, 0};
+//{void (*tests[])(void) = {test0, 0};
   run_tests("$", 1, tests);
   return 0;
  }
