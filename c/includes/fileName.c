@@ -138,14 +138,18 @@ static int equalsString_int_FileName_string                                     
  (const FileName      file,                                                            // File
   const char * const expected)                                                  // Zero terminated string of expected content
  {char * const r = file.proto->readFile(file);                                             // Read results
-  return !strcmp(r, expected);                                                  // Check results
+  const int R = !strcmp(r, expected);                                                  // Check results
+  free(r);
+  return R;
  }
 
 static int containsString_int_FileName_string                                          // Check that the content of the specified file contains the specified zero terminated string.
  (const FileName      file,                                                            // File
   const char * const expected)                                                  // Zero terminated string of expected content
  {char * const r = file.proto->readFile(file);                                             // Read results
-  return !!strstr(r, expected);                                                 // Check results
+  const int R = !!strstr(r, expected);                                                 // Check results
+  free(r);
+  return R;
  }
 
 static size_t maxFileNameSize_FileNameFileName                                         // Maximum size of a file name
