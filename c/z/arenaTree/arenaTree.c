@@ -152,13 +152,12 @@ static $String key_string_$Node                                                 
 
 //D1 Allocation                                                                 // Allocating memory in the tree
 
-static $Node setKey_$Node_$Node_$String                                         // Copy a string into the key field of a node
+static void setKey_$Node_$String                                                // Copy a string into the key field of a node
  (const $Node        node,                                                      // Node
   const char * const key)                                                       // Key - it will be copied into the tree
  {const $   t  = node.tree;
   $Content * const c = node ▷ content;
   c->key.delta = t ▷ saveString(key, 0).offset;
-  return node;
  };
 
 static size_t used_$                                                            // Amount of space currently being used within the arena of a tree.
