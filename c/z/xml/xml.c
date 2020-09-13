@@ -381,16 +381,22 @@ static  size_t count_size_$Tag                                                  
 
 //D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
 
-static void wrap_$Tag_string                                                    // Wrap a specified tag with a new tag
+static $Tag wrap_$Tag_string                                                    // Wrap a specified tag with a new tag and return the newly createdf wraping tag.
  (const $Tag         tag,                                                       // Tag
-  const char * const string)                                                    // Wrapper without the leading < or trailing or >                                                                              //const char * void (* const function) (const $Tag tag))
+  const char * const string)                                                    // Wrapper without the leading < or trailing or >
  {char s[strlen(string)+4], *p = s;
   *p++ = $Open;
    p   = stpcpy(p, string);
   *p++ = $Close;
   *p   = 0;
 
-  tag.node ▷ wrap(s);
+  const ArenaTreeNode n =  tag.node ▷ wrap(s);
+  return new $Tag(xml: tag.xml, node: n);
+ }
+
+static void unwrap_$Tag                                                         // Unwrap the specified tag.
+ (const $Tag         tag)                                                       // Tag
+ {tag.node ▷ unwrap;
  }
 
 //D1 Print                                                                      // Print an $ parse tree starting at the specified tag.
@@ -457,6 +463,7 @@ static int prettyPrintsAs_int_$_string                                          
   r ▷ free;
   return 1;
  }
+duplicate s/_\$_/_\$Tag_/,s/Parse\sxml/Tag\x20tag/,s/xml/tag/
 
 static void prettyPrintAssert_$Tag                                              // Pretty print the $ parse tree starting at the specified tag as an assert statement
  (const $Tag         tag,                                                       // Starting tag
@@ -577,9 +584,9 @@ void test0()                                                                    
   $Tag B = b ▷ first;             assert(B ▷ valid); assert(B ▷ tagNameEquals("text")); assert(B ▷ tagStringEquals("bb"));
 
   x ▷ free;
- }
+ } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap
  {$Parse x = make$ParseFromString
    ("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>");
 
@@ -639,22 +646,24 @@ void test1()                                                                    
 
   assert(a ▷ equals(b ▷ parent));
 
-  f ▷ wrap("F id='1'");
-//x ▷ prettyPrintAssert("x");
-assert(prettyPrintsAs_int_Xml_string(x,
+  $Tag F = f ▷ wrap("F id='1'");
+//d ▷ prettyPrintAssert("d");
+  assert(prettyPrintsAs_int_$Tag_string(d,
 "\n"
-"<a>\n"
-" <b><c/>\n"
-"  <d><e/>e<F id='1'><f/></F>f<g>g</g>\n"
-"  </d>\n"
-"  <h>h</h>\n"
-" </b>\n"
-" <i/>i<j>\n"
-"</a>\n"
+"<d><e/>e<F id='1'><f/></F>f<g>g</g>\n"
+"</d>\n"
+));
+
+  F ▷ unwrap;
+//d ▷ prettyPrintAssert("d");
+  assert(prettyPrintsAs_int_$Tag_string(d,
+"\n"
+"<d><e/>e<f/>f<g>g</g>\n"
+"</d>\n"
 ));
 
   x ▷ free;
- }
+ } // test1
 
 void test2()                                                                    //Tprint
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
@@ -675,7 +684,7 @@ void test2()                                                                    
   assert( c ▷ tagNameEquals("conbody"));
 
   x ▷ free;
- }
+ } // test2
 
 void test3()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {char *file =       "/home/phil/c/z/xml/validation/validation.xml";
@@ -779,7 +788,7 @@ void test3()                                                                    
    }
 
   xml ▷ free;
- }
+ } // test3
 
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, 0};
