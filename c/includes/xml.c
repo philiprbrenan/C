@@ -411,16 +411,22 @@ static  size_t count_size_XmlTag                                                
 
 //D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
 
-static void wrap_XmlTag_string                                                    // Wrap a specified tag with a new tag
+static XmlTag wrap_XmlTag_string                                                    // Wrap a specified tag with a new tag and return the newly createdf wraping tag.
  (const XmlTag         tag,                                                       // Tag
-  const char * const string)                                                    // Wrapper without the leading < or trailing or >                                                                              //const char * void (* const function) (const XmlTag tag))
+  const char * const string)                                                    // Wrapper without the leading < or trailing or >
  {char s[strlen(string)+4], *p = s;
   *p++ = XmlOpen;
    p   = stpcpy(p, string);
   *p++ = XmlClose;
   *p   = 0;
 
-  tag.node.proto->wrap(tag.node, s);
+  const ArenaTreeNode n =  tag.node.proto->wrap(tag.node, s);
+  return newXmlTag(({struct XmlTag t = {xml: tag.xml, node: n, proto: &ProtoTypes_XmlTag}; t;}));
+ }
+
+static void unwrap_XmlTag                                                         // Unwrap the specified tag.
+ (const XmlTag         tag)                                                       // Tag
+ {tag.node.proto->unwrap(tag.node);
  }
 
 //D1 Print                                                                      // Print an Xml parse tree starting at the specified tag.
@@ -487,6 +493,28 @@ static int prettyPrintsAs_int_Xml_string                                        
   r.proto->free(r);
   return 1;
  }
+static int prettyPrintsAs_int_XmlTag_string                                          // Check that the Xml parse tree prints as expected
+ (XmlTag tag,                                                                   // Xml parse tree
+  const char * const expected)                                                  // Expected pretty print
+ {const ReadOnlyBytes r = tag.proto->prettyPrint(tag);
+  const int result =  r.proto->equalsString(r, expected);
+
+  if (!result)                                                                   // Strings match
+   {for(size_t i = 0; i < r.length; ++i)
+     {char a = *(r.data+i), b = *(expected+i);
+      if (a != b)
+       {say("Strings differ in prettyPrintsAs"
+            " at position: %lu on characters:  %c and %c\n", i, a, b);
+        r.proto->free(r);
+        return 0;
+       }
+     }
+   }
+
+  r.proto->free(r);
+  return 1;
+ }
+#line 466 "/home/phil/c/z/xml/xml.c"
 
 static void prettyPrintAssert_XmlTag                                              // Pretty print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
@@ -607,9 +635,9 @@ void test0()                                                                    
   XmlTag B = b.proto->first(b);             assert(B.proto->valid(B)); assert(B.proto->tagNameEquals(B, "text")); assert(B.proto->tagStringEquals(B, "bb"));
 
   x.proto->free(x);
- }
+ } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TmakeXmlParseFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TmakeXmlParseFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap
  {XmlParse x = makeXmlParseFromString
    ("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>");
 
@@ -669,22 +697,24 @@ void test1()                                                                    
 
   assert(a.proto->equals(a, b.proto->parent(b)));
 
-  f.proto->wrap(f, "F id='1'");
-//x.proto->prettyPrintAssert(x, "x");
-assert(prettyPrintsAs_int_Xml_string(x,
+  XmlTag F = f.proto->wrap(f, "F id='1'");
+//d.proto->prettyPrintAssert(d, "d");
+  assert(prettyPrintsAs_int_XmlTag_string(d,
 "\n"
-"<a>\n"
-" <b><c/>\n"
-"  <d><e/>e<F id='1'><f/></F>f<g>g</g>\n"
-"  </d>\n"
-"  <h>h</h>\n"
-" </b>\n"
-" <i/>i<j>\n"
-"</a>\n"
+"<d><e/>e<F id='1'><f/></F>f<g>g</g>\n"
+"</d>\n"
+));
+
+  F.proto->unwrap(F);
+//d.proto->prettyPrintAssert(d, "d");
+  assert(prettyPrintsAs_int_XmlTag_string(d,
+"\n"
+"<d><e/>e<f/>f<g>g</g>\n"
+"</d>\n"
 ));
 
   x.proto->free(x);
- }
+ } // test1
 
 void test2()                                                                    //Tprint
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
@@ -705,7 +735,7 @@ void test2()                                                                    
   assert( c.proto->tagNameEquals(c, "conbody"));
 
   x.proto->free(x);
- }
+ } // test2
 
 void test3()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {char *file =       "/home/phil/c/z/xml/validation/validation.xml";
@@ -809,7 +839,7 @@ void test3()                                                                    
    }
 
   xml.proto->free(xml);
- }
+ } // test3
 
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, 0};
