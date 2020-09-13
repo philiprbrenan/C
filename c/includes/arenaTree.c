@@ -7,7 +7,6 @@
 #ifndef ArenaTree_included
 #define ArenaTree_included
 #include <setjmp.h>
-#include <readOnlyBytes.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
@@ -16,7 +15,7 @@
 
 
 typedef char * ArenaTreeString;                                                         // Arena Tree string
-//typedef struct ReadOnlyBytes ReadOnlyBytes;                                     // Arena Tree string
+typedef struct ReadOnlyBytes ReadOnlyBytes;
 
 typedef struct ArenaTree                                                                // Arena Tree.
  {const struct ProtoTypes_ArenaTree *proto;                                             // Methods associated with an arena tree
@@ -63,6 +62,7 @@ typedef struct ArenaTreeDescription                                             
  } ArenaTreeDescription;
 
 #include <arenaTree_prototypes.h>                                                      // Arena tree prototypes now that the relevant structures have been declared
+#include <readOnlyBytes.c>
 
 #define ArenaTreefe( child, parent) for(ArenaTreeNode child = parent.proto->first(parent); child.proto->valid(child); child = child.proto->next(child)) // Each child in a parent from first to last
 #define ArenaTreefer(child, parent) for(ArenaTreeNode child = parent.proto->last(parent);  child.proto->valid(child); child = child.proto->prev(child)) // Each child in a parent from last to first
