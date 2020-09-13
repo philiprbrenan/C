@@ -6,8 +6,8 @@
 #define _GNU_SOURCE
 #ifndef StringBuffer_included
 #define StringBuffer_included
-#include <arenaTree.c>
 #include <readOnlyBytes.c>
+#include <arenaTree.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
@@ -69,6 +69,16 @@ static void addChar_StringBuffer                                                
 static void addNewLine                                                          // Add a new line
  (const StringBuffer buffer)                                                               // StringBuffer
  {buffer.proto->add(buffer, "\n");
+ }
+
+static void addSingleQuote                                                      // Add a single quote
+ (const StringBuffer buffer)                                                               // StringBuffer
+ {buffer.proto->add(buffer, "'");
+ }
+
+static void addDoubleQuote                                                      // Add a double quote
+ (const StringBuffer buffer)                                                               // StringBuffer
+ {buffer.proto->add(buffer, "\"");
  }
 
 //D1 Statistics                                                                 // Statistics on the contents of the StringBuffer.
@@ -218,7 +228,9 @@ void test2()                                                                    
  {StringBuffer a = makeStringBuffer();
     a.proto->addChar(a, 'a');
     a.proto->addNewLine(a);
-  assert( a.proto->equalsString(a, "a\n"));
+    a.proto->addSingleQuote(a);
+    a.proto->addDoubleQuote(a);
+  assert( a.proto->equalsString(a, "a\n'\""));
 
   a.proto->free(a);
  }
