@@ -5,8 +5,8 @@
 #define _GNU_SOURCE
 #ifndef $_included
 #define $_included
-#include <arenaTree.c>
 #include <readOnlyBytes.c>
+#include <arenaTree.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
@@ -68,6 +68,16 @@ static void addChar_$                                                           
 static void addNewLine                                                          // Add a new line
  (const $ buffer)                                                               // $
  {buffer ▷ add("\n");
+ }
+
+static void addSingleQuote                                                      // Add a single quote
+ (const $ buffer)                                                               // $
+ {buffer ▷ add("'");
+ }
+
+static void addDoubleQuote                                                      // Add a double quote
+ (const $ buffer)                                                               // $
+ {buffer ▷ add("\"");
  }
 
 //D1 Statistics                                                                 // Statistics on the contents of the $.
@@ -217,7 +227,9 @@ void test2()                                                                    
  {$ a = make$();
     a ▷ addChar('a');
     a ▷ addNewLine;
-  assert( a ▷ equalsString   ("a\n"));
+    a ▷ addSingleQuote;
+    a ▷ addDoubleQuote;
+  assert( a ▷ equalsString("a\n'\""));
 
   a ▷ free;
  }
