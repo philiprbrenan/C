@@ -27,8 +27,8 @@ typedef struct ReadOnlyBytes                                                    
 //D1 Constructors                                                               // Construct a description of a read only byte sequence
 
 static ReadOnlyBytes makeReadOnlyBytes                                                                  //CP Create a new description of a read only sequence of bytes
- (char  * const data,
-  const size_t length,                                                          // Length of the byte sequence
+ (char * const data,                                                            // Memory to contain the read only bytes string
+  size_t       length,                                                          // Length of the byte sequence
   const enum ReadOnlyBytesAllocator allocator)                                              // Allocation of memory so we know how to free it (or not to free it)
  {const ReadOnlyBytes r = {data, length, allocator, &ProtoTypes_ReadOnlyBytes};
   return r;
