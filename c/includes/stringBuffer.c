@@ -51,12 +51,23 @@ static void addFormat                                                           
   const char * const format,                                                    // Format
   ...)                                                                          // Strings
  {va_list va;
+  const int N = 2  ;                                                         // Guess a reasonable size                                                                               //dx=const Xml x =  for the output string
+  char data[N];                                                                 // Space on stack for first attempt
   va_start(va, format);
-  char * data; const int length = vasprintf(&data, format, va);                 // Allocate and format output string
+  const int L = vsnprintf(data, N, format, va);                                 // First attempt
   va_end(va);
-  const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, data, length);
-  s.proto->putTreeLast(s);
-  free(data);
+  if (N > L)                                                                    // Success on the first attempt
+   {const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, data, L);
+    s.proto->putTreeLast(s);
+   }
+  else                                                                          // Second attempt
+   {char data[L+1];
+    va_start(va, format);
+    vsnprintf(data, L+1, format, va);
+    va_end(va);
+    const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, data, L);
+    s.proto->putTreeLast(s);
+   }
  }
 
 static void addChar_StringBuffer                                                           // Add the specified character
