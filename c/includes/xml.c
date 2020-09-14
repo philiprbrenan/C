@@ -61,23 +61,26 @@ static XmlParse makeXmlParseFromFile                                            
   const ReadOnlyBytes b = x.data      = makeReadOnlyBytesFromFile(f);           // String to parse
   ArenaTreeNode       P = t.proto->root(t);                                             // Current parent node
 
-  XmlParse error                                                                  // Report an error
+  XmlParse error                                                                  // Report an error message adding the file name involved on the following line
    (const char * const p,                                                       // Pointer to position at which the error occurred
     const char *format, ...)                                                    // Message text
    {va_list va;
+    const StringBuffer m = makeStringBuffer();                                  // Build the error message
+    const size_t       o = p - b.proto->data(b);                                        // Offset of the error
     va_start(va, format);
-    char m[256]; vsnprintf(m, sizeof(m), format, va);                           // Format message
+    m.proto->addVaFormat(m, format, va);                                                // Format error message in a buffer of adequate size
     va_end(va);
-    const ArenaTreeNode n = e.proto->node(e, m);                                        // Save the text of the error message as the key of a node
-    n.proto->setData(n, p - b.proto->data(b));                                                  // Save the offset of the error in the node data offset.
+    m.proto->addFormat(m, "\n  File     : %s",    fileName.name);                       // Add file name details
+    m.proto->addFormat(m, "\n  At offset: %lu\n", o);                                   // Add offset in file
+    const ArenaTreeNode n = e.proto->nodeFromStringBuffer(e, m);                        // Save the text of the error message as the key of a node
+    n.proto->setData(n, o);                                                             // Save the offset of the error in the node data offset.
     n.proto->putTreeLast(n);                                                            // Add the error to the error list
+    m.proto->free(m);                                                                   // Free string buffer
     return x;
    } // error
 
   char *p  = b.proto->data(b); const char * const textStart = p;                        // Start of text to be parsed
-  if  (*p != XmlOpen)                                                             // Insist that the first character is <
-   {return error(p, "Xml must start with: %c\n", XmlOpen);
-   }
+  if  (*p != XmlOpen) return error(p, "Xml must start with: %c", XmlOpen);            // Insist that the first character is <
 
   int remainderIsWhiteSpace(char *p)                                            // Find the next non space character in a zero terminated string
    {for(; *p; ++p) if (!isspace(*p)) return 0;                                  // Non white space
@@ -116,12 +119,12 @@ static XmlParse makeXmlParseFromFile                                            
           char b[N+1]; strncpy(b, parseXmlTagName(o),       N);                   // End tag name
 
           if (strncmp(a, b, N))                                                 // Tag name mismatch
-           {error(o, "End tag: %s does not match start tag: %s\n", b, a);
+           {error(o, "End tag: %s does not match start tag: %s", b, a);
            }
 
           if (!P.proto->isRoot(P)) P = P.proto->parent(P);                                      // Go up one level if possible
           else if (remainderIsWhiteSpace(p)) {}                                 // On root - ignore trailing white space
-          else error(o, "Ignoring text beyond closing tag\n");                  // On root with remaining text
+          else error(o, "Ignoring text beyond closing tag");                    // On root with remaining text
          }
 
         const char oo = *(o+1), cc = *(c-1);                                    // First character after <, last character before >
@@ -133,10 +136,10 @@ static XmlParse makeXmlParseFromFile                                            
         p = c + 1;                                                              // Start of text
        }
 
-      else return error(o, "Cannot find closing: %c\n", XmlClose);                // No closing > present
+      else return error(o, "Cannot find closing: %c", XmlClose);                  // No closing > present
      }
     else                                                                        // Check that trailing text is all spaces
-     {if (!remainderIsWhiteSpace(p)) error(p, "Ignoring text at end\n");
+     {if (!remainderIsWhiteSpace(p)) error(p, "Ignoring text at end");
       break;
      }
    }
@@ -145,8 +148,8 @@ static XmlParse makeXmlParseFromFile                                            
    {const ArenaTreeNode root = t.proto->root(t);
     const size_t N = root.proto->countChildren(root);
     char * const f = fileName.name, *p = b.proto->data(b);
-    if (N == 0) return error(p, "No xml root tag found in file: %s\n",f);
-    else if (N > 1) return error(p, "More than one root xml tag found in file: %s\n", f);
+    if (N == 0)     return error(p, "No xml root tag found");
+    else if (N > 1) return error(p, "More than one root xml tag found");
    }
 
   if (1)                                                                        // Make the single root xml tag the root of the parse tree
@@ -234,22 +237,22 @@ static XmlTag last_XmlTag                                                       
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->last(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 232 "/home/phil/c/z/xml/xml.c"
+#line 235 "/home/phil/c/z/xml/xml.c"
 static XmlTag next_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->next(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 232 "/home/phil/c/z/xml/xml.c"
+#line 235 "/home/phil/c/z/xml/xml.c"
 static XmlTag prev_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->prev(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 232 "/home/phil/c/z/xml/xml.c"
+#line 235 "/home/phil/c/z/xml/xml.c"
 static XmlTag parent_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->parent(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 232 "/home/phil/c/z/xml/xml.c"
+#line 235 "/home/phil/c/z/xml/xml.c"
 
 static XmlTag first_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
  (const XmlParse xml)                                                             // Parent tag
@@ -259,7 +262,7 @@ static XmlTag last_XmlParse                                                     
  (const XmlParse xml)                                                             // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: xml, node: xml.tree.proto->last(xml.tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 238 "/home/phil/c/z/xml/xml.c"
+#line 241 "/home/phil/c/z/xml/xml.c"
 
 //D1 Location                                                                   // Check the current location in the Xml parse tre
 
@@ -275,7 +278,7 @@ static int isLast_XmlTag                                                        
   const XmlTag parent = tag.proto->parent(tag), f = parent.proto->last(parent);
   return f.proto->equals(f, tag);
  }
-#line 248 "/home/phil/c/z/xml/xml.c"
+#line 251 "/home/phil/c/z/xml/xml.c"
 
 //D1 Text methods                                                               // Methods that operate on text tags
 
@@ -530,7 +533,7 @@ static int prettyPrintsAs_int_XmlTag_string                                     
   r.proto->free(r);
   return 1;
  }
-#line 482 "/home/phil/c/z/xml/xml.c"
+#line 485 "/home/phil/c/z/xml/xml.c"
 
 static void prettyPrintAssert_XmlTag                                              // Pretty print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
