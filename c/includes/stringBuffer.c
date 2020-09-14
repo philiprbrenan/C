@@ -4,19 +4,22 @@
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
 #define _GNU_SOURCE
-#ifndef StringBuffer_included
-#define StringBuffer_included
 #include <readOnlyBytes.c>
 #include <arenaTree.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
+#ifndef StringBuffer_included_StringBuffer
+#define StringBuffer_included_StringBuffer
 typedef struct StringBuffer                                                                // StringBuffer
  {const struct ProtoTypes_StringBuffer *proto;                                             // Prototypes for methods
   ArenaTree string;                                                             // String being built
  } StringBuffer;
+#endif
 
+#ifndef StringBuffer_included
+#define StringBuffer_included
 #include <stringBuffer_prototypes.h>
 
 static StringBuffer makeStringBuffer                                                                  // Make a StringBuffer
@@ -193,6 +196,7 @@ static ReadOnlyBytes readOnlyBytes_StringBuffer                                 
   ArenaTreefe(c, buffer.string) p = stpcpy(p, c.proto->key(c));
   return r;
  }
+#endif
 
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
@@ -263,6 +267,5 @@ int main(void)                                                                  
   run_tests("StringBuffer", 1, tests);
   return 0;
  }
-#endif
 #endif
 // valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/stringBuffer/stringBuffer
