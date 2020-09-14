@@ -439,6 +439,7 @@ static size_t b2SumW8_size_$Node                                                
   s ▷ free;
   return d;
  }
+#endif
 
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
@@ -664,6 +665,5 @@ int main(void)                                                                  
   run_tests("$", repetitions, tests);
   return 0;
  }
-#endif
 #endif
 // valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree
