@@ -3,19 +3,22 @@
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
 #define _GNU_SOURCE
-#ifndef $_included
-#define $_included
 #include <readOnlyBytes.c>
 #include <arenaTree.c>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
+#ifndef $_included_$
+#define $_included_$
 typedef struct $                                                                // $
  {const struct ProtoTypes_$ *proto;                                             // Prototypes for methods
   ArenaTree string;                                                             // String being built
  } $;
+#endif
 
+#ifndef $_included
+#define $_included
 #include <$$_prototypes.h>
 
 static $ make$                                                                  // Make a $
@@ -192,6 +195,7 @@ static ReadOnlyBytes readOnlyBytes_$                                            
   ArenaTreefe(c, buffer.string) p = stpcpy(p, c ▷ key);
   return r;
  }
+#endif
 
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
@@ -262,6 +266,5 @@ int main(void)                                                                  
   run_tests("$", 1, tests);
   return 0;
  }
-#endif
 #endif
 // valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/stringBuffer/stringBuffer
