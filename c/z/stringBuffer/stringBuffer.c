@@ -31,67 +31,74 @@ static void free_$                                                              
 
 //D1 Concatenate                                                                // Concatenate various items
 
-static void add                                                                 // Concatenate a string
+static void add_$_string                                                        // Concatenate a string
  (const $ buffer,                                                               // $
   const char * const string)                                                    // Zero terminated string
  {const ArenaTreeNode s = buffer.string ▷ node(string);
   s ▷ putTreeLast;
  }
 
-static void addReadOnlyBytes                                                    // Concatenate a read only bytes
+static void addReadOnlyBytes_$_readOnlyBytes                                    // Concatenate a read only bytes
  (const $             buffer,                                                   // $
   const ReadOnlyBytes string)                                                   // Read only bytes
  {const ArenaTreeNode s = buffer.string ▷ noden(string.data, string.length);
   s ▷ putTreeLast;
  }
 
-static void addFormat                                                           // Add a formatted string
+static void addVaFormat_$_string_va                                             // Add a variadic argument formatted string
  (const $ buffer,                                                               // $
   const char * const format,                                                    // Format
-  ...)                                                                          // Strings
- {va_list va;
+  va_list va1)                                                                  // Variable argument list
+ {va_list va2; va_copy(va2, va1);                                               // We might need to make two passes through the variable arguments
   const int N = 1024;                                                           // Guess a reasonable size                                                                               //dx=const Xml x =  for the output string
   char data[N];                                                                 // Space on stack for first attempt
-  va_start(va, format);
-  const int L = vsnprintf(data, N, format, va);                                 // First attempt
-  va_end(va);
+  const int L = vsnprintf(data, N, format, va1);                                // First attempt
   if (N > L + 1)                                                                // Success on the first attempt
    {const ArenaTreeNode s = buffer.string ▷ noden(data, L);
                         s ▷ putTreeLast;
    }
   else                                                                          // Second attempt
    {char data[L+1];
-    va_start(va, format);
-    vsnprintf(data, L+1, format, va);
-    va_end(va);
+    vsnprintf(data, L+1, format, va2);
     const ArenaTreeNode s = buffer.string ▷ noden(data, L);
                         s ▷ putTreeLast;
    }
  }
 
-static void addChar_$                                                           // Add the specified character
+
+static void addFormat_$_strings                                                 // Add a formatted string
+ (const $ buffer,                                                               // $
+  const char * const format,                                                    // Format
+  ...)                                                                          // Strings
+ {va_list va;
+  va_start(va, format);
+  buffer ▷ addVaFormat(format, va);
+  va_end(va);
+ }
+
+static void addChar_$_char                                                      // Add the specified character
  (const $    buffer,                                                            // $
   const char c)                                                                 // Character to add
  {const char s[2] = {c, 0};
   buffer ▷ add(s);
  }
 
-static void addNewLine                                                          // Add a new line
+static void addNewLine_$                                                        // Add a new line
  (const $ buffer)                                                               // $
  {buffer ▷ add("\n");
  }
 
-static void addSingleQuote                                                      // Add a single quote
+static void addSingleQuote_$                                                    // Add a single quote
  (const $ buffer)                                                               // $
  {buffer ▷ add("'");
  }
 
-static void addDoubleQuote                                                      // Add a double quote
+static void addDoubleQuote_$                                                    // Add a double quote
  (const $ buffer)                                                               // $
  {buffer ▷ add("\"");
  }
 
-static void addQuotedNewLine                                                    // Add a quoted new line
+static void addQuotedNewLine_$                                                  // Add a quoted new line
  (const $ buffer)                                                               // $
  {buffer ▷ add("\\n");
  }
