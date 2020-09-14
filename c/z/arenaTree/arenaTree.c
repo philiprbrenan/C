@@ -814,6 +814,7 @@ $ read$                                                                         
   arena->root = h.root;                                                         // Offset to root in arena
   return tree;
  }
+#endif
 
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
@@ -1103,6 +1104,5 @@ int main(void)                                                                  
 
   return 0;
  }
-#endif
 #endif
 // valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/arenaTree/arenaTree
