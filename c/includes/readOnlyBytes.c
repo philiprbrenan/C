@@ -200,6 +200,7 @@ static ArenaTree splitSpaces                                                    
   if (  i > j) save();
   return t;
  }
+#endif
 
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
@@ -358,7 +359,5 @@ int main(void)                                                                  
   run_tests("ReadOnlyBytes", 1, tests);
   return 0;
  }
-
-#endif
 #endif
 // valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/readOnlyBytes/readOnlyBytes
