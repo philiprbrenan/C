@@ -32,67 +32,74 @@ static void free_StringBuffer                                                   
 
 //D1 Concatenate                                                                // Concatenate various items
 
-static void add                                                                 // Concatenate a string
+static void add_StringBuffer_string                                                        // Concatenate a string
  (const StringBuffer buffer,                                                               // StringBuffer
   const char * const string)                                                    // Zero terminated string
  {const ArenaTreeNode s = buffer.string.proto->node(buffer.string, string);
   s.proto->putTreeLast(s);
  }
 
-static void addReadOnlyBytes                                                    // Concatenate a read only bytes
+static void addReadOnlyBytes_StringBuffer_readOnlyBytes                                    // Concatenate a read only bytes
  (const StringBuffer             buffer,                                                   // StringBuffer
   const ReadOnlyBytes string)                                                   // Read only bytes
  {const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, string.data, string.length);
   s.proto->putTreeLast(s);
  }
 
-static void addFormat                                                           // Add a formatted string
+static void addVaFormat_StringBuffer_string_va                                             // Add a variadic argument formatted string
+ (const StringBuffer buffer,                                                               // StringBuffer
+  const char * const format,                                                    // Format
+  va_list va1)                                                                  // Variable argument list
+ {va_list va2; va_copy(va2, va1);                                               // We might need to make two passes through the variable arguments
+  const int N = 1024;                                                           // Guess a reasonable size                                                                               //dx=const Xml x =  for the output string
+  char data[N];                                                                 // Space on stack for first attempt
+  const int L = vsnprintf(data, N, format, va1);                                // First attempt
+  if (N > L + 1)                                                                // Success on the first attempt
+   {const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, data, L);
+                        s.proto->putTreeLast(s);
+   }
+  else                                                                          // Second attempt
+   {char data[L+1];
+    vsnprintf(data, L+1, format, va2);
+    const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, data, L);
+                        s.proto->putTreeLast(s);
+   }
+ }
+
+
+static void addFormat_StringBuffer_strings                                                 // Add a formatted string
  (const StringBuffer buffer,                                                               // StringBuffer
   const char * const format,                                                    // Format
   ...)                                                                          // Strings
  {va_list va;
-  const int N = 2  ;                                                         // Guess a reasonable size                                                                               //dx=const Xml x =  for the output string
-  char data[N];                                                                 // Space on stack for first attempt
   va_start(va, format);
-  const int L = vsnprintf(data, N, format, va);                                 // First attempt
+  buffer.proto->addVaFormat(buffer, format, va);
   va_end(va);
-  if (N > L)                                                                    // Success on the first attempt
-   {const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, data, L);
-    s.proto->putTreeLast(s);
-   }
-  else                                                                          // Second attempt
-   {char data[L+1];
-    va_start(va, format);
-    vsnprintf(data, L+1, format, va);
-    va_end(va);
-    const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, data, L);
-    s.proto->putTreeLast(s);
-   }
  }
 
-static void addChar_StringBuffer                                                           // Add the specified character
+static void addChar_StringBuffer_char                                                      // Add the specified character
  (const StringBuffer    buffer,                                                            // StringBuffer
   const char c)                                                                 // Character to add
  {const char s[2] = {c, 0};
   buffer.proto->add(buffer, s);
  }
 
-static void addNewLine                                                          // Add a new line
+static void addNewLine_StringBuffer                                                        // Add a new line
  (const StringBuffer buffer)                                                               // StringBuffer
  {buffer.proto->add(buffer, "\n");
  }
 
-static void addSingleQuote                                                      // Add a single quote
+static void addSingleQuote_StringBuffer                                                    // Add a single quote
  (const StringBuffer buffer)                                                               // StringBuffer
  {buffer.proto->add(buffer, "'");
  }
 
-static void addDoubleQuote                                                      // Add a double quote
+static void addDoubleQuote_StringBuffer                                                    // Add a double quote
  (const StringBuffer buffer)                                                               // StringBuffer
  {buffer.proto->add(buffer, "\"");
  }
 
-static void addQuotedNewLine                                                    // Add a quoted new line
+static void addQuotedNewLine_StringBuffer                                                  // Add a quoted new line
  (const StringBuffer buffer)                                                               // StringBuffer
  {buffer.proto->add(buffer, "\\n");
  }
