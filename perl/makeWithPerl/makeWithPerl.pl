@@ -51,6 +51,7 @@ my $compile;                                                                    
 my $run;                                                                        # Run
 my $doc;                                                                        # Documentation
 my $c;                                                                          # C
+my $coverage;                                                                   # Get coverage of code
 my $cpp;                                                                        # C++
 my $html;                                                                       # Html
 my $perl;                                                                       # Perl
@@ -81,6 +82,7 @@ GetOptions
   'androidLog'  =>\$androidLog,
   'cIncludes=s' =>\$cIncludes,
   'valgrind'    =>\$valgrind,
+  'coverage'    =>\$coverage,
  );
 
 unless($compile or $run or $doc or $html or $androidLog)                        # Check action
@@ -212,8 +214,10 @@ if ($perl)                                                                      
    }
  }
 elsif ($c)                                                                      # GCC
- {my $lp = '-L/usr/lib/x86_64-linux-gnu/libperl.so.5.26 ';
+ {my $lp = '';
   my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8);
+
+  $lp .= " -lX11" if $file =~ m(/x/);                                           # Add X windows if running an X windows program
 
 #  for my $lib(qw(gtk+-3.0 glib-2.0))
 #   {$cp .= ' '.trim(qx(pkg-config --cflags $lib));
@@ -221,16 +225,16 @@ elsif ($c)                                                                      
 #   }
 
   my $optimize = 0;                                                             # Whether to optimize or not
-# my $opt = 0 ? '-O3' : '-fprofile-arcs -ftest-coverage -aux-info /tmp/aux-info.data';
-  my $opt = $compile ? '' : $optimize ? '-O3' : '--coverage -Wno-unused-function -ggdb';
+# '--coverage -aux-info /tmp/aux-info.data';
+  my $opt  = ' -Wno-unused-function';
+     $opt .= $optimize ? ' -O3' : ' -ggdb';
+     $opt .= $coverage ? ' --coverage' : '';
 
-
-  my $I    = $cIncludes;                                                        # Includes folders
   my $gcc  = "gcc $opt  -fmax-errors=132 -rdynamic -Wall -Wextra $cp";          # Options: rdynamic required for printStackBackTrace
-     $gcc .= " -I$I";                                                           # Includes
+     $gcc .= " -I$cIncludes";                                                   # Includes
 
-  my $cFile = fpe($I, fn($file), q(c));                                         # Preprocess output
-  my $hFile = fpe($I, fn($file).q(_prototypes), q(h));                          # Prototypes
+  my $cFile = fpe($cIncludes, fn($file), q(c));                                 # Preprocess output
+  my $hFile = fpe($cIncludes, fn($file).q(_prototypes), q(h));                  # Prototypes
 
   Preprocess::Ops::c($file, $cFile, $hFile);                                    # Preprocess
 
@@ -243,15 +247,18 @@ elsif ($c)                                                                      
    {my $e = $file =~ s(\.cp?p?\Z) ()gsr;                                        # Execute
     my $o = fpe($e, q(o));                                                      # Object file
     my $a = fpe($e, q(gcda));                                                   # Coverage file
-    my $g = owf(undef, "run\nbacktrace\n");                                     # Gdb command file
+#   my $g = owf(undef, "run\nbacktrace\n");                                     # Gdb command file
 #   my $c = qq(rm $e $o $a 2>/dev/null; $gcc -o "$e" "$cFile" $lp; gdb -batch-silent -x $g $e 2>&1);
-    my $c = qq(rm $e $o $a 2>/dev/null; $gcc -o "$e" "$cFile" $lp && $e 2>&1);
+    unlink $e, $o, $a;
+
+    my  $c = qq($gcc -o "$e" "$cFile" $lp && $e 2>&1);                          # Compile and run
     lll qq($c);
-    my $result = qx($c);
-    say STDERR $result;
-    unlink $o, $g;
-    exit(1) unless $result =~ m(SUCCESS);                                       # Confirm successful
-    if (!$optimize)                                                             # Place coverage files in a sub folder
+    my  $result = qx($c);
+    lll $result;
+    unlink $o; # $g;
+    exit(1) if $file =~ m(/z/) and $result !~ m(SUCCESS);                       # Confirm successful
+
+    if ($coverage)                                                              # Place coverage files in a sub folder
      {my $c = qq(gcov $a);
       lll qq($c);
       say STDERR qx($c);
@@ -261,6 +268,7 @@ elsif ($c)                                                                      
       my @files = searchDirectoryTreesForMatchingFiles(fp($file), qw(.gcda .gcno .gcov));
       moveFileWithClobber $_, swapFilePrefix($_, $d, $g) for @files;
      }
+
     if ($valgrind)                                                              # Valgrind requested
      {my $c = qq(valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes $e 2>&1);
       lll qq($c);
