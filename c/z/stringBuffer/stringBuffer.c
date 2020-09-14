@@ -50,12 +50,23 @@ static void addFormat                                                           
   const char * const format,                                                    // Format
   ...)                                                                          // Strings
  {va_list va;
+  const int N = 1024;                                                           // Guess a reasonable size                                                                               //dx=const Xml x =  for the output string
+  char data[N];                                                                 // Space on stack for first attempt
   va_start(va, format);
-  char * data; const int length = vasprintf(&data, format, va);                 // Allocate and format output string
+  const int L = vsnprintf(data, N, format, va);                                 // First attempt
   va_end(va);
-  const ArenaTreeNode s = buffer.string ▷ noden(data, length);
-  s ▷ putTreeLast;
-  free(data);
+  if (N > L + 1)                                                                // Success on the first attempt
+   {const ArenaTreeNode s = buffer.string ▷ noden(data, L);
+                        s ▷ putTreeLast;
+   }
+  else                                                                          // Second attempt
+   {char data[L+1];
+    va_start(va, format);
+    vsnprintf(data, L+1, format, va);
+    va_end(va);
+    const ArenaTreeNode s = buffer.string ▷ noden(data, L);
+                        s ▷ putTreeLast;
+   }
  }
 
 static void addChar_$                                                           // Add the specified character
