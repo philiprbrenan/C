@@ -15,6 +15,7 @@ exports arena   pointer_$_size allocate_offset_$_size pointer_$Offset size_$ use
 
 typedef char * $String;                                                         // Arena Tree string
 typedef struct ReadOnlyBytes ReadOnlyBytes;
+typedef struct StringBuffer  StringBuffer;
 
 typedef struct $                                                                // Arena Tree.
  {const struct ProtoTypes_$ *proto;                                             // Methods associated with an arena tree
@@ -61,10 +62,10 @@ typedef struct $Description                                                     
  } $Description;
 
 #include <$$_prototypes.h>                                                      // Arena tree prototypes now that the relevant structures have been declared
-#include <readOnlyBytes.c>
-
 #define $fe( child, parent) for($Node child = parent ▷ first; child ▷ valid; child = child ▷ next) // Each child in a parent from first to last
 #define $fer(child, parent) for($Node child = parent ▷ last;  child ▷ valid; child = child ▷ prev) // Each child in a parent from last to first
+#include <readOnlyBytes.c>
+#include <stringBuffer.c>
 
 //D1 Constructors                                                               // Construct a new Arena tree.
 
@@ -226,6 +227,21 @@ static $Node node_$Node_$_$String                                               
  (const $             tree,                                                     // Arena tree in which to create the node
   const char * const  key)                                                      // Key for this node.  Note: we do not order nodes automatically.
  {return tree ▷ noden(key, 0);
+ }
+
+static  $Node nodeFromReadOnlyBytes_$Node_$_ReadOnlyBytes                       // Create a new tree node from a ReadOnlyBytes String
+ (const $             tree,                                                     // Arena tree in which to create the node
+  const ReadOnlyBytes string)                                                   // Key for this node as a read only bytes string.
+ {return tree ▷ noden(string.data, string.length);
+ }
+
+static  $Node nodeFromStringBuffer_$_$Node_$_StringBuffer                       // Create a new tree node from a String Buffer
+ (const $             tree,                                                     // Arena tree in which to create the node
+  const StringBuffer  string)                                                   // Key for this node as a string buffer
+ {const ReadOnlyBytes r = string ▷ readOnlyBytes;                               // Read only bytes from string buffer
+  const ArenaTreeNode n = tree ▷ nodeFromReadOnlyBytes(r);
+  r ▷ free;
+  return n;
  }
 
 static $Offset saveString_$Offset_$_$String                                     //P Save a copy of a zero terminated string in a tree and return the offset of the string.
@@ -1063,11 +1079,26 @@ void test12()                                                                   
   t ▷ free;
  }
 
+void test13()                                                                   //TnodeFromReadOnlyBytes //TnodeFromStringBuffer
+ {$ t = make$();
+
+  const ReadOnlyBytes r = makeReadOnlyBytesFromString("aaa");
+  const StringBuffer  s = makeStringBuffer();
+  s ▷ addReadOnlyBytes(r);
+
+  const $Node a = t ▷ nodeFromReadOnlyBytes(r); a ▷ putTreeLast;
+  const $Node A = t ▷ nodeFromStringBuffer (s); A ▷ putTreeLast;
+
+  assert(t ▷ printsWithBracketsAs("(aaaaaa)"));
+
+  t ▷ free; s ▷ free; r ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
-  void (*tests[])(void) = {test0,  test1,  test2, test3, test4,
-                           test5,  test6,  test7, test8, test9,
-                           test10, test11, test12, 0};
+  void (*tests[])(void) = {test0,  test1,  test2,  test3, test4,
+                           test5,  test6,  test7,  test8, test9,
+                           test10, test11, test12, test13, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
