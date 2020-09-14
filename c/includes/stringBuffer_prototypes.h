@@ -2,26 +2,30 @@ static StringBuffer makeStringBuffer
  ();
 static void free_StringBuffer
  (const StringBuffer buffer);
-static void add
+static void add_StringBuffer_string
  (const StringBuffer buffer,
   const char * const string);
-static void addReadOnlyBytes
+static void addReadOnlyBytes_StringBuffer_readOnlyBytes
  (const StringBuffer             buffer,
   const ReadOnlyBytes string);
-static void addFormat
+static void addVaFormat_StringBuffer_string_va
+ (const StringBuffer buffer,
+  const char * const format,
+  va_list va1);
+static void addFormat_StringBuffer_strings
  (const StringBuffer buffer,
   const char * const format,
   ...);
-static void addChar_StringBuffer
+static void addChar_StringBuffer_char
  (const StringBuffer    buffer,
   const char c);
-static void addNewLine
+static void addNewLine_StringBuffer
  (const StringBuffer buffer);
-static void addSingleQuote
+static void addSingleQuote_StringBuffer
  (const StringBuffer buffer);
-static void addDoubleQuote
+static void addDoubleQuote_StringBuffer
  (const StringBuffer buffer);
-static void addQuotedNewLine
+static void addQuotedNewLine_StringBuffer
  (const StringBuffer buffer);
 static size_t length_StringBuffer
  (const StringBuffer buffer);
@@ -53,9 +57,6 @@ static size_t substring_size_StringBuffer_int_int_string
 static ReadOnlyBytes readOnlyBytes_StringBuffer
  (const StringBuffer buffer);
 struct ProtoTypes_StringBuffer {
-  void  (*add)(                                                                 // Concatenate a string
-    const StringBuffer buffer,                                                  // StringBuffer
-    const char * const string);                                                 // Zero terminated string
   void  (*addChar)(                                                             // Add the specified character
     const StringBuffer buffer,                                                  // StringBuffer
     const char c);                                                              // Character to add
@@ -74,6 +75,13 @@ struct ProtoTypes_StringBuffer {
     const ReadOnlyBytes string);                                                // Read only bytes
   void  (*addSingleQuote)(                                                      // Add a single quote
     const StringBuffer buffer);                                                 // StringBuffer
+  void  (*addVaFormat)(                                                         // Add a variadic argument formatted string
+    const StringBuffer buffer,                                                  // StringBuffer
+    const char * const format,                                                  // Format
+    va_list va1);                                                               // Variable argument list
+  void  (*add)(                                                                 // Concatenate a string
+    const StringBuffer buffer,                                                  // StringBuffer
+    const char * const string);                                                 // Zero terminated string
   int  (*containsString)(                                                       // Checks whether a StringBuffer contains a specified zero terminated string.
     const StringBuffer buffer,                                                  // StringBuffer
     const char * const string);                                                 // String
@@ -106,6 +114,6 @@ struct ProtoTypes_StringBuffer {
     const size_t length,                                                        // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
     char * const string);                                                       // String to load with enough space for the string and its terminating zero
  } const ProtoTypes_StringBuffer =
-{add, addChar_StringBuffer, addDoubleQuote, addFormat, addNewLine, addQuotedNewLine, addReadOnlyBytes, addSingleQuote, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, length_StringBuffer, readOnlyBytes_StringBuffer, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string};
+{addChar_StringBuffer_char, addDoubleQuote_StringBuffer, addFormat_StringBuffer_strings, addNewLine_StringBuffer, addQuotedNewLine_StringBuffer, addReadOnlyBytes_StringBuffer_readOnlyBytes, addSingleQuote_StringBuffer, addVaFormat_StringBuffer_string_va, add_StringBuffer_string, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, length_StringBuffer, readOnlyBytes_StringBuffer, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string};
 StringBuffer newStringBuffer(StringBuffer allocator) {return allocator;}
 
