@@ -40,7 +40,7 @@ END
 if (1)                                                                          # Upload files
  {my @files = $compile;
 
-  push @files, grep {!-d $_ and !m(/backup/|/z/z/)}                             # Ignore these files
+  push @files, grep {-T $_ and !m(/backup/|/z/z/)}                              # Select files ignoring backups and tests
     searchDirectoryTreesForMatchingFiles(@dir, qw(.h .c .pl .md));
 
   my %files = map {$_=>1} grep {1 or /makeWithPerl/} @files;                    # Filter files
