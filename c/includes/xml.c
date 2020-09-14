@@ -147,7 +147,7 @@ static XmlParse makeXmlParseFromFile                                            
   if (1)                                                                        // Confirm there is exactly one root node
    {const ArenaTreeNode root = t.proto->root(t);
     const size_t N = root.proto->countChildren(root);
-    char * const f = fileName.name, *p = b.proto->data(b);
+    char *p = b.proto->data(b);
     if (N == 0)     return error(p, "No xml root tag found");
     else if (N > 1) return error(p, "More than one root xml tag found");
    }
@@ -615,6 +615,7 @@ static int printContains_XmlParse                                               
   s.proto->free(s);
   return r;
  }
+#endif
 
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
@@ -874,7 +875,5 @@ int main(void)                                                                  
   run_tests("Xml", 1, tests);
   return 0;
  }
-
-#endif
 #endif
 // valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/xml/xml
