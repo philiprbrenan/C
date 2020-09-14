@@ -3,8 +3,8 @@
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
 #define _GNU_SOURCE
-#ifndef $
-#define $
+#ifndef $_included
+#define $_included
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
