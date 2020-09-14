@@ -60,23 +60,26 @@ static $Parse make$ParseFromFile                                                
   const ReadOnlyBytes b = x.data      = makeReadOnlyBytesFromFile(f);           // String to parse
   ArenaTreeNode       P = t ▷ root;                                             // Current parent node
 
-  $Parse error                                                                  // Report an error
+  $Parse error                                                                  // Report an error message adding the file name involved on the following line
    (const char * const p,                                                       // Pointer to position at which the error occurred
     const char *format, ...)                                                    // Message text
    {va_list va;
+    const StringBuffer m = makeStringBuffer();                                  // Build the error message
+    const size_t       o = p - b ▷ data;                                        // Offset of the error
     va_start(va, format);
-    char m[256]; vsnprintf(m, sizeof(m), format, va);                           // Format message
+    m ▷ addVaFormat(format, va);                                                // Format error message in a buffer of adequate size
     va_end(va);
-    const ArenaTreeNode n = e ▷ node(m);                                        // Save the text of the error message as the key of a node
-    n ▷ setData(p - b ▷ data);                                                  // Save the offset of the error in the node data offset.
+    m ▷ addFormat("\n  File     : %s",    fileName.name);                       // Add file name details
+    m ▷ addFormat("\n  At offset: %lu\n", o);                                   // Add offset in file
+    const ArenaTreeNode n = e ▷ nodeFromStringBuffer(m);                        // Save the text of the error message as the key of a node
+    n ▷ setData(o);                                                             // Save the offset of the error in the node data offset.
     n ▷ putTreeLast;                                                            // Add the error to the error list
+    m ▷ free;                                                                   // Free string buffer
     return x;
    } // error
 
   char *p  = b ▷ data; const char * const textStart = p;                        // Start of text to be parsed
-  if  (*p != $Open)                                                             // Insist that the first character is <
-   {return error(p, "$ must start with: %c\n", $Open);
-   }
+  if  (*p != $Open) return error(p, "$ must start with: %c", $Open);            // Insist that the first character is <
 
   int remainderIsWhiteSpace(char *p)                                            // Find the next non space character in a zero terminated string
    {for(; *p; ++p) if (!isspace(*p)) return 0;                                  // Non white space
@@ -115,12 +118,12 @@ static $Parse make$ParseFromFile                                                
           char b[N+1]; strncpy(b, parse$TagName(o),       N);                   // End tag name
 
           if (strncmp(a, b, N))                                                 // Tag name mismatch
-           {error(o, "End tag: %s does not match start tag: %s\n", b, a);
+           {error(o, "End tag: %s does not match start tag: %s", b, a);
            }
 
           if (!P ▷ isRoot) P = P ▷ parent;                                      // Go up one level if possible
           else if (remainderIsWhiteSpace(p)) {}                                 // On root - ignore trailing white space
-          else error(o, "Ignoring text beyond closing tag\n");                  // On root with remaining text
+          else error(o, "Ignoring text beyond closing tag");                    // On root with remaining text
          }
 
         const char oo = *(o+1), cc = *(c-1);                                    // First character after <, last character before >
@@ -132,10 +135,10 @@ static $Parse make$ParseFromFile                                                
         p = c + 1;                                                              // Start of text
        }
 
-      else return error(o, "Cannot find closing: %c\n", $Close);                // No closing > present
+      else return error(o, "Cannot find closing: %c", $Close);                  // No closing > present
      }
     else                                                                        // Check that trailing text is all spaces
-     {if (!remainderIsWhiteSpace(p)) error(p, "Ignoring text at end\n");
+     {if (!remainderIsWhiteSpace(p)) error(p, "Ignoring text at end");
       break;
      }
    }
@@ -144,8 +147,8 @@ static $Parse make$ParseFromFile                                                
    {const ArenaTreeNode root = t ▷ root;
     const size_t N = root ▷ countChildren;
     char * const f = fileName.name, *p = b ▷ data;
-    if (N == 0) return error(p, "No xml root tag found in file: %s\n",f);
-    else if (N > 1) return error(p, "More than one root xml tag found in file: %s\n", f);
+    if (N == 0)     return error(p, "No xml root tag found");
+    else if (N > 1) return error(p, "More than one root xml tag found");
    }
 
   if (1)                                                                        // Make the single root xml tag the root of the parse tree
