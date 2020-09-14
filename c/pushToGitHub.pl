@@ -19,12 +19,14 @@ use GitHub::Crud;
 use YAML::Loader;
 use feature qw(say current_sub);
 
-my $home = q(/home/phil/);                                                      # Local files
-my $user = q(philiprbrenan);                                                    # Repo
-my $repo = q(C);
-my $wf   = q(.github/workflows/main.yml);
+my $home    = q(/home/phil/);                                                   # Local files
+my $user    = q(philiprbrenan);                                                 # User
+my $repo    = q(C);                                                             # Repo
+my $wf      = q(.github/workflows/main.yml);                                    # Work flow
+my $compile = q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);                  # Compile
+my @dir     = qw(/home/phil/c/);                                                # Directories to upload
 
-my @c    =  grep {!/\A#/} split /\s+/, <<END;                                   # C files
+my @c    =  grep {!/\A#/} split /\s+/, <<END;                                   # C files to run
 arenaRedBlackTree
 arenaTree
 fileName
@@ -36,14 +38,14 @@ utilities
 END
 
 if (1)                                                                          # Upload files
- {my @files;
-  push @files, grep {!-d $_ and !m(/backup/|/z/z/)}
-    searchDirectoryTreesForMatchingFiles(qw(/home/phil/c/ .h .c .pl .md)),
-    q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);
+ {my @files = $compile;
 
-  my %files = map {$_=>1} grep {1 or /makeWithPerl/} @files;
+  push @files, grep {!-d $_ and !m(/backup/|/z/z/)}                             # Ignore these files
+    searchDirectoryTreesForMatchingFiles(@dir, qw(.h .c .pl .md));
 
-  for my $f(sort keys %files)
+  my %files = map {$_=>1} grep {1 or /makeWithPerl/} @files;                    # Filter files
+
+  for my $f(sort keys %files)                                                   # Upload each selected file
    {my $t = swapFilePrefix($f, $home);
        $t = swapFilePrefix($t, q(c/)) if $t =~ m(readme)i and $t !~ m(samples);
     lll "$f to $t ",
@@ -67,7 +69,7 @@ END
   join "\n", @t;
  }->();
 
-my $y = <<END;
+my $y = <<END;                                                                  # Workflow
 # Test various C programs written with the help of: https://metacpan.org/pod/Preprocess::Ops
 
 name: Test
@@ -101,4 +103,4 @@ $tests
 END
 #        sudo apt -y install build-essential libgtk-3-dev gdb tree
 
-lll GitHub::Crud::writeFileUsingSavedToken($user, $repo, $wf, $y);
+lll GitHub::Crud::writeFileUsingSavedToken($user, $repo, $wf, $y);              # Upload workflow
