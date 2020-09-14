@@ -46,6 +46,12 @@ static ArenaTreeNode noden_ArenaTreeNode_ArenaTree_ArenaTreeString
 static ArenaTreeNode node_ArenaTreeNode_ArenaTree_ArenaTreeString
  (const ArenaTree             tree,
   const char * const  key);
+static  ArenaTreeNode nodeFromReadOnlyBytes_ArenaTreeNode_ArenaTree_ReadOnlyBytes
+ (const ArenaTree             tree,
+  const ReadOnlyBytes string);
+static  ArenaTreeNode nodeFromStringBuffer_ArenaTree_ArenaTreeNode_ArenaTree_StringBuffer
+ (const ArenaTree             tree,
+  const StringBuffer  string);
 static ArenaTreeOffset saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString
  (const ArenaTree       tree,
   const char * const str,
@@ -249,6 +255,12 @@ struct ProtoTypes_ArenaTree {
   ArenaTreeNode    (*nodeFromOffset)(                                           // Create a node to locate an allocation within the arena of a tree.
     const ArenaTree tree,                                                       // Tree
     const size_t delta);                                                        // Delta within arena. A delta of zero represents no such node.
+  ArenaTreeNode  (*nodeFromReadOnlyBytes)(                                      // Create a new tree node from a ReadOnlyBytes String
+    const ArenaTree tree,                                                       // Arena tree in which to create the node
+    const ReadOnlyBytes string);                                                // Key for this node as a read only bytes string.
+  ArenaTreeNode  (*nodeFromStringBuffer)(                                       // Create a new tree node from a String Buffer
+    const ArenaTree tree,                                                       // Arena tree in which to create the node
+    const StringBuffer string);                                                 // Key for this node as a string buffer
   ArenaTreeNode  (*node)(                                                       // Create a new tree node keyed by a zero terminated string.
     const ArenaTree tree,                                                       // Arena tree in which to create the node
     const char * const key);                                                    // Key for this node.  Note: we do not order nodes automatically.
@@ -301,7 +313,7 @@ struct ProtoTypes_ArenaTree {
     const ArenaTree tree,                                                       // Tree
     const char * const file);                                                   // File
  } const ProtoTypes_ArenaTree =
-{allocate_offset_ArenaTree_size, by_ArenaTree_sub, check_ArenaTree, countChildren_size_ArenaTree, count_size_ArenaTree, findFirstChild_ArenaTree_string, findFirst_ArenaTree_string, first_ArenaTreeNode_ArenaTree, free_ArenaTree, fromLetters_ArenaTree_ArenaTreeString, get_ArenaTree_data_size, last_ArenaTreeNode_ArenaTree, next_ArenaTreeNode_ArenaTree, nodeFromOffset_ArenaTree_size, node_ArenaTreeNode_ArenaTree_ArenaTreeString, noden_ArenaTreeNode_ArenaTree_ArenaTreeString, offsetTo_ArenaTree_pointer, offset_ArenaTree_size, pointer_ArenaTree_size, prev_ArenaTreeNode_ArenaTree, printContains_ArenaTree, printWithBrackets_ArenaTreeString_ArenaTree, print_string_ArenaTree, printsAs_int_ArenaTree_string, printsWithBracketsAs_int_ArenaTree_string, retrieve_ArenaTree_ArenaTreeOffset_data_size, root_ArenaTreeNodeOffset_ArenaTree, saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString, store_offset_ArenaTree_data_size, used_ArenaTree, write_void_ArenaTree_ArenaTreeString};
+{allocate_offset_ArenaTree_size, by_ArenaTree_sub, check_ArenaTree, countChildren_size_ArenaTree, count_size_ArenaTree, findFirstChild_ArenaTree_string, findFirst_ArenaTree_string, first_ArenaTreeNode_ArenaTree, free_ArenaTree, fromLetters_ArenaTree_ArenaTreeString, get_ArenaTree_data_size, last_ArenaTreeNode_ArenaTree, next_ArenaTreeNode_ArenaTree, nodeFromOffset_ArenaTree_size, nodeFromReadOnlyBytes_ArenaTreeNode_ArenaTree_ReadOnlyBytes, nodeFromStringBuffer_ArenaTree_ArenaTreeNode_ArenaTree_StringBuffer, node_ArenaTreeNode_ArenaTree_ArenaTreeString, noden_ArenaTreeNode_ArenaTree_ArenaTreeString, offsetTo_ArenaTree_pointer, offset_ArenaTree_size, pointer_ArenaTree_size, prev_ArenaTreeNode_ArenaTree, printContains_ArenaTree, printWithBrackets_ArenaTreeString_ArenaTree, print_string_ArenaTree, printsAs_int_ArenaTree_string, printsWithBracketsAs_int_ArenaTree_string, retrieve_ArenaTree_ArenaTreeOffset_data_size, root_ArenaTreeNodeOffset_ArenaTree, saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString, store_offset_ArenaTree_data_size, used_ArenaTree, write_void_ArenaTree_ArenaTreeString};
 ArenaTree newArenaTree(ArenaTree allocator) {return allocator;}
 
 struct ProtoTypes_ArenaTreeNode {
