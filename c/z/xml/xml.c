@@ -44,12 +44,11 @@ typedef struct $Tag                                                             
 static $Tag make$Tag_$Parse_ArenaTreeNode                                       //P Make a tag descriptor from a parse tree node holding the tag
  (const $Parse        xml,                                                      // Xml parse tree
   const ArenaTreeNode node)                                                     // Node holding tag
- {$Tag t = new$Tag(xml: xml, node: node);
-  return t;
+ {return new $Tag(xml: xml, node: node);
  }
 
 static $Parse make$ParseFromFile                                                // Make a parse $ from the contents of a file
- (FileName            fileName)                                                 // Name of file holding $
+ (const FileName      fileName)                                                 // Name of file holding $
  {const ReadOnlyBytes source = makeReadOnlyBytesFromFile(fileName);             // String to parse
   const ArenaTree     t = makeArenaTree();                                      // Parse tree,
   const ArenaTree     errors = makeArenaTree();                                 // Errors list
@@ -61,7 +60,7 @@ static $Parse make$ParseFromFile                                                
 
   $Parse error                                                                  // Report an error message adding the file name involved on the following line
    (const char * const p,                                                       // Pointer to position at which the error occurred
-    const char *format, ...)                                                    // Message text
+    const char * const format, ...)                                             // Message text
    {va_list va;
     const StringBuffer m = makeStringBuffer();                                  // Build the error message
     const size_t       o = p - source ▷ data;                                   // Offset of the error
@@ -80,18 +79,18 @@ static $Parse make$ParseFromFile                                                
   const char *p  = source ▷ data; const char * const textStart = p;             // Start of text to be parsed
   if  (*p != $Open) return error(p, "$ must start with: %c", $Open);            // Insist that the first character is <
 
-  int remainderIsWhiteSpace(char *p)                                            // Find the next non space character in a zero terminated string
+  int remainderIsWhiteSpace(const char *p)                                      // Find the next non space character in a zero terminated string
    {for(; *p; ++p) if (!isspace(*p)) return 0;                                  // Non white space
     return 1;                                                                   // Its all white sace
    }
 
-  for(char *p = source ▷ data; *p;)                                             // Break out tags and text
+  for(char * p = source ▷ data; *p;)                                            // Break out tags and text
    {const char * const o = strchr(p, $Open);                                    // Find next open
 
     if (o)                                                                      // Found next open
      {if (o > p)
        {int allBlank()                                                          // Check whether the text to be saved is all white space. We can recover the position of non whitespace from the offset saved in the data field of the node.
-         {for(char * q = p; q < o; ++q) if (!isspace(*q)) return 0;
+         {for(const char * q = p; q < o; ++q) if (!isspace(*q)) return 0;
           return 1;
           }
 
@@ -241,9 +240,14 @@ duplicate s/first/last/
 
 //D1 Location                                                                   // Check the current location in the $ parse tre
 
+static int isRoot_$Tag                                                          // Check whether the specified tag is the root tag
+ (const $Tag tag)                                                               // Tag
+ {return !tag ▷ valid;
+ }
+
 static int isFirst_$Tag                                                         // Check that the specified tag is first under its parent
  (const $Tag tag)                                                               // Tag
- {if (!tag ▷ valid) return 1;                                                   // The root tag is always first
+ {if (tag ▷ isRoot) return 1;                                                   // The root tag is always first
   const $Tag parent = tag ▷ parent, f = parent ▷ first;
   return f ▷ equals(tag);
  }
@@ -322,8 +326,18 @@ static $Tag findFirstTag_$Tag_$Tag_string                                       
 static $Tag findFirstTag_$Tag_$Parse_string                                     // Find the first tag in an $ parse tree with the specified name.
  (const $Parse       xml,                                                       // Xml parse tree
   const char * const key)                                                       // Name of the tag to find
- {const $Tag t = new $Tag(xml: xml, node: xml.tree ▷ root);
-  return t ▷ findFirstTag(key);
+ {jmp_buf found;
+  $Tag T = new $Tag(xml: xml);                                                  // Tag found if any
+
+  void find(const $Tag tag)                                                     // Check whether the name of the tag matches the specified key
+   {if (tag ▷ tagNameEquals(key))
+     {T.node = tag.node;                                                        // Found matching node
+      longjmp(found, 1);
+     }
+   }
+
+  if (!setjmp(found)) xml ▷ by(find);                                           // Search the $ parse tree
+  return T;
  }
 
 static $Tag root_$Parse                                                         // Return the root tag of the specified $ parse tree
@@ -356,8 +370,10 @@ static void by_$Tag_sub                                                         
 static void by_$Parse_sub                                                       // Traverse the $ parse tree in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
  (const $Parse xml,                                                             // $ parse tree
   void (* const function) (const $Tag tag))                                     // Function to call on each tag
- {const $Tag root = xml ▷ root;
-  root ▷ by(function);
+ {void f(const ArenaTreeNode node)
+   {function(new $Tag(xml: xml, node: node));
+   }
+  xml.tree ▷ by(f);
  }
 
 static  size_t countChildren_size_$                                             // Count the number of tags at the first level in an xml parse tree.
@@ -402,7 +418,8 @@ static void changeName_$Tag                                                     
 static $Tag wrap_$Tag_string                                                    // Wrap a specified tag with a new tag and return the newly createdf wraping tag.
  (const $Tag         tag,                                                       // Tag
   const char * const string)                                                    // Wrapper without the leading < or trailing or >
- {char s[strlen(string)+4], *p = s;
+ {if (tag ▷ isRoot) return tag;
+  char s[strlen(string)+4], *p = s;
   *p++ = $Open;
    p   = stpcpy(p, string);
   *p++ = $Close;
@@ -412,9 +429,10 @@ static $Tag wrap_$Tag_string                                                    
   return new $Tag(xml: tag.xml, node: n);
  }
 
-static void unwrap_$Tag                                                         // Unwrap the specified tag.
+static $Tag unwrap_$Tag                                                         // Unwrap the specified tag.
  (const $Tag         tag)                                                       // Tag
- {tag.node ▷ unwrap;
+ {if (!tag ▷ isRoot) tag.node ▷ unwrap;                                         // Cannot unwrap the root tag
+  return tag;
  }
 
 //D1 Print                                                                      // Print an $ parse tree starting at the specified tag.
