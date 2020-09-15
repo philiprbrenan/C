@@ -111,7 +111,8 @@ static void addQuotedNewLine_$                                                  
 static size_t length_$                                                          // Length of the string held in the buffer
  (const $ buffer)                                                               // $
  {size_t length = 0;
-  ArenaTreefe(c, buffer.string) length += strlen(c ▷ key);
+  ArenaTreeNode  root = buffer.string ▷ root;
+  ArenaTreefe(c, root) length += strlen(c ▷ key);
   return length;
  }
 
@@ -168,7 +169,8 @@ static void string_$_string                                                     
  (const $        buffer,                                                        // $
   char  * const  string)                                                        // String to load with enough space for the string and its terminating zero
  {char  * p =    string;
-  ArenaTreefe(c, buffer.string) p = stpcpy(p, c ▷ key);
+  ArenaTreeNode  root = buffer.string ▷ root;
+  ArenaTreefe(c, root) p = stpcpy(p, c ▷ key);
   *p = 0;
  }
 
@@ -192,7 +194,8 @@ static ReadOnlyBytes readOnlyBytes_$                                            
  {const size_t l = buffer ▷ length;
   char data[l+1];
   char * p = data;
-  ArenaTreefe(c, buffer.string) p = stpcpy(p, c ▷ key);
+  ArenaTreeNode  root = buffer.string ▷ root;
+  ArenaTreefe(c, root) p = stpcpy(p, c ▷ key);
   const ReadOnlyBytes r = makeReadOnlyBytesDupN(data, l);
   return r;
  }
