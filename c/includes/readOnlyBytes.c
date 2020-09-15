@@ -182,7 +182,7 @@ static int containsString_ReadOnlyBytes_zeroString                              
 static size_t b2SumW8_ReadOnlyBytes                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const ReadOnlyBytes r)                                                                    // Description of read only sequence of bytes
  {const FileName i = makeFileNameTemporaryWithContent("i.txt", r.data,r.length);
-  return i.proto->b2SumW8(i);                                                           // The digest is in the first two bytes
+  return i.proto->b2SumW8(i);
  }
 
 static ArenaTree splitNewLine                                                   // Split the specified ReadOnlyBytes on any new line characters
