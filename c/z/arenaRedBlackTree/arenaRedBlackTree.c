@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 
 /* Each node of the base red black tree can, in turn, have a separate red black
-tree dependent from it with the same arena*/
+tree dependent from it within the same arena*/
 
 #define _GNU_SOURCE
 #ifndef $_included
@@ -140,18 +140,17 @@ static int valid_$Node                                                          
 static $Found find_$Found_$Found_$Node_string                                   //P Find a key if it exists within the tree starting at this node.
  ($Found      found,                                                            // Found definition
   const $Node root)                                                             // The root node at which the tree starts
- {const $ tree = root.tree;                                                     // Tree containing node
-  const char * const key = found.key;                                           // The key to find
+ {const char * const key = found.key;                                           // The key to find
 
-  for($Node p   = root; p ▷ valid;)                                             // Search down through tree
-   {found.last  = p;                                                            // Record last parent compared with key sought
+  for($Node p = root; p ▷ valid;)                                               // Search down through tree
+   {found.last.offset  = p.offset;                                              // Record last parent compared with key sought
     const char * const k = p ▷ key;                                             // Key of current parent node
     const int i = found.different = strcmp(key, k);                             // Compare key sought with current key
 
     if (!i) return found;                                                       // Found
 
     $Content * const c = p ▷ content;                                           // Continue
-    p = tree ▷ nodeFromOffset(i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
+    p.offset = i < 0 ? c->left.delta : c->right.delta;                          // Continue left or right
    }
 
   return found;                                                                 // Found
@@ -160,8 +159,7 @@ static $Found find_$Found_$Found_$Node_string                                   
 static $Node locate_$Node_string                                                // Locate the node with the specified key if it exists within the tree owned by the specified node.
  (const $Node        node,                                                      // Node
   const char * const key)                                                       // Key to find
- {const $ tree = node.tree;                                                     // $ containing node
-  $Node p = node ▷ ownedTreeRoot;                                               // Root node
+ {$Node p = node ▷ ownedTreeRoot;                                               // Root node
   if (!p ▷ valid) return p;                                                     // Empty tree
   for(;;)                                                                       // Search down through tree
    {const char * const k = p ▷ key;                                             // Key of current parent node
@@ -170,7 +168,7 @@ static $Node locate_$Node_string                                                
     if (!i) return p;                                                           // Found
 
     $Content * const c = p ▷ content;                                           // Continue
-    p = tree ▷ nodeFromOffset(i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
+    p.offset = i < 0 ? c->left.delta : c->right.delta;                          // Continue left or right
     if (!p ▷ valid) return p;                                                   // Not found
    }
 
@@ -189,7 +187,7 @@ static $Node locate_$_string                                                    
     if (!i) return p;                                                           // Found
 
     $Content * const c = p ▷ content;                                           // Continue
-    p = tree ▷ nodeFromOffset(i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
+    p.offset = i < 0 ? c->left.delta : c->right.delta;                          // Continue left or right
     if (!p ▷ valid) return p;                                                   // Not found
    }
 
@@ -241,7 +239,7 @@ static $Node ll_$Node_$_strings                                                 
   for(;p ▷ valid;)
    {const char * const k = va_arg(va, char *);
     if (!k) break;
-    p = p ▷ locate(k);
+    p.offset = p ▷ locate(k).offset;
    }
   va_end(va);
   return p;
@@ -263,8 +261,7 @@ static $Node add_$Node_$Found_$Node_string                                      
 
   n ▷ setUp(p);                                                                 // Set parent of inserted node
 
-//?for(; p ▷ valid; p = p ▷ up)                                                 // Balance nodes along path back to root
-  for($Node p = n; p ▷ valid; p = p ▷ up)                                       // Balance nodes along path back to root
+  for($Node p = new $Node(tree: n.tree, offset: n.offset); p ▷ valid; p.offset = p ▷ up.offset)                                       // Balance nodes along path back to root
    {size_t height($Node p)                                                      // Height of a node
      {return p ▷ valid ? p ▷ height : 0;
      }
@@ -316,8 +313,8 @@ static $Node add_$Node_$Found_$Node_string                                      
      }
 
     const int L = height(p ▷ left), R = height(p ▷ right);                      // Left and right depths
-    if      (2*L + 1 < R) p = balance(1);                                       // Balance left or right if necessary
-    else if (2*R + 1 < L) p = balance(0);
+    if      (2*L + 1 < R) p.offset = balance(1).offset;                         // Balance left or right if necessary
+    else if (2*R + 1 < L) p.offset = balance(0).offset;
     else     setHeight(p);                                                      // Balanced: propogate height
    }
 
