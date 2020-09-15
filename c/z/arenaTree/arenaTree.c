@@ -675,7 +675,7 @@ static ReadOnlyBytes print_string_$Node                                         
   len(node);
   const $String s = p = alloc(l+1); *s = 0;
   print(node);
-  return new ReadOnlyBytes(data:s, length: l, ReadOnlyBytesAllocator_malloc);
+  return makeReadOnlyBytes(s, l, ReadOnlyBytesAllocator_malloc);
  }
 
 static ReadOnlyBytes print_string_$                                             // Print an entire tree in preorder as a string.
