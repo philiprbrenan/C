@@ -1,21 +1,21 @@
 static ReadOnlyBytes makeReadOnlyBytes
  (const char * const    data,
-  size_t                length,
+  const size_t          length,
   const enum ReadOnlyBytesAllocator allocator);
 static ReadOnlyBytes makeReadOnlyBytesError
  (const enum ReadOnlyBytesError  error,
   const char * const format,
   ...);
 static ReadOnlyBytes makeReadOnlyBytesFromString
- (char * const string);
+ (const char * const string);
 static ReadOnlyBytes makeReadOnlyBytesFromStringN
- (char * const string,
-  const size_t length);
+ (const char * const string,
+  const size_t       length);
 static ReadOnlyBytes makeReadOnlyBytesDup
  (const char * const string);
 static ReadOnlyBytes makeReadOnlyBytesDupN
- (char * const string,
-  const size_t length);
+ (const char * const string,
+  const size_t       length);
 static ReadOnlyBytes makeReadOnlyBytesFromFormat
  (const char * const format,
   ...);
