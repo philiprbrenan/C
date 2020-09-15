@@ -13,14 +13,14 @@
 typedef struct ArenaTree ArenaTree;
 
 typedef struct $                                                                //s Description of a read only sequence of bytes
- {char * data;                                                                  // Address of the first byte in the read only sequence of bytes
-  size_t length;                                                                // Length of the byte sequence
-  enum   $Error                                                                 // Description of any error that might have occurred during the creation of the $ from a file. The error message also appears in printed form in the $ data area.
+ {const char * const data;                                                                  // Address of the first byte in the read only sequence of bytes
+  const size_t length;                                                                // Length of the byte sequence
+  const enum   $Error                                                                 // Description of any error that might have occurred during the creation of the $ from a file. The error message also appears in printed form in the $ data area.
    {$Error_none = 0,                                                            // No error occured
     $Error_no_such_file,                                                        // File does not exist
     $Error_unable_to_map                                                        // Cannot map file
    } error;                                                                     // Non zeroif an error occured. The text of the error wil also show up in the $ data .
-  enum   $Allocator                                                             // Allocation of memory
+  const enum   $Allocator                                                             // Allocation of memory
    {$Allocator_none    = 0,                                                     // Stack
     $Allocator_malloc  = 1,                                                     // malloc
     $Allocator_malloc1 = 2,                                                     // malloc with extra string terminating zero
@@ -35,7 +35,7 @@ typedef struct $                                                                
 //D1 Constructors                                                               // Construct a description of a $ that has been created without errors.
 
 static $ make$                                                                  //CP Create a new description of a $
- (char * const          data,                                                   // Memory to contain the read only bytes string
+ (const char * const    data,                                                   // Memory to contain the read only bytes string
   size_t                length,                                                 // Length of the byte sequence
   const enum $Allocator allocator)                                              // Allocation of memory so we know how to free it (or not to free it)
  {const $ r = {data, length, $Error_none, allocator, &ProtoTypes_$};
@@ -93,12 +93,12 @@ static $ make$FromFormat                                                        
   return make$(data, length, $Allocator_malloc);                                // Successful allocation
  }
 
-static $ make$Buffer                                                            //C Create an empty read only sequence of bytes of the specified length which can be written into to load it.
- (const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
- {char * const s = alloc(length);
-  memset(s, 0, length);
-  return make$(s, length, $Allocator_malloc);
- }
+//static $ make$Buffer                                                            //C Create an empty read only sequence of bytes of the specified length which can be written into to load it.
+// (const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
+// {char * const s = alloc(length);
+//  memset(s, 0, length);
+//  return make$(s, length, $Allocator_malloc);
+// }
 
 static $ make$FromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
  (const FileName file)                                                          // File to read
@@ -297,14 +297,13 @@ void test6()                                                                    
 void test7()                                                                    //Tmake$Dup //Tmake$DupN //Tmake$FromString //Tmake$FromStringN //Tmake$FromFormat //Tmake$Buffer
  {$ d = make$Dup       ("aaa"), D = make$DupN       ("aaaa", 3),
     s = make$FromString("aaa"), S = make$FromStringN("aaaa", 3),
-    f = make$FromFormat("%s", "aaa"), m = make$Buffer(3);
-    memcpy(m.data, "aaaa", 3);
+    f = make$FromFormat("%s", "aaa");
   assert(d ▷ equals(D)); assert(d ▷ length == 3); assert(D ▷ length == 3);
   assert(d ▷ equals(s)); assert(s ▷ length == 3);
   assert(d ▷ equals(S)); assert(S ▷ length == 3);
   assert(d ▷ equals(f)); assert(f ▷ length == 3);
 
-  d ▷ free; D ▷ free; s ▷ free; S ▷ free; f ▷ free; m ▷ free;
+  d ▷ free; D ▷ free; s ▷ free; S ▷ free; f ▷ free;
  }
 
 void test8()                                                                    //Tmake$FromFile //TwriteTemporaryFile
