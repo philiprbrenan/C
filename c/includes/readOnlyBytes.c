@@ -37,7 +37,7 @@ typedef struct ReadOnlyBytes                                                    
 
 static ReadOnlyBytes makeReadOnlyBytes                                                                  //CP Create a new description of a ReadOnlyBytes
  (const char * const    data,                                                   // Memory to contain the read only bytes string
-  size_t                length,                                                 // Length of the byte sequence
+  const size_t          length,                                                 // Length of the byte sequence
   const enum ReadOnlyBytesAllocator allocator)                                              // Allocation of memory so we know how to free it (or not to free it)
  {const ReadOnlyBytes r = {data, length, ReadOnlyBytesError_none, allocator, &ProtoTypes_ReadOnlyBytes};
   return r;
@@ -57,14 +57,14 @@ static ReadOnlyBytes makeReadOnlyBytesError                                     
  }
 
 static ReadOnlyBytes makeReadOnlyBytesFromString                                                        //C Create a new description of a read only sequence of bytes read from a specified string.
- (char * const string)                                                          // Zero terminated string
+ (const char * const string)                                                    // Zero terminated string
  {return makeReadOnlyBytes(string, strlen(string), ReadOnlyBytesAllocator_none);
  }
 
 static ReadOnlyBytes makeReadOnlyBytesFromStringN                                                       //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
- (char * const string,                                                          // String
-  const size_t length)                                                          // Length of string, apply strlen if zero
- {const size_t l = length ? : strlen(string);
+ (const char * const string,                                                    // String
+  const size_t       length)                                                    // Length of string, apply strlen if zero
+ {const size_t l =   length ? : strlen(string);                                 // Apply strlen if requested
   return makeReadOnlyBytes(string, l, ReadOnlyBytesAllocator_none);
  }
 
@@ -75,10 +75,10 @@ static ReadOnlyBytes makeReadOnlyBytesDup                                       
   return makeReadOnlyBytes(strncpy(s, string, l), l, ReadOnlyBytesAllocator_malloc1);
  }
 
-static ReadOnlyBytes makeReadOnlyBytesDupN                                                               //C Create a new description of a read only sequence of bytes read from a specified string of specified length by duplicating it.
- (char * const string,                                                          // String
-  const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
- {const size_t l = length ? : strlen(string);
+static ReadOnlyBytes makeReadOnlyBytesDupN                                                              //C Create a new description of a read only sequence of bytes read from a specified string of specified length by duplicating it.
+ (const char * const string,                                                    // String
+  const size_t       length)                                                    // Length of string (no need to include any zero terminating byte)
+ {const size_t l =   length ? : strlen(string);                                 // Apply strlen if requested
   char * const s = alloc(l + 1); s[l] = 0;
   return makeReadOnlyBytes(strncpy(s, string, l), l, ReadOnlyBytesAllocator_malloc1);
  }
@@ -93,13 +93,6 @@ static ReadOnlyBytes makeReadOnlyBytesFromFormat                                
 
   return makeReadOnlyBytes(data, length, ReadOnlyBytesAllocator_malloc);                                // Successful allocation
  }
-
-//static ReadOnlyBytes makeReadOnlyBytesBuffer                                                            //C Create an empty read only sequence of bytes of the specified length which can be written into to load it.
-// (const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
-// {char * const s = alloc(length);
-//  memset(s, 0, length);
-//  return makeReadOnlyBytes(s, length, ReadOnlyBytesAllocator_malloc);
-// }
 
 static ReadOnlyBytes makeReadOnlyBytesFromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
  (const FileName file)                                                          // File to read
@@ -375,6 +368,7 @@ void test9()                                                                    
 void test10()
  {ReadOnlyBytes f = makeReadOnlyBytesFromFile(makeFileName("/aaa/bbb"));
   assert(f.error == ReadOnlyBytesError_no_such_file);
+  f.proto->free(f);
  }
 
 int main(void)                                                                  // Run tests
