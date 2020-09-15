@@ -16,24 +16,43 @@ typedef struct ArenaTree ArenaTree;
 typedef struct ReadOnlyBytes                                                                //s Description of a read only sequence of bytes
  {char * data;                                                                  // Address of the first byte in the read only sequence of bytes
   size_t length;                                                                // Length of the byte sequence
+  enum   ReadOnlyBytesError                                                                 // Description of any error that might have occurred during the creation of the ReadOnlyBytes from a file. The error message also appears in printed form in the ReadOnlyBytes data area.
+   {ReadOnlyBytesError_none = 0,                                                            // No error occured
+    ReadOnlyBytesError_no_such_file,                                                        // File does not exist
+    ReadOnlyBytesError_unable_to_map                                                        // Cannot map file
+   } error;                                                                     // Non zeroif an error occured. The text of the error wil also show up in the ReadOnlyBytes data .
   enum   ReadOnlyBytesAllocator                                                             // Allocation of memory
    {ReadOnlyBytesAllocator_none    = 0,                                                     // Stack
     ReadOnlyBytesAllocator_malloc  = 1,                                                     // malloc
     ReadOnlyBytesAllocator_malloc1 = 2,                                                     // malloc with extra string terminating zero
-    ReadOnlyBytesAllocator_mmap    = 3} allocator;                                          // mmap
+    ReadOnlyBytesAllocator_mmap    = 3                                                      // mmap
+   } allocator;
   const struct ProtoTypes_ReadOnlyBytes *proto;                                             // Prototypes for methods
  } ReadOnlyBytes;
 
 #include <readOnlyBytes_prototypes.h>
 #include <arenaTree.c>                                                          // Now we know what a ReadOnlyBytes looks like
 
-//D1 Constructors                                                               // Construct a description of a read only byte sequence
+//D1 Constructors                                                               // Construct a description of a ReadOnlyBytes that has been created without errors.
 
-static ReadOnlyBytes makeReadOnlyBytes                                                                  //CP Create a new description of a read only sequence of bytes
- (char * const data,                                                            // Memory to contain the read only bytes string
-  size_t       length,                                                          // Length of the byte sequence
+static ReadOnlyBytes makeReadOnlyBytes                                                                  //CP Create a new description of a ReadOnlyBytes
+ (char * const          data,                                                   // Memory to contain the read only bytes string
+  size_t                length,                                                 // Length of the byte sequence
   const enum ReadOnlyBytesAllocator allocator)                                              // Allocation of memory so we know how to free it (or not to free it)
- {const ReadOnlyBytes r = {data, length, allocator, &ProtoTypes_ReadOnlyBytes};
+ {const ReadOnlyBytes r = {data, length, ReadOnlyBytesError_none, allocator, &ProtoTypes_ReadOnlyBytes};
+  return r;
+ }
+
+static ReadOnlyBytes makeReadOnlyBytesError                                                             //CP Reason why a ReadOnlyBytes could not be created from a file.
+ (const enum ReadOnlyBytesError  error,                                                     // Error status
+  const char * const format,                                                    // Format
+  ...)                                                                          // Strings
+ {va_list va;
+  va_start(va, format);
+  char * data; const int length = vasprintf(&data, format, va);                 // Allocate and format output string
+  va_end(va);
+
+  const ReadOnlyBytes r = {data, length, error, ReadOnlyBytesAllocator_malloc1, &ProtoTypes_ReadOnlyBytes};
   return r;
  }
 
@@ -87,14 +106,16 @@ static ReadOnlyBytes makeReadOnlyBytesFromFile                                  
  {struct stat  s;
   const char * const f = file.name;
   const  int   d = open(f, O_RDONLY);
-  if (d < 0 || fstat(d, &s) < 0)                                                // Unsuccessful allocation
-   {printStackBackTrace("Unable to open file: %s because: %m\n",  f);
-   }
+
+  if (d < 0 || fstat(d, &s) < 0) return makeReadOnlyBytesError(ReadOnlyBytesError_no_such_file,         // Unsuccessful allocation
+     "Unable to open file: %s because: %m\n",  f);
+
   const size_t l = s.st_size;                                                   // Size of file
   char * const data = mmap(NULL, l + 1, PROT_READ, MAP_PRIVATE, d, 0);          // Add space for a terminating zero byte - mmap sets unused bytes beyond the file to zero giving us a zero terminated string.
-  if (!data)                                                                    // Unsuccessful mapping
-   {printStackBackTrace("Unable to map file: %s because: %m\n",  f);
-   }
+
+  if (!data) return makeReadOnlyBytesError(ReadOnlyBytesError_unable_to_map,                            // Unsuccessful mapping
+    "Unable to map file: %s because: %m\n",  f);
+
   close(d);                                                                     // Close the file: the map is private so we no long need the underlying file
 
   return makeReadOnlyBytes(data, l, ReadOnlyBytesAllocator_mmap);                                       // Read only bytes description of a mapped file
@@ -352,9 +373,14 @@ void test9()                                                                    
    }
  }
 
+void test10()
+ {ReadOnlyBytes f = makeReadOnlyBytesFromFile(makeFileName("/aaa/bbb"));
+  assert(f.error == ReadOnlyBytesError_no_such_file);
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7, test8, test9, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4,  test5,
+                           test6, test7, test8, test9, test10, 0};
 // {void (*tests[])(void) = {test9, 0};
   run_tests("ReadOnlyBytes", 1, tests);
   return 0;
