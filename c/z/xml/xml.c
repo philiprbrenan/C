@@ -18,19 +18,19 @@ char $tagName[256];                                                             
 
 typedef struct $Parse                                                           // $ parse tree
  {const struct ProtoTypes_$Parse *proto;                                        // Prototypes for methods
-  FileName          fileName;                                                   // Source file containing $ to be parsed
-  ReadOnlyBytes     data;                                                       // $ to be parsed
-  ArenaTree         tree;                                                       // Parse tree created from $ being parsed
-  ArenaTree         errors;                                                     // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is $Error
-  ArenaRedBlackTree possibilities;                                              // Possibility sets for each Dita tag
-  ArenaRedBlackTree first;                                                      // First set of possibilities for each Dita tag
-  ArenaRedBlackTree next;                                                       // Next set of possibilities for each Dita child tag under a given parent tag
+  const FileName          fileName;                                             // Source file containing $ to be parsed
+  const ReadOnlyBytes     data;                                                 // $ to be parsed
+  const ArenaTree         tree;                                                 // Parse tree created from $ being parsed
+  const ArenaTree         errors;                                               // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is $Error
+  const ArenaRedBlackTree possibilities;                                        // Possibility sets for each Dita tag
+  const ArenaRedBlackTree first;                                                // First set of possibilities for each Dita tag
+  const ArenaRedBlackTree next;                                                 // Next set of possibilities for each Dita child tag under a given parent tag
  } $Parse;
 
 typedef struct $Tag                                                             // Tag in an $ parse tree
  {const struct ProtoTypes_$Tag *proto;                                          // Prototypes for methods
-  $Parse        xml;                                                            // $ parse tree
-  ArenaTreeNode node;                                                           // Arena tree node in the xml parse tree that contains this tag
+  const $Parse            xml;                                                  // $ parse tree
+  ArenaTreeNode           node;                                                 // Arena tree node in the xml parse tree that contains this tag
  } $Tag;
 
 #include <$$_prototypes.h>
@@ -50,14 +50,13 @@ static $Tag make$Tag_$Parse_ArenaTreeNode                                       
 
 static $Parse make$ParseFromFile                                                // Make a parse $ from the contents of a file
  (FileName            fileName)                                                 // Name of file holding $
- {const ReadOnlyBytes b = makeReadOnlyBytesFromFile(fileName);                  // String to parse
-  $Parse              x = new$Parse(data: b, fileName: fileName);
-  const ArenaTree     t = x.tree      = makeArenaTree();                        // Parse tree,
-  const ArenaTree     e = x.errors    = makeArenaTree();                        // Errors list
-                      x.possibilities = makeArenaRedBlackTree();                // Single Step Validation
-                      x.first         = makeArenaRedBlackTree();                // First set of possibilities for each tag
-                      x.next          = makeArenaRedBlackTree();                // Next set of possibilities for each Dita child tag under a given parent tag
-                      x.fileName  = fileName;                                   // Name of file containing parse
+ {const ReadOnlyBytes source = makeReadOnlyBytesFromFile(fileName);             // String to parse
+  const ArenaTree     t = makeArenaTree();                                      // Parse tree,
+  const ArenaTree     errors = makeArenaTree();                                 // Errors list
+  const ArenaRedBlackTree possibilities = makeArenaRedBlackTree();              // Single Step Validation
+  const ArenaRedBlackTree first         = makeArenaRedBlackTree();              // First set of possibilities for each tag
+  const ArenaRedBlackTree next          = makeArenaRedBlackTree();              // Next set of possibilities for each Dita child tag under a given parent tag
+  const $Parse        x = {data: source, fileName: fileName, tree: t, errors: errors, possibilities: possibilities, first: first, next: next, proto: &ProtoTypes_$Parse};
   ArenaTreeNode       P = t ▷ root;                                             // Current parent node
 
   $Parse error                                                                  // Report an error message adding the file name involved on the following line
@@ -65,20 +64,20 @@ static $Parse make$ParseFromFile                                                
     const char *format, ...)                                                    // Message text
    {va_list va;
     const StringBuffer m = makeStringBuffer();                                  // Build the error message
-    const size_t       o = p - b ▷ data;                                        // Offset of the error
+    const size_t       o = p - source ▷ data;                                   // Offset of the error
     va_start(va, format);
     m ▷ addVaFormat(format, va);                                                // Format error message in a buffer of adequate size
     va_end(va);
     m ▷ addFormat("\n  File     : %s",    fileName.name);                       // Add file name details
     m ▷ addFormat("\n  At offset: %lu\n", o);                                   // Add offset in file
-    const ArenaTreeNode n = e ▷ nodeFromStringBuffer(m);                        // Save the text of the error message as the key of a node
+    const ArenaTreeNode n = errors ▷ nodeFromStringBuffer(m);                   // Save the text of the error message as the key of a node
     n ▷ setData(o);                                                             // Save the offset of the error in the node data offset.
     n ▷ putTreeLast;                                                            // Add the error to the error list
     m ▷ free;                                                                   // Free string buffer
     return x;
    } // error
 
-  char *p  = b ▷ data; const char * const textStart = p;                        // Start of text to be parsed
+  const char *p  = source ▷ data; const char * const textStart = p;             // Start of text to be parsed
   if  (*p != $Open) return error(p, "$ must start with: %c", $Open);            // Insist that the first character is <
 
   int remainderIsWhiteSpace(char *p)                                            // Find the next non space character in a zero terminated string
@@ -86,7 +85,7 @@ static $Parse make$ParseFromFile                                                
     return 1;                                                                   // Its all white sace
    }
 
-  for(char *p = b ▷ data; *p;)                                                  // Break out tags and text
+  for(char *p = source ▷ data; *p;)                                             // Break out tags and text
    {const char * const o = strchr(p, $Open);                                    // Find next open
 
     if (o)                                                                      // Found next open
@@ -146,19 +145,19 @@ static $Parse make$ParseFromFile                                                
   if (1)                                                                        // Confirm there is exactly one root node
    {const ArenaTreeNode root = t ▷ root;
     const size_t N = root ▷ countChildren;
-    char *p = b ▷ data;
+    const char * const p = source ▷ data;
     if (N == 0)     return error(p, "No xml root tag found");
     else if (N > 1) return error(p, "More than one root xml tag found");
    }
 
   if (1)                                                                        // Make the single root xml tag the root of the parse tree
    {const ArenaTreeNode r = t ▷ root,     f = r ▷ first;
-    ArenaTreeContent *  a = r ▷ content, *b = f ▷ content;
+    ArenaTreeContent * const a = r ▷ content, * const b = f ▷ content;
     *a = *b;
     ArenaTreefe(c, r) c ▷ setUp(r);
    }
 
-  b ▷ free;                                                                     // Free mapped input file as we can now reconstruct it from the parse tree
+  source ▷ free;                                                                // Free mapped input file as we can now reconstruct it from the parse tree
 
   return x;
  } // make$ParseFromFile
@@ -225,8 +224,8 @@ static int tagStringEquals_$Tag_string                                          
 
 //D1 Navigation                                                                 // Navigate through an $ parse tree.
 
-#define $fe( child, parent) for($Tag child = new $Tag(xml: parent.xml, node: parent ▷ first.node); child ▷ valid; child.node = child ▷ next.node)  // Each child in a parent from first to last
-#define $fer(child, parent) for($Tag child = new $Tag(xml: parent.xml, node: parent ▷ last.node);  child ▷ valid; child,node = child ▷ prev.node)) // Each child in a parent from last to first
+#define $fe( child, parent) for($Tag child = new $Tag(xml: parent.xml, node: parent ▷ first.node); child ▷ valid; child.node.offset = child ▷ next.node.offset)  // Each child in a parent from first to last
+#define $fer(child, parent) for($Tag child = new $Tag(xml: parent.xml, node: parent ▷ last.node);  child ▷ valid; child.node.offset = child ▷ prev.node.offset) // Each child in a parent from last to first
 
 static $Tag first_$Tag                                                          // Return the first child tag under the specified parent tag.
  (const $Tag parent)                                                            // Parent tag
@@ -391,7 +390,7 @@ static void changeName_$Tag                                                     
   const char * const string  = tag ▷ tagString;                                 // Tag string
   const size_t o = strlen(oldName), n = strlen(newName), l = strlen(string);
 
-  char key[l + n + 1], *p = key, *q = strstr(string, oldName);
+  char key[l + n + 1], * p = key, * const q = strstr(string, oldName);
   p = stpncpy(p, string, q - string);
   p = stpcpy (p, newName);
   p = stpcpy (p, q + o);
@@ -421,10 +420,10 @@ static void unwrap_$Tag                                                         
 //D1 Print                                                                      // Print an $ parse tree starting at the specified tag.
 
 static ReadOnlyBytes prettyPrint_readOnlyBytes_$Tag                             // Print the $ parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
- ($Tag tag)                                                                     // Starting tag
- {StringBuffer p = makeStringBuffer();
+ (const $Tag tag)                                                               // Starting tag
+ {const StringBuffer p = makeStringBuffer();
 
-  void print(const $Tag parent, int depth)                                      // Print the specified parent and its children
+  void print(const $Tag parent, const int depth)                                // Print the specified parent and its children
    {void space()                                                                // Format with white space
      {p ▷ add("\n");
       for(int i = 0; i < depth; ++i) p ▷ add(" ");
@@ -435,7 +434,7 @@ static ReadOnlyBytes prettyPrint_readOnlyBytes_$Tag                             
     void close()                                                                // Add close tag
      {p ▷ addFormat("%c%c%s%c", $Open, $Slash, parent ▷ tagName, $Close);
      }
-    if (parent ▷ empty) open();                                                 // Parent is empty
+    if      ( parent ▷ empty) open();                                           // Parent is empty
     else if (!parent ▷ openChildren)                                            // Parent contains only text and singletons
      {open();
       $fe(child, parent) p ▷ add(child ▷ tagString);
@@ -445,7 +444,7 @@ static ReadOnlyBytes prettyPrint_readOnlyBytes_$Tag                             
      {space(); open();
       $fe(child, parent) print(child, depth+1);
       space(); close();
-      if (!parent ▷ isLast) space();                                              // If we are last the next end tag will be offset anyway
+      if (!parent ▷ isLast) space();                                            // If we are last the next end tag will be offset anyway
      }
    }
 
@@ -456,20 +455,20 @@ static ReadOnlyBytes prettyPrint_readOnlyBytes_$Tag                             
  }
 
 static ReadOnlyBytes prettyPrint_readOnlyBytes_$                                // Print the $ parse tree with additional spacing between tags to make the tree easier to read.
- ($Parse xml)                                                                   // $ parse tree
+ (const $Parse xml)                                                             // $ parse tree
  {const $Tag root = xml ▷ root;
   return root ▷ prettyPrint;
  }
 
 static int prettyPrintsAs_int_$_string                                          // Check that the $ parse tree prints as expected
- ($Parse xml,                                                                   // $ parse tree
+ (const $Parse xml,                                                             // $ parse tree
   const char * const expected)                                                  // Expected pretty print
  {const ReadOnlyBytes r = xml ▷ prettyPrint;
   const int result =  r ▷ equalsString(expected);
 
-  if (!result)                                                                   // Strings match
+  if (!result)                                                                  // Strings match
    {for(size_t i = 0; i < r.length; ++i)
-     {char a = *(r.data+i), b = *(expected+i);
+     {const char a = *(r.data+i), b = *(expected+i);
       if (a != b)
        {say("Strings differ in prettyPrintsAs"
             " at position: %lu on characters:  %c and %c\n", i, a, b);
@@ -490,8 +489,8 @@ static void prettyPrintAssert_$Tag                                              
  {const FileName f = makeFileName("/home/phil/c/z/z/zzz.txt");
   if (! f ▷ size) return;                                                       // File does not exist - create it by hand to make this function work
   const ReadOnlyBytes r = tag ▷ prettyPrint;
-  StringBuffer        s = makeStringBuffer();
-  ArenaTree           t = r ▷ splitNewLine;
+  const StringBuffer  s = makeStringBuffer();
+  const ArenaTree     t = r ▷ splitNewLine;
   s ▷ addFormat("assert(prettyPrintsAs_int_$_string(%s,\n", variable);
   ArenaTreefe(line, t)
    {const char * const k = line ▷ key;
@@ -504,7 +503,7 @@ static void prettyPrintAssert_$Tag                                              
     s ▷ addNewLine;
    }
   s ▷ add("));\n\n");
-  ReadOnlyBytes R = s ▷ readOnlyBytes;
+  const ReadOnlyBytes R = s ▷ readOnlyBytes;
   R ▷ writeFile(f);
   f ▷ free; r ▷ free; R ▷ free; t ▷ free;
  }
@@ -539,8 +538,8 @@ static int printsAs_$Tag                                                        
  }
 
 static int printsAs_$Parse                                                      // Check the print of an $ parse tree is as expected.
- (const $Parse  xml,                                                            // $ parse tree
-  const char *  expected)                                                       // Expected string
+ (const $Parse       xml,                                                       // $ parse tree
+  const char * const expected)                                                  // Expected string
  {const ReadOnlyBytes s = xml ▷ print;
   const int       r = s ▷ equalsString(expected);
   s ▷ free;
@@ -549,7 +548,7 @@ static int printsAs_$Parse                                                      
 
 static int printContains_$Tag                                                   // Check the print of an $ parse tree starting at the specified tag contains the expected string
  (const $Tag    tag,                                                            // Starting tag
-  const char *  expected)                                                       // Expected string
+  const char *  const expected)                                                 // Expected string
  {const ReadOnlyBytes s = tag ▷ print;
   const int       r = s ▷ containsString(expected);
   s ▷ free;
@@ -557,8 +556,8 @@ static int printContains_$Tag                                                   
  }
 
 static int printContains_$Parse                                                 // Check the print of an $ parse tree contains the expected string.
- (const $Parse  xml,                                                            // $ parse tree
-  const char *  expected)                                                       // Expected string
+ (const $Parse       xml,                                                       // $ parse tree
+  const char * const expected)                                                  // Expected string
  {const ReadOnlyBytes s = xml ▷ print;
   const int       r = s ▷ containsString(expected);
   s ▷ free;
