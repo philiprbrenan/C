@@ -91,14 +91,14 @@ static XmlTag wrap_XmlTag_string
 static void unwrap_XmlTag
  (const XmlTag         tag);
 static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag
- (XmlTag tag);
+ (const XmlTag tag);
 static ReadOnlyBytes prettyPrint_readOnlyBytes_Xml
- (XmlParse xml);
+ (const XmlParse xml);
 static int prettyPrintsAs_int_Xml_string
- (XmlParse xml,
+ (const XmlParse xml,
   const char * const expected);
 static int prettyPrintsAs_int_XmlTag_string
- (XmlTag tag,
+ (const XmlTag tag,
   const char * const expected);
 static void prettyPrintAssert_XmlTag
  (const XmlTag         tag,
@@ -114,14 +114,14 @@ static int printsAs_XmlTag
  (const XmlTag          tag,
   const char *  const expected);
 static int printsAs_XmlParse
- (const XmlParse  xml,
-  const char *  expected);
+ (const XmlParse       xml,
+  const char * const expected);
 static int printContains_XmlTag
  (const XmlTag    tag,
-  const char *  expected);
+  const char *  const expected);
 static int printContains_XmlParse
- (const XmlParse  xml,
-  const char *  expected);
+ (const XmlParse       xml,
+  const char * const expected);
 struct ProtoTypes_XmlParse {
   void  (*by)(                                                                  // Traverse the Xml parse tree in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
     const XmlParse xml,                                                         // Xml parse tree
@@ -151,18 +151,18 @@ struct ProtoTypes_XmlParse {
     const XmlParse xml,                                                         // Xml
     const char * const variable);                                               // The name of the variable preceding this call
   ReadOnlyBytes  (*prettyPrint)(                                                // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
-    XmlParse xml);                                                              // Xml parse tree
+    const XmlParse xml);                                                        // Xml parse tree
   int  (*prettyPrintsAs)(                                                       // Check that the Xml parse tree prints as expected
-    XmlParse xml,                                                               // Xml parse tree
+    const XmlParse xml,                                                         // Xml parse tree
     const char * const expected);                                               // Expected pretty print
   int  (*printContains)(                                                        // Check the print of an Xml parse tree contains the expected string.
     const XmlParse xml,                                                         // Xml parse tree
-    const char * expected);                                                     // Expected string
+    const char * const expected);                                               // Expected string
   ReadOnlyBytes  (*print)(                                                      // Print an entire Xml parse tree as a string.
     const XmlParse xml);                                                        // Xml parse tree
   int  (*printsAs)(                                                             // Check the print of an Xml parse tree is as expected.
     const XmlParse xml,                                                         // Xml parse tree
-    const char * expected);                                                     // Expected string
+    const char * const expected);                                               // Expected string
   XmlTag  (*root)(                                                              // Return the root tag of the specified Xml parse tree
     const XmlParse xml);                                                        // Xml parse tree
  } const ProtoTypes_XmlParse =
@@ -211,15 +211,15 @@ struct ProtoTypes_XmlTag {
     const XmlTag tag,                                                           // Starting tag
     const char * const variable);                                               // The name of the variable preceding this call
   ReadOnlyBytes  (*prettyPrint)(                                                // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
-    XmlTag tag);                                                                // Starting tag
+    const XmlTag tag);                                                          // Starting tag
   int  (*prettyPrintsAs)(                                                       // Check that the Xml parse tree prints as expected
-    XmlTag tag,                                                                 // Xml parse tree
+    const XmlTag tag,                                                           // Xml parse tree
     const char * const expected);                                               // Expected pretty print
   XmlTag  (*prev)(                                                              // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
   int  (*printContains)(                                                        // Check the print of an Xml parse tree starting at the specified tag contains the expected string
     const XmlTag tag,                                                           // Starting tag
-    const char * expected);                                                     // Expected string
+    const char *  const expected);                                              // Expected string
   ReadOnlyBytes  (*print)(                                                      // Print the parse tree as a string starting at the specified tag.
     const XmlTag tag);                                                          // Starting tag
   int  (*printsAs)(                                                             // Check the print of an Xml parse tree starting at the specified tag is as expected.
