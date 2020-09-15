@@ -112,7 +112,8 @@ static void addQuotedNewLine_StringBuffer                                       
 static size_t length_StringBuffer                                                          // Length of the string held in the buffer
  (const StringBuffer buffer)                                                               // StringBuffer
  {size_t length = 0;
-  ArenaTreefe(c, buffer.string) length += strlen(c.proto->key(c));
+  ArenaTreeNode  root = buffer.string.proto->root(buffer.string);
+  ArenaTreefe(c, root) length += strlen(c.proto->key(c));
   return length;
  }
 
@@ -169,7 +170,8 @@ static void string_StringBuffer_string                                          
  (const StringBuffer        buffer,                                                        // StringBuffer
   char  * const  string)                                                        // String to load with enough space for the string and its terminating zero
  {char  * p =    string;
-  ArenaTreefe(c, buffer.string) p = stpcpy(p, c.proto->key(c));
+  ArenaTreeNode  root = buffer.string.proto->root(buffer.string);
+  ArenaTreefe(c, root) p = stpcpy(p, c.proto->key(c));
   *p = 0;
  }
 
@@ -193,7 +195,8 @@ static ReadOnlyBytes readOnlyBytes_StringBuffer                                 
  {const size_t l = buffer.proto->length(buffer);
   char data[l+1];
   char * p = data;
-  ArenaTreefe(c, buffer.string) p = stpcpy(p, c.proto->key(c));
+  ArenaTreeNode  root = buffer.string.proto->root(buffer.string);
+  ArenaTreefe(c, root) p = stpcpy(p, c.proto->key(c));
   const ReadOnlyBytes r = makeReadOnlyBytesDupN(data, l);
   return r;
  }
