@@ -3,12 +3,12 @@
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
 #define _GNU_SOURCE
-#ifndef $_included
-#define $_included
 #include <setjmp.h>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
+#ifndef $_included
+#define $_included
 
 exports structs $ $Delta $Node $Offset $Arena $Description
 exports arena   pointer_$_size allocate_offset_$_size pointer_$Offset size_$ used_$ saveString_$Offset_$_$String node_$Node_$_$String noden_$Node_$_$String nodeFromOffset_$_size content_$Node offset_$_size make$ new$Offset setData_$Node_size getData_size_$Node equals_int_$Node_$Node equalsString_$Node_string
@@ -63,7 +63,7 @@ typedef struct $Description                                                     
 
 #include <$$_prototypes.h>                                                      // Arena tree prototypes now that the relevant structures have been declared
 #define $fe( child, parent) for($Node child = parent ▷ first; child ▷ valid; child = child ▷ next) // Each child in a parent from first to last
-#define $fer(child, parent) for($Node child = parent ▷ last;  child ▷ valid; child = child ▷ prev) // Each child in a parent from last to first
+#define $fer(child, parent) for($Node child = parent ▷ last ; child ▷ valid; child = child ▷ prev) // Each child in a parent from last to first
 #include <readOnlyBytes.c>
 #include <stringBuffer.c>
 
@@ -181,8 +181,7 @@ static $Offset  offset_$_size                                                   
 static $Node   nodeFromOffset_$_size                                            //P Create a node to locate an allocation within the arena of a tree.
  (const $      tree,                                                            // Tree
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
- {const $Node  n = {tree, delta, &ProtoTypes_$Node};                            // Create node
-  return       n;
+ {return new $Node(tree: tree, offset: delta);
  }
 
 static $Offset allocate_offset_$_size                                           //P Allocate memory within the arena of a tree and clear the allocated memory
@@ -364,7 +363,7 @@ static int valid_$Node                                                          
 
 static  $Node parent_$Node_$Node                                                // Get the parent of a child
  (const $Node child)                                                            // Child
- {if (child ▷ isRoot) printStackBackTrace("The root node of a tree has no parent\n");
+ {if (child ▷ isRoot) return child;
   return child.tree ▷ nodeFromOffset(child ▷ content->parent.delta);
  }
 
@@ -393,11 +392,11 @@ static  $Node findFirst_$Node_string                                            
  (const $Node        node,                                                      // Node at the start of the tree to be searched
   const char * const key)                                                       // Key to find
  {jmp_buf found;
-  $Node F;                                                                      // An invalid node
+  $Node F = new $Node(tree: node.tree);                                                                      // An invalid node
 
   void find($Node node)                                                         // Check whether the key of the current node matches the specified key
    {if (node ▷ equalsString(key))                                               // Found
-     {F = node;
+     {F.offset = node.offset;
       longjmp(found, 1);
      }
    }
@@ -410,8 +409,19 @@ static  $Node findFirst_$Node_string                                            
 static  $Node findFirst_$_string                                                // Find the first node with the specified key in a post-order traversal of the tree.
  (const $            tree,                                                      // Tree
   const char * const key)                                                       // Key to find
- {const $Node r = tree ▷ root;                                                  // Root node of the tree
-  return r ▷ findFirst(key);                                                    // Search the tree
+ {jmp_buf found;
+  $Node F = new $Node(tree: tree);                                                                      // An invalid node
+
+  void find($Node node)                                                         // Check whether the key of the current node matches the specified key
+   {if (node ▷ equalsString(key))                                               // Found
+     {F.offset = node.offset;
+      longjmp(found, 1);
+     }
+   }
+
+  if (!setjmp(found)) tree ▷ by(find);                                          // Search the tree
+
+  return F;                                                                     // Return an invalid node
  }
 
 static  $Node findFirstChild_$Node_string                                       // Find the first child of the specified parent with the specified key.
@@ -437,8 +447,8 @@ static int context_$Node                                                        
         $Node * const parent,                                                   // Parent container
   const char  * const key)                                                      // Key
  {if (child ▷ isRoot) return 0;                                                 // The root node has no context
-  const $Node p = *parent = child ▷ parent;                                     // Get parent if it exists
-  return(p ▷ valid && strcmp(p ▷ key, key) == 0);                               // Check key
+  const $Node p = *parent = child ▷ parent;
+  return p ▷ valid && !strcmp(p ▷ key, key);                                    // Check key
  }
 
 static int isFirst_$Node                                                        // Confirm a child is first under its parent
@@ -552,10 +562,11 @@ static void by_$Node_sub                                                        
  ($Node node,                                                                   // Node
   void (* const function) (const $Node node))                                   // Function
  {void children(const $Node parent)                                             // Process the children of the specified parent
-   {const size_t N = parent ▷ countChildren;                                    // Number of children
-    $Node c[N+1];                                                               // Array of children terminated by a trailing zero
-    size_t n = 0; $fe(child, parent) c[n++] = child;                            // Load each child into an array
-    for(size_t i = 0; i < N; ++i) children(c[i]);                               // Process each child allowing it to change position
+   {if (!parent ▷ valid) return;
+    const size_t N = parent ▷ countChildren;                                    // Number of children
+    size_t c[N+1];                                                              // Array of children terminated by a trailing zero
+    size_t n = 0; $fe(child, parent) c[n++] = child.offset;                     // Load each child into an array
+    for(size_t i = 0; i < N; ++i) children(new $Node(tree: parent.tree, offset: c[i]));            // Process each child allowing it to change position
     function(parent);                                                           // Process the parent
    }
   children(node);                                                               // Start at the specified root node
@@ -564,15 +575,21 @@ static void by_$Node_sub                                                        
 static void by_$_sub                                                            // Traverse a tree in post-order calling the specified function to process each child node.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
  (const $ tree,                                                                 // Tree
   void (* const function) (const $Node node))                                   // Function
- {const $Node n = tree ▷ root;                                                  // Start at the root
-  n ▷ by(function);
+ {const $Node root = tree ▷ root;
+  const size_t   N = tree ▷ countChildren;                                      // Number of children under root
+  size_t c[N+1];                                                                // Array of children terminated by a trailing zero
+  size_t n = 0; $fe(child, root) c[n++] = child.offset;                         // Load each child into an array
+  for(size_t i = 0; i < N; ++i)
+   {$Node n = new $Node(tree: tree, offset: c[i]);                              // Process each child allowing it to change position
+    n ▷ by(function);
+   }
+  function(root);
  }
 
 static  size_t countChildren_size_$                                             // Count the number of children directly under a parent.
  (const $ tree)                                                                 // $
  {size_t l = 0;
   const $Node root = tree ▷ root;
-  if (!root ▷ valid) return 0;
   $fe(child, root) ++l;
   return l;                                                                     // Return count
  }
@@ -584,12 +601,13 @@ static  size_t countChildren_size_$Node                                         
   return l;                                                                     // Return count
  }
 
-static  size_t count_size_$Node                                                 // Count the number of nodes under a specified node.
+static  size_t count_size_$Node                                                 // Count the number of nodes under a specified node but not including the specified node.
  (const $Node node)                                                             // Node
  {size_t l = 0;
 
   void count(const $Node parent)                                                // Process the children of the specified parent
-   {l++; $fe(child, parent) count(child);                                       // Each child
+   {if (!parent ▷ valid) return;
+    l++; $fe(child, parent) count(child);                                       // Each child
    }
 
   count(node);                                                                  // Start at the specified node
@@ -599,8 +617,11 @@ static  size_t count_size_$Node                                                 
 
 static  size_t count_size_$                                                     // Count the number of nodes in a tree
  (const $ tree)                                                                 // Tree
- {const $Node root = tree ▷ root;
-  return root ▷ count;
+ {size_t l = 0;
+
+  const $Node root = tree ▷ root;                                               // Root is always valid
+  $fe(child, root) l += 1 + child ▷ count;                                      // Child under root plus its children
+  return l;                                                                     // Return count without counting the root node
  }
 
 //D1 Print                                                                      // Print Arena Trees in various ways
@@ -751,7 +772,9 @@ static  $Node cut_$Node_$Node                                                   
 
 static  $Node unwrap_$Node_$Node                                                // Unwrap the specified parent and return it.
  (const $Node parent)                                                           // Parent to unwrap
- {for  ($Node child = parent  ▷ last; child ▷ valid; child = parent ▷ last)     // Each child in a parent from first to last
+ {for($Node child = new $Node(tree: parent.tree, offset: parent ▷ last.offset); // Remove last children
+    child ▷ valid;
+    child.offset = parent ▷ last.offset)
    {parent ▷ putNext(child ▷ cut);                                              // Place each child after the parent
    }
   return parent ▷ cut;                                                          // Remove and return empty parent
@@ -825,10 +848,11 @@ void test0()                                                                    
 
   for(int i = 0; i < 10; ++i)                                                   // Load tree
    {char s[2] = {'a'+i, 0};
-    $Node         child = t ▷ node(s); root ▷ putLast (child);
-                  child = t ▷ node(s); root ▷ putFirst(child);
-    s[0] = 'A'+i; child ▷ setKey(s);
-    assert(strcmp(child ▷ key, s) == 0);
+
+    $Node c1 = t ▷ node(s); root ▷ putLast (c1);
+    $Node c2 = t ▷ node(s); root ▷ putFirst(c2);
+    s[0] = 'A'+i; c2 ▷ setKey(s);
+    assert(strcmp(c2 ▷ key, s) == 0);
    }
 
   if (1)                                                                        // For each
@@ -878,11 +902,10 @@ void test2()                                                                    
   assert(t ▷ printsWithBracketsAs("a(b(c(de)f)g(hi)j)"));
   assert(t ▷ printContains("def"));
 
-  char l[t ▷ count + 1]; *l = 0;
+  char l[t ▷ count + 2], *p = l;
 
-  void process($Node n) {strcat(l, n ▷ key);}
+  void process($Node n) {p = stpcpy(p, n ▷ key); *p = 0;}
   t ▷ by(process);
-
   assert(strcmp(l, "decfbhigja") == 0);
 
   t ▷ free;
@@ -924,9 +947,11 @@ void test4()                                                                    
  {$ t = make$();    t ▷ fromLetters("b(c(de(f)gh)i)j");
   assert(t ▷ printsWithBracketsAs("a(b(c(de(f)gh)i)j)"));
 
+
   $Node c = t ▷ findFirst("c");
-  $Node d = t ▷ findFirst("d");
-  assert(d ▷ equalsString("d"));
+
+  assert(c ▷ equalsString("c"));
+  $Node d = t ▷ findFirst("d"); assert(d ▷ equalsString("d"));
   $Node e = t ▷ findFirst("e"); assert(e ▷ equalsString("e"));
   $Node f = t ▷ findFirst("f"); assert(f ▷ equalsString("f"));
   $Node g = t ▷ findFirst("g"); assert(g ▷ equalsString("g"));
