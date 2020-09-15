@@ -19,19 +19,19 @@ char XmltagName[256];                                                           
 
 typedef struct XmlParse                                                           // Xml parse tree
  {const struct ProtoTypes_XmlParse *proto;                                        // Prototypes for methods
-  FileName          fileName;                                                   // Source file containing Xml to be parsed
-  ReadOnlyBytes     data;                                                       // Xml to be parsed
-  ArenaTree         tree;                                                       // Parse tree created from Xml being parsed
-  ArenaTree         errors;                                                     // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is XmlError
-  ArenaRedBlackTree possibilities;                                              // Possibility sets for each Dita tag
-  ArenaRedBlackTree first;                                                      // First set of possibilities for each Dita tag
-  ArenaRedBlackTree next;                                                       // Next set of possibilities for each Dita child tag under a given parent tag
+  const FileName          fileName;                                             // Source file containing Xml to be parsed
+  const ReadOnlyBytes     data;                                                 // Xml to be parsed
+  const ArenaTree         tree;                                                 // Parse tree created from Xml being parsed
+  const ArenaTree         errors;                                               // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is XmlError
+  const ArenaRedBlackTree possibilities;                                        // Possibility sets for each Dita tag
+  const ArenaRedBlackTree first;                                                // First set of possibilities for each Dita tag
+  const ArenaRedBlackTree next;                                                 // Next set of possibilities for each Dita child tag under a given parent tag
  } XmlParse;
 
 typedef struct XmlTag                                                             // Tag in an Xml parse tree
  {const struct ProtoTypes_XmlTag *proto;                                          // Prototypes for methods
-  XmlParse        xml;                                                            // Xml parse tree
-  ArenaTreeNode node;                                                           // Arena tree node in the xml parse tree that contains this tag
+  const XmlParse            xml;                                                  // Xml parse tree
+  ArenaTreeNode           node;                                                 // Arena tree node in the xml parse tree that contains this tag
  } XmlTag;
 
 #include <xml_prototypes.h>
@@ -51,14 +51,13 @@ static XmlTag makeXmlTag_XmlParse_ArenaTreeNode                                 
 
 static XmlParse makeXmlParseFromFile                                                // Make a parse Xml from the contents of a file
  (FileName            fileName)                                                 // Name of file holding Xml
- {const ReadOnlyBytes b = makeReadOnlyBytesFromFile(fileName);                  // String to parse
-  XmlParse              x = newXmlParse(({struct XmlParse t = {data: b, fileName: fileName, proto: &ProtoTypes_XmlParse}; t;}));
-  const ArenaTree     t = x.tree      = makeArenaTree();                        // Parse tree,
-  const ArenaTree     e = x.errors    = makeArenaTree();                        // Errors list
-                      x.possibilities = makeArenaRedBlackTree();                // Single Step Validation
-                      x.first         = makeArenaRedBlackTree();                // First set of possibilities for each tag
-                      x.next          = makeArenaRedBlackTree();                // Next set of possibilities for each Dita child tag under a given parent tag
-                      x.fileName  = fileName;                                   // Name of file containing parse
+ {const ReadOnlyBytes source = makeReadOnlyBytesFromFile(fileName);             // String to parse
+  const ArenaTree     t = makeArenaTree();                                      // Parse tree,
+  const ArenaTree     errors = makeArenaTree();                                 // Errors list
+  const ArenaRedBlackTree possibilities = makeArenaRedBlackTree();              // Single Step Validation
+  const ArenaRedBlackTree first         = makeArenaRedBlackTree();              // First set of possibilities for each tag
+  const ArenaRedBlackTree next          = makeArenaRedBlackTree();              // Next set of possibilities for each Dita child tag under a given parent tag
+  const XmlParse        x = {data: source, fileName: fileName, tree: t, errors: errors, possibilities: possibilities, first: first, next: next, proto: &ProtoTypes_XmlParse};
   ArenaTreeNode       P = t.proto->root(t);                                             // Current parent node
 
   XmlParse error                                                                  // Report an error message adding the file name involved on the following line
@@ -66,20 +65,20 @@ static XmlParse makeXmlParseFromFile                                            
     const char *format, ...)                                                    // Message text
    {va_list va;
     const StringBuffer m = makeStringBuffer();                                  // Build the error message
-    const size_t       o = p - b.proto->data(b);                                        // Offset of the error
+    const size_t       o = p - source.proto->data(source);                                   // Offset of the error
     va_start(va, format);
     m.proto->addVaFormat(m, format, va);                                                // Format error message in a buffer of adequate size
     va_end(va);
     m.proto->addFormat(m, "\n  File     : %s",    fileName.name);                       // Add file name details
     m.proto->addFormat(m, "\n  At offset: %lu\n", o);                                   // Add offset in file
-    const ArenaTreeNode n = e.proto->nodeFromStringBuffer(e, m);                        // Save the text of the error message as the key of a node
+    const ArenaTreeNode n = errors.proto->nodeFromStringBuffer(errors, m);                   // Save the text of the error message as the key of a node
     n.proto->setData(n, o);                                                             // Save the offset of the error in the node data offset.
     n.proto->putTreeLast(n);                                                            // Add the error to the error list
     m.proto->free(m);                                                                   // Free string buffer
     return x;
    } // error
 
-  char *p  = b.proto->data(b); const char * const textStart = p;                        // Start of text to be parsed
+  const char *p  = source.proto->data(source); const char * const textStart = p;             // Start of text to be parsed
   if  (*p != XmlOpen) return error(p, "Xml must start with: %c", XmlOpen);            // Insist that the first character is <
 
   int remainderIsWhiteSpace(char *p)                                            // Find the next non space character in a zero terminated string
@@ -87,7 +86,7 @@ static XmlParse makeXmlParseFromFile                                            
     return 1;                                                                   // Its all white sace
    }
 
-  for(char *p = b.proto->data(b); *p;)                                                  // Break out tags and text
+  for(char *p = source.proto->data(source); *p;)                                             // Break out tags and text
    {const char * const o = strchr(p, XmlOpen);                                    // Find next open
 
     if (o)                                                                      // Found next open
@@ -147,19 +146,19 @@ static XmlParse makeXmlParseFromFile                                            
   if (1)                                                                        // Confirm there is exactly one root node
    {const ArenaTreeNode root = t.proto->root(t);
     const size_t N = root.proto->countChildren(root);
-    char *p = b.proto->data(b);
+    const char * const p = source.proto->data(source);
     if (N == 0)     return error(p, "No xml root tag found");
     else if (N > 1) return error(p, "More than one root xml tag found");
    }
 
   if (1)                                                                        // Make the single root xml tag the root of the parse tree
    {const ArenaTreeNode r = t.proto->root(t),     f = r.proto->first(r);
-    ArenaTreeContent *  a = r.proto->content(r), *b = f.proto->content(f);
+    ArenaTreeContent * const a = r.proto->content(r), * const b = f.proto->content(f);
     *a = *b;
     ArenaTreefe(c, r) c.proto->setUp(c, r);
    }
 
-  b.proto->free(b);                                                                     // Free mapped input file as we can now reconstruct it from the parse tree
+  source.proto->free(source);                                                                // Free mapped input file as we can now reconstruct it from the parse tree
 
   return x;
  } // makeXmlParseFromFile
@@ -226,8 +225,8 @@ static int tagStringEquals_XmlTag_string                                        
 
 //D1 Navigation                                                                 // Navigate through an Xml parse tree.
 
-#define Xmlfe( child, parent) for(XmlTag child = newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.proto->first(parent).node, proto: &ProtoTypes_XmlTag}; t;})); child.proto->valid(child); child.node = child.proto->next(child).node)  // Each child in a parent from first to last
-#define Xmlfer(child, parent) for(XmlTag child = newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.proto->last(parent).node, proto: &ProtoTypes_XmlTag}; t;}));  child.proto->valid(child); child,node = child.proto->prev(child).node)) // Each child in a parent from last to first
+#define Xmlfe( child, parent) for(XmlTag child = newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.proto->first(parent).node, proto: &ProtoTypes_XmlTag}; t;})); child.proto->valid(child); child.node.offset = child.proto->next(child).node.offset)  // Each child in a parent from first to last
+#define Xmlfer(child, parent) for(XmlTag child = newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.proto->last(parent).node, proto: &ProtoTypes_XmlTag}; t;}));  child.proto->valid(child); child.node.offset = child.proto->prev(child).node.offset) // Each child in a parent from last to first
 
 static XmlTag first_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
@@ -237,22 +236,22 @@ static XmlTag last_XmlTag                                                       
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->last(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 235 "/home/phil/c/z/xml/xml.c"
+#line 234 "/home/phil/c/z/xml/xml.c"
 static XmlTag next_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->next(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 235 "/home/phil/c/z/xml/xml.c"
+#line 234 "/home/phil/c/z/xml/xml.c"
 static XmlTag prev_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->prev(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 235 "/home/phil/c/z/xml/xml.c"
+#line 234 "/home/phil/c/z/xml/xml.c"
 static XmlTag parent_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->parent(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 235 "/home/phil/c/z/xml/xml.c"
+#line 234 "/home/phil/c/z/xml/xml.c"
 
 static XmlTag first_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
  (const XmlParse xml)                                                             // Parent tag
@@ -262,7 +261,7 @@ static XmlTag last_XmlParse                                                     
  (const XmlParse xml)                                                             // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: xml, node: xml.tree.proto->last(xml.tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 241 "/home/phil/c/z/xml/xml.c"
+#line 240 "/home/phil/c/z/xml/xml.c"
 
 //D1 Location                                                                   // Check the current location in the Xml parse tre
 
@@ -278,7 +277,7 @@ static int isLast_XmlTag                                                        
   const XmlTag parent = tag.proto->parent(tag), f = parent.proto->last(parent);
   return f.proto->equals(f, tag);
  }
-#line 251 "/home/phil/c/z/xml/xml.c"
+#line 250 "/home/phil/c/z/xml/xml.c"
 
 //D1 Text methods                                                               // Methods that operate on text tags
 
@@ -421,7 +420,7 @@ static void changeName_XmlTag                                                   
   const char * const string  = tag.proto->tagString(tag);                                 // Tag string
   const size_t o = strlen(oldName), n = strlen(newName), l = strlen(string);
 
-  char key[l + n + 1], *p = key, *q = strstr(string, oldName);
+  char key[l + n + 1], * p = key, * const q = strstr(string, oldName);
   p = stpncpy(p, string, q - string);
   p = stpcpy (p, newName);
   p = stpcpy (p, q + o);
@@ -451,10 +450,10 @@ static void unwrap_XmlTag                                                       
 //D1 Print                                                                      // Print an Xml parse tree starting at the specified tag.
 
 static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag                             // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
- (XmlTag tag)                                                                     // Starting tag
- {StringBuffer p = makeStringBuffer();
+ (const XmlTag tag)                                                               // Starting tag
+ {const StringBuffer p = makeStringBuffer();
 
-  void print(const XmlTag parent, int depth)                                      // Print the specified parent and its children
+  void print(const XmlTag parent, const int depth)                                // Print the specified parent and its children
    {void space()                                                                // Format with white space
      {p.proto->add(p, "\n");
       for(int i = 0; i < depth; ++i) p.proto->add(p, " ");
@@ -465,7 +464,7 @@ static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag                           
     void close()                                                                // Add close tag
      {p.proto->addFormat(p, "%c%c%s%c", XmlOpen, XmlSlash, parent.proto->tagName(parent), XmlClose);
      }
-    if (parent.proto->empty(parent)) open();                                                 // Parent is empty
+    if      ( parent.proto->empty(parent)) open();                                           // Parent is empty
     else if (!parent.proto->openChildren(parent))                                            // Parent contains only text and singletons
      {open();
       Xmlfe(child, parent) p.proto->add(p, child.proto->tagString(child));
@@ -475,7 +474,7 @@ static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag                           
      {space(); open();
       Xmlfe(child, parent) print(child, depth+1);
       space(); close();
-      if (!parent.proto->isLast(parent)) space();                                              // If we are last the next end tag will be offset anyway
+      if (!parent.proto->isLast(parent)) space();                                            // If we are last the next end tag will be offset anyway
      }
    }
 
@@ -486,20 +485,20 @@ static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag                           
  }
 
 static ReadOnlyBytes prettyPrint_readOnlyBytes_Xml                                // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
- (XmlParse xml)                                                                   // Xml parse tree
+ (const XmlParse xml)                                                             // Xml parse tree
  {const XmlTag root = xml.proto->root(xml);
   return root.proto->prettyPrint(root);
  }
 
 static int prettyPrintsAs_int_Xml_string                                          // Check that the Xml parse tree prints as expected
- (XmlParse xml,                                                                   // Xml parse tree
+ (const XmlParse xml,                                                             // Xml parse tree
   const char * const expected)                                                  // Expected pretty print
  {const ReadOnlyBytes r = xml.proto->prettyPrint(xml);
   const int result =  r.proto->equalsString(r, expected);
 
-  if (!result)                                                                   // Strings match
+  if (!result)                                                                  // Strings match
    {for(size_t i = 0; i < r.length; ++i)
-     {char a = *(r.data+i), b = *(expected+i);
+     {const char a = *(r.data+i), b = *(expected+i);
       if (a != b)
        {say("Strings differ in prettyPrintsAs"
             " at position: %lu on characters:  %c and %c\n", i, a, b);
@@ -513,14 +512,14 @@ static int prettyPrintsAs_int_Xml_string                                        
   return 1;
  }
 static int prettyPrintsAs_int_XmlTag_string                                          // Check that the Xml parse tree prints as expected
- (XmlTag tag,                                                                   // Xml parse tree
+ (const XmlTag tag,                                                             // Xml parse tree
   const char * const expected)                                                  // Expected pretty print
  {const ReadOnlyBytes r = tag.proto->prettyPrint(tag);
   const int result =  r.proto->equalsString(r, expected);
 
-  if (!result)                                                                   // Strings match
+  if (!result)                                                                  // Strings match
    {for(size_t i = 0; i < r.length; ++i)
-     {char a = *(r.data+i), b = *(expected+i);
+     {const char a = *(r.data+i), b = *(expected+i);
       if (a != b)
        {say("Strings differ in prettyPrintsAs"
             " at position: %lu on characters:  %c and %c\n", i, a, b);
@@ -533,7 +532,7 @@ static int prettyPrintsAs_int_XmlTag_string                                     
   r.proto->free(r);
   return 1;
  }
-#line 485 "/home/phil/c/z/xml/xml.c"
+#line 484 "/home/phil/c/z/xml/xml.c"
 
 static void prettyPrintAssert_XmlTag                                              // Pretty print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
@@ -541,8 +540,8 @@ static void prettyPrintAssert_XmlTag                                            
  {const FileName f = makeFileName("/home/phil/c/z/z/zzz.txt");
   if (! f.proto->size(f)) return;                                                       // File does not exist - create it by hand to make this function work
   const ReadOnlyBytes r = tag.proto->prettyPrint(tag);
-  StringBuffer        s = makeStringBuffer();
-  ArenaTree           t = r.proto->splitNewLine(r);
+  const StringBuffer  s = makeStringBuffer();
+  const ArenaTree     t = r.proto->splitNewLine(r);
   s.proto->addFormat(s, "assert(prettyPrintsAs_int_Xml_string(%s,\n", variable);
   ArenaTreefe(line, t)
    {const char * const k = line.proto->key(line);
@@ -555,7 +554,7 @@ static void prettyPrintAssert_XmlTag                                            
     s.proto->addNewLine(s);
    }
   s.proto->add(s, "));\n\n");
-  ReadOnlyBytes R = s.proto->readOnlyBytes(s);
+  const ReadOnlyBytes R = s.proto->readOnlyBytes(s);
   R.proto->writeFile(R, f);
   f.proto->free(f); r.proto->free(r); R.proto->free(R); t.proto->free(t);
  }
@@ -590,8 +589,8 @@ static int printsAs_XmlTag                                                      
  }
 
 static int printsAs_XmlParse                                                      // Check the print of an Xml parse tree is as expected.
- (const XmlParse  xml,                                                            // Xml parse tree
-  const char *  expected)                                                       // Expected string
+ (const XmlParse       xml,                                                       // Xml parse tree
+  const char * const expected)                                                  // Expected string
  {const ReadOnlyBytes s = xml.proto->print(xml);
   const int       r = s.proto->equalsString(s, expected);
   s.proto->free(s);
@@ -600,7 +599,7 @@ static int printsAs_XmlParse                                                    
 
 static int printContains_XmlTag                                                   // Check the print of an Xml parse tree starting at the specified tag contains the expected string
  (const XmlTag    tag,                                                            // Starting tag
-  const char *  expected)                                                       // Expected string
+  const char *  const expected)                                                 // Expected string
  {const ReadOnlyBytes s = tag.proto->print(tag);
   const int       r = s.proto->containsString(s, expected);
   s.proto->free(s);
@@ -608,8 +607,8 @@ static int printContains_XmlTag                                                 
  }
 
 static int printContains_XmlParse                                                 // Check the print of an Xml parse tree contains the expected string.
- (const XmlParse  xml,                                                            // Xml parse tree
-  const char *  expected)                                                       // Expected string
+ (const XmlParse       xml,                                                       // Xml parse tree
+  const char * const expected)                                                  // Expected string
  {const ReadOnlyBytes s = xml.proto->print(xml);
   const int       r = s.proto->containsString(s, expected);
   s.proto->free(s);
