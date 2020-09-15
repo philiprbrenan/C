@@ -36,7 +36,7 @@ typedef struct $                                                                
 
 static $ make$                                                                  //CP Create a new description of a $
  (const char * const    data,                                                   // Memory to contain the read only bytes string
-  size_t                length,                                                 // Length of the byte sequence
+  const size_t          length,                                                 // Length of the byte sequence
   const enum $Allocator allocator)                                              // Allocation of memory so we know how to free it (or not to free it)
  {const $ r = {data, length, $Error_none, allocator, &ProtoTypes_$};
   return r;
@@ -56,14 +56,14 @@ static $ make$Error                                                             
  }
 
 static $ make$FromString                                                        //C Create a new description of a read only sequence of bytes read from a specified string.
- (char * const string)                                                          // Zero terminated string
+ (const char * const string)                                                    // Zero terminated string
  {return make$(string, strlen(string), $Allocator_none);
  }
 
 static $ make$FromStringN                                                       //C Create a new description of a read only sequence of bytes read from a specified string of specified length.
- (char * const string,                                                          // String
-  const size_t length)                                                          // Length of string, apply strlen if zero
- {const size_t l = length ? : strlen(string);
+ (const char * const string,                                                    // String
+  const size_t       length)                                                    // Length of string, apply strlen if zero
+ {const size_t l =   length ? : strlen(string);                                 // Apply strlen if requested
   return make$(string, l, $Allocator_none);
  }
 
@@ -74,10 +74,10 @@ static $ make$Dup                                                               
   return make$(strncpy(s, string, l), l, $Allocator_malloc1);
  }
 
-static $ make$DupN                                                               //C Create a new description of a read only sequence of bytes read from a specified string of specified length by duplicating it.
- (char * const string,                                                          // String
-  const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
- {const size_t l = length ? : strlen(string);
+static $ make$DupN                                                              //C Create a new description of a read only sequence of bytes read from a specified string of specified length by duplicating it.
+ (const char * const string,                                                    // String
+  const size_t       length)                                                    // Length of string (no need to include any zero terminating byte)
+ {const size_t l =   length ? : strlen(string);                                 // Apply strlen if requested
   char * const s = alloc(l + 1); s[l] = 0;
   return make$(strncpy(s, string, l), l, $Allocator_malloc1);
  }
@@ -92,13 +92,6 @@ static $ make$FromFormat                                                        
 
   return make$(data, length, $Allocator_malloc);                                // Successful allocation
  }
-
-//static $ make$Buffer                                                            //C Create an empty read only sequence of bytes of the specified length which can be written into to load it.
-// (const size_t length)                                                          // Length of string (no need to include any zero terminating byte)
-// {char * const s = alloc(length);
-//  memset(s, 0, length);
-//  return make$(s, length, $Allocator_malloc);
-// }
 
 static $ make$FromFile                                                          //C Create a new description of a read only sequence of bytes read from a file.
  (const FileName file)                                                          // File to read
@@ -374,6 +367,7 @@ void test9()                                                                    
 void test10()
  {$ f = make$FromFile(makeFileName("/aaa/bbb"));
   assert(f.error == $Error_no_such_file);
+  f ▷  free;
  }
 
 int main(void)                                                                  // Run tests
