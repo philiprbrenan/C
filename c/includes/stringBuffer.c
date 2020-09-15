@@ -191,9 +191,10 @@ static size_t substring_size_StringBuffer_int_int_string                        
 static ReadOnlyBytes readOnlyBytes_StringBuffer                                            // Create a read only bytes string from the StringBuffer.
  (const StringBuffer buffer)                                                               // StringBuffer
  {const size_t l = buffer.proto->length(buffer);
-  const ReadOnlyBytes r = makeReadOnlyBytesBuffer(l);
-  char * p = r.data;
+  char data[l+1];
+  char * p = data;
   ArenaTreefe(c, buffer.string) p = stpcpy(p, c.proto->key(c));
+  const ReadOnlyBytes r = makeReadOnlyBytesDupN(data, l);
   return r;
  }
 #endif
