@@ -335,7 +335,7 @@ struct ProtoTypes_ArenaTreeNode {
     const ArenaTreeNode source);                                                // Source node
   size_t  (*countChildren)(                                                     // Count the number of children directly under a node.
     const ArenaTreeNode parent);                                                // Parent
-  size_t  (*count)(                                                             // Count the number of nodes under a specified node.
+  size_t  (*count)(                                                             // Count the number of nodes under a specified node but not including the specified node.
     const ArenaTreeNode node);                                                  // Node
   ArenaTreeNode  (*cut)(                                                        // Cut out a child.
     const ArenaTreeNode child);                                                 // Child to cut out
