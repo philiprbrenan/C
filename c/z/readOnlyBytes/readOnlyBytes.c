@@ -181,7 +181,7 @@ static int containsString_$_zeroString                                          
 static size_t b2SumW8_$                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const $ r)                                                                    // Description of read only sequence of bytes
  {const FileName i = makeFileNameTemporaryWithContent("i.txt", r.data,r.length);
-  return i ▷ b2SumW8;                                                           // The digest is in the first two bytes
+  return i ▷ b2SumW8;
  }
 
 static ArenaTree splitNewLine                                                   // Split the specified $ on any new line characters
