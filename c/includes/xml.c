@@ -51,14 +51,14 @@ static XmlTag makeXmlTag_XmlParse_ArenaTreeNode                                 
 
 static XmlParse makeXmlParseFromFile                                                // Make a parse Xml from the contents of a file
  (FileName            fileName)                                                 // Name of file holding Xml
- {XmlParse              x = newXmlParse(({struct XmlParse t = {proto: &ProtoTypes_XmlParse};   t;}));
+ {const ReadOnlyBytes b = makeReadOnlyBytesFromFile(fileName);                  // String to parse
+  XmlParse              x = newXmlParse(({struct XmlParse t = {data: b, fileName: fileName, proto: &ProtoTypes_XmlParse}; t;}));
   const ArenaTree     t = x.tree      = makeArenaTree();                        // Parse tree,
   const ArenaTree     e = x.errors    = makeArenaTree();                        // Errors list
                       x.possibilities = makeArenaRedBlackTree();                // Single Step Validation
                       x.first         = makeArenaRedBlackTree();                // First set of possibilities for each tag
                       x.next          = makeArenaRedBlackTree();                // Next set of possibilities for each Dita child tag under a given parent tag
-  const FileName      f = x.fileName  = fileName;                               // Name of file containing parse
-  const ReadOnlyBytes b = x.data      = makeReadOnlyBytesFromFile(f);           // String to parse
+                      x.fileName  = fileName;                                   // Name of file containing parse
   ArenaTreeNode       P = t.proto->root(t);                                             // Current parent node
 
   XmlParse error                                                                  // Report an error message adding the file name involved on the following line
@@ -226,8 +226,8 @@ static int tagStringEquals_XmlTag_string                                        
 
 //D1 Navigation                                                                 // Navigate through an Xml parse tree.
 
-#define Xmlfe( child, parent) for(XmlTag child = parent.proto->first(parent); child.proto->valid(child); child = child.proto->next(child))  // Each child in a parent from first to last
-#define Xmlfer(child, parent) for(XmlTag child = parent.proto->last(parent);  child.proto->valid(child); child = child.proto->prev(child))) // Each child in a parent from last to first
+#define Xmlfe( child, parent) for(XmlTag child = newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.proto->first(parent).node, proto: &ProtoTypes_XmlTag}; t;})); child.proto->valid(child); child.node = child.proto->next(child).node)  // Each child in a parent from first to last
+#define Xmlfer(child, parent) for(XmlTag child = newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.proto->last(parent).node, proto: &ProtoTypes_XmlTag}; t;}));  child.proto->valid(child); child,node = child.proto->prev(child).node)) // Each child in a parent from last to first
 
 static XmlTag first_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
@@ -337,11 +337,11 @@ static XmlTag findFirstTag_XmlTag_XmlTag_string                                 
  (const XmlTag   parent,                                                          // Parent tag
   const char * const key)                                                       // Name of the tag to find
  {jmp_buf found;
-  XmlTag T = newXmlTag(({struct XmlTag t = {proto: &ProtoTypes_XmlTag};   t;}));                                                            // Tag found if any
+  XmlTag T = newXmlTag(({struct XmlTag t = {xml: parent.xml, proto: &ProtoTypes_XmlTag}; t;}));                                           // Tag found if any
 
   void find(const XmlTag tag)                                                     // Check whether the name of the tag matches the specified key
    {if (tag.proto->tagNameEquals(tag, key))
-     {T = tag;                                                                  // Found
+     {T.node = tag.node;                                                        // Found matching node
       longjmp(found, 1);
      }
    }
