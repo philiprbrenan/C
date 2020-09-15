@@ -217,12 +217,14 @@ elsif ($c)                                                                      
  {my $lp = '';
   my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8);
 
-  $lp .= " -lX11" if $file =~ m(/x/);                                           # Add X windows if running an X windows program
+  $lp .= " -lX11" if $file =~ m(/x/);                                           # X windows
 
-#  for my $lib(qw(gtk+-3.0 glib-2.0))
-#   {$cp .= ' '.trim(qx(pkg-config --cflags $lib));
-#    $lp .= ' '.trim(qx(pkg-config --libs $lib));
-#   }
+  if ($file =~ m(/g/))                                                          # GTK
+   {for my $lib(qw(gtk+-3.0 glib-2.0))
+     {$cp .= ' '.trim(qx(pkg-config --cflags $lib));
+      $lp .= ' '.trim(qx(pkg-config --libs   $lib));
+     }
+   }
 
   my $optimize = 0;                                                             # Whether to optimize or not
 # '--coverage -aux-info /tmp/aux-info.data';
