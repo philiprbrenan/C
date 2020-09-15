@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 
 /* Each node of the base red black tree can, in turn, have a separate red black
-tree dependent from it with the same arena*/
+tree dependent from it within the same arena*/
 
 #define _GNU_SOURCE
 #ifndef ArenaRedBlackTree_included
@@ -135,10 +135,9 @@ static ArenaRedBlackTreeOffset  offset_ArenaRedBlackTree_size                   
 static ArenaRedBlackTreeNode   nodeFromOffset_ArenaRedBlackTree_size                                            //IP Create a node to locate an allocation within the arena of a tree.
  (const ArenaRedBlackTree      tree,                                                            // Tree
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
- {const ArenaRedBlackTreeNode  n = {tree, delta, &ProtoTypes_ArenaRedBlackTreeNode};                            // Create node
-  return       n;
+ {return newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {tree: tree, offset: delta, proto: &ProtoTypes_ArenaRedBlackTreeNode}; t;}));
  }
-#line 189 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 188 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeOffset allocate_offset_ArenaRedBlackTree_size                                           //IP Allocate memory within the arena of a tree and clear the allocated memory
  (const ArenaRedBlackTree      tree,                                                            // ArenaTree in which to allocate
   const size_t size)                                                            // Amount of memory required
@@ -165,7 +164,7 @@ static ArenaRedBlackTreeOffset allocate_offset_ArenaRedBlackTree_size           
    }
   printStackBackTrace("Arena too large\n");                                     // The arena has become too large for the chosen size of offsets.
  }
-#line 216 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 215 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeNode noden_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString                                              //I Create a new tree node keyed by a string of the specified length to which a terminating zero will be appended.
  (const ArenaRedBlackTree       tree,                                                           // Arena tree in which to create the node
   const char * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
@@ -176,13 +175,13 @@ static ArenaRedBlackTreeNode noden_ArenaRedBlackTreeNode_ArenaRedBlackTree_Arena
   a->key.delta = k.offset;                                                      // Save key offset
   return tree.proto->nodeFromOffset(tree, c.offset);                                       // Return node
  }
-#line 227 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 226 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeNode node_ArenaRedBlackTreeNode_ArenaRedBlackTree_ArenaRedBlackTreeString                                               //I Create a new tree node keyed by a zero terminated string.
  (const ArenaRedBlackTree             tree,                                                     // Arena tree in which to create the node
   const char * const  key)                                                      // Key for this node.  Note: we do not order nodes automatically.
  {return tree.proto->noden(tree, key, 0);
  }
-#line 248 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 247 "/home/phil/c/z/arenaTree/arenaTree.c"
 static ArenaRedBlackTreeOffset saveString_ArenaRedBlackTreeOffset_ArenaRedBlackTree_ArenaRedBlackTreeString                                     //IP Save a copy of a zero terminated string in a tree and return the offset of the string.
  (const ArenaRedBlackTree       tree,                                                           // Arena tree in which to create the node
   const char * const str,                                                       // String
@@ -193,18 +192,18 @@ static ArenaRedBlackTreeOffset saveString_ArenaRedBlackTreeOffset_ArenaRedBlackT
   char * const T = stpncpy(t, str, l); *T = 0;
   return o;
  }
-#line 311 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 310 "/home/phil/c/z/arenaTree/arenaTree.c"
 static size_t getData_size_ArenaRedBlackTreeNode                                                //I Get the value of the data offset associated with a node.
  (const ArenaRedBlackTreeNode  node)                                                            // Node in an arena tree associated with the data
  {return node.proto->content(node)->data.delta;                                            // Value of the data offset field
  }
-#line 316 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 315 "/home/phil/c/z/arenaTree/arenaTree.c"
 static void setData_ArenaRedBlackTreeNode_size                                                  //I Set the value of the data offset associated with a node.
  (const ArenaRedBlackTreeNode  node,                                                            // Node in an arena tree to associate with the data
   const size_t offset)                                                          // Value the data offset is to be set to
  {node.proto->content(node)->data.delta = offset;                                          // Record offset
  }
-#line 387 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 386 "/home/phil/c/z/arenaTree/arenaTree.c"
 static int equalsString_ArenaRedBlackTreeNode_string                                            //I Check that the key of a node
  (const ArenaRedBlackTreeNode        node,                                                      // Node
   const char * const key)                                                       // Key
@@ -302,18 +301,17 @@ static int valid_ArenaRedBlackTreeNode                                          
 static ArenaRedBlackTreeFound find_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string                                   //P Find a key if it exists within the tree starting at this node.
  (ArenaRedBlackTreeFound      found,                                                            // Found definition
   const ArenaRedBlackTreeNode root)                                                             // The root node at which the tree starts
- {const ArenaRedBlackTree tree = root.tree;                                                     // Tree containing node
-  const char * const key = found.key;                                           // The key to find
+ {const char * const key = found.key;                                           // The key to find
 
-  for(ArenaRedBlackTreeNode p   = root; p.proto->valid(p);)                                             // Search down through tree
-   {found.last  = p;                                                            // Record last parent compared with key sought
+  for(ArenaRedBlackTreeNode p = root; p.proto->valid(p);)                                               // Search down through tree
+   {found.last.offset  = p.offset;                                              // Record last parent compared with key sought
     const char * const k = p.proto->key(p);                                             // Key of current parent node
     const int i = found.different = strcmp(key, k);                             // Compare key sought with current key
 
     if (!i) return found;                                                       // Found
 
     ArenaRedBlackTreeContent * const c = p.proto->content(p);                                           // Continue
-    p = tree.proto->nodeFromOffset(tree, i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
+    p.offset = i < 0 ? c->left.delta : c->right.delta;                          // Continue left or right
    }
 
   return found;                                                                 // Found
@@ -322,8 +320,7 @@ static ArenaRedBlackTreeFound find_ArenaRedBlackTreeFound_ArenaRedBlackTreeFound
 static ArenaRedBlackTreeNode locate_ArenaRedBlackTreeNode_string                                                // Locate the node with the specified key if it exists within the tree owned by the specified node.
  (const ArenaRedBlackTreeNode        node,                                                      // Node
   const char * const key)                                                       // Key to find
- {const ArenaRedBlackTree tree = node.tree;                                                     // ArenaRedBlackTree containing node
-  ArenaRedBlackTreeNode p = node.proto->ownedTreeRoot(node);                                               // Root node
+ {ArenaRedBlackTreeNode p = node.proto->ownedTreeRoot(node);                                               // Root node
   if (!p.proto->valid(p)) return p;                                                     // Empty tree
   for(;;)                                                                       // Search down through tree
    {const char * const k = p.proto->key(p);                                             // Key of current parent node
@@ -332,7 +329,7 @@ static ArenaRedBlackTreeNode locate_ArenaRedBlackTreeNode_string                
     if (!i) return p;                                                           // Found
 
     ArenaRedBlackTreeContent * const c = p.proto->content(p);                                           // Continue
-    p = tree.proto->nodeFromOffset(tree, i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
+    p.offset = i < 0 ? c->left.delta : c->right.delta;                          // Continue left or right
     if (!p.proto->valid(p)) return p;                                                   // Not found
    }
 
@@ -351,7 +348,7 @@ static ArenaRedBlackTreeNode locate_ArenaRedBlackTree_string                    
     if (!i) return p;                                                           // Found
 
     ArenaRedBlackTreeContent * const c = p.proto->content(p);                                           // Continue
-    p = tree.proto->nodeFromOffset(tree, i < 0 ? c->left.delta : c->right.delta);          // Continue left or right
+    p.offset = i < 0 ? c->left.delta : c->right.delta;                          // Continue left or right
     if (!p.proto->valid(p)) return p;                                                   // Not found
    }
 
@@ -403,7 +400,7 @@ static ArenaRedBlackTreeNode ll_ArenaRedBlackTreeNode_ArenaRedBlackTree_strings 
   for(;p.proto->valid(p);)
    {const char * const k = va_arg(va, char *);
     if (!k) break;
-    p = p.proto->locate(p, k);
+    p.offset = p.proto->locate(p, k).offset;
    }
   va_end(va);
   return p;
@@ -425,8 +422,7 @@ static ArenaRedBlackTreeNode add_ArenaRedBlackTreeNode_ArenaRedBlackTreeFound_Ar
 
   n.proto->setUp(n, p);                                                                 // Set parent of inserted node
 
-//?for(; p.proto->valid(p); p = p.proto->up(p))                                                 // Balance nodes along path back to root
-  for(ArenaRedBlackTreeNode p = n; p.proto->valid(p); p = p.proto->up(p))                                       // Balance nodes along path back to root
+  for(ArenaRedBlackTreeNode p = newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {tree: n.tree, offset: n.offset, proto: &ProtoTypes_ArenaRedBlackTreeNode}; t;})); p.proto->valid(p); p.offset = p.proto->up(p).offset)                                       // Balance nodes along path back to root
    {size_t height(ArenaRedBlackTreeNode p)                                                      // Height of a node
      {return p.proto->valid(p) ? p.proto->height(p) : 0;
      }
@@ -478,8 +474,8 @@ static ArenaRedBlackTreeNode add_ArenaRedBlackTreeNode_ArenaRedBlackTreeFound_Ar
      }
 
     const int L = height(p.proto->left(p)), R = height(p.proto->right(p));                      // Left and right depths
-    if      (2*L + 1 < R) p = balance(1);                                       // Balance left or right if necessary
-    else if (2*R + 1 < L) p = balance(0);
+    if      (2*L + 1 < R) p.offset = balance(1).offset;                         // Balance left or right if necessary
+    else if (2*R + 1 < L) p.offset = balance(0).offset;
     else     setHeight(p);                                                      // Balanced: propogate height
    }
 
