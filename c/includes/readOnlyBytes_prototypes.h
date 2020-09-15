@@ -1,5 +1,5 @@
 static ReadOnlyBytes makeReadOnlyBytes
- (char * const          data,
+ (const char * const    data,
   size_t                length,
   const enum ReadOnlyBytesAllocator allocator);
 static ReadOnlyBytes makeReadOnlyBytesError
@@ -19,8 +19,6 @@ static ReadOnlyBytes makeReadOnlyBytesDupN
 static ReadOnlyBytes makeReadOnlyBytesFromFormat
  (const char * const format,
   ...);
-static ReadOnlyBytes makeReadOnlyBytesBuffer
- (const size_t length);
 static ReadOnlyBytes makeReadOnlyBytesFromFile
  (const FileName file);
 static void free_ReadOnlyBytes
