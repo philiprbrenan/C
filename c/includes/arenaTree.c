@@ -4,12 +4,12 @@
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
 #define _GNU_SOURCE
-#ifndef ArenaTree_included
-#define ArenaTree_included
 #include <setjmp.h>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
+#ifndef ArenaTree_included
+#define ArenaTree_included
 
 
 
@@ -64,7 +64,7 @@ typedef struct ArenaTreeDescription                                             
 
 #include <arenaTree_prototypes.h>                                                      // Arena tree prototypes now that the relevant structures have been declared
 #define ArenaTreefe( child, parent) for(ArenaTreeNode child = parent.proto->first(parent); child.proto->valid(child); child = child.proto->next(child)) // Each child in a parent from first to last
-#define ArenaTreefer(child, parent) for(ArenaTreeNode child = parent.proto->last(parent);  child.proto->valid(child); child = child.proto->prev(child)) // Each child in a parent from last to first
+#define ArenaTreefer(child, parent) for(ArenaTreeNode child = parent.proto->last(parent) ; child.proto->valid(child); child = child.proto->prev(child)) // Each child in a parent from last to first
 #include <readOnlyBytes.c>
 #include <stringBuffer.c>
 
@@ -182,8 +182,7 @@ static ArenaTreeOffset  offset_ArenaTree_size                                   
 static ArenaTreeNode   nodeFromOffset_ArenaTree_size                                            //P Create a node to locate an allocation within the arena of a tree.
  (const ArenaTree      tree,                                                            // Tree
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
- {const ArenaTreeNode  n = {tree, delta, &ProtoTypes_ArenaTreeNode};                            // Create node
-  return       n;
+ {return newArenaTreeNode(({struct ArenaTreeNode t = {tree: tree, offset: delta, proto: &ProtoTypes_ArenaTreeNode}; t;}));
  }
 
 static ArenaTreeOffset allocate_offset_ArenaTree_size                                           //P Allocate memory within the arena of a tree and clear the allocated memory
@@ -365,7 +364,7 @@ static int valid_ArenaTreeNode                                                  
 
 static  ArenaTreeNode parent_ArenaTreeNode_ArenaTreeNode                                                // Get the parent of a child
  (const ArenaTreeNode child)                                                            // Child
- {if (child.proto->isRoot(child)) printStackBackTrace("The root node of a tree has no parent\n");
+ {if (child.proto->isRoot(child)) return child;
   return child.tree.proto->nodeFromOffset(child.tree, child.proto->content(child)->parent.delta);
  }
 
@@ -377,17 +376,17 @@ static  ArenaTreeNode last_ArenaTreeNode_ArenaTreeNode                          
  (const ArenaTreeNode parent)                                                           // Parent
  {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->last.delta);
  }
-#line 375 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 374 "/home/phil/c/z/arenaTree/arenaTree.c"
 static  ArenaTreeNode next_ArenaTreeNode_ArenaTreeNode                                                 // Get the next child under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
  {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->next.delta);
  }
-#line 375 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 374 "/home/phil/c/z/arenaTree/arenaTree.c"
 static  ArenaTreeNode prev_ArenaTreeNode_ArenaTreeNode                                                 // Get the prev child under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
  {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->prev.delta);
  }
-#line 375 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 374 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 static  ArenaTreeNode first_ArenaTreeNode_ArenaTree                                                     // Get the first child in the specified ArenaTree.
  (const ArenaTree tree)                                                                 // Parent
@@ -399,19 +398,19 @@ static  ArenaTreeNode last_ArenaTreeNode_ArenaTree                              
  {const ArenaTreeNode root = tree.proto->root(tree);
   return root.proto->last(root);
  }
-#line 382 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 381 "/home/phil/c/z/arenaTree/arenaTree.c"
 static  ArenaTreeNode next_ArenaTreeNode_ArenaTree                                                     // Get the next child in the specified ArenaTree.
  (const ArenaTree tree)                                                                 // Parent
  {const ArenaTreeNode root = tree.proto->root(tree);
   return root.proto->next(root);
  }
-#line 382 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 381 "/home/phil/c/z/arenaTree/arenaTree.c"
 static  ArenaTreeNode prev_ArenaTreeNode_ArenaTree                                                     // Get the prev child in the specified ArenaTree.
  (const ArenaTree tree)                                                                 // Parent
  {const ArenaTreeNode root = tree.proto->root(tree);
   return root.proto->prev(root);
  }
-#line 382 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 381 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -425,11 +424,11 @@ static  ArenaTreeNode findFirst_ArenaTreeNode_string                            
  (const ArenaTreeNode        node,                                                      // Node at the start of the tree to be searched
   const char * const key)                                                       // Key to find
  {jmp_buf found;
-  ArenaTreeNode F;                                                                      // An invalid node
+  ArenaTreeNode F = newArenaTreeNode(({struct ArenaTreeNode t = {tree: node.tree, proto: &ProtoTypes_ArenaTreeNode}; t;}));                                                                      // An invalid node
 
   void find(ArenaTreeNode node)                                                         // Check whether the key of the current node matches the specified key
    {if (node.proto->equalsString(node, key))                                               // Found
-     {F = node;
+     {F.offset = node.offset;
       longjmp(found, 1);
      }
    }
@@ -442,8 +441,19 @@ static  ArenaTreeNode findFirst_ArenaTreeNode_string                            
 static  ArenaTreeNode findFirst_ArenaTree_string                                                // Find the first node with the specified key in a post-order traversal of the tree.
  (const ArenaTree            tree,                                                      // Tree
   const char * const key)                                                       // Key to find
- {const ArenaTreeNode r = tree.proto->root(tree);                                                  // Root node of the tree
-  return r.proto->findFirst(r, key);                                                    // Search the tree
+ {jmp_buf found;
+  ArenaTreeNode F = newArenaTreeNode(({struct ArenaTreeNode t = {tree: tree, proto: &ProtoTypes_ArenaTreeNode}; t;}));                                                                      // An invalid node
+
+  void find(ArenaTreeNode node)                                                         // Check whether the key of the current node matches the specified key
+   {if (node.proto->equalsString(node, key))                                               // Found
+     {F.offset = node.offset;
+      longjmp(found, 1);
+     }
+   }
+
+  if (!setjmp(found)) tree.proto->by(tree, find);                                          // Search the tree
+
+  return F;                                                                     // Return an invalid node
  }
 
 static  ArenaTreeNode findFirstChild_ArenaTreeNode_string                                       // Find the first child of the specified parent with the specified key.
@@ -469,8 +479,8 @@ static int context_ArenaTreeNode                                                
         ArenaTreeNode * const parent,                                                   // Parent container
   const char  * const key)                                                      // Key
  {if (child.proto->isRoot(child)) return 0;                                                 // The root node has no context
-  const ArenaTreeNode p = *parent = child.proto->parent(child);                                     // Get parent if it exists
-  return(p.proto->valid(p) && strcmp(p.proto->key(p), key) == 0);                               // Check key
+  const ArenaTreeNode p = *parent = child.proto->parent(child);
+  return p.proto->valid(p) && !strcmp(p.proto->key(p), key);                                    // Check key
  }
 
 static int isFirst_ArenaTreeNode                                                        // Confirm a child is first under its parent
@@ -483,7 +493,7 @@ static int isLast_ArenaTreeNode                                                 
  {const ArenaTreeNode parent = child.proto->parent(child);
   return child.proto->equals(child, parent.proto->last(parent));
  }
-#line 449 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 459 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 static int isEmpty_ArenaTreeNode                                                        // Confirm a node has no children.
  (const ArenaTreeNode node)                                                             // Node
@@ -538,7 +548,7 @@ static  ArenaTreeNode putTreeLast_ArenaTreeNode_ArenaTreeNode                   
   const ArenaTreeNode r = t.proto->root(t);
   return r.proto->putLast(r, child);                                                   // Put the child last
  }
-#line 498 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 508 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 static  ArenaTreeNode putFirst_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode                                        // Put a child first under its parent
  (const ArenaTreeNode parent,                                                           // Parent
@@ -550,7 +560,7 @@ static  ArenaTreeNode putLast_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode         
   const ArenaTreeNode child)                                                            // Child
  {return         putFL_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode(0, parent, child);                     // Put a child last under its parent
  }
-#line 505 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 515 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 static  ArenaTreeNode putNP_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode                                           //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -597,7 +607,7 @@ static  ArenaTreeNode putPrev_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode         
   const ArenaTreeNode child)                                                            // Child
  {return        putNP_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode(0, sibling, child);                     // Put child previous
  }
-#line 547 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 557 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 //D1 Traverse                                                                   // Traverse a tree.
 
@@ -605,10 +615,11 @@ static void by_ArenaTreeNode_sub                                                
  (ArenaTreeNode node,                                                                   // Node
   void (* const function) (const ArenaTreeNode node))                                   // Function
  {void children(const ArenaTreeNode parent)                                             // Process the children of the specified parent
-   {const size_t N = parent.proto->countChildren(parent);                                    // Number of children
-    ArenaTreeNode c[N+1];                                                               // Array of children terminated by a trailing zero
-    size_t n = 0; ArenaTreefe(child, parent) c[n++] = child;                            // Load each child into an array
-    for(size_t i = 0; i < N; ++i) children(c[i]);                               // Process each child allowing it to change position
+   {if (!parent.proto->valid(parent)) return;
+    const size_t N = parent.proto->countChildren(parent);                                    // Number of children
+    size_t c[N+1];                                                              // Array of children terminated by a trailing zero
+    size_t n = 0; ArenaTreefe(child, parent) c[n++] = child.offset;                     // Load each child into an array
+    for(size_t i = 0; i < N; ++i) children(newArenaTreeNode(({struct ArenaTreeNode t = {tree: parent.tree, offset: c[i], proto: &ProtoTypes_ArenaTreeNode}; t;})));            // Process each child allowing it to change position
     function(parent);                                                           // Process the parent
    }
   children(node);                                                               // Start at the specified root node
@@ -617,15 +628,21 @@ static void by_ArenaTreeNode_sub                                                
 static void by_ArenaTree_sub                                                            // Traverse a tree in post-order calling the specified function to process each child node.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
  (const ArenaTree tree,                                                                 // Tree
   void (* const function) (const ArenaTreeNode node))                                   // Function
- {const ArenaTreeNode n = tree.proto->root(tree);                                                  // Start at the root
-  n.proto->by(n, function);
+ {const ArenaTreeNode root = tree.proto->root(tree);
+  const size_t   N = tree.proto->countChildren(tree);                                      // Number of children under root
+  size_t c[N+1];                                                                // Array of children terminated by a trailing zero
+  size_t n = 0; ArenaTreefe(child, root) c[n++] = child.offset;                         // Load each child into an array
+  for(size_t i = 0; i < N; ++i)
+   {ArenaTreeNode n = newArenaTreeNode(({struct ArenaTreeNode t = {tree: tree, offset: c[i], proto: &ProtoTypes_ArenaTreeNode}; t;}));                              // Process each child allowing it to change position
+    n.proto->by(n, function);
+   }
+  function(root);
  }
 
 static  size_t countChildren_size_ArenaTree                                             // Count the number of children directly under a parent.
  (const ArenaTree tree)                                                                 // ArenaTree
  {size_t l = 0;
   const ArenaTreeNode root = tree.proto->root(tree);
-  if (!root.proto->valid(root)) return 0;
   ArenaTreefe(child, root) ++l;
   return l;                                                                     // Return count
  }
@@ -637,12 +654,13 @@ static  size_t countChildren_size_ArenaTreeNode                                 
   return l;                                                                     // Return count
  }
 
-static  size_t count_size_ArenaTreeNode                                                 // Count the number of nodes under a specified node.
+static  size_t count_size_ArenaTreeNode                                                 // Count the number of nodes under a specified node but not including the specified node.
  (const ArenaTreeNode node)                                                             // Node
  {size_t l = 0;
 
   void count(const ArenaTreeNode parent)                                                // Process the children of the specified parent
-   {l++; ArenaTreefe(child, parent) count(child);                                       // Each child
+   {if (!parent.proto->valid(parent)) return;
+    l++; ArenaTreefe(child, parent) count(child);                                       // Each child
    }
 
   count(node);                                                                  // Start at the specified node
@@ -652,8 +670,11 @@ static  size_t count_size_ArenaTreeNode                                         
 
 static  size_t count_size_ArenaTree                                                     // Count the number of nodes in a tree
  (const ArenaTree tree)                                                                 // Tree
- {const ArenaTreeNode root = tree.proto->root(tree);
-  return root.proto->count(root);
+ {size_t l = 0;
+
+  const ArenaTreeNode root = tree.proto->root(tree);                                               // Root is always valid
+  ArenaTreefe(child, root) l += 1 + child.proto->count(child);                                      // Child under root plus its children
+  return l;                                                                     // Return count without counting the root node
  }
 
 //D1 Print                                                                      // Print Arena Trees in various ways
@@ -804,7 +825,9 @@ static  ArenaTreeNode cut_ArenaTreeNode_ArenaTreeNode                           
 
 static  ArenaTreeNode unwrap_ArenaTreeNode_ArenaTreeNode                                                // Unwrap the specified parent and return it.
  (const ArenaTreeNode parent)                                                           // Parent to unwrap
- {for  (ArenaTreeNode child = parent.proto->last(parent); child.proto->valid(child); child = parent.proto->last(parent))     // Each child in a parent from first to last
+ {for(ArenaTreeNode child = newArenaTreeNode(({struct ArenaTreeNode t = {tree: parent.tree, offset: parent.proto->last(parent).offset, proto: &ProtoTypes_ArenaTreeNode}; t;})); // Remove last children
+    child.proto->valid(child);
+    child.offset = parent.proto->last(parent).offset)
    {parent.proto->putNext(parent, child.proto->cut(child));                                              // Place each child after the parent
    }
   return parent.proto->cut(parent);                                                          // Remove and return empty parent
@@ -878,10 +901,11 @@ void test0()                                                                    
 
   for(int i = 0; i < 10; ++i)                                                   // Load tree
    {char s[2] = {'a'+i, 0};
-    ArenaTreeNode         child = t.proto->node(t, s); root.proto->putLast(root, child);
-                  child = t.proto->node(t, s); root.proto->putFirst(root, child);
-    s[0] = 'A'+i; child.proto->setKey(child, s);
-    assert(strcmp(child.proto->key(child), s) == 0);
+
+    ArenaTreeNode c1 = t.proto->node(t, s); root.proto->putLast(root, c1);
+    ArenaTreeNode c2 = t.proto->node(t, s); root.proto->putFirst(root, c2);
+    s[0] = 'A'+i; c2.proto->setKey(c2, s);
+    assert(strcmp(c2.proto->key(c2), s) == 0);
    }
 
   if (1)                                                                        // For each
@@ -931,11 +955,10 @@ void test2()                                                                    
   assert(t.proto->printsWithBracketsAs(t, "a(b(c(de)f)g(hi)j)"));
   assert(t.proto->printContains(t, "def"));
 
-  char l[t.proto->count(t) + 1]; *l = 0;
+  char l[t.proto->count(t) + 2], *p = l;
 
-  void process(ArenaTreeNode n) {strcat(l, n.proto->key(n));}
+  void process(ArenaTreeNode n) {p = stpcpy(p, n.proto->key(n)); *p = 0;}
   t.proto->by(t, process);
-
   assert(strcmp(l, "decfbhigja") == 0);
 
   t.proto->free(t);
@@ -977,9 +1000,11 @@ void test4()                                                                    
  {ArenaTree t = makeArenaTree();    t.proto->fromLetters(t, "b(c(de(f)gh)i)j");
   assert(t.proto->printsWithBracketsAs(t, "a(b(c(de(f)gh)i)j)"));
 
+
   ArenaTreeNode c = t.proto->findFirst(t, "c");
-  ArenaTreeNode d = t.proto->findFirst(t, "d");
-  assert(d.proto->equalsString(d, "d"));
+
+  assert(c.proto->equalsString(c, "c"));
+  ArenaTreeNode d = t.proto->findFirst(t, "d"); assert(d.proto->equalsString(d, "d"));
   ArenaTreeNode e = t.proto->findFirst(t, "e"); assert(e.proto->equalsString(e, "e"));
   ArenaTreeNode f = t.proto->findFirst(t, "f"); assert(f.proto->equalsString(f, "f"));
   ArenaTreeNode g = t.proto->findFirst(t, "g"); assert(g.proto->equalsString(g, "g"));
