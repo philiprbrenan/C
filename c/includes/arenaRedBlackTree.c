@@ -543,8 +543,7 @@ static ReadOnlyBytes sprintRoot_string_rootArenaRedBlackTreeNode                
    }
   len(root, 0);                                                                 // Set size of print
 
-  const ReadOnlyBytes r = makeReadOnlyBytesBuffer(l);                           // Output area
-  char * p = r.data;
+  char data[l+1], *p = data;                                                    // Output area
 
   void print(const ArenaRedBlackTreeNode node, size_t depth)                                    // Print to allocated string
    {if (!node.proto->valid(node)) return;                                                  // No such node
@@ -556,7 +555,7 @@ static ReadOnlyBytes sprintRoot_string_rootArenaRedBlackTreeNode                
    }
 
   print(root, 0);                                                               // Print to buffer
-
+  const ReadOnlyBytes r = makeReadOnlyBytesDupN(data, l);                       // Create read only bytes
   return r;                                                                     // Please free the returned string when done.
  }
 
