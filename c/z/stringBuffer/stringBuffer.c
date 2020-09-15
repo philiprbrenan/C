@@ -190,9 +190,10 @@ static size_t substring_size_$_int_int_string                                   
 static ReadOnlyBytes readOnlyBytes_$                                            // Create a read only bytes string from the $.
  (const $ buffer)                                                               // $
  {const size_t l = buffer ▷ length;
-  const ReadOnlyBytes r = makeReadOnlyBytesBuffer(l);
-  char * p = r.data;
+  char data[l+1];
+  char * p = data;
   ArenaTreefe(c, buffer.string) p = stpcpy(p, c ▷ key);
+  const ReadOnlyBytes r = makeReadOnlyBytesDupN(data, l);
   return r;
  }
 #endif
