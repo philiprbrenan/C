@@ -50,14 +50,14 @@ static $Tag make$Tag_$Parse_ArenaTreeNode                                       
 
 static $Parse make$ParseFromFile                                                // Make a parse $ from the contents of a file
  (FileName            fileName)                                                 // Name of file holding $
- {$Parse              x = new$Parse;
+ {const ReadOnlyBytes b = makeReadOnlyBytesFromFile(fileName);                  // String to parse
+  $Parse              x = new$Parse(data: b, fileName: fileName);
   const ArenaTree     t = x.tree      = makeArenaTree();                        // Parse tree,
   const ArenaTree     e = x.errors    = makeArenaTree();                        // Errors list
                       x.possibilities = makeArenaRedBlackTree();                // Single Step Validation
                       x.first         = makeArenaRedBlackTree();                // First set of possibilities for each tag
                       x.next          = makeArenaRedBlackTree();                // Next set of possibilities for each Dita child tag under a given parent tag
-  const FileName      f = x.fileName  = fileName;                               // Name of file containing parse
-  const ReadOnlyBytes b = x.data      = makeReadOnlyBytesFromFile(f);           // String to parse
+                      x.fileName  = fileName;                                   // Name of file containing parse
   ArenaTreeNode       P = t ▷ root;                                             // Current parent node
 
   $Parse error                                                                  // Report an error message adding the file name involved on the following line
@@ -225,8 +225,8 @@ static int tagStringEquals_$Tag_string                                          
 
 //D1 Navigation                                                                 // Navigate through an $ parse tree.
 
-#define $fe( child, parent) for($Tag child = parent ▷ first; child ▷ valid; child = child ▷ next)  // Each child in a parent from first to last
-#define $fer(child, parent) for($Tag child = parent ▷ last;  child ▷ valid; child = child ▷ prev)) // Each child in a parent from last to first
+#define $fe( child, parent) for($Tag child = new $Tag(xml: parent.xml, node: parent ▷ first.node); child ▷ valid; child.node = child ▷ next.node)  // Each child in a parent from first to last
+#define $fer(child, parent) for($Tag child = new $Tag(xml: parent.xml, node: parent ▷ last.node);  child ▷ valid; child,node = child ▷ prev.node)) // Each child in a parent from last to first
 
 static $Tag first_$Tag                                                          // Return the first child tag under the specified parent tag.
  (const $Tag parent)                                                            // Parent tag
@@ -307,11 +307,11 @@ static $Tag findFirstTag_$Tag_$Tag_string                                       
  (const $Tag   parent,                                                          // Parent tag
   const char * const key)                                                       // Name of the tag to find
  {jmp_buf found;
-  $Tag T = new $Tag;                                                            // Tag found if any
+  $Tag T = new $Tag(xml: parent.xml);                                           // Tag found if any
 
   void find(const $Tag tag)                                                     // Check whether the name of the tag matches the specified key
    {if (tag ▷ tagNameEquals(key))
-     {T = tag;                                                                  // Found
+     {T.node = tag.node;                                                        // Found matching node
       longjmp(found, 1);
      }
    }
