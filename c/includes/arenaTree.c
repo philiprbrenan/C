@@ -728,7 +728,7 @@ static ReadOnlyBytes print_string_ArenaTreeNode                                 
   len(node);
   const ArenaTreeString s = p = alloc(l+1); *s = 0;
   print(node);
-  return newReadOnlyBytes(({struct ReadOnlyBytes t = {data:s, length: l, ReadOnlyBytesAllocator_malloc, proto: &ProtoTypes_ReadOnlyBytes}; t;}));
+  return makeReadOnlyBytes(s, l, ReadOnlyBytesAllocator_malloc);
  }
 
 static ReadOnlyBytes print_string_ArenaTree                                             // Print an entire tree in preorder as a string.
