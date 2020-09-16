@@ -19,7 +19,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#define say(args...) fprintf(stderr, args)                                      // Say something
+#define say(format...) fprintf(stderr, format)                                  // Say something using the specifed format
+
+// Create a local string with the specified name from the specified format assuming that most of the time it will have less than the specified number of characters (N).
+#define lsprintf(a,N,format...) char a##c[N+1]; const size_t a##l = snprintf(a##c, N, format); char a[a##l+1]; if (a##l > N) sprintf(a, format); else memcpy(a, a##c, a##l+1);
 
 //D1 Errors                                                                     // Methods for reporting errors
 
@@ -123,6 +126,11 @@ void test1()                                                                    
 
 void test2()                                                                    //Talloc
  {free(alloc(4));
+  char a[4]; a[0] = 'a'; a[1] = 'b'; a[2] = 0;
+  lsprintf(aa, 2, "%s%s", a, a);
+  assert(!strcmp(aa, "abab"));
+  lsprintf(bb, 5, "%s%s", a, a);
+  assert(!strcmp(bb, "abab"));
  }
 
 int main(void)                                                                  // Run tests
