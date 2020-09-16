@@ -214,7 +214,7 @@ if ($perl)                                                                      
    }
  }
 elsif ($c)                                                                      # GCC
- {my $lp = '';
+ {my $lp = '-lm ';
   my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8);
 
   $lp .= " -lX11" if $file =~ m(/x/);                                           # X windows
