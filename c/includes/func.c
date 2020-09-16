@@ -7,13 +7,14 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-typedef char * (*fn_type bbb) (char *);
+typedef char (*fn_type) (void);
 
-char * aaa(char * a) {return a;}
+char aaa(fn_type a) {return a();}
 
 
 int main(void)
- {fn_type a = aaa;
-  printf("%s\n", a("a"));
+ {char bbb(void) {return 'b';}
+  fn_type ccc {return 'c';}
+  printf("AAAA %c\n", aaa(bbb));
   return 0;
  }
