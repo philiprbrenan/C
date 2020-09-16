@@ -1,4 +1,4 @@
-#line 1 "/home/phil/c/g/tests/example-4.c"
+#line 1 "/home/phil/c/g/z/example-4.c"
 #include <gtk/gtk.h>
 
 /* Surface to store current scribbles */
@@ -8,6 +8,8 @@ static void
 clear_surface (void)
 {
   cairo_t *cr;
+
+  GdkDrawingContext *cc = gdk_cairo_get_drawing_context(cr);
 
   cr = cairo_create (surface);
 
