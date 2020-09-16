@@ -258,7 +258,7 @@ elsif ($c)                                                                      
     my  $result = qx($c);
     lll $result;
     unlink $o; # $g;
-    exit(1) if $file =~ m(/z/) and $result !~ m(SUCCESS);                       # Confirm successful
+    exit(1) if $file =~ m(/c/z/) and $result !~ m(SUCCESS);                     # Confirm successful when running tests
 
     if ($coverage)                                                              # Place coverage files in a sub folder
      {my $c = qq(gcov $a);
