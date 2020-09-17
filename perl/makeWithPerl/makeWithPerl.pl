@@ -46,43 +46,45 @@ my $javaClasses = fpd($javaHome, qw(Classes));                                  
 my $androidJar  = fpe(qw(/home phil Android sdk platforms android-25 android jar));
 my $swtJar      = fpe(qw(/home phil java    swt jars swt jar));
 my $classPath   = join ':', $javaClasses, $androidJar, $swtJar;                 # Class path to classes created locally and well know jars
+my $androidLog;                                                                 # Android log
+my $bash;                                                                       # Bash
+my $c;                                                                          # C
 my $cIncludes   = fpd(qw(/home phil c includes));                               # C includes folder
 my $compile;                                                                    # Compile
-my $run;                                                                        # Run
-my $doc;                                                                        # Documentation
-my $c;                                                                          # C
 my $coverage;                                                                   # Get coverage of code
 my $cpp;                                                                        # C++
+my $doc;                                                                        # Documentation
 my $html;                                                                       # Html
-my $perl;                                                                       # Perl
-my $python;                                                                     # Python
 my $java;                                                                       # Java
 my $javascript;                                                                 # Javascript
-my $bash;                                                                       # Bash
+my $optimize;                                                                   # Run with valgrind to check for memory leaks
+my $perl;                                                                       # Perl
+my $python;                                                                     # Python
+my $run;                                                                        # Run
 my $vala;                                                                       # Vala
-my $valgrind;                                                                   # Run with valgrind to check for memory leaks
-my $androidLog;                                                                 # Android log
+my $valgrind;                                                                   # Run optimizing compiler
 my $xmlCatalog  = q(/home/phil/z/r/dita/dita-ot-3.1/catalog-dita.xml);          # Standard xml catalog
 my $xmlHPE      = q(/home/phil/r/hp/dtd/Dtd_2016_07_12/catalog-hpe.xml);        # HPE catalog
 my $xmlSF       = q(/home/phil/r/dita/salesForce/catalog.xml);                  # SF catalog
 
-GetOptions
- ('compile'     =>\$compile,
-  'run'         =>\$run,
+GetOptions(
+  'androidLog'  =>\$androidLog,
+  'bash'        =>\$bash,
   'c'           =>\$c,
+  'cIncludes=s' =>\$cIncludes,
+  'compile'     =>\$compile,
+  'coverage'    =>\$coverage,
   'cpp'         =>\$cpp,
   'doc'         =>\$doc,
   'html'        =>\$html,
+  'java'        =>\$java,
+  'javascript'  =>\$javascript,
+  'optimize'    =>\$optimize,
   'perl'        =>\$perl,
   'python'      =>\$python,
-  'java'        =>\$java,
-  'bash'        =>\$bash,
+  'run'         =>\$run,
   'vala'        =>\$vala,
-  'javascript'  =>\$javascript,
-  'androidLog'  =>\$androidLog,
-  'cIncludes=s' =>\$cIncludes,
   'valgrind'    =>\$valgrind,
-  'coverage'    =>\$coverage,
  );
 
 unless($compile or $run or $doc or $html or $androidLog)                        # Check action
@@ -214,34 +216,36 @@ if ($perl)                                                                      
    }
  }
 elsif ($c)                                                                      # GCC
- {my $lp = '-lm ';
-  my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8);
+ {# my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8 -fopenmp -fopenacc -foffload=nvptx-none);
+  my $cp = join ' ', map {split /\s+/} grep {!/\A#/} split /\n/, <<END;         # Compiler options
+-finput-charset=UTF-8 -fmax-errors=132 -rdynamic
+-Wall -Wextra -Wno-unused-function
+-fopenmp -foffload=nvptx-none
+#-fopenacc
+END
+     $cp .= " -I$cIncludes" if $cIncludes;                                      # Our include files
 
-  $lp .= " -lX11" if $file =~ m(/x/);                                           # X windows
+  my $lp  = ' -lm';                                                             # Linker options - math lib
+     $lp .= " -lX11" if $file =~ m(/x/);                                        # X windows
 
-  if ($file =~ m(/g/))                                                          # GTK
+  if ($file =~ m(/g/))                                                          # GTK options and libraries if we are in a graphics folder
    {for my $lib(qw(gtk+-3.0 glib-2.0))
      {$cp .= ' '.trim(qx(pkg-config --cflags $lib));
       $lp .= ' '.trim(qx(pkg-config --libs   $lib));
      }
    }
 
-  my $optimize = 0;                                                             # Whether to optimize or not
-# '--coverage -aux-info /tmp/aux-info.data';
-  my $opt  = ' -Wno-unused-function';
-     $opt .= $optimize ? ' -O3' : ' -ggdb';
-     $opt .= $coverage ? ' --coverage' : '';
-
-  my $gcc  = "gcc $opt  -fmax-errors=132 -rdynamic -Wall -Wextra $cp";          # Options: rdynamic required for printStackBackTrace
-     $gcc .= " -I$cIncludes";                                                   # Includes
+     $lp .= $optimize ? ' -O3' : ' -ggdb';                                      # Optimization argument
+     $lp .= $coverage ? ' --coverage' : '';                                     # Coverage     argument
 
   my $cFile = fpe($cIncludes, fn($file), q(c));                                 # Preprocess output
   my $hFile = fpe($cIncludes, fn($file).q(_prototypes), q(h));                  # Prototypes
 
   Preprocess::Ops::c($file, $cFile, $hFile);                                    # Preprocess
 
+  my $gcc = 'gcc';                                                              # Gcc version 10
   if ($compile)
-   {my $cmd = qq($gcc -c "$cFile" -o /dev/null);                                # Syntax check
+   {my $cmd = qq($gcc $cp -c "$cFile" -o /dev/null);                            # Syntax check
     say STDERR $cmd;
     print STDERR $_ for qx($cmd);
    }
@@ -253,7 +257,7 @@ elsif ($c)                                                                      
 #   my $c = qq(rm $e $o $a 2>/dev/null; $gcc -o "$e" "$cFile" $lp; gdb -batch-silent -x $g $e 2>&1);
     unlink $e, $o, $a;
 
-    my  $c = qq($gcc -o "$e" "$cFile" $lp && $e 2>&1);                          # Compile and run
+    my  $c = qq($gcc $cp -o "$e" "$cFile" $lp && $e 2>&1);                      # Compile and run
     lll qq($c);
     my  $result = qx($c);
     lll $result;
