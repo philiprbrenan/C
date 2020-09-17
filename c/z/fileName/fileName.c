@@ -126,7 +126,7 @@ static void unlink_$                                                            
 static size_t b2SumW8_$                                                         // Get a BLAKE2 digest for a file represented as two hex digits.
  (const $ i)                                                                    // Name of file containing content for which we want a digest.
  {const $ o = make$Temporary("o.txt");                                          // File to receive output
-  Utilities_system("b2sum -l 8 < %s > %s", i.name, o.name);                     // Execute Blake command via shell
+  execSystemCommand("b2sum -l 8 < %s > %s", i.name, o.name);                    // Execute Blake command via shell
   char * const r = o ▷ readFile;                                                // Read results from command
   const size_t d = strtol(r, NULL, 16);                                         // Convert result from hex string to integer
   free(r);                                                                      // Free read string
@@ -137,7 +137,7 @@ static int equalsString_int_$_string                                            
  (const $      file,                                                            // File
   const char * const expected)                                                  // Zero terminated string of expected content
  {char * const r = file ▷ readFile;                                             // Read results
-  const int R = !strcmp(r, expected);                                                  // Check results
+  const int R = !strcmp(r, expected);                                           // Check results
   free(r);
   return R;
  }
@@ -146,7 +146,7 @@ static int containsString_int_$_string                                          
  (const $      file,                                                            // File
   const char * const expected)                                                  // Zero terminated string of expected content
  {char * const r = file ▷ readFile;                                             // Read results
-  const int R = !!strstr(r, expected);                                                 // Check results
+  const int R = !!strstr(r, expected);                                          // Check results
   free(r);
   return R;
  }
