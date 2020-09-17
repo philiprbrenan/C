@@ -71,7 +71,7 @@ void * __attribute__ ((unused)) alloc                                           
 
 //D1 System commands                                                            // Execute system commands
 
-void $_system                                                                   // Execute a command via the shell
+void execSystemCommand                                                          // Execute a command via the shell
  (const char *format, ...)                                                      // Format of command
  {va_list arg;
   va_start(arg, format);
