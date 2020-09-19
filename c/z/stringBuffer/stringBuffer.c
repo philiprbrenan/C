@@ -3,7 +3,7 @@
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
 #define _GNU_SOURCE
-#include <readOnlyBytes.c>
+#include <ctype.h>
 #include <arenaTree.c>
 #include <utilities.c>
 
@@ -13,13 +13,15 @@
 #define $_included_$
 typedef struct $                                                                // $
  {const struct ProtoTypes_$ *proto;                                             // Prototypes for methods
-  ArenaTree string;                                                             // String being built
+  ArenaTree     string;                                                         // String being built
  } $;
 #endif
 
 #ifndef $_included
 #define $_included
 #include <$$_prototypes.h>
+#define $fe( child, parent) for(ArenaTreeNode child = parent.string ▷ first; child ▷ valid; child = child ▷ next) // Each child in a parent from first to last
+#define $fer(child, parent) for(ArenaTreeNode child = parent.string ▷ last ; child ▷ valid; child = child ▷ prev) // Each child in a parent from last to first
 
 static $ make$                                                                  // Make a $
  ()                                                                             //
@@ -27,12 +29,19 @@ static $ make$                                                                  
   return new$(string: string);
  }
 
+static $ make$FromString                                                        // Make a $ from a string
+ (const char * const string)                                                    // String
+ {b ◁ make$();
+  b ▷ add(string);
+  return b;
+ }
+
 static void free_$                                                              // Free a $
  (const $ buffer)                                                               // $
  {buffer.string ▷ free;
  }
 
-//D1 Concatenate                                                                // Concatenate various items
+//D1 Concatenate                                                                // Concatenate various items to a string buffer.
 
 static void add_$_string                                                        // Concatenate a string
  (const $ buffer,                                                               // $
@@ -41,11 +50,21 @@ static void add_$_string                                                        
   s ▷ putTreeLast;
  }
 
-static void addReadOnlyBytes_$_readOnlyBytes                                    // Concatenate a read only bytes
- (const $             buffer,                                                   // $
-  const ReadOnlyBytes string)                                                   // Read only bytes
- {const ArenaTreeNode s = buffer.string ▷ noden(string.data, string.length);
+static void addn_$_string                                                       // Concatenate a string of known length
+ (const $            buffer,                                                    // $
+  const char * const string,                                                    // String
+  const size_t        length)                                                    // String length
+ {s ◁ buffer.string ▷ noden(string, length);
   s ▷ putTreeLast;
+ }
+
+static void add$_$_$                                                            // Add a string buffer
+ (const $ buffer,                                                               // Target $
+  const $ add)                                                                  // Source $
+ {const size_t l = buffer ▷ count;
+  char *s[l];
+  size_t i = 0; $fe(line, add) s[i++] = line ▷ key;
+  for(size_t i = 0; i < l; ++i) buffer ▷ add(s[i]);
  }
 
 static void addVaFormat_$_string_va                                             // Add a variadic argument formatted string
@@ -67,7 +86,6 @@ static void addVaFormat_$_string_va                                             
                         s ▷ putTreeLast;
    }
  }
-
 
 static void addFormat_$_strings                                                 // Add a formatted string
  (const $ buffer,                                                               // $
@@ -104,6 +122,55 @@ static void addDoubleQuote_$                                                    
 static void addQuotedNewLine_$                                                  // Add a quoted new line
  (const $ buffer)                                                               // $
  {buffer ▷ add("\\n");
+ }
+
+//D1 Join and Split                                                             // Join all the sub strings in the strin buffer into one string. Split the contents of the string buffer on spaces or new lines.
+
+static size_t count_$                                                           // Count the number of sub strings in the buffer
+ (const $ buffer)                                                               // $
+ {return buffer.string ▷ countChildren;                                         // Count the number of sub strings
+ }
+
+static void join_$                                                              // Join in place - join all the sub strings in the specified string buffer and replace them with one string.
+ (const $ old)                                                                  // $
+ {C ◁ old.string ▷ countChildren;                                               // Number of sub strings
+  if (C <= 1) return;                                                           // Already joined
+  N ◁ old ▷ length;                                                             // Length of joined string
+  char b[N+1]; old ▷ string(b);
+  new ◁ make$();                                                                // New string buffer
+  new ▷ add(b);                                                                 // Load new buffer from joined string
+  old.string ▷ swap(new.string);                                                // Swap arenas so that the old becomes the new
+  new ▷ free;                                                                   // Free old arena
+ }
+
+static StringBuffer splitLines                                                  // Split the specified $ on any new line characters and return the split text as a new $
+ (const $ string)                                                               // $
+ {r ◁ make$();                                                                  // Results
+  N ◁ string ▷ length;                                                          // Length of current string
+  char s[N+1]; string ▷ string(s);                                              // Linearize current string
+  size_t i = 0, j = 0;                                                          // Line start and end
+  void save()                                                                   // Save a string
+   {r ▷ addn(s+j, i - j + 1);
+    j = i+1;
+   }
+  for(; i < N; ++i) if (s[i] == '\n') save();
+  if (  i > j) save();
+  return r;
+ }
+
+static StringBuffer splitWords                                                  // Split the specified $ into words delimited by spaces and return the split text as a new $
+ (const $ string)                                                               // $
+ {r ◁ make$();                                                                  // Results
+  N ◁ string ▷ length;                                                          // Length of current string
+  char s[N+1]; string ▷ string(s);                                              // Linearize current string
+  size_t i = 0, j = 0;                                                          // Line start and end
+  void save()                                                                   // Save a string
+   {if (i > j) r ▷ addn(s+j, i - j);
+    j = i+1;
+   }
+  for(; i < N; ++i) if (isspace(s[i])) save();
+  save();
+  return r;
  }
 
 //D1 Statistics                                                                 // Statistics on the contents of the $.
@@ -189,38 +256,84 @@ static size_t substring_size_$_int_int_string                                   
   return n;                                                                     // Actual length of sub string
  }
 
-static ReadOnlyBytes readOnlyBytes_$                                            // Create a read only bytes string from the $.
- (const $ buffer)                                                               // $
- {const size_t l = buffer ▷ length;
-  char data[l+1];
-  char * p = data;
-  ArenaTreeNode  root = buffer.string ▷ root;
-  ArenaTreefe(c, root) p = stpcpy(p, c ▷ key);
-  const ReadOnlyBytes r = makeReadOnlyBytesDupN(data, l);
-  return r;
+//D1 Read and Write                                                             // Read/write a string buffer from/to named and temporary files.
+
+static ssize_t writeToFileHandle                                                //P Write a $ as a string to a file handle and return the non negative number of bytes written or a negative error.
+ (const $            buffer,                                                    // $
+  const int          d,                                                         // Base name of the file
+  const char * const fileName)                                                  // The name of the file being written to
+ {ssize_t N = 0;
+  $fe(line, buffer)
+   {k ◁ line ▷ key;
+    l ◁ strlen(k);
+    w ◁ write(d, k, l);
+    if (w < 0 || (size_t)w != (size_t)l)
+     {printStackBackTrace
+       ("Unable to write file because: %m\nFile: %s\n", fileName);
+      return -1;
+     }
+    else N += l;
+   }
+  return N;
  }
+
+static  $ writeTemporaryFile_$_string                                           // Write a $ as a string to a temporary file with the specified base name and return the full name of the file created as a string buffer.
+ (const $            buffer,                                                    // $
+  const char * const fileName)                                                  // Base name of the file
+ {fullFileName ◁ make$();                                                       // String buffer to record full file name of file created
+
+  ssize_t writer(int d, char *f)                                                // Write
+   {if (buffer ▷ writeToFileHandle(d, f) >= 0) fullFileName  ▷ add(f);          // Record full file name of temporary file name created if content was written successfully
+    return 0;                                                                   // Success is now determined by whether the temporary file name was created in the returned string buffer or not.
+   }
+
+  makeTemporaryFileWithContent(fileName, writer);                               // Create temporary file and write to it
+  return fullFileName;
+ }
+
+static ssize_t writeFile_$_string                                               // Write a $ as a string to the specified file
+ (const $            buffer,                                                    // $
+  const char * const fileName)                                                  // Base name of the file
+ {ssize_t writer(int d)                                                         // Write
+   {return buffer ▷ writeToFileHandle(d, fileName);
+   }
+  return writeFile(fileName, writer);                                           // Write to file and return bytes written
+ }
+
+static void writeStderr_$                                                       //P Write a $ as a string to stderr
+ (const $ buffer)                                                               // $
+ {buffer ▷ writeToFileHandle(fileno(stderr), "stderr");
+ }
+
+static $ readFile_$_string                                                      // Read a file and returns its content as a string buffer.
+ (const $ fileName)                                                             // Name of the file as the content of a string buffer
+ {buffer ◁ make$();                                                             // Content will appear here
+  ssize_t reader(char * location, size_t length)                                // File content
+   {buffer ▷ addn(location, length);                                            // Place content in $
+    return 0;                                                                   // Success is now determined by the content of the $
+   }
+  N ◁ fileName ▷ length;                                                        // Length of file name
+  char f[N+1]; fileName ▷ string(f);
+  readFile(f, reader);                                                          // Read file
+  return buffer;                                                                // Content read
+ }
+
 #endif
 
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
 
-void test0()                                                                    //Tmake$ //Tadd //TaddFormat //TaddReadOnlyBytes //Tlength //Tstring //Tfree
- {$ s = make$();
-    s ▷ add("Hello"); assert(s ▷ length == 5);
-    s ▷ add(" ");
-    s ▷ add("world");
-  ReadOnlyBytes r = s ▷ readOnlyBytes;
-  assert(r ▷ equalsString("Hello world"));
-  int i = 0;
-    s ▷ addFormat(" - %d ", ++i);
-    s ▷ addReadOnlyBytes(r);
-    s ▷ addFormat(" - %d",   ++i);
-  ReadOnlyBytes p = s ▷ readOnlyBytes;
-  assert(p ▷ equalsString("Hello world - 1 Hello world - 2"));
-  p ▷ free; r ▷ free; s ▷ free;
+void test0()                                                                    //Tmake$ //Tadd //TaddFormat //TaddStringBuffer //Tfree
+ {s ◁ make$();
+  s ▷ add("Hello"); assert(s ▷ length == 5);
+  s ▷ add(" ");
+  s ▷ addStringBuffer(s);
+  s ▷ addFormat("%s", "World");
+  assert(s ▷ equalsString("Hello Hello World"));
+  s ▷ free;
  }
 
-void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //TreadOnlyBytes //Tsubstring //TsubstringEquals
+void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //Tsubstring //TsubstringEquals //Tjoin //Tcount
  {$ a = make$();   $ b = make$(); $ c = make$();
     a ▷ add("ab");   b ▷ add("a");  c ▷ add("aba");
     a ▷ add("c");    b ▷ add("bc"); c ▷ add("bc");
@@ -248,25 +361,92 @@ void test1()                                                                    
     assert(!strcmp(buffer, "bab"));
    }
 
-  ReadOnlyBytes A = a ▷ readOnlyBytes, B = b ▷ readOnlyBytes;
-  assert(A ▷ equals(B));
+  c ▷ join;
+  assert(c ▷ count <= 1);
+  assert(c ▷ equalsString("ababc"));
 
-  a ▷ free; b ▷ free; c ▷ free; A ▷ free; B ▷ free;
+  a ▷ free; b ▷ free; c ▷ free; //A ▷ free; B ▷ free;
  }
 
-void test2()                                                                    //TaddChar //TaddNewLine
- {$ a = make$();
-    a ▷ addChar('a');
-    a ▷ addNewLine;
-    a ▷ addSingleQuote;
-    a ▷ addDoubleQuote;
-  assert( a ▷ equalsString("a\n'\""));
+void test2()                                                                    //TaddChar //TaddNewLine //Tb2SumW8 //TaddDoubleQuote //TaddSingleQuote
+ {a ◁ make$();
+  a ▷ addChar('a');
+  a ▷ addNewLine;
+  a ▷ addSingleQuote;
+  a ▷ addDoubleQuote;
+  assert(a ▷ equalsString("a\n'\""));
+  a ▷ free;
+ }
+
+void test3()                                                                    //TsplitLines //Tmake$FromString
+ {a  ◁ make$FromString("a\nbb\nccc\ndddd\n");
+  s  ◁ a ▷ splitLines;
+  s1 ◁ s.string ▷ first; assert(s1 ▷ equalsString("a\n"));
+  s2 ◁ s1 ▷ next;        assert(s2 ▷ equalsString("bb\n"));
+  s3 ◁ s2 ▷ next;        assert(s3 ▷ equalsString("ccc\n"));
+  s4 ◁ s3 ▷ next;        assert(s4 ▷ equalsString("dddd\n"));
+  a  ▷ free; s ▷ free;
+ }
+
+void test4()                                                                    //TsplitWords
+ {a  ◁ make$FromString("  a\nbb   ccc dddd\n\n  ");
+  s  ◁ a ▷ splitWords;
+  s1 ◁ s.string ▷ first; assert(s1 ▷ equalsString("a"));
+  s2 ◁ s1 ▷ next;        assert(s2 ▷ equalsString("bb"));
+  s3 ◁ s2 ▷ next;        assert(s3 ▷ equalsString("ccc"));
+  s4 ◁ s3 ▷ next;        assert(s4 ▷ equalsString("dddd"));
+  a  ▷ free; s ▷ free;
+ }
+
+void test5()                                                                    //TreadFile //TwriteTemporaryFile
+ {c ◁ "a\nbb\nccc\ndddd\n";
+  a ◁ make$FromString(c);
+  f ◁ a ▷ writeTemporaryFile("a.txt");
+  b ◁ f ▷ readFile;
+  assert(b ▷ equalsString(c));
+  a ▷ free; b ▷ free; f ▷ free;
+ }
+
+void test6()                                                                    //TwriteFile //Tlength //Tstring //Taddn
+ {F ◁ "a.txt";
+  c ◁ "a\nbb\nccc\ndddd\n";
+
+  a ◁ make$();
+  a ▷ addn(c, strlen(c));
+
+  a ▷ writeFile(F);
+
+  f ◁ make$(); f ▷ add(F);
+  b ◁ f ▷ readFile;
+  assert(b ▷ equalsString(c));
+  assert(b ▷ length == strlen(c));
+
+  char C[b ▷ length + 1]; b ▷ string(C); assert(!strcmp(c, C));
+
+  a ▷ free; b ▷ free; f ▷ free; unlink(F);
+ }
+
+void test7()                                                                    //TaddVaFormat //TaddQuotedNewLine
+ {a ◁ make$();
+
+  void add(char *   format, ...)
+   {va_list  va;
+    va_start(va,    format);
+    a ▷ addVaFormat(format, va);
+    va_end  (va);
+   }
+
+  add("%s %s", "Hello", "World");
+  a ▷ addQuotedNewLine;
+
+  assert(a ▷ equalsString("Hello World\\n"));
 
   a ▷ free;
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
+                           test6, test7,  0};
   run_tests("$", 1, tests);
   return 0;
  }
