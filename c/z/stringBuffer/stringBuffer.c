@@ -53,7 +53,7 @@ static void add_$_string                                                        
 static void addn_$_string                                                       // Concatenate a string of known length
  (const $            buffer,                                                    // $
   const char * const string,                                                    // String
-  const size_t        length)                                                    // String length
+  const size_t       length)                                                    // String length
  {s ◁ buffer.string ▷ noden(string, length);
   s ▷ putTreeLast;
  }
