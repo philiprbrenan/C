@@ -276,17 +276,17 @@ static void get_$Node_data_size                                                 
  (const $Node  node,                                                            // Node in an arena tree associated with the data
   void * const data,                                                            // Pointer to the area into which the data is to be copied
   const size_t length)                                                          // Length of the data to be retrieved
- {node.tree ▷ get(node ▷ content->data.delta, data, length);                         // Locate data
+ {node.tree ▷ get(node ▷ content->data.delta, data, length);                    // Locate data
  }
 
-static void set_$Node_data_size                                                 // Save a copy of the specified data in the arena of the tree and return the offset of the data.
+static void set_$Node_data_size                                                 // Save the specified data in the arena of the tree and return the offset of the data.
  (const $Node  node,                                                            // Node in an arena tree to associate with the data
   const void * const data,                                                      // Pointer to the data to be saved
   const size_t length)                                                          // Length of the data to be saved
  {node ▷ content->data.delta = node.tree ▷ store(data, length).offset;          // Record offset of saved data
  }
 
-static void copyData_$Node_$Node                                                // Copy the data associated with the sourtce node to the target node by copying the offset to the data held in the source node to the target node.
+static void copyData_$Node_$Node                                                // Copy the data offset associated with the source node to the target node by copying the offset to the data held in the source node to the target node.
  (const $Node target,                                                           // Target node
   const $Node source)                                                           // Source node
  {target ▷ content->data = source ▷ content->data;                              // Copy data offset
@@ -396,7 +396,7 @@ static  $Node findFirst_$_string                                                
  (const $            tree,                                                      // Tree
   const char * const key)                                                       // Key to find
  {jmp_buf found;
-  $Node F = new $Node(tree: tree);                                                                      // An invalid node
+  $Node F = new $Node(tree: tree);                                              // An invalid node
 
   void find($Node node)                                                         // Check whether the key of the current node matches the specified key
    {if (node ▷ equalsString(key))                                               // Found
@@ -552,7 +552,9 @@ static void by_$Node_sub                                                        
     N ◁ parent ▷ countChildren;                                                 // Number of children
     size_t c[N+1];                                                              // Array of children terminated by a trailing zero
     size_t n = 0; $fe(child, parent) c[n++] = child.offset;                     // Load each child into an array
-    for(size_t i = 0; i < N; ++i) children(new $Node(tree: parent.tree, offset: c[i]));            // Process each child allowing it to change position
+    for(size_t i = 0; i < N; ++i)                                               // Process each child allowing it to change its position without changing the traversal
+     {children(new $Node(tree: parent.tree, offset: c[i]));
+     }
     function(parent);                                                           // Process the parent
    }
   children(node);                                                               // Start at the specified root node
@@ -665,7 +667,7 @@ static int printsWithBracketsAs_int_$_string                                    
 
 static StringBuffer print_string_$Node                                          // Print a node and the $ below it in preorder as a string.
  (const $Node node)                                                             // Node to print from
- {s ◁ makeStringBuffer();                                                         // String buffer being constructed
+ {s ◁ makeStringBuffer();                                                       // String buffer being constructed
 
   void print(const $Node parent)                                                // Print the children of the specified parent
    {s ▷ add(parent ▷ key);
@@ -708,7 +710,7 @@ static int printContains_$Node                                                  
  }
 
 static int printContains_$                                                      // Check the print of an $ contains the expected string.
- (const $       tree,                                                            // $ parse tree
+ (const $       tree,                                                           // $ parse tree
   const char *  expected)                                                       // Expected string
  {s ◁ tree ▷ print;
   r ◁ s ▷ containsString(expected);
