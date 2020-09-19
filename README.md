@@ -8,11 +8,9 @@ to make ANSI-C code object oriented.
 
 See the last few lines of :
 
-https://github.com/philiprbrenan/C/blob/master/c/z/arenaRedBlackTree/arenaRedBlackTree.c
+https://github.com/philiprbrenan/C/blob/master/c/z/stringBuffer/stringBuffer.c
 
-or:
+for a working example.
 
-https://github.com/philiprbrenan/C/blob/master/c/z/xml/xml.c
-
-for examples.
+(We reject: kings, presidents and voting. We believe in: rough consensus and running code. https://en.wikiquote.org/wiki/David_D._Clark)
 
