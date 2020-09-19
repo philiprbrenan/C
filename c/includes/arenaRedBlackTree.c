@@ -398,7 +398,7 @@ static ArenaRedBlackTreeNode ll_ArenaRedBlackTreeNode_ArenaRedBlackTree_strings 
 static ArenaRedBlackTreeNode add_ArenaRedBlackTreeNode_ArenaRedBlackTreeFound_ArenaRedBlackTreeNode_string                                      // Add a new key if not already present in the tree root at the specified node.
  (ArenaRedBlackTreeFound f,                                                                     // Found status for the key being added.
   ArenaRedBlackTreeNode owner)                                                                  // Invalid - the base tree. Valid - the node that owns the tree being added to.
- {const ArenaRedBlackTreeNode invalid = newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {proto: &ProtoTypes_ArenaRedBlackTreeNode};   t;}));                                                          // Return an invalid  node if the node already exists in the tree
+ {const ArenaRedBlackTreeNode invalid = newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {proto: &ProtoTypes_ArenaRedBlackTreeNode};   t;}));                                              // Return an invalid  node if the node already exists in the tree
   if (!f.different) return invalid;                                             // Key already present
 
    const typeof(f.key) key = f.key;                                                                 // The key to add
@@ -409,7 +409,9 @@ static ArenaRedBlackTreeNode add_ArenaRedBlackTreeNode_ArenaRedBlackTreeFound_Ar
 
   n.proto->setUp(n, p);                                                                 // Set parent of inserted node
 
-  for(ArenaRedBlackTreeNode p = newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {tree: n.tree, offset: n.offset, proto: &ProtoTypes_ArenaRedBlackTreeNode}; t;})); p.proto->valid(p); p.offset = p.proto->up(p).offset)                                       // Balance nodes along path back to root
+  for(ArenaRedBlackTreeNode p = newArenaRedBlackTreeNode(({struct ArenaRedBlackTreeNode t = {tree: n.tree, offset: n.offset, proto: &ProtoTypes_ArenaRedBlackTreeNode}; t;}));                      // Balance nodes along path back to root
+            p.proto->valid(p);
+            p.offset = p.proto->up(p).offset)
    {size_t height(ArenaRedBlackTreeNode p)                                                      // Height of a node
      {return p.proto->valid(p) ? p.proto->height(p) : 0;
      }
