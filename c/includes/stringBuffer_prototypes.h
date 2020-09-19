@@ -10,7 +10,7 @@ static void add_StringBuffer_string
 static void addn_StringBuffer_string
  (const StringBuffer            buffer,
   const char * const string,
-  const size_t        length);
+  const size_t       length);
 static void addStringBuffer_StringBuffer_StringBuffer
  (const StringBuffer buffer,
   const StringBuffer add);
