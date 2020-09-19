@@ -39,18 +39,6 @@ jobs:
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaTree/arenaTree.c --cIncludes c/includes
         perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaTree/arenaTree.c --cIncludes c/includes --valgrind
 
-    - name: Run fileName
-      if: always()
-      run: |
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/fileName/fileName.c --cIncludes c/includes
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/fileName/fileName.c --cIncludes c/includes --valgrind
-
-    - name: Run readOnlyBytes
-      if: always()
-      run: |
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/readOnlyBytes/readOnlyBytes.c --cIncludes c/includes
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/readOnlyBytes/readOnlyBytes.c --cIncludes c/includes --valgrind
-
     - name: Run stringBuffer
       if: always()
       run: |
