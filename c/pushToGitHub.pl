@@ -29,9 +29,6 @@ my @dir     = qw(/home/phil/c/);                                                
 my @c    =  grep {!/\A#/} split /\s+/, <<END;                                   # C files to run
 arenaRedBlackTree
 arenaTree
-fileName
-#redBlackTree
-readOnlyBytes
 stringBuffer
 xml
 utilities
