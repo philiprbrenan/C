@@ -241,7 +241,7 @@ static $Node ll_$Node_$_strings                                                 
 static $Node add_$Node_$Found_$Node_string                                      // Add a new key if not already present in the tree root at the specified node.
  ($Found f,                                                                     // Found status for the key being added.
   $Node owner)                                                                  // Invalid - the base tree. Valid - the node that owns the tree being added to.
- {const $Node invalid = new $Node;                                                          // Return an invalid  node if the node already exists in the tree
+ {const $Node invalid = new $Node;                                              // Return an invalid  node if the node already exists in the tree
   if (!f.different) return invalid;                                             // Key already present
 
    key ◁ f.key;                                                                 // The key to add
@@ -252,7 +252,9 @@ static $Node add_$Node_$Found_$Node_string                                      
 
   n ▷ setUp(p);                                                                 // Set parent of inserted node
 
-  for($Node p = new $Node(tree: n.tree, offset: n.offset); p ▷ valid; p.offset = p ▷ up.offset)                                       // Balance nodes along path back to root
+  for($Node p = new $Node(tree: n.tree, offset: n.offset);                      // Balance nodes along path back to root
+            p ▷ valid;
+            p.offset = p ▷ up.offset)
    {size_t height($Node p)                                                      // Height of a node
      {return p ▷ valid ? p ▷ height : 0;
      }
