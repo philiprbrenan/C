@@ -277,17 +277,17 @@ static void get_ArenaTreeNode_data_size                                         
  (const ArenaTreeNode  node,                                                            // Node in an arena tree associated with the data
   void * const data,                                                            // Pointer to the area into which the data is to be copied
   const size_t length)                                                          // Length of the data to be retrieved
- {node.tree.proto->get(node.tree, node.proto->content(node)->data.delta, data, length);                         // Locate data
+ {node.tree.proto->get(node.tree, node.proto->content(node)->data.delta, data, length);                    // Locate data
  }
 
-static void set_ArenaTreeNode_data_size                                                 // Save a copy of the specified data in the arena of the tree and return the offset of the data.
+static void set_ArenaTreeNode_data_size                                                 // Save the specified data in the arena of the tree and return the offset of the data.
  (const ArenaTreeNode  node,                                                            // Node in an arena tree to associate with the data
   const void * const data,                                                      // Pointer to the data to be saved
   const size_t length)                                                          // Length of the data to be saved
  {node.proto->content(node)->data.delta = node.tree.proto->store(node.tree, data, length).offset;          // Record offset of saved data
  }
 
-static void copyData_ArenaTreeNode_ArenaTreeNode                                                // Copy the data associated with the sourtce node to the target node by copying the offset to the data held in the source node to the target node.
+static void copyData_ArenaTreeNode_ArenaTreeNode                                                // Copy the data offset associated with the source node to the target node by copying the offset to the data held in the source node to the target node.
  (const ArenaTreeNode target,                                                           // Target node
   const ArenaTreeNode source)                                                           // Source node
  {target.proto->content(target)->data = source.proto->content(source)->data;                              // Copy data offset
@@ -428,7 +428,7 @@ static  ArenaTreeNode findFirst_ArenaTree_string                                
  (const ArenaTree            tree,                                                      // Tree
   const char * const key)                                                       // Key to find
  {jmp_buf found;
-  ArenaTreeNode F = newArenaTreeNode(({struct ArenaTreeNode t = {tree: tree, proto: &ProtoTypes_ArenaTreeNode}; t;}));                                                                      // An invalid node
+  ArenaTreeNode F = newArenaTreeNode(({struct ArenaTreeNode t = {tree: tree, proto: &ProtoTypes_ArenaTreeNode}; t;}));                                              // An invalid node
 
   void find(ArenaTreeNode node)                                                         // Check whether the key of the current node matches the specified key
    {if (node.proto->equalsString(node, key))                                               // Found
@@ -605,7 +605,9 @@ static void by_ArenaTreeNode_sub                                                
     const typeof(parent.proto->countChildren(parent)) N = parent.proto->countChildren(parent);                                                 // Number of children
     size_t c[N+1];                                                              // Array of children terminated by a trailing zero
     size_t n = 0; ArenaTreefe(child, parent) c[n++] = child.offset;                     // Load each child into an array
-    for(size_t i = 0; i < N; ++i) children(newArenaTreeNode(({struct ArenaTreeNode t = {tree: parent.tree, offset: c[i], proto: &ProtoTypes_ArenaTreeNode}; t;})));            // Process each child allowing it to change position
+    for(size_t i = 0; i < N; ++i)                                               // Process each child allowing it to change its position without changing the traversal
+     {children(newArenaTreeNode(({struct ArenaTreeNode t = {tree: parent.tree, offset: c[i], proto: &ProtoTypes_ArenaTreeNode}; t;})));
+     }
     function(parent);                                                           // Process the parent
    }
   children(node);                                                               // Start at the specified root node
@@ -718,7 +720,7 @@ static int printsWithBracketsAs_int_ArenaTree_string                            
 
 static StringBuffer print_string_ArenaTreeNode                                          // Print a node and the ArenaTree below it in preorder as a string.
  (const ArenaTreeNode node)                                                             // Node to print from
- {const typeof(makeStringBuffer()) s = makeStringBuffer();                                                         // String buffer being constructed
+ {const typeof(makeStringBuffer()) s = makeStringBuffer();                                                       // String buffer being constructed
 
   void print(const ArenaTreeNode parent)                                                // Print the children of the specified parent
    {s.proto->add(s, parent.proto->key(parent));
@@ -761,7 +763,7 @@ static int printContains_ArenaTreeNode                                          
  }
 
 static int printContains_ArenaTree                                                      // Check the print of an ArenaTree contains the expected string.
- (const ArenaTree       tree,                                                            // ArenaTree parse tree
+ (const ArenaTree       tree,                                                           // ArenaTree parse tree
   const char *  expected)                                                       // Expected string
  {const typeof(tree.proto->print(tree)) s = tree.proto->print(tree);
   const typeof(s.proto->containsString(s, expected)) r = s.proto->containsString(s, expected);
