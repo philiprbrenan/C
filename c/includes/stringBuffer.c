@@ -54,7 +54,7 @@ static void add_StringBuffer_string                                             
 static void addn_StringBuffer_string                                                       // Concatenate a string of known length
  (const StringBuffer            buffer,                                                    // StringBuffer
   const char * const string,                                                    // String
-  const size_t        length)                                                    // String length
+  const size_t       length)                                                    // String length
  {const typeof(buffer.string.proto->noden(buffer.string, string, length)) s = buffer.string.proto->noden(buffer.string, string, length);
   s.proto->putTreeLast(s);
  }
