@@ -330,7 +330,7 @@ struct ProtoTypes_ArenaTreeNode {
     const ArenaTreeNode child,                                                  // Child
     ArenaTreeNode * const parent,                                               // Parent container
     const char  * const key);                                                   // Key
-  void  (*copyData)(                                                            // Copy the data associated with the sourtce node to the target node by copying the offset to the data held in the source node to the target node.
+  void  (*copyData)(                                                            // Copy the data offset associated with the source node to the target node by copying the offset to the data held in the source node to the target node.
     const ArenaTreeNode target,                                                 // Target node
     const ArenaTreeNode source);                                                // Source node
   size_t  (*countChildren)(                                                     // Count the number of children directly under a node.
@@ -419,7 +419,7 @@ struct ProtoTypes_ArenaTreeNode {
   void  (*setUp)(                                                               // Make the specified parent node the parent of the specified child node
     const ArenaTreeNode child,                                                  // Child
     const ArenaTreeNode parent);                                                // Child
-  void  (*set)(                                                                 // Save a copy of the specified data in the arena of the tree and return the offset of the data.
+  void  (*set)(                                                                 // Save the specified data in the arena of the tree and return the offset of the data.
     const ArenaTreeNode node,                                                   // Node in an arena tree to associate with the data
     const void * const data,                                                    // Pointer to the data to be saved
     const size_t length);                                                       // Length of the data to be saved
