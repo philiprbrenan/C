@@ -2,7 +2,7 @@ static XmlTag makeXmlTag_XmlParse_ArenaTreeNode
  (const XmlParse        xml,
   const ArenaTreeNode node);
 static XmlParse makeXmlParseFromFile
- (const FileName      fileName);
+ (const char * const sourceFileName);
 static XmlParse makeXmlParseFromString
  (const char * const string);
 static void free_XmlParse
@@ -92,9 +92,9 @@ static XmlTag wrap_XmlTag_string
   const char * const string);
 static XmlTag unwrap_XmlTag
  (const XmlTag         tag);
-static ReadOnlyBytes prettyPrint_readOnlyBytes_XmlTag
+static StringBuffer prettyPrint_stringBuffer_XmlTag
  (const XmlTag tag);
-static ReadOnlyBytes prettyPrint_readOnlyBytes_Xml
+static StringBuffer prettyPrint_stringBuffer_Xml
  (const XmlParse xml);
 static int prettyPrintsAs_int_Xml_string
  (const XmlParse xml,
@@ -108,9 +108,9 @@ static void prettyPrintAssert_XmlTag
 static void prettyPrintAssert_Xml_string
  (const XmlParse       xml,
   const char * const variable);
-static ReadOnlyBytes print_readOnlyBytes_XmlTag
+static StringBuffer print_stringBuffer_XmlTag
  (const XmlTag tag);
-static ReadOnlyBytes print_ReadOnlyBytes_XmlParse
+static StringBuffer print_stringBuffer_XmlParse
  (const XmlParse        xml);
 static int printsAs_XmlTag
  (const XmlTag          tag,
@@ -152,7 +152,7 @@ struct ProtoTypes_XmlParse {
   void  (*prettyPrintAssert)(                                                   // Pretty print the Xml parse tree as an assert statement
     const XmlParse xml,                                                         // Xml
     const char * const variable);                                               // The name of the variable preceding this call
-  ReadOnlyBytes  (*prettyPrint)(                                                // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
+  StringBuffer  (*prettyPrint)(                                                 // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
     const XmlParse xml);                                                        // Xml parse tree
   int  (*prettyPrintsAs)(                                                       // Check that the Xml parse tree prints as expected
     const XmlParse xml,                                                         // Xml parse tree
@@ -160,7 +160,7 @@ struct ProtoTypes_XmlParse {
   int  (*printContains)(                                                        // Check the print of an Xml parse tree contains the expected string.
     const XmlParse xml,                                                         // Xml parse tree
     const char * const expected);                                               // Expected string
-  ReadOnlyBytes  (*print)(                                                      // Print an entire Xml parse tree as a string.
+  StringBuffer  (*print)(                                                       // Print an entire Xml parse tree as a string.
     const XmlParse xml);                                                        // Xml parse tree
   int  (*printsAs)(                                                             // Check the print of an Xml parse tree is as expected.
     const XmlParse xml,                                                         // Xml parse tree
@@ -168,7 +168,7 @@ struct ProtoTypes_XmlParse {
   XmlTag  (*root)(                                                              // Return the root tag of the specified Xml parse tree
     const XmlParse xml);                                                        // Xml parse tree
  } const ProtoTypes_XmlParse =
-{by_XmlParse_sub, countChildren_size_Xml, count_size_Xml, errors_XmlParse, findFirstChild_XmlTag_XmlParse_string, findFirstTag_XmlTag_XmlParse_string, first_XmlParse, free_XmlParse, last_XmlParse, makeXmlTag_XmlParse_ArenaTreeNode, prettyPrintAssert_Xml_string, prettyPrint_readOnlyBytes_Xml, prettyPrintsAs_int_Xml_string, printContains_XmlParse, print_ReadOnlyBytes_XmlParse, printsAs_XmlParse, root_XmlParse};
+{by_XmlParse_sub, countChildren_size_Xml, count_size_Xml, errors_XmlParse, findFirstChild_XmlTag_XmlParse_string, findFirstTag_XmlTag_XmlParse_string, first_XmlParse, free_XmlParse, last_XmlParse, makeXmlTag_XmlParse_ArenaTreeNode, prettyPrintAssert_Xml_string, prettyPrint_stringBuffer_Xml, prettyPrintsAs_int_Xml_string, printContains_XmlParse, print_stringBuffer_XmlParse, printsAs_XmlParse, root_XmlParse};
 XmlParse newXmlParse(XmlParse allocator) {return allocator;}
 
 struct ProtoTypes_XmlTag {
@@ -214,7 +214,7 @@ struct ProtoTypes_XmlTag {
   void  (*prettyPrintAssert)(                                                   // Pretty print the Xml parse tree starting at the specified tag as an assert statement
     const XmlTag tag,                                                           // Starting tag
     const char * const variable);                                               // The name of the variable preceding this call
-  ReadOnlyBytes  (*prettyPrint)(                                                // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
+  StringBuffer  (*prettyPrint)(                                                 // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
     const XmlTag tag);                                                          // Starting tag
   int  (*prettyPrintsAs)(                                                       // Check that the Xml parse tree prints as expected
     const XmlTag tag,                                                           // Xml parse tree
@@ -224,7 +224,7 @@ struct ProtoTypes_XmlTag {
   int  (*printContains)(                                                        // Check the print of an Xml parse tree starting at the specified tag contains the expected string
     const XmlTag tag,                                                           // Starting tag
     const char *  const expected);                                              // Expected string
-  ReadOnlyBytes  (*print)(                                                      // Print the parse tree as a string starting at the specified tag.
+  StringBuffer  (*print)(                                                       // Print the parse tree as a string buffer starting at the specified tag.
     const XmlTag tag);                                                          // Starting tag
   int  (*printsAs)(                                                             // Check the print of an Xml parse tree starting at the specified tag is as expected.
     const XmlTag tag,                                                           // Starting tag
@@ -251,6 +251,6 @@ struct ProtoTypes_XmlTag {
     const XmlTag tag,                                                           // Tag
     const char * const string);                                                 // Wrapper without the leading < or trailing or >
  } const ProtoTypes_XmlTag =
-{by_XmlTag_sub, changeName_XmlTag, countChildren_size_XmlTag, count_size_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, isFirst_XmlTag, isLast_XmlTag, isRoot_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, openChildren_XmlTag, parent_XmlTag, prettyPrintAssert_XmlTag, prettyPrint_readOnlyBytes_XmlTag, prettyPrintsAs_int_XmlTag_string, prev_XmlTag, printContains_XmlTag, print_readOnlyBytes_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, text_string_XmlTag, unwrap_XmlTag, valid_XmlTag, wrap_XmlTag_string};
+{by_XmlTag_sub, changeName_XmlTag, countChildren_size_XmlTag, count_size_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, isFirst_XmlTag, isLast_XmlTag, isRoot_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, openChildren_XmlTag, parent_XmlTag, prettyPrintAssert_XmlTag, prettyPrint_stringBuffer_XmlTag, prettyPrintsAs_int_XmlTag_string, prev_XmlTag, printContains_XmlTag, print_stringBuffer_XmlTag, printsAs_XmlTag, root_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagString_XmlTag, text_string_XmlTag, unwrap_XmlTag, valid_XmlTag, wrap_XmlTag_string};
 XmlTag newXmlTag(XmlTag allocator) {return allocator;}
 
