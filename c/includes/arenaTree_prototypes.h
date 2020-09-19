@@ -1,5 +1,8 @@
 static ArenaTree makeArenaTree
  ();
+static void swap_ArenaTree_ArenaTree
+ (ArenaTree source,
+  ArenaTree target);
 static char * check_ArenaTree
  (const ArenaTree tree);
 static void * pointer_ArenaTree_size
@@ -19,9 +22,9 @@ static int checkKey_int_ArenaTreeNode_string_size
 static int equals_int_ArenaTreeNode_ArenaTreeNode
  (const ArenaTreeNode a,
   const ArenaTreeNode b);
-static ArenaTreeNode root_ArenaTreeNodeOffset_ArenaTree
+static  ArenaTreeNode root_ArenaTreeNodeOffset_ArenaTree
  (const ArenaTree tree);
-static ArenaTreeNode root_ArenaTreeNodeOffset_ArenaTreeNodeOffset
+static  ArenaTreeNode root_ArenaTreeNodeOffset_ArenaTreeNodeOffset
  (const ArenaTreeNode node);
 static ArenaTreeString key_string_ArenaTreeNode
  (const ArenaTreeNode node);
@@ -46,9 +49,6 @@ static ArenaTreeNode noden_ArenaTreeNode_ArenaTree_ArenaTreeString
 static ArenaTreeNode node_ArenaTreeNode_ArenaTree_ArenaTreeString
  (const ArenaTree             tree,
   const char * const  key);
-static  ArenaTreeNode nodeFromReadOnlyBytes_ArenaTreeNode_ArenaTree_ReadOnlyBytes
- (const ArenaTree             tree,
-  const ReadOnlyBytes string);
 static  ArenaTreeNode nodeFromStringBuffer_ArenaTree_ArenaTreeNode_ArenaTree_StringBuffer
  (const ArenaTree             tree,
   const StringBuffer  string);
@@ -191,10 +191,10 @@ static int printsWithBracketsAs_int_ArenaTreeNode_string
 static int printsWithBracketsAs_int_ArenaTree_string
  (const ArenaTree            tree,
   const char * const expected);
-static ReadOnlyBytes print_string_ArenaTreeNode
- (const ArenaTreeNode   node);
-static ReadOnlyBytes print_string_ArenaTree
- (const ArenaTree t);
+static StringBuffer print_string_ArenaTreeNode
+ (const ArenaTreeNode node);
+static StringBuffer print_string_ArenaTree
+ (const ArenaTree tree);
 static int printsAs_int_ArenaTreeNode_string
  (const ArenaTreeNode        node,
   const char * const expected);
@@ -255,9 +255,6 @@ struct ProtoTypes_ArenaTree {
   ArenaTreeNode    (*nodeFromOffset)(                                           // Create a node to locate an allocation within the arena of a tree.
     const ArenaTree tree,                                                       // Tree
     const size_t delta);                                                        // Delta within arena. A delta of zero represents no such node.
-  ArenaTreeNode  (*nodeFromReadOnlyBytes)(                                      // Create a new tree node from a ReadOnlyBytes String
-    const ArenaTree tree,                                                       // Arena tree in which to create the node
-    const ReadOnlyBytes string);                                                // Key for this node as a read only bytes string.
   ArenaTreeNode  (*nodeFromStringBuffer)(                                       // Create a new tree node from a String Buffer
     const ArenaTree tree,                                                       // Arena tree in which to create the node
     const StringBuffer string);                                                 // Key for this node as a string buffer
@@ -284,8 +281,8 @@ struct ProtoTypes_ArenaTree {
     const char * expected);                                                     // Expected string
   ArenaTreeString  (*printWithBrackets)(                                        // Print an entire tree in preorder as a string with brackets around each sub tree
     const ArenaTree t);                                                         // Tree
-  ReadOnlyBytes  (*print)(                                                      // Print an entire tree in preorder as a string.
-    const ArenaTree t);                                                         // ArenaTree
+  StringBuffer  (*print)(                                                       // Print an entire tree in preorder as a string.
+    const ArenaTree tree);                                                      // ArenaTree
   int  (*printsAs)(                                                             // Check that the specified ArenaTree prints as expected.
     const ArenaTree tree,                                                       // ArenaTree
     const char * const expected);                                               // Expected string when printed
@@ -307,13 +304,16 @@ struct ProtoTypes_ArenaTree {
     const ArenaTree tree,                                                       // Tree in whose arena the data will be stored
     const void *  const data,                                                   // Pointer to the data to be stored
     const size_t length);                                                       // Length of the data to be stored
+  void  (*swap)(                                                                // Swap the arenas of two trees.
+    ArenaTree source,                                                           // Source tree
+    ArenaTree target);                                                          // Target tree
   size_t  (*used)(                                                              // Amount of space currently being used within the arena of a tree.
     const ArenaTree tree);                                                      // Tree
   void  (*write)(                                                               // Write a tree to a named file or abort
     const ArenaTree tree,                                                       // Tree
     const char * const file);                                                   // File
  } const ProtoTypes_ArenaTree =
-{allocate_offset_ArenaTree_size, by_ArenaTree_sub, check_ArenaTree, countChildren_size_ArenaTree, count_size_ArenaTree, findFirstChild_ArenaTree_string, findFirst_ArenaTree_string, first_ArenaTreeNode_ArenaTree, free_ArenaTree, fromLetters_ArenaTree_ArenaTreeString, get_ArenaTree_data_size, last_ArenaTreeNode_ArenaTree, next_ArenaTreeNode_ArenaTree, nodeFromOffset_ArenaTree_size, nodeFromReadOnlyBytes_ArenaTreeNode_ArenaTree_ReadOnlyBytes, nodeFromStringBuffer_ArenaTree_ArenaTreeNode_ArenaTree_StringBuffer, node_ArenaTreeNode_ArenaTree_ArenaTreeString, noden_ArenaTreeNode_ArenaTree_ArenaTreeString, offsetTo_ArenaTree_pointer, offset_ArenaTree_size, pointer_ArenaTree_size, prev_ArenaTreeNode_ArenaTree, printContains_ArenaTree, printWithBrackets_ArenaTreeString_ArenaTree, print_string_ArenaTree, printsAs_int_ArenaTree_string, printsWithBracketsAs_int_ArenaTree_string, retrieve_ArenaTree_ArenaTreeOffset_data_size, root_ArenaTreeNodeOffset_ArenaTree, saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString, store_offset_ArenaTree_data_size, used_ArenaTree, write_void_ArenaTree_ArenaTreeString};
+{allocate_offset_ArenaTree_size, by_ArenaTree_sub, check_ArenaTree, countChildren_size_ArenaTree, count_size_ArenaTree, findFirstChild_ArenaTree_string, findFirst_ArenaTree_string, first_ArenaTreeNode_ArenaTree, free_ArenaTree, fromLetters_ArenaTree_ArenaTreeString, get_ArenaTree_data_size, last_ArenaTreeNode_ArenaTree, next_ArenaTreeNode_ArenaTree, nodeFromOffset_ArenaTree_size, nodeFromStringBuffer_ArenaTree_ArenaTreeNode_ArenaTree_StringBuffer, node_ArenaTreeNode_ArenaTree_ArenaTreeString, noden_ArenaTreeNode_ArenaTree_ArenaTreeString, offsetTo_ArenaTree_pointer, offset_ArenaTree_size, pointer_ArenaTree_size, prev_ArenaTreeNode_ArenaTree, printContains_ArenaTree, printWithBrackets_ArenaTreeString_ArenaTree, print_string_ArenaTree, printsAs_int_ArenaTree_string, printsWithBracketsAs_int_ArenaTree_string, retrieve_ArenaTree_ArenaTreeOffset_data_size, root_ArenaTreeNodeOffset_ArenaTree, saveString_ArenaTreeOffset_ArenaTree_ArenaTreeString, store_offset_ArenaTree_data_size, swap_ArenaTree_ArenaTree, used_ArenaTree, write_void_ArenaTree_ArenaTreeString};
 ArenaTree newArenaTree(ArenaTree allocator) {return allocator;}
 
 struct ProtoTypes_ArenaTreeNode {
@@ -384,8 +384,8 @@ struct ProtoTypes_ArenaTreeNode {
     const char * expected);                                                     // Expected string
   ArenaTreeString  (*printWithBrackets)(                                        // Print a node and the tree below it in preorder as a string with each sub tree enclosed in brackets.
     const ArenaTreeNode node);                                                  // Node
-  ReadOnlyBytes  (*print)(                                                      // Print a node and the ArenaTree below it in preorder as a string.
-    const ArenaTreeNode node);                                                  // Node
+  StringBuffer  (*print)(                                                       // Print a node and the ArenaTree below it in preorder as a string.
+    const ArenaTreeNode node);                                                  // Node to print from
   int  (*printsAs)(                                                             // Check that the ArenaTree starting at the specified node prints as expected.
     const ArenaTreeNode node,                                                   // Node
     const char * const expected);                                               // Expected string when printed
