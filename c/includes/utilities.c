@@ -23,6 +23,7 @@
 #define say(format...) fprintf(stderr, format)                                  // Say something using the specifed format
 
 // Create a local string with the specified name from the specified format assuming that most of the time it will have less than the specified number of characters (N).
+//#define lsprintf(a,N,format...) size_t a##n; char a[N+1]; {a##n = snprintf(a, N, format); say("BBBB %lu %lu\n", N, a##n); if (a##n > N) {char b[a##n - N]; sprintf(a, format);}}
 #define lsprintf(a,N,format...) char a##c[N+1]; const size_t a##l = snprintf(a##c, N, format); char a[a##l+1]; if (a##l > N) sprintf(a, format); else memcpy(a, a##c, a##l+1);
 
 //D1 Errors                                                                     // Methods for reporting errors
