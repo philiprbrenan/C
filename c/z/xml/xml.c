@@ -57,10 +57,10 @@ static $Parse make$ParseFromFile                                                
   first         ◁ makeArenaRedBlackTree();                                      // First set of possibilities for each tag
   next          ◁ makeArenaRedBlackTree();                                      // Next set of possibilities for each Dita child tag under a given parent tag
   const $Parse  x = {data: sourceBuffer, fileName: sourceFN, tree: t, errors: errors, possibilities: possibilities, first: first, next: next, proto: &ProtoTypes_$Parse};
-  ArenaTreeNode P = t ▷ root;                                                   // Current parent node
+  P ◀ t ▷ root;                                                                 // Current parent node
 
   sourceBufferFirst ◁ sourceBuffer.string ▷ first;                              // First node in the strin buffer holding the source to be parsed
-  char *source = sourceBufferFirst ▷ key;                                       // The source is all in one node so we use it in the string buffer rather than copying it out.
+  source            ◀ sourceBufferFirst   ▷ key;                                // The source is all in one node so we use it in the string buffer rather than copying it out.
 
   $Parse error                                                                  // Report an error message adding the file name involved on the following line
    (const char * const p,                                                       // Pointer to position at which the error occurred
@@ -83,7 +83,7 @@ static $Parse make$ParseFromFile                                                
     return x;
    } // error
 
-  char *p = source;                                                             // Start of text to be parsed
+  p ◀ source;                                                                   // Start of text to be parsed
   if  (*p != $Open) return error(p, "$ must start with: %c", $Open);            // Insist that the first character is <
 
   int remainderIsWhiteSpace(const char *p)                                      // Find the next non space character in a zero terminated string
