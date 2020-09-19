@@ -58,10 +58,10 @@ static XmlParse makeXmlParseFromFile                                            
   const typeof(makeArenaRedBlackTree()) first = makeArenaRedBlackTree();                                      // First set of possibilities for each tag
   const typeof(makeArenaRedBlackTree()) next = makeArenaRedBlackTree();                                      // Next set of possibilities for each Dita child tag under a given parent tag
   const XmlParse  x = {data: sourceBuffer, fileName: sourceFN, tree: t, errors: errors, possibilities: possibilities, first: first, next: next, proto: &ProtoTypes_XmlParse};
-  ArenaTreeNode P = t.proto->root(t);                                                   // Current parent node
+  typeof(t.proto->root(t)) P = t.proto->root(t);                                                                 // Current parent node
 
   const typeof(sourceBuffer.string.proto->first(sourceBuffer.string)) sourceBufferFirst = sourceBuffer.string.proto->first(sourceBuffer.string);                              // First node in the strin buffer holding the source to be parsed
-  char *source = sourceBufferFirst.proto->key(sourceBufferFirst);                                       // The source is all in one node so we use it in the string buffer rather than copying it out.
+  typeof(sourceBufferFirst.proto->key(sourceBufferFirst)) source = sourceBufferFirst.proto->key(sourceBufferFirst);                                // The source is all in one node so we use it in the string buffer rather than copying it out.
 
   XmlParse error                                                                  // Report an error message adding the file name involved on the following line
    (const char * const p,                                                       // Pointer to position at which the error occurred
@@ -84,7 +84,7 @@ static XmlParse makeXmlParseFromFile                                            
     return x;
    } // error
 
-  char *p = source;                                                             // Start of text to be parsed
+  typeof(source) p = source;                                                             // Start of text to be parsed
   if  (*p != XmlOpen) return error(p, "Xml must start with: %c", XmlOpen);            // Insist that the first character is <
 
   int remainderIsWhiteSpace(const char *p)                                      // Find the next non space character in a zero terminated string
