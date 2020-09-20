@@ -14,7 +14,7 @@
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
-char $tagName[256];                                                             // Tag name returned by tag
+char $tagName[256];                                                             // Tag name return area as xml tags are short
 
 typedef struct $Parse                                                           // $ parse tree
  {const struct ProtoTypes_$Parse *proto;                                        // Prototypes for methods
