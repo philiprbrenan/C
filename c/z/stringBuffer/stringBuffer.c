@@ -495,7 +495,6 @@ void test8()                                                                    
 void test9()                                                                    //Tsystem //Tmake$VaFormat
  {a ◁ make$FromString("uname");
   a ▷ system;
-  a ▷ writeStderr;
   assert(a ▷ containsString("Linux"));
   a ▷ free;
  }
