@@ -1,7 +1,3 @@
-static StringBuffer makeStringBuffer
- ();
-static StringBuffer makeStringBufferFromString
- (const char * const string);
 static void free_StringBuffer
  (const StringBuffer buffer);
 static void add_StringBuffer_string
@@ -68,6 +64,11 @@ static size_t substring_size_StringBuffer_int_int_string
   const size_t start,
   const size_t length,
   char * const string);
+static void apply_StringBuffer_function
+ (const StringBuffer string,
+  void (*action)(char *string, size_t length));
+static  void system_StringBuffer_StringBuffer
+ (const StringBuffer    command);
 static ssize_t writeToFileHandle
  (const StringBuffer            buffer,
   const int          d,
@@ -112,6 +113,9 @@ struct ProtoTypes_StringBuffer {
     const StringBuffer buffer,                                                  // StringBuffer
     const char * const string,                                                  // String
     const size_t length);                                                       // String length
+  void  (*apply)(                                                               // Apply a function to a string.
+    const StringBuffer string,                                                  // StringBuffer
+    void (*action) (char *string, size_t length));                              // Action to apply
   int  (*containsString)(                                                       // Checks whether a StringBuffer contains a specified zero terminated string.
     const StringBuffer buffer,                                                  // StringBuffer
     const char * const string);                                                 // String
@@ -151,19 +155,21 @@ struct ProtoTypes_StringBuffer {
     const size_t start,                                                         // Offset to start of string
     const size_t length,                                                        // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
     char * const string);                                                       // String to load with enough space for the string and its terminating zero
+  void  (*system)(                                                              // Replace a StringBuffer containing a system command with the results of executing that command.
+    const StringBuffer command);                                                // StringBuffer containing command to execute
   ssize_t  (*writeFile)(                                                        // Write a StringBuffer as a string to the specified file
     const StringBuffer buffer,                                                  // StringBuffer
     const char * const fileName);                                               // Base name of the file
   void  (*writeStderr)(                                                         // Write a StringBuffer as a string to stderr
     const StringBuffer buffer);                                                 // StringBuffer
   StringBuffer  (*writeTemporaryFile)(                                          // Write a StringBuffer as a string to a temporary file with the specified base name and return the full name of the file created as a string buffer.
-    const StringBuffer buffer,                                                  // StringBuffer
+    const StringBuffer buffer,                                                  // StringBuffer content to be written
     const char * const fileName);                                               // Base name of the file
   ssize_t  (*writeToFileHandle)(                                                // Write a StringBuffer as a string to a file handle and return the non negative number of bytes written or a negative error.
     const StringBuffer buffer,                                                  // StringBuffer
     const int d,                                                                // Base name of the file
     const char * const fileName);                                               // The name of the file being written to
  } const ProtoTypes_StringBuffer =
-{addChar_StringBuffer_char, addDoubleQuote_StringBuffer, addFormat_StringBuffer_strings, addNewLine_StringBuffer, addQuotedNewLine_StringBuffer, addSingleQuote_StringBuffer, addStringBuffer_StringBuffer_StringBuffer, addVaFormat_StringBuffer_string_va, add_StringBuffer_string, addn_StringBuffer_string, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, count_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, join_StringBuffer, length_StringBuffer, readFile_StringBuffer_string, splitLines, splitWords, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string, writeFile_StringBuffer_string, writeStderr_StringBuffer, writeTemporaryFile_StringBuffer_string, writeToFileHandle};
+{addChar_StringBuffer_char, addDoubleQuote_StringBuffer, addFormat_StringBuffer_strings, addNewLine_StringBuffer, addQuotedNewLine_StringBuffer, addSingleQuote_StringBuffer, addStringBuffer_StringBuffer_StringBuffer, addVaFormat_StringBuffer_string_va, add_StringBuffer_string, addn_StringBuffer_string, apply_StringBuffer_function, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, count_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, join_StringBuffer, length_StringBuffer, readFile_StringBuffer_string, splitLines, splitWords, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string, system_StringBuffer_StringBuffer, writeFile_StringBuffer_string, writeStderr_StringBuffer, writeTemporaryFile_StringBuffer_string, writeToFileHandle};
 StringBuffer newStringBuffer(StringBuffer allocator) {return allocator;}
 
