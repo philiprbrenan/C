@@ -65,5 +65,4 @@ jobs:
       if: always()
       run: |
         (cd /home/runner/work/C/C/c/g/pangoText/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/g/pangoText//pangoText.c --cIncludes /home/runner/work/C/C/c/includes)
-        (cd /home/runner/work/C/C/c/g/pangoText/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/g/pangoText//pangoText.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
 
