@@ -23,17 +23,27 @@ typedef struct $                                                                
 #define $fe( child, parent) for(ArenaTreeNode child = parent.string ▷ first; child ▷ valid; child = child ▷ next) // Each child in a parent from first to last
 #define $fer(child, parent) for(ArenaTreeNode child = parent.string ▷ last ; child ▷ valid; child = child ▷ prev) // Each child in a parent from last to first
 
-static $ make$                                                                  // Make a $
+$ make$                                                                         // Make a $
  ()                                                                             //
  {ArenaTree string = makeArenaTree();
   return new$(string: string);
  }
 
-static $ make$FromString                                                        // Make a $ from a string
+$ make$FromString                                                               // Make a $ from a string
  (const char * const string)                                                    // String
  {b ◁ make$();
   b ▷ add(string);
   return b;
+ }
+
+$ make$FromVaFormat                                                             // Make a string buffer from a variadic argument formatted string
+ (const char * const format,                                                    // Format
+  ...)                                                                          // Variable argument list
+ {va_list va;
+  va_start(va, format);
+  s ◁ make$();
+  s ▷ addVaFormat(format, va);
+  return s;
  }
 
 static void free_$                                                              // Free a $
@@ -256,6 +266,32 @@ static size_t substring_size_$_int_int_string                                   
   return n;                                                                     // Actual length of sub string
  }
 
+static void apply_$_function                                                    // Apply a function to a string.
+ (const $ string,                                                               // $
+  void (*action)(char *string, size_t length))                                  // Action to apply
+ {length ◁ string ▷ length;                                                     // Length of string
+  char s[length + 1]; string ▷ string(s);                                       // Place string on stack
+  action(s, length);                                                            // Perform action on string
+ }
+
+static  void system_$_$                                                         // Replace a $ containing a system command with the results of executing that command.
+ (const $    command)                                                           // $ containing command to execute
+ {t ◁ make$();                                                                  // Temporary file name for output
+  ssize_t writer(int d, char *fileName) {t ▷ add(fileName); return 0; if(0)d=d;}// Function to write to a file handle. Return non negative on success, negative on failure: this value will be returned to the caller.
+  makeTemporaryFileWithContent("exec.txt", writer);                             // Save temporary file name
+  command ▷ add(" 1>"); command ▷ add$(t); command ▷ add(" 2>&1");              // Command with output capture
+
+  void execString(char * cmd, size_t length)                                    // Execute command in string
+   {system(cmd);                                                                // Execute command
+    if(0)length=length;
+   }
+
+  command ▷ apply(execString);                                                  // Execute command in string buffer
+  r ◁ t ▷ readFile;                                                             // Load the results
+  r.string ▷ swap(command.string);                                              // Overwrite the input command with the results
+  t ▷ free; r ▷ free;                                                           // Free file name and command
+ }
+
 //D1 Read and Write                                                             // Read/write a string buffer from/to named and temporary files.
 
 static ssize_t writeToFileHandle                                                //P Write a $ as a string to a file handle and return the non negative number of bytes written or a negative error.
@@ -278,7 +314,7 @@ static ssize_t writeToFileHandle                                                
  }
 
 static  $ writeTemporaryFile_$_string                                           // Write a $ as a string to a temporary file with the specified base name and return the full name of the file created as a string buffer.
- (const $            buffer,                                                    // $
+ (const $            buffer,                                                    // $ content to be written
   const char * const fileName)                                                  // Base name of the file
  {fullFileName ◁ make$();                                                       // String buffer to record full file name of file created
 
@@ -444,9 +480,29 @@ void test7()                                                                    
   a ▷ free;
  }
 
+void test8()                                                                    //Tapply
+ {const char * const c = "Hello World";
+  a ◁ make$FromString(c);
+
+  void check(char * s, size_t l)
+   {assert(l == strlen(c));
+    assert(!strcmp(c, s));
+   }
+
+  a ▷ free;
+ }
+
+void test9()                                                                    //Tsystem //Tmake$VaFormat
+ {a ◁ make$FromString("uname");
+  a ▷ system;
+  a ▷ writeStderr;
+  assert(a ▷ containsString("Linux"));
+  a ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7,  0};
+                           test6, test7, test8, test9, 0};
   run_tests("$", 1, tests);
   return 0;
  }
