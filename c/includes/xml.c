@@ -15,7 +15,7 @@
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
-char XmltagName[256];                                                             // Tag name returned by tag
+char XmltagName[256];                                                             // Tag name return area as xml tags are short
 
 typedef struct XmlParse                                                           // Xml parse tree
  {const struct ProtoTypes_XmlParse *proto;                                        // Prototypes for methods
@@ -84,7 +84,7 @@ static XmlParse makeXmlParseFromFile                                            
     return x;
    } // error
 
-  typeof(source) p = source;                                                             // Start of text to be parsed
+  typeof(source) p = source;                                                                   // Start of text to be parsed
   if  (*p != XmlOpen) return error(p, "Xml must start with: %c", XmlOpen);            // Insist that the first character is <
 
   int remainderIsWhiteSpace(const char *p)                                      // Find the next non space character in a zero terminated string
