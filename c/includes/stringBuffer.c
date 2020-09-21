@@ -69,13 +69,19 @@ static void addn_StringBuffer_string                                            
   s.proto->putTreeLast(s);
  }
 
+void debug(){}
+
 static void addStringBuffer_StringBuffer_StringBuffer                                                            // Add a string buffer
  (const StringBuffer buffer,                                                               // Target StringBuffer
   const StringBuffer add)                                                                  // Source StringBuffer
- {const size_t l = buffer.proto->count(buffer);
-  char *s[l];
-  size_t i = 0; StringBufferfe(line, add) s[i++] = line.proto->key(line);
-  for(size_t i = 0; i < l; ++i) buffer.proto->add(buffer, s[i]);
+ {const typeof(add.proto->count(add)) l = add.proto->count(add);
+  ArenaTreeNode s[l];
+  size_t i = 0; StringBufferfe(line, add) s[i++] = line;
+
+ for(size_t i = 0; i < l; ++i)
+  {const typeof(s[i]) n = s[i];
+   debug();
+   buffer.proto->add(buffer, n.proto->key(n));}
  }
 
 static void addVaFormat_StringBuffer_string_va                                             // Add a variadic argument formatted string
@@ -280,7 +286,7 @@ static  void system_StringBuffer_StringBuffer                                   
  {const typeof(makeStringBuffer()) t = makeStringBuffer();                                                                  // Temporary file name for output
   ssize_t writer(int d, char *fileName) {t.proto->add(t, fileName); return 0; if(0)d=d;}// Function to write to a file handle. Return non negative on success, negative on failure: this value will be returned to the caller.
   makeTemporaryFileWithContent("exec.txt", writer);                             // Save temporary file name
-  command.proto->add(command, " 1>"); command.proto->addStringBuffer(command, t); command.proto->add(command, " 2>&1");              // Command with output capture
+  command.proto->add(command, " 1>");  command.proto->addStringBuffer(command, t);  command.proto->add(command, " 2>&1");            // Command with output capture
 
   void execString(char * cmd, size_t length)                                    // Execute command in string
    {system(cmd);                                                                // Execute command
