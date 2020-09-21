@@ -15,7 +15,7 @@ jobs:
     - name: Install
       run: |
         sudo apt update
-        sudo apt -y install build-essential gdb tree
+        sudo apt -y install build-essential gdb tree gtk+-3.0-dev
         sudo cpan install Data::Table::Text Data::Dump Dita::PCD Getopt::Long File::Basename Java::Doc Preprocess::Ops
 
     - name: Install Valgrind
@@ -30,30 +30,36 @@ jobs:
     - name: Run arenaRedBlackTree
       if: always()
       run: |
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaRedBlackTree/arenaRedBlackTree.c --cIncludes c/includes
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaRedBlackTree/arenaRedBlackTree.c --cIncludes c/includes --valgrind
+        (cd c/z/arenaRedBlackTree/; perl perl/makeWithPerl/makeWithPerl.pl --c --run arenaRedBlackTree.c --cIncludes c/includes)
+        (cd c/z/arenaRedBlackTree/; perl perl/makeWithPerl/makeWithPerl.pl --c --run arenaRedBlackTree.c --cIncludes c/includes --valgrind)
 
     - name: Run arenaTree
       if: always()
       run: |
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaTree/arenaTree.c --cIncludes c/includes
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/arenaTree/arenaTree.c --cIncludes c/includes --valgrind
+        (cd c/z/arenaTree/; perl perl/makeWithPerl/makeWithPerl.pl --c --run arenaTree.c --cIncludes c/includes)
+        (cd c/z/arenaTree/; perl perl/makeWithPerl/makeWithPerl.pl --c --run arenaTree.c --cIncludes c/includes --valgrind)
 
     - name: Run stringBuffer
       if: always()
       run: |
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/stringBuffer/stringBuffer.c --cIncludes c/includes
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/stringBuffer/stringBuffer.c --cIncludes c/includes --valgrind
+        (cd c/z/stringBuffer/; perl perl/makeWithPerl/makeWithPerl.pl --c --run stringBuffer.c --cIncludes c/includes)
+        (cd c/z/stringBuffer/; perl perl/makeWithPerl/makeWithPerl.pl --c --run stringBuffer.c --cIncludes c/includes --valgrind)
 
     - name: Run xml
       if: always()
       run: |
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/xml/xml.c --cIncludes c/includes --valgrind
+        (cd c/z/xml/; perl perl/makeWithPerl/makeWithPerl.pl --c --run xml.c --cIncludes c/includes)
+        (cd c/z/xml/; perl perl/makeWithPerl/makeWithPerl.pl --c --run xml.c --cIncludes c/includes --valgrind)
 
     - name: Run utilities
       if: always()
       run: |
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/utilities/utilities.c --cIncludes c/includes
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/utilities/utilities.c --cIncludes c/includes --valgrind
+        (cd c/z/utilities/; perl perl/makeWithPerl/makeWithPerl.pl --c --run utilities.c --cIncludes c/includes)
+        (cd c/z/utilities/; perl perl/makeWithPerl/makeWithPerl.pl --c --run utilities.c --cIncludes c/includes --valgrind)
+
+    - name: Run pangoText
+      if: always()
+      run: |
+        (cd c/g/pangoText/; perl perl/makeWithPerl/makeWithPerl.pl --c --run pangoText.c --cIncludes c/includes)
+        (cd c/g/pangoText/; perl perl/makeWithPerl/makeWithPerl.pl --c --run pangoText.c --cIncludes c/includes --valgrind)
 
