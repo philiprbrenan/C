@@ -148,7 +148,6 @@ ssize_t __attribute__ ((unused)) makeTemporaryFileWithContent                   
    {printStackBackTrace("Unable to open file because %m, file:\n%s\n", file);
     return -2;
    }
-
   const typeof(writer(o, file)) r = writer(o, file);                                                          // Write data per caller
 
   close(o);                                                                     // Close temporary file
