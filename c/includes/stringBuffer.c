@@ -496,7 +496,6 @@ void test8()                                                                    
 void test9()                                                                    //Tsystem //TmakeStringBufferVaFormat
  {const typeof(makeStringBufferFromString("uname")) a = makeStringBufferFromString("uname");
   a.proto->system(a);
-  a.proto->writeStderr(a);
   assert(a.proto->containsString(a, "Linux"));
   a.proto->free(a);
  }
