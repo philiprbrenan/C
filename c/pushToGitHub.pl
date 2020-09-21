@@ -62,13 +62,16 @@ sub test($$)                                                                    
   my $file = fpe($dir, $d, $c, $c, q(c));
   -e $file or confess "No such file: $file";
   my $path = fpd($git, q(c), $d, $c);
-  <<END;
+  my @r = <<END;
     - name: Run $c
       if: always()
       run: |
         (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes)
+END
+  push @r, <<END  unless $d =~ m(g);                                            # GTK has too may leaks
         (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes --valgrind)
 END
+    join '', @r;
    }
 
 
