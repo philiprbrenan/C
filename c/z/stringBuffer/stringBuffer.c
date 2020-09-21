@@ -68,13 +68,19 @@ static void addn_$_string                                                       
   s ▷ putTreeLast;
  }
 
+void debug(){}
+
 static void add$_$_$                                                            // Add a string buffer
  (const $ buffer,                                                               // Target $
   const $ add)                                                                  // Source $
- {const size_t l = buffer ▷ count;
-  char *s[l];
-  size_t i = 0; $fe(line, add) s[i++] = line ▷ key;
-  for(size_t i = 0; i < l; ++i) buffer ▷ add(s[i]);
+ {l ◁ add ▷ count;
+  ArenaTreeNode s[l];
+  size_t i = 0; $fe(line, add) s[i++] = line;
+
+ for(size_t i = 0; i < l; ++i)
+  {n ◁ s[i];
+   debug();
+   buffer ▷ add(n ▷ key);}
  }
 
 static void addVaFormat_$_string_va                                             // Add a variadic argument formatted string
@@ -279,7 +285,7 @@ static  void system_$_$                                                         
  {t ◁ make$();                                                                  // Temporary file name for output
   ssize_t writer(int d, char *fileName) {t ▷ add(fileName); return 0; if(0)d=d;}// Function to write to a file handle. Return non negative on success, negative on failure: this value will be returned to the caller.
   makeTemporaryFileWithContent("exec.txt", writer);                             // Save temporary file name
-  command ▷ add(" 1>"); command ▷ add$(t); command ▷ add(" 2>&1");              // Command with output capture
+  command ▷ add(" 1>");  command ▷ add$(t);  command ▷ add(" 2>&1");            // Command with output capture
 
   void execString(char * cmd, size_t length)                                    // Execute command in string
    {system(cmd);                                                                // Execute command
