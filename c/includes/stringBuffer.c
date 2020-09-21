@@ -24,17 +24,27 @@ typedef struct StringBuffer                                                     
 #define StringBufferfe( child, parent) for(ArenaTreeNode child = parent.string.proto->first(parent.string); child.proto->valid(child); child = child.proto->next(child)) // Each child in a parent from first to last
 #define StringBufferfer(child, parent) for(ArenaTreeNode child = parent.string.proto->last(parent.string) ; child.proto->valid(child); child = child.proto->prev(child)) // Each child in a parent from last to first
 
-static StringBuffer makeStringBuffer                                                                  // Make a StringBuffer
+StringBuffer makeStringBuffer                                                                         // Make a StringBuffer
  ()                                                                             //
  {ArenaTree string = makeArenaTree();
   return newStringBuffer(({struct StringBuffer t = {string: string, proto: &ProtoTypes_StringBuffer}; t;}));
  }
 
-static StringBuffer makeStringBufferFromString                                                        // Make a StringBuffer from a string
+StringBuffer makeStringBufferFromString                                                               // Make a StringBuffer from a string
  (const char * const string)                                                    // String
  {const typeof(makeStringBuffer()) b = makeStringBuffer();
   b.proto->add(b, string);
   return b;
+ }
+
+StringBuffer makeStringBufferFromVaFormat                                                             // Make a string buffer from a variadic argument formatted string
+ (const char * const format,                                                    // Format
+  ...)                                                                          // Variable argument list
+ {va_list va;
+  va_start(va, format);
+  const typeof(makeStringBuffer()) s = makeStringBuffer();
+  s.proto->addVaFormat(s, format, va);
+  return s;
  }
 
 static void free_StringBuffer                                                              // Free a StringBuffer
@@ -257,6 +267,32 @@ static size_t substring_size_StringBuffer_int_int_string                        
   return n;                                                                     // Actual length of sub string
  }
 
+static void apply_StringBuffer_function                                                    // Apply a function to a string.
+ (const StringBuffer string,                                                               // StringBuffer
+  void (*action)(char *string, size_t length))                                  // Action to apply
+ {const typeof(string.proto->length(string)) length = string.proto->length(string);                                                     // Length of string
+  char s[length + 1]; string.proto->string(string, s);                                       // Place string on stack
+  action(s, length);                                                            // Perform action on string
+ }
+
+static  void system_StringBuffer_StringBuffer                                                         // Replace a StringBuffer containing a system command with the results of executing that command.
+ (const StringBuffer    command)                                                           // StringBuffer containing command to execute
+ {const typeof(makeStringBuffer()) t = makeStringBuffer();                                                                  // Temporary file name for output
+  ssize_t writer(int d, char *fileName) {t.proto->add(t, fileName); return 0; if(0)d=d;}// Function to write to a file handle. Return non negative on success, negative on failure: this value will be returned to the caller.
+  makeTemporaryFileWithContent("exec.txt", writer);                             // Save temporary file name
+  command.proto->add(command, " 1>"); command.proto->addStringBuffer(command, t); command.proto->add(command, " 2>&1");              // Command with output capture
+
+  void execString(char * cmd, size_t length)                                    // Execute command in string
+   {system(cmd);                                                                // Execute command
+    if(0)length=length;
+   }
+
+  command.proto->apply(command, execString);                                                  // Execute command in string buffer
+  const typeof(t.proto->readFile(t)) r = t.proto->readFile(t);                                                             // Load the results
+  r.string.proto->swap(r.string, command.string);                                              // Overwrite the input command with the results
+  t.proto->free(t); r.proto->free(r);                                                           // Free file name and command
+ }
+
 //D1 Read and Write                                                             // Read/write a string buffer from/to named and temporary files.
 
 static ssize_t writeToFileHandle                                                //P Write a StringBuffer as a string to a file handle and return the non negative number of bytes written or a negative error.
@@ -279,7 +315,7 @@ static ssize_t writeToFileHandle                                                
  }
 
 static  StringBuffer writeTemporaryFile_StringBuffer_string                                           // Write a StringBuffer as a string to a temporary file with the specified base name and return the full name of the file created as a string buffer.
- (const StringBuffer            buffer,                                                    // StringBuffer
+ (const StringBuffer            buffer,                                                    // StringBuffer content to be written
   const char * const fileName)                                                  // Base name of the file
  {const typeof(makeStringBuffer()) fullFileName = makeStringBuffer();                                                       // String buffer to record full file name of file created
 
@@ -445,9 +481,29 @@ void test7()                                                                    
   a.proto->free(a);
  }
 
+void test8()                                                                    //Tapply
+ {const char * const c = "Hello World";
+  const typeof(makeStringBufferFromString(c)) a = makeStringBufferFromString(c);
+
+  void check(char * s, size_t l)
+   {assert(l == strlen(c));
+    assert(!strcmp(c, s));
+   }
+
+  a.proto->free(a);
+ }
+
+void test9()                                                                    //Tsystem //TmakeStringBufferVaFormat
+ {const typeof(makeStringBufferFromString("uname")) a = makeStringBufferFromString("uname");
+  a.proto->system(a);
+  a.proto->writeStderr(a);
+  assert(a.proto->containsString(a, "Linux"));
+  a.proto->free(a);
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7,  0};
+                           test6, test7, test8, test9, 0};
   run_tests("StringBuffer", 1, tests);
   return 0;
  }
