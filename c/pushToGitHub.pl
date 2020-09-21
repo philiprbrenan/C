@@ -26,12 +26,16 @@ my $wf      = q(.github/workflows/main.yml);                                    
 my $compile = q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);                  # Compile
 my @dir     = qw(/home/phil/c/);                                                # Directories to upload
 
-my @c    =  grep {!/\A#/} split /\s+/, <<END;                                   # C files to run
+my @cz      =  grep {!/\A#/} split /\s+/, <<END;                                # z files to run
 arenaRedBlackTree
 arenaTree
 stringBuffer
 xml
 utilities
+END
+
+my @cg      =  grep {!/\A#/} split /\s+/, <<END;                                # g files to run
+pangoText
 END
 
 if (1)                                                                          # Upload files
@@ -50,19 +54,25 @@ if (1)                                                                          
    }
  }
 
-my $tests = sub                                                                 # Commands to run tests
- {my @t;
-  for my $c(@c)
-   {push @t, <<END;
+sub test($$)                                                                    # Write one test
+ {my ($dir, $c) = @_;                                                           # Folder, Program to be tested
+  my $path = qq(c/$dir/$c/);
+  my $file = fpe($home, $path, $c, q(c));
+  -e $path or confess "No such file: $file";
+  <<END;
     - name: Run $c
       if: always()
       run: |
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/$c/$c.c --cIncludes c/includes
-        perl perl/makeWithPerl/makeWithPerl.pl --c --run c/z/$c/$c.c --cIncludes c/includes --valgrind
+        (cd $path; perl perl/makeWithPerl/makeWithPerl.pl --c --run $c.c --cIncludes c/includes)
+        (cd $path; perl perl/makeWithPerl/makeWithPerl.pl --c --run $c.c --cIncludes c/includes --valgrind)
 END
-#     continue-on-error: true
-
    }
+
+
+my $tests = sub                                                                 # Commands to run tests
+ {my @t;
+  push @t, test q(z), $_ for @cz;
+  push @t, test q(g), $_ for @cg;
   join "\n", @t;
  }->();
 
@@ -84,7 +94,7 @@ jobs:
     - name: Install
       run: |
         sudo apt update
-        sudo apt -y install build-essential gdb tree
+        sudo apt -y install build-essential gdb tree gtk+-3.0-dev
         sudo cpan install Data::Table::Text Data::Dump Dita::PCD Getopt::Long File::Basename Java::Doc Preprocess::Ops
 
     - name: Install Valgrind
