@@ -80,6 +80,7 @@ void test0()
   c ◁ makeStringBufferFromString("b2sum pango.png");
   c ▷ system;
   assert(c ▷ containsString("fade60d"));
+  c ▷ free;
  }
 
 int main (void)
