@@ -58,7 +58,7 @@ sub test($$)                                                                    
  {my ($dir, $c) = @_;                                                           # Folder, Program to be tested
   my $path = qq(c/$dir/$c/);
   my $file = fpe($home, $path, $c, q(c));
-  -e $path or confess "No such file: $file";
+  -e $file or confess "No such file: $file";
   <<END;
     - name: Run $c
       if: always()
