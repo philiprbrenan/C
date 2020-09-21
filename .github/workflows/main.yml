@@ -15,6 +15,7 @@ jobs:
     - name: Env
       run: |
         echo $HOME
+        pwd
 
     - name: Install
       run: |
@@ -29,6 +30,7 @@ jobs:
     - name: Home
       run: |
         echo $HOME
+        pwd
         tree
 
     - name: Run arenaRedBlackTree
