@@ -3,20 +3,22 @@
 #include <pango/pangocairo.h>
 #define SIZE 2000
 
+const size_t height = 600, width = height;                                      //
+
 static void
 draw_text
  (cairo_t *cr)
  {PangoLayout          * layout;
-  PangoFontDescription * desc;
+  PangoFontDescription * font;
 
-  cairo_translate(cr, 10, -400);
+  cairo_translate(cr, 10, 10);
 
   layout = pango_cairo_create_layout(cr);                                        // Create a PangoLayout, set the font and text
 
   pango_layout_set_text(layout, "Cy", -1);
-  desc = pango_font_description_from_string("Noto Sans Bold 1200");
-  pango_layout_set_font_description(layout, desc);
-  pango_font_description_free(desc);
+  font = pango_font_description_from_string("Noto Sans Bold 1200");
+  pango_layout_set_font_description(layout, font);
+  pango_font_description_free(font);
   cairo_set_source_rgb(cr, 1, 0, 0);
 
   pango_cairo_show_layout(cr, layout);
