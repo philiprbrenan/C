@@ -772,7 +772,7 @@ void test1()                                                                    
 
 void test2()                                                                    //Tprint
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
-  if (!develop()) strcpy(file, "q(/home/runner/work/C/C/c/z/xml/samples/foreword.dita");
+  if (!develop()) strcpy(file, "/home/runner/work/C/C/c/z/xml/samples/foreword.dita");
 
   XmlParse x = makeXmlParseFromFile(file);
 
