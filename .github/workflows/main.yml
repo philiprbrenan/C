@@ -30,36 +30,36 @@ jobs:
     - name: Run arenaRedBlackTree
       if: always()
       run: |
-        (cd c/z/arenaRedBlackTree/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run arenaRedBlackTree.c --cIncludes c/includes)
-        (cd c/z/arenaRedBlackTree/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run arenaRedBlackTree.c --cIncludes c/includes --valgrind)
+        (cd c/z/arenaRedBlackTree/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run arenaRedBlackTree.c --cIncludes c/includes)
+        (cd c/z/arenaRedBlackTree/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run arenaRedBlackTree.c --cIncludes c/includes --valgrind)
 
     - name: Run arenaTree
       if: always()
       run: |
-        (cd c/z/arenaTree/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run arenaTree.c --cIncludes c/includes)
-        (cd c/z/arenaTree/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run arenaTree.c --cIncludes c/includes --valgrind)
+        (cd c/z/arenaTree/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run arenaTree.c --cIncludes c/includes)
+        (cd c/z/arenaTree/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run arenaTree.c --cIncludes c/includes --valgrind)
 
     - name: Run stringBuffer
       if: always()
       run: |
-        (cd c/z/stringBuffer/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run stringBuffer.c --cIncludes c/includes)
-        (cd c/z/stringBuffer/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run stringBuffer.c --cIncludes c/includes --valgrind)
+        (cd c/z/stringBuffer/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run stringBuffer.c --cIncludes c/includes)
+        (cd c/z/stringBuffer/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run stringBuffer.c --cIncludes c/includes --valgrind)
 
     - name: Run xml
       if: always()
       run: |
-        (cd c/z/xml/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run xml.c --cIncludes c/includes)
-        (cd c/z/xml/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run xml.c --cIncludes c/includes --valgrind)
+        (cd c/z/xml/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run xml.c --cIncludes c/includes)
+        (cd c/z/xml/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run xml.c --cIncludes c/includes --valgrind)
 
     - name: Run utilities
       if: always()
       run: |
-        (cd c/z/utilities/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run utilities.c --cIncludes c/includes)
-        (cd c/z/utilities/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run utilities.c --cIncludes c/includes --valgrind)
+        (cd c/z/utilities/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run utilities.c --cIncludes c/includes)
+        (cd c/z/utilities/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run utilities.c --cIncludes c/includes --valgrind)
 
     - name: Run pangoText
       if: always()
       run: |
-        (cd c/g/pangoText/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run pangoText.c --cIncludes c/includes)
-        (cd c/g/pangoText/; perl $HOME/perl/makeWithPerl/makeWithPerl.pl --c --run pangoText.c --cIncludes c/includes --valgrind)
+        (cd c/g/pangoText/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run pangoText.c --cIncludes c/includes)
+        (cd c/g/pangoText/; perl ~/perl/makeWithPerl/makeWithPerl.pl --c --run pangoText.c --cIncludes c/includes --valgrind)
 
