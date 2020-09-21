@@ -20,11 +20,12 @@ use YAML::Loader;
 use feature qw(say current_sub);
 
 my $home    = q(/home/phil/);                                                   # Local files
+my $git     = q(/home/runner/work/C/C);                                         # Corresponding location on Github
 my $user    = q(philiprbrenan);                                                 # User
 my $repo    = q(C);                                                             # Repo
 my $wf      = q(.github/workflows/main.yml);                                    # Work flow
 my $compile = q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);                  # Compile
-my @dir     = qw(/home/phil/c/);                                                # Directories to upload
+my $dir     = fpd($home, q(c/));                                                # Directories to upload
 
 my @cz      =  grep {!/\A#/} split /\s+/, <<END;                                # z files to run
 arenaRedBlackTree
@@ -41,8 +42,10 @@ END
 if (1)                                                                          # Upload files
  {my @files = $compile;
 
-  push @files, grep {-T $_ and !m(/backup/|/z/z/)}                              # Select files ignoring backups and tests
-    searchDirectoryTreesForMatchingFiles(@dir, qw(.h .c .pl .md));
+  if (1)                                                                        # Select files ignoring backups and tests
+   {push @files, grep {-T $_ and !m(/backup/|/z/z/)}
+      searchDirectoryTreesForMatchingFiles($dir, qw(.h .c .pl .md));
+   }
 
   my %files = map {$_=>1} grep {1 or /makeWithPerl/} @files;                    # Filter files
 
@@ -55,16 +58,16 @@ if (1)                                                                          
  }
 
 sub test($$)                                                                    # Write one test
- {my ($dir, $c) = @_;                                                           # Folder, Program to be tested
-  my $path = qq(c/$dir/$c/);
-  my $file = fpe($home, $path, $c, q(c));
+ {my ($d, $c) = @_;                                                             # Folder, Program to be tested
+  my $file = fpe($dir, $d, $c, $c, q(c));
   -e $file or confess "No such file: $file";
+  my $path = fpd($git, q(c), $d, $c);
   <<END;
     - name: Run $c
       if: always()
       run: |
-        (cd $path; perl perl/makeWithPerl/makeWithPerl.pl --c --run $c.c --cIncludes c/includes)
-        (cd $path; perl perl/makeWithPerl/makeWithPerl.pl --c --run $c.c --cIncludes c/includes --valgrind)
+        (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes)
+        (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes --valgrind)
 END
    }
 
@@ -91,6 +94,11 @@ jobs:
     steps:
     - uses: actions/checkout\@v2
 
+    - name: Env
+      run: |
+        echo \$HOME
+        pwd
+
     - name: Install
       run: |
         sudo apt update
@@ -103,7 +111,6 @@ jobs:
 
     - name: Home
       run: |
-        echo \$HOME
         tree
 
 $tests
