@@ -124,7 +124,6 @@ ssize_t __attribute__ ((unused)) readFile                                       
     close(i);
     return -3;
    }
-
   const typeof(reader(s, size)) r = reader(s, size);                                                          // Read data per caller
 
   close(i);                                                                     // Close file
