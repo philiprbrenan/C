@@ -23,6 +23,7 @@ typedef struct StringBuffer                                                     
 #include <stringBuffer_prototypes.h>
 #define StringBufferfe( child, parent) for(ArenaTreeNode child = parent.string.proto->first(parent.string); child.proto->valid(child); child = child.proto->next(child)) // Each child in a parent from first to last
 #define StringBufferfer(child, parent) for(ArenaTreeNode child = parent.string.proto->last(parent.string) ; child.proto->valid(child); child = child.proto->prev(child)) // Each child in a parent from last to first
+#define makeLocalCopyOfStringBuffer(string,length,buffer) const size_t length = length_StringBuffer(buffer); char string[length+1]; string_StringBuffer_string(buffer, string); // Load a string buffer into locally defined string/length variables.
 
 StringBuffer makeStringBuffer                                                                         // Make a StringBuffer
  ()                                                                             //
@@ -72,8 +73,8 @@ static void addn_StringBuffer_string                                            
 static void addStringBuffer_StringBuffer_StringBuffer                                                            // Add a string buffer
  (const StringBuffer buffer,                                                               // Target StringBuffer
   const StringBuffer add)                                                                  // Source StringBuffer
- {const typeof(add.proto->length(add)) N = add.proto->length(add); char a[N+1]; add.proto->string(add, a);
-  buffer.proto->add(buffer, a);
+ {makeLocalCopyOfStringBuffer(a, N, add);                                                  // Make a local copy of the buffer to be added in case the source and target buffers are the same
+  buffer.proto->add(buffer, a);                                                              // Add copy of source to target
  }
 
 static void addVaFormat_StringBuffer_string_va                                             // Add a variadic argument formatted string
@@ -144,8 +145,7 @@ static void join_StringBuffer                                                   
  (const StringBuffer old)                                                                  // StringBuffer
  {const typeof(old.string.proto->countChildren(old.string)) C = old.string.proto->countChildren(old.string);                                               // Number of sub strings
   if (C <= 1) return;                                                           // Already joined
-  const typeof(old.proto->length(old)) N = old.proto->length(old);                                                             // Length of joined string
-  char b[N+1]; old.proto->string(old, b);
+  makeLocalCopyOfStringBuffer(b, N, old);                                                  // Local copy of string
   const typeof(makeStringBuffer()) new = makeStringBuffer();                                                                // New string buffer
   new.proto->add(new, b);                                                                 // Load new buffer from joined string
   old.string.proto->swap(old.string, new.string);                                                // Swap arenas so that the old becomes the new
@@ -155,8 +155,7 @@ static void join_StringBuffer                                                   
 static StringBuffer splitLines                                                  // Split the specified StringBuffer on any new line characters and return the split text as a new StringBuffer
  (const StringBuffer string)                                                               // StringBuffer
  {const typeof(makeStringBuffer()) r = makeStringBuffer();                                                                  // Results
-  const typeof(string.proto->length(string)) N = string.proto->length(string);                                                          // Length of current string
-  char s[N+1]; string.proto->string(string, s);                                              // Linearize current string
+  makeLocalCopyOfStringBuffer(s, N, string);                                               // Local copy of string
   size_t i = 0, j = 0;                                                          // Line start and end
   void save()                                                                   // Save a string
    {r.proto->addn(r, s+j, i - j + 1);
@@ -170,8 +169,7 @@ static StringBuffer splitLines                                                  
 static StringBuffer splitWords                                                  // Split the specified StringBuffer into words delimited by spaces and return the split text as a new StringBuffer
  (const StringBuffer string)                                                               // StringBuffer
  {const typeof(makeStringBuffer()) r = makeStringBuffer();                                                                  // Results
-  const typeof(string.proto->length(string)) N = string.proto->length(string);                                                          // Length of current string
-  char s[N+1]; string.proto->string(string, s);                                              // Linearize current string
+  makeLocalCopyOfStringBuffer(s, N, string);                                               // Local copy of string
   size_t i = 0, j = 0;                                                          // Line start and end
   void save()                                                                   // Save a string
    {if (i > j) r.proto->addn(r, s+j, i - j);
@@ -204,28 +202,28 @@ static int equals_StringBuffer_StringBuffer                                     
 static int equalsString_StringBuffer_string                                                // Checks whether a StringBuffer is equal to a specified zero terminated string.
  (const StringBuffer            buffer,                                                    // StringBuffer
   const char * const string)                                                    // String
- {const size_t l = strlen(string);
-  if (buffer.proto->length(buffer) != l) return 0;
-  char B[l+1]; buffer.proto->string(buffer, B);
-  return !strcmp(B, string);
+ {const size_t l = strlen(string);                                              // Length of comparison
+  makeLocalCopyOfStringBuffer(b, N, buffer);                                               // Local copy
+  if (l != N) return 0;                                                         // Strings differ in length and so cannot be equal
+  return !strncmp(b, string, l);                                                // Check strings are equal
  }
 
 static int contains_StringBuffer_StringBuffer                                                         // Checks whether the first StringBuffer contains the second StringBuffer
  (const StringBuffer a,                                                                    // First StringBuffer
   const StringBuffer b)                                                                    // Second StringBuffer
- {const size_t la = a.proto->length(a), lb = b.proto->length(b);
+ {makeLocalCopyOfStringBuffer(A, la, a);                                                   // Local copy of first
+  makeLocalCopyOfStringBuffer(B, lb, b);                                                   // Local copy of second
   if (la < lb) return 0;                                                        // Cannot be contained in a shorter string
-  char A[la+1], B[lb+1]; a.proto->string(a, A); b.proto->string(b, B);
   return !!strstr(A, B);
  }
 
 static int containsString_StringBuffer_StringBuffer                                                   // Checks whether a StringBuffer contains a specified zero terminated string.
  (const StringBuffer            buffer,                                                    // StringBuffer
   const char * const string)                                                    // String
- {const size_t l = strlen(string), lb = buffer.proto->length(buffer);
+ {const size_t l = strlen(string);                                              // Length of string to be found
+  makeLocalCopyOfStringBuffer(b, lb, buffer);                                              // Local copy of string to be searched
   if (lb < l) return 0;                                                         // Cannot be contained in a shorter string
-  char B[lb+1]; buffer.proto->string(buffer, B);
-  return !!strstr(B, string);
+  return !!strstr(b, string);
  }
 
 static int substringEquals_int_StringBuffer_int_int_string                                 // Checks whether a sub string of the specified StringBuffer is equal to the specified zero terminated string.
@@ -255,10 +253,9 @@ static size_t substring_size_StringBuffer_int_int_string                        
   const size_t start,                                                           // Offset to start of string
   const size_t length,                                                          // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
   char * const string)                                                          // String to load with enough space for the string and its terminating zero
- {const size_t l = buffer.proto->length(buffer);                                             // Length of source string
+ {makeLocalCopyOfStringBuffer(s, l, buffer);                                               // Local copy
   *string        = 0;                                                           // Start with an empty output string
   if (start >= l) return 0;                                                     // Substring starts beyond the end of the string
-  char s[l+1]; buffer.proto->string(buffer, s);                                              // Buffer as a single string
   const size_t n = start + length < l ? length : l - start;                     // Amount we can copy
   strncpy(string, s + start, n);                                                // Copy out as much of the sub string as we can
   string[n] = 0;                                                                // Zero terminate sub string
@@ -268,9 +265,8 @@ static size_t substring_size_StringBuffer_int_int_string                        
 static void apply_StringBuffer_function                                                    // Apply a function to a string.
  (const StringBuffer string,                                                               // StringBuffer
   void (*action)(char *string, size_t length))                                  // Action to apply
- {const typeof(string.proto->length(string)) length = string.proto->length(string);                                                     // Length of string
-  char s[length + 1]; string.proto->string(string, s);                                       // Place string on stack
-  action(s, length);                                                            // Perform action on string
+ {makeLocalCopyOfStringBuffer(s, l, string);                                               // Local copy
+  action(s, l);                                                                 // Perform action on string
  }
 
 static  void system_StringBuffer_StringBuffer                                                         // Replace a StringBuffer containing a system command with the results of executing that command.
@@ -347,8 +343,7 @@ static StringBuffer readFile_StringBuffer_string                                
    {buffer.proto->addn(buffer, location, length);                                            // Place content in StringBuffer
     return 0;                                                                   // Success is now determined by the content of the StringBuffer
    }
-  const typeof(fileName.proto->length(fileName)) N = fileName.proto->length(fileName);                                                        // Length of file name
-  char f[N+1]; fileName.proto->string(fileName, f);
+  makeLocalCopyOfStringBuffer(f, n, fileName);                                             // Local copy
   readFile(f, reader);                                                          // Read file
   return buffer;                                                                // Content read
  }
