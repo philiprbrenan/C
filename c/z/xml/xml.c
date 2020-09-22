@@ -171,7 +171,7 @@ static $Parse make$ParseFromString                                              
  (const char * const string)                                                    // String of xml
  {f ◁ makeStringBufferFromString(string);                                       // File base name
   t ◁ f ▷ writeTemporaryFile("zzz.xml");                                        // Create a temporary file
-  char T[t ▷ length + 1]; t ▷ string(T);                                        // Name of temporary file
+  makeLocalCopyOfStringBuffer(T, l, t);                                         // Local copy
   x ◁ make$ParseFromFile(T);                                                    // Parse temporary file
   unlink(T); f ▷ free; t ▷ free;                                                // Unlink temporary file and free string buffers
   return x;
@@ -492,8 +492,7 @@ static int prettyPrintsAs_int_$_string                                          
  {s ◁ xml ▷ prettyPrint;
 
   if (!s ▷ equalsString(expected))                                              // Strings do not match
-   {N ◁ s ▷ length;
-    char S[N+1]; s ▷ string(S);
+   {makeLocalCopyOfStringBuffer(S, N, s);                                         // Local copy
     for(size_t i = 0; i < N; ++i)
      {const char a = *(S+i), b = *(expected+i);
       if (a != b)
