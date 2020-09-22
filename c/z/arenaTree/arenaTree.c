@@ -230,10 +230,8 @@ static $Node node_$Node_$_$String                                               
 static  $Node nodeFromStringBuffer_$_$Node_$_StringBuffer                       // Create a new tree node from a String Buffer
  (const $             tree,                                                     // Arena tree in which to create the node
   const StringBuffer  string)                                                   // Key for this node as a string buffer
- {N ◁ string ▷ length;                                                          // Length of buffer
-  char b[N+1];                                                                  // Space for buffer and terminating zero
-  string   ▷ string(b);                                                         // Create continuous string
-  n ◁ tree ▷ noden (b, N);                                                      // Node from string of known length
+ {makeLocalCopyOfStringBuffer(b, l, string);                                    // Local copy
+  n ◁ tree ▷ noden(b, l);                                                       // Node from string of known length
   return n;
  }
 
