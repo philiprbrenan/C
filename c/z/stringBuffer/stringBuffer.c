@@ -68,19 +68,11 @@ static void addn_$_string                                                       
   s ▷ putTreeLast;
  }
 
-void debug(){}
-
 static void add$_$_$                                                            // Add a string buffer
  (const $ buffer,                                                               // Target $
   const $ add)                                                                  // Source $
- {l ◁ add ▷ count;
-  ArenaTreeNode s[l];
-  size_t i = 0; $fe(line, add) s[i++] = line;
-
- for(size_t i = 0; i < l; ++i)
-  {n ◁ s[i];
-   debug();
-   buffer ▷ add(n ▷ key);}
+ {N ◁ add ▷ length; char a[N+1]; add ▷ string(a);
+  buffer ▷ add(a);
  }
 
 static void addVaFormat_$_string_va                                             // Add a variadic argument formatted string
