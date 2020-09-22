@@ -231,10 +231,8 @@ static ArenaTreeNode node_ArenaTreeNode_ArenaTree_ArenaTreeString               
 static  ArenaTreeNode nodeFromStringBuffer_ArenaTree_ArenaTreeNode_ArenaTree_StringBuffer                       // Create a new tree node from a String Buffer
  (const ArenaTree             tree,                                                     // Arena tree in which to create the node
   const StringBuffer  string)                                                   // Key for this node as a string buffer
- {const typeof(string.proto->length(string)) N = string.proto->length(string);                                                          // Length of buffer
-  char b[N+1];                                                                  // Space for buffer and terminating zero
-  string.proto->string(string, b);                                                         // Create continuous string
-  const typeof(tree.proto->noden(tree, b, N)) n = tree.proto->noden(tree, b, N);                                                      // Node from string of known length
+ {makeLocalCopyOfStringBuffer(b, l, string);                                    // Local copy
+  const typeof(tree.proto->noden(tree, b, l)) n = tree.proto->noden(tree, b, l);                                                       // Node from string of known length
   return n;
  }
 
@@ -362,17 +360,17 @@ static  ArenaTreeNode last_ArenaTreeNode_ArenaTreeNode                          
  (const ArenaTreeNode parent)                                                           // Parent
  {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->last.delta);
  }
-#line 360 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 358 "/home/phil/c/z/arenaTree/arenaTree.c"
 static  ArenaTreeNode next_ArenaTreeNode_ArenaTreeNode                                                 // Get the next child under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
  {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->next.delta);
  }
-#line 360 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 358 "/home/phil/c/z/arenaTree/arenaTree.c"
 static  ArenaTreeNode prev_ArenaTreeNode_ArenaTreeNode                                                 // Get the prev child under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
  {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->prev.delta);
  }
-#line 360 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 358 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 static  ArenaTreeNode first_ArenaTreeNode_ArenaTree                                                     // Get the first child in the specified ArenaTree.
  (const ArenaTree tree)                                                                 // Parent
@@ -384,19 +382,19 @@ static  ArenaTreeNode last_ArenaTreeNode_ArenaTree                              
  {const ArenaTreeNode root = tree.proto->root(tree);
   return root.proto->last(root);
  }
-#line 367 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 365 "/home/phil/c/z/arenaTree/arenaTree.c"
 static  ArenaTreeNode next_ArenaTreeNode_ArenaTree                                                     // Get the next child in the specified ArenaTree.
  (const ArenaTree tree)                                                                 // Parent
  {const ArenaTreeNode root = tree.proto->root(tree);
   return root.proto->next(root);
  }
-#line 367 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 365 "/home/phil/c/z/arenaTree/arenaTree.c"
 static  ArenaTreeNode prev_ArenaTreeNode_ArenaTree                                                     // Get the prev child in the specified ArenaTree.
  (const ArenaTree tree)                                                                 // Parent
  {const ArenaTreeNode root = tree.proto->root(tree);
   return root.proto->prev(root);
  }
-#line 367 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 365 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -479,7 +477,7 @@ static int isLast_ArenaTreeNode                                                 
  {const ArenaTreeNode parent = child.proto->parent(child);
   return child.proto->equals(child, parent.proto->last(parent));
  }
-#line 445 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 443 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 static int isEmpty_ArenaTreeNode                                                        // Confirm a node has no children.
  (const ArenaTreeNode node)                                                             // Node
@@ -534,7 +532,7 @@ static  ArenaTreeNode putTreeLast_ArenaTreeNode_ArenaTreeNode                   
   const typeof(t.proto->root(t)) r = t.proto->root(t);
   return r.proto->putLast(r, child);                                                   // Put the child last
  }
-#line 494 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 492 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 static  ArenaTreeNode putFirst_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode                                        // Put a child first under its parent
  (const ArenaTreeNode parent,                                                           // Parent
@@ -546,7 +544,7 @@ static  ArenaTreeNode putLast_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode         
   const ArenaTreeNode child)                                                            // Child
  {return putFL_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode(0, parent, child);                             // Put a child last under its parent
  }
-#line 501 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 499 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 static  ArenaTreeNode putNP_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode                                           //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -593,7 +591,7 @@ static  ArenaTreeNode putPrev_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode         
   const ArenaTreeNode child)                                                            // Child
  {return putNP_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode(0, sibling, child);                            // Put child previous
  }
-#line 543 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 541 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 //D1 Traverse                                                                   // Traverse a tree.
 
