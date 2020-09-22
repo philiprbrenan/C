@@ -69,19 +69,11 @@ static void addn_StringBuffer_string                                            
   s.proto->putTreeLast(s);
  }
 
-void debug(){}
-
 static void addStringBuffer_StringBuffer_StringBuffer                                                            // Add a string buffer
  (const StringBuffer buffer,                                                               // Target StringBuffer
   const StringBuffer add)                                                                  // Source StringBuffer
- {const typeof(add.proto->count(add)) l = add.proto->count(add);
-  ArenaTreeNode s[l];
-  size_t i = 0; StringBufferfe(line, add) s[i++] = line;
-
- for(size_t i = 0; i < l; ++i)
-  {const typeof(s[i]) n = s[i];
-   debug();
-   buffer.proto->add(buffer, n.proto->key(n));}
+ {const typeof(add.proto->length(add)) N = add.proto->length(add); char a[N+1]; add.proto->string(add, a);
+  buffer.proto->add(buffer, a);
  }
 
 static void addVaFormat_StringBuffer_string_va                                             // Add a variadic argument formatted string
