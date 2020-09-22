@@ -72,62 +72,62 @@ static $Node root_$                                                             
 
 static size_t height_$Node                                                      // Height of a sub tree starting at the specified node
  (const $Node node)                                                             // Node
- {return node ▷ content->height.delta;
+ {return node ▷ content->height.offset;
  }
 
 static char *key_$Node                                                          // Key of the specified node as a zero terminated string
  (const $Node node)                                                             // Node
- {return node.tree ▷ pointer(node ▷ content->key.delta);
+ {return node.tree ▷ pointer(node ▷ content->key.offset);
  }
 
 static $Node up_$Node_$Node                                                     // Parent node for the specified node.
  (const $Node node)                                                             // Node
- {return node.tree ▷ nodeFromOffset(node ▷ content->up.delta);
+ {return node.tree ▷ nodeFromOffset(node ▷ content->up.offset);
  }
 
 static $Node left_$Node_$Node                                                   // Left child node below the specified parent node.
  (const $Node     parent)                                                       // Parent
- {return parent.tree ▷ nodeFromOffset(parent ▷ content->left.delta);
+ {return parent.tree ▷ nodeFromOffset(parent ▷ content->left.offset);
  }
 
 static $Node right_$Node_$Node                                                  // Right child node below the specified parent node.
  (const $Node     parent)                                                       // Parent
- {return  parent.tree ▷ nodeFromOffset(parent ▷ content->right.delta);
+ {return  parent.tree ▷ nodeFromOffset(parent ▷ content->right.offset);
  }
 
 static $Node ownedTreeRoot_$Node_$Node                                          //P Root of tree owned by this node if there is  one, else the returned node has an offset of zero.
  (const $Node     parent)                                                       // Parent
- {return parent.tree ▷ nodeFromOffset(parent ▷ content->tree.delta);
+ {return parent.tree ▷ nodeFromOffset(parent ▷ content->tree.offset);
  }
 
 static void setHeight_$Node                                                     //P Save the height of the sub tree starting at the specified node
  (const $Node  parent,                                                          // Parent
   const size_t height)                                                          // Height
- {parent ▷ content->height.delta = height;
+ {parent ▷ content->height.offset = height;
  }
 
 static void setUp_$Node_$Node                                                   //P Set parent node of specified child node
  (const $Node child,                                                            // Parent
   const $Node parent)                                                           // Child
- {child ▷ content->up.delta = parent.offset;
+ {child ▷ content->up.offset = parent.offset;
  }
 
 static void setLeft_$Node_$Node                                                 //P Set left child of specified parent.
  (const $Node parent,                                                           // Parent
   const $Node left)                                                             // Left child
- {parent ▷ content->left.delta = left.offset;
+ {parent ▷ content->left.offset = left.offset;
  }
 
 static void setRight_$Node_$Node                                                //P Parent parent for a specified parent in a red black tree
  (const $Node parent,                                                           // Parent
   const $Node right)                                                            // Right child
- {parent ▷ content->right.delta = right.offset;
+ {parent ▷ content->right.offset = right.offset;
  }
 
 static void setTree_$Node_$Node                                                 //P Set the other tree located by this node.
  (const $Node parent,                                                           // Parent
   const $Node tree)                                                             // Tree to be added to parent
- {parent ▷ content->tree.delta = tree.offset;
+ {parent ▷ content->tree.offset = tree.offset;
  }
 
 static int valid_$Node                                                          // Check that the specified node is valid.
@@ -147,7 +147,7 @@ static $Found find_$Found_$Found_$Node_string                                   
 
     if (!i) return found;                                                       // Found
 
-    p.offset = i < 0 ? p ▷ content->left.delta : p ▷ content->right.delta;      // Continue left or right
+    p.offset = i < 0 ? p ▷ content->left.offset : p ▷ content->right.offset;    // Continue left or right
    }
 
   return found;                                                                 // Found
@@ -163,7 +163,7 @@ static $Node locate_$Node_string                                                
 
     if (!i) return p;                                                           // Found
 
-    p.offset = i < 0 ? p ▷ content->left.delta : p ▷ content->right.delta;      // Continue left or right
+    p.offset = i < 0 ? p ▷ content->left.offset : p ▷ content->right.offset;    // Continue left or right
     if (!p ▷ valid) return p;                                                   // Not found
    }
 
@@ -178,7 +178,7 @@ static $Node locate_$_string                                                    
   for(;;)                                                                       // Search down through tree
    {     i ◁ strcmp(key, p ▷ key);                                              // Compare key sought with current key
     if (!i) return p;                                                           // Found
-    p.offset = i < 0 ? p ▷ content->left.delta : p ▷ content->right.delta;      // Continue left or right
+    p.offset = i < 0 ? p ▷ content->left.offset : p ▷ content->right.offset;    // Continue left or right
     if (!p ▷ valid) return p;                                                   // Not found
    }
 
@@ -281,7 +281,7 @@ static $Node add_$Node_$Found_$Node_string                                      
           L ◁ p ▷ left;  if (L ▷ valid) L ▷ setUp(p);
          }
 
-        rl ▷ content->up.delta = 0;                                             // Nothing above this node as it is now the new root node
+        rl ▷ content->up.offset = 0;                                            // Nothing above this node as it is now the new root node
        }
 
       else                                                                      // Balance a node that is not the root node
