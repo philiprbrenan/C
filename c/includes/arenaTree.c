@@ -23,7 +23,7 @@ typedef struct ArenaTree                                                        
  } ArenaTree;
 
 typedef struct ArenaTreeDelta                                                           // The amount an item is offset within a tree.
- {unsigned int delta;
+ {unsigned int offset;
  } ArenaTreeDelta;
 
 typedef struct ArenaTreeContent                                                         // A tree node in the arena
@@ -152,7 +152,7 @@ static  ArenaTreeNode root_ArenaTreeNodeOffset_ArenaTreeNodeOffset              
 static ArenaTreeString key_string_ArenaTreeNode                                                 //V Get a temporary pointer to the offset containing the key of a node.
  (const ArenaTreeNode node)                                                             // NodeContent
  {const ArenaTree t = node.tree;
-  const typeof(t.proto->offset(t, (node.proto->content(node))->key.delta)) k = t.proto->offset(t, (node.proto->content(node))->key.delta);
+  const typeof(t.proto->offset(t, (node.proto->content(node))->key.offset)) k = t.proto->offset(t, (node.proto->content(node))->key.offset);
   return  k.proto->pointer(k);
  }
 
@@ -167,7 +167,7 @@ static void setKey_ArenaTreeNode_ArenaTreeString                                
    {strcpy(k, key);
     return;
    }
-  node.proto->content(node)->key.delta = node.tree.proto->saveString(node.tree, key, m).offset;            // Allocate new (longer) key
+  node.proto->content(node)->key.offset = node.tree.proto->saveString(node.tree, key, m).offset;           // Allocate new (longer) key
  };
 
 static size_t used_ArenaTree                                                            // Amount of space currently being used within the arena of a tree.
@@ -218,7 +218,7 @@ static ArenaTreeNode noden_ArenaTreeNode_ArenaTree_ArenaTreeString              
   const char * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
   const size_t  length)                                                         // Length of the key, or if zero, I will use strlen
  {const typeof(tree.proto->allocate(tree, sizeof(ArenaTreeContent))) c = tree.proto->allocate(tree, sizeof(ArenaTreeContent));                                        // Space required for a tree node
- ((ArenaTreeContent *)(c.proto->pointer(c)))->key.delta = tree.proto->saveString(tree, key, length).offset;// Save key                                                      // Save key offset
+ ((ArenaTreeContent *)(c.proto->pointer(c)))->key.offset = tree.proto->saveString(tree, key,length).offset;// Save key                                                      // Save key offset
   return tree.proto->nodeFromOffset(tree, c.offset);                                       // Return node
  }
 
@@ -275,14 +275,14 @@ static void get_ArenaTreeNode_data_size                                         
  (const ArenaTreeNode  node,                                                            // Node in an arena tree associated with the data
   void * const data,                                                            // Pointer to the area into which the data is to be copied
   const size_t length)                                                          // Length of the data to be retrieved
- {node.tree.proto->get(node.tree, node.proto->content(node)->data.delta, data, length);                    // Locate data
+ {node.tree.proto->get(node.tree, node.proto->content(node)->data.offset, data, length);                   // Locate data
  }
 
 static void set_ArenaTreeNode_data_size                                                 // Save the specified data in the arena of the tree and return the offset of the data.
  (const ArenaTreeNode  node,                                                            // Node in an arena tree to associate with the data
   const void * const data,                                                      // Pointer to the data to be saved
   const size_t length)                                                          // Length of the data to be saved
- {node.proto->content(node)->data.delta = node.tree.proto->store(node.tree, data, length).offset;          // Record offset of saved data
+ {node.proto->content(node)->data.offset = node.tree.proto->store(node.tree, data, length).offset;         // Record offset of saved data
  }
 
 static void copyData_ArenaTreeNode_ArenaTreeNode                                                // Copy the data offset associated with the source node to the target node by copying the offset to the data held in the source node to the target node.
@@ -293,13 +293,13 @@ static void copyData_ArenaTreeNode_ArenaTreeNode                                
 
 static size_t getData_size_ArenaTreeNode                                                // Get the value of the data offset associated with a node.
  (const ArenaTreeNode  node)                                                            // Node in an arena tree associated with the data
- {return node.proto->content(node)->data.delta;                                            // Value of the data offset field
+ {return node.proto->content(node)->data.offset;                                           // Value of the data offset field
  }
 
 static void setData_ArenaTreeNode_size                                                  // Set the value of the data offset associated with a node.
  (const ArenaTreeNode  node,                                                            // Node in an arena tree to associate with the data
   const size_t offset)                                                          // Value the data offset is to be set to
- {node.proto->content(node)->data.delta = offset;                                          // Record offset
+ {node.proto->content(node)->data.offset = offset;                                         // Record offset
  }
 
 static void fromLetters_ArenaTree_ArenaTreeString                                               // Load tree from a string of letters and brackets.  The root node of the tree so constructed is always given the letter 'a'.
@@ -349,26 +349,26 @@ static int valid_ArenaTreeNode                                                  
 static  ArenaTreeNode parent_ArenaTreeNode_ArenaTreeNode                                                // Get the parent of a child
  (const ArenaTreeNode child)                                                            // Child
  {if (child.proto->isRoot(child)) return child;
-  return child.tree.proto->nodeFromOffset(child.tree, child.proto->content(child)->parent.delta);
+  return child.tree.proto->nodeFromOffset(child.tree, child.proto->content(child)->parent.offset);
  }
 
 static  ArenaTreeNode first_ArenaTreeNode_ArenaTreeNode                                                 // Get the first child under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
- {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->first.delta);
+ {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->first.offset);
  }
 static  ArenaTreeNode last_ArenaTreeNode_ArenaTreeNode                                                 // Get the last child under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
- {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->last.delta);
+ {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->last.offset);
  }
 #line 358 "/home/phil/c/z/arenaTree/arenaTree.c"
 static  ArenaTreeNode next_ArenaTreeNode_ArenaTreeNode                                                 // Get the next child under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
- {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->next.delta);
+ {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->next.offset);
  }
 #line 358 "/home/phil/c/z/arenaTree/arenaTree.c"
 static  ArenaTreeNode prev_ArenaTreeNode_ArenaTreeNode                                                 // Get the prev child under a parent.
  (const ArenaTreeNode parent)                                                           // Parent
- {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->prev.delta);
+ {return  parent.tree.proto->nodeFromOffset(parent.tree, parent.proto->content(parent)->prev.offset);
  }
 #line 358 "/home/phil/c/z/arenaTree/arenaTree.c"
 
@@ -506,17 +506,17 @@ static  ArenaTreeNode putFL_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode           
   if (child.tree.arena != tree.arena) printStackBackTrace("Wrong tree\n");      // Parent and child must be in same tree
   const typeof(parent.offset) P = parent.offset;    const typeof(child.offset) C = child.offset;                                       // Delta of parent and child
   const typeof(parent.proto->content(parent)) p = parent.proto->content(parent); const typeof(child.proto->content(child)) c = child.proto->content(child);                                   // Pointers to parent and child
-  const typeof(first ? p->first.delta : p->last.delta) L = first ? p->first.delta : p->last.delta;                                   // Delta of child currently first/last
+  const typeof(first ? p->first.offset : p->last.offset) L = first ? p->first.offset : p->last.offset;                                 // Delta of child currently first/last
   if (!L)                                                                       // No children yet
-   {if (first) p->last.delta = C; else p->first.delta = C;                      // Delta to last/first child
+   {if (first) p->last.offset = C; else p->first.offset = C;                    // Delta to last/first child
    }
   else                                                                          // Existing children
    {ArenaTreeContent * const l = tree.proto->pointer(tree, L);                                     // Link first/last two children together
-    if (first) l->prev.delta = C; else l->next.delta = C;
-    if (first) c->next.delta = L; else c->prev.delta = L;
+    if (first) l->prev.offset = C; else l->next.offset = C;
+    if (first) c->next.offset = L; else c->prev.offset = L;
    }
-  c->parent.delta = P;                                                          // Parent new first/last child
-  if (first)  p->first.delta = C; else p->last.delta = C;                       // Parent points to new first/last child
+  c->parent.offset = P;                                                         // Parent new first/last child
+  if (first)  p->first.offset = C; else p->last.offset = C;                     // Parent points to new first/last child
   return child;
  }
 
@@ -563,22 +563,22 @@ static  ArenaTreeNode putNP_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode           
   else                                                                          // Not last/first
    {const typeof(twin.proto->content(twin)) w = twin.proto->content(twin);                                                         // Pointer to twin of sibling
     if (next)
-     {s->next.delta = w->prev.delta = child.offset;
-      c->prev.delta = sibling.offset; c->next.delta = twin.offset;
+     {s->next.offset = w->prev.offset = child.offset;
+      c->prev.offset = sibling.offset; c->next.offset = twin.offset;
      }
     else
-     {s->prev.delta = w->next.delta = child.offset;
-      c->next.delta = sibling.offset; c->prev.delta = twin.offset;
+     {s->prev.offset = w->next.offset = child.offset;
+      c->next.offset = sibling.offset; c->prev.offset = twin.offset;
      }
    }
-  c->parent.delta = parent.offset;                                              // Parent new next/prev child
+  c->parent.offset = parent.offset;                                             // Parent new next/prev child
   return child;
  }
 
 static void setUp_ArenaTreeNode_ArenaTreeNode                                                   //P Make the specified parent node the parent of the specified child node
  (const ArenaTreeNode child,                                                            // Child
   const ArenaTreeNode parent)                                                           // Child
- {child.proto->content(child)->parent.delta = parent.offset;                                // Set parent of child
+ {child.proto->content(child)->parent.offset = parent.offset;                               // Set parent of child
  }
 
 static  ArenaTreeNode putNext_ArenaTreeNode_ArenaTreeNode_ArenaTreeNode                                         // Put a child next after the specified sibling
@@ -777,25 +777,25 @@ static  ArenaTreeNode cut_ArenaTreeNode_ArenaTreeNode                           
   const typeof(parent.proto->content(parent)) p = parent.proto->content(parent); const typeof(child.proto->content(child)) c = child.proto->content(child);                                    // Parent pointer, child content
 
   if (child.proto->isOnlyChild(child))                                                      // Only child
-   {p->first.delta = p->last.delta = 0;                                         // Remove child
+   {p->first.offset = p->last.offset = 0;                                       // Remove child
    }
   else if (child.proto->isLast(child))                                                      // Last child
    {const typeof(child.proto->prev(child)) L = child.proto->prev(child);
     const typeof(L.proto->content(L)) l = L.proto->content(L);
-    p->last.delta = L.offset; l->next.delta = 0;                                // Last child under parent
+    p->last.offset = L.offset; l->next.offset = 0;                              // Last child under parent
    }
   else if (child.proto->isFirst(child))                                                     // First child
    {const typeof(child.proto->next(child)) F = child.proto->next(child);
     const typeof(F.proto->content(F)) f = F.proto->content(F);
-    p->first.delta = F.offset; f->prev.delta = 0;                               // Last child under parent
+    p->first.offset = F.offset; f->prev.offset = 0;                             // Last child under parent
    }
   else                                                                          // Some where in the middle
    {const typeof(child.proto->next(child)) N = child.proto->next(child);    const typeof(child.proto->prev(child)) P = child.proto->prev(child);
     const typeof(N.proto->content(N)) n = N.proto->content(N); const typeof(P.proto->content(P)) p = P.proto->content(P);
-    p->next.delta = N.offset; n->prev.delta = P.offset;
+    p->next.offset = N.offset; n->prev.offset = P.offset;
    }
 
-  c->next.delta = c->prev.delta = 0;                                            // Remove child
+  c->next.offset = c->prev.offset = 0;                                          // Remove child
 
   return child;
  }
@@ -1041,7 +1041,7 @@ void test6()                                                                    
 
 void test7()                                                                    //TsetKey //Tkey //TsaveString //Tused //Tsize
  {const typeof(makeArenaTree()) t = makeArenaTree(); t.proto->fromLetters(t, "");
-  ArenaTreeDelta d = {delta : 1};
+  ArenaTreeDelta d = {offset : 1};
   assert(sizeof(d) == 4);
 
   const typeof(t.proto->saveString(t, "aaaa", 0)) a = t.proto->saveString(t, "aaaa", 0);
