@@ -22,7 +22,7 @@ typedef struct $                                                                
  } $;
 
 typedef struct $Delta                                                           // The amount an item is offset within a tree.
- {unsigned int delta;
+ {unsigned int offset;
  } $Delta;
 
 typedef struct $Content                                                         // A tree node in the arena
@@ -151,7 +151,7 @@ static  $Node root_$NodeOffset_$NodeOffset                                      
 static $String key_string_$Node                                                 //V Get a temporary pointer to the offset containing the key of a node.
  (const $Node node)                                                             // NodeContent
  {const $ t = node.tree;
-  k ◁ t ▷ offset((node ▷ content)->key.delta);
+  k ◁ t ▷ offset((node ▷ content)->key.offset);
   return  k ▷ pointer;
  }
 
@@ -166,7 +166,7 @@ static void setKey_$Node_$String                                                
    {strcpy(k, key);
     return;
    }
-  node ▷ content->key.delta = node.tree ▷ saveString(key, m).offset;            // Allocate new (longer) key
+  node ▷ content->key.offset = node.tree ▷ saveString(key, m).offset;           // Allocate new (longer) key
  };
 
 static size_t used_$                                                            // Amount of space currently being used within the arena of a tree.
@@ -217,7 +217,7 @@ static $Node noden_$Node_$_$String                                              
   const char * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the tree is determined solely by the user.
   const size_t  length)                                                         // Length of the key, or if zero, I will use strlen
  {c ◁ tree ▷ allocate(sizeof($Content));                                        // Space required for a tree node
- (($Content *)(c ▷ pointer))->key.delta = tree ▷ saveString(key, length).offset;// Save key                                                      // Save key offset
+ (($Content *)(c ▷ pointer))->key.offset = tree ▷ saveString(key,length).offset;// Save key                                                      // Save key offset
   return tree ▷ nodeFromOffset(c.offset);                                       // Return node
  }
 
@@ -274,14 +274,14 @@ static void get_$Node_data_size                                                 
  (const $Node  node,                                                            // Node in an arena tree associated with the data
   void * const data,                                                            // Pointer to the area into which the data is to be copied
   const size_t length)                                                          // Length of the data to be retrieved
- {node.tree ▷ get(node ▷ content->data.delta, data, length);                    // Locate data
+ {node.tree ▷ get(node ▷ content->data.offset, data, length);                   // Locate data
  }
 
 static void set_$Node_data_size                                                 // Save the specified data in the arena of the tree and return the offset of the data.
  (const $Node  node,                                                            // Node in an arena tree to associate with the data
   const void * const data,                                                      // Pointer to the data to be saved
   const size_t length)                                                          // Length of the data to be saved
- {node ▷ content->data.delta = node.tree ▷ store(data, length).offset;          // Record offset of saved data
+ {node ▷ content->data.offset = node.tree ▷ store(data, length).offset;         // Record offset of saved data
  }
 
 static void copyData_$Node_$Node                                                // Copy the data offset associated with the source node to the target node by copying the offset to the data held in the source node to the target node.
@@ -292,13 +292,13 @@ static void copyData_$Node_$Node                                                
 
 static size_t getData_size_$Node                                                // Get the value of the data offset associated with a node.
  (const $Node  node)                                                            // Node in an arena tree associated with the data
- {return node ▷ content->data.delta;                                            // Value of the data offset field
+ {return node ▷ content->data.offset;                                           // Value of the data offset field
  }
 
 static void setData_$Node_size                                                  // Set the value of the data offset associated with a node.
  (const $Node  node,                                                            // Node in an arena tree to associate with the data
   const size_t offset)                                                          // Value the data offset is to be set to
- {node ▷ content->data.delta = offset;                                          // Record offset
+ {node ▷ content->data.offset = offset;                                         // Record offset
  }
 
 static void fromLetters_$_$String                                               // Load tree from a string of letters and brackets.  The root node of the tree so constructed is always given the letter 'a'.
@@ -348,12 +348,12 @@ static int valid_$Node                                                          
 static  $Node parent_$Node_$Node                                                // Get the parent of a child
  (const $Node child)                                                            // Child
  {if (child ▷ isRoot) return child;
-  return child.tree ▷ nodeFromOffset(child ▷ content->parent.delta);
+  return child.tree ▷ nodeFromOffset(child ▷ content->parent.offset);
  }
 
 static  $Node first_$Node_$Node                                                 // Get the first child under a parent.
  (const $Node parent)                                                           // Parent
- {return  parent.tree ▷ nodeFromOffset(parent ▷ content->first.delta);
+ {return  parent.tree ▷ nodeFromOffset(parent ▷ content->first.offset);
  }
 duplicate s/first/last/g s/first/next/g s/first/prev/g
 
@@ -469,17 +469,17 @@ static  $Node putFL_$Node_$Node_$Node                                           
   if (child.tree.arena != tree.arena) printStackBackTrace("Wrong tree\n");      // Parent and child must be in same tree
   P ◁ parent.offset;    C ◁ child.offset;                                       // Delta of parent and child
   p ◁ parent ▷ content; c ◁ child  ▷ content;                                   // Pointers to parent and child
-  L ◁ first ? p->first.delta : p->last.delta;                                   // Delta of child currently first/last
+  L ◁ first ? p->first.offset : p->last.offset;                                 // Delta of child currently first/last
   if (!L)                                                                       // No children yet
-   {if (first) p->last.delta = C; else p->first.delta = C;                      // Delta to last/first child
+   {if (first) p->last.offset = C; else p->first.offset = C;                    // Delta to last/first child
    }
   else                                                                          // Existing children
    {$Content * const l = tree ▷ pointer(L);                                     // Link first/last two children together
-    if (first) l->prev.delta = C; else l->next.delta = C;
-    if (first) c->next.delta = L; else c->prev.delta = L;
+    if (first) l->prev.offset = C; else l->next.offset = C;
+    if (first) c->next.offset = L; else c->prev.offset = L;
    }
-  c->parent.delta = P;                                                          // Parent new first/last child
-  if (first)  p->first.delta = C; else p->last.delta = C;                       // Parent points to new first/last child
+  c->parent.offset = P;                                                         // Parent new first/last child
+  if (first)  p->first.offset = C; else p->last.offset = C;                     // Parent points to new first/last child
   return child;
  }
 
@@ -515,22 +515,22 @@ static  $Node putNP_$Node_$Node_$Node                                           
   else                                                                          // Not last/first
    {w ◁ twin ▷ content;                                                         // Pointer to twin of sibling
     if (next)
-     {s->next.delta = w->prev.delta = child.offset;
-      c->prev.delta = sibling.offset; c->next.delta = twin.offset;
+     {s->next.offset = w->prev.offset = child.offset;
+      c->prev.offset = sibling.offset; c->next.offset = twin.offset;
      }
     else
-     {s->prev.delta = w->next.delta = child.offset;
-      c->next.delta = sibling.offset; c->prev.delta = twin.offset;
+     {s->prev.offset = w->next.offset = child.offset;
+      c->next.offset = sibling.offset; c->prev.offset = twin.offset;
      }
    }
-  c->parent.delta = parent.offset;                                              // Parent new next/prev child
+  c->parent.offset = parent.offset;                                             // Parent new next/prev child
   return child;
  }
 
 static void setUp_$Node_$Node                                                   //P Make the specified parent node the parent of the specified child node
  (const $Node child,                                                            // Child
   const $Node parent)                                                           // Child
- {child ▷ content->parent.delta = parent.offset;                                // Set parent of child
+ {child ▷ content->parent.offset = parent.offset;                               // Set parent of child
  }
 
 static  $Node putNext_$Node_$Node_$Node                                         // Put a child next after the specified sibling
@@ -724,25 +724,25 @@ static  $Node cut_$Node_$Node                                                   
   p ◁ parent ▷ content; c ◁ child ▷ content;                                    // Parent pointer, child content
 
   if (child ▷ isOnlyChild)                                                      // Only child
-   {p->first.delta = p->last.delta = 0;                                         // Remove child
+   {p->first.offset = p->last.offset = 0;                                       // Remove child
    }
   else if (child ▷ isLast)                                                      // Last child
    {L ◁ child  ▷ prev;
     l ◁ L ▷ content;
-    p->last.delta = L.offset; l->next.delta = 0;                                // Last child under parent
+    p->last.offset = L.offset; l->next.offset = 0;                              // Last child under parent
    }
   else if (child ▷ isFirst)                                                     // First child
    {F ◁ child ▷ next;
     f ◁ F     ▷ content;
-    p->first.delta = F.offset; f->prev.delta = 0;                               // Last child under parent
+    p->first.offset = F.offset; f->prev.offset = 0;                             // Last child under parent
    }
   else                                                                          // Some where in the middle
    {N ◁ child ▷ next;    P ◁ child ▷ prev;
     n ◁     N ▷ content; p ◁     P ▷ content;
-    p->next.delta = N.offset; n->prev.delta = P.offset;
+    p->next.offset = N.offset; n->prev.offset = P.offset;
    }
 
-  c->next.delta = c->prev.delta = 0;                                            // Remove child
+  c->next.offset = c->prev.offset = 0;                                          // Remove child
 
   return child;
  }
@@ -988,7 +988,7 @@ void test6()                                                                    
 
 void test7()                                                                    //TsetKey //Tkey //TsaveString //Tused //Tsize
  {t ◁ make$(); t ▷ fromLetters("");
-  $Delta d = {delta : 1};
+  $Delta d = {offset : 1};
   assert(sizeof(d) == 4);
 
   a ◁ t ▷ saveString("aaaa", 0);
