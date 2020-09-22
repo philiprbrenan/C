@@ -123,7 +123,6 @@ ssize_t __attribute__ ((unused)) readFile                                       
     close(i);
     return -3;
    }
-
   r ◁ reader(s, size);                                                          // Read data per caller
 
   close(i);                                                                     // Close file
