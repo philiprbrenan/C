@@ -22,6 +22,7 @@ typedef struct $                                                                
 #include <$$_prototypes.h>
 #define $fe( child, parent) for(ArenaTreeNode child = parent.string ▷ first; child ▷ valid; child = child ▷ next) // Each child in a parent from first to last
 #define $fer(child, parent) for(ArenaTreeNode child = parent.string ▷ last ; child ▷ valid; child = child ▷ prev) // Each child in a parent from last to first
+#define makeLocalCopyOf$(string,length,buffer) const size_t length = length_StringBuffer(buffer); char string[length+1]; string_StringBuffer_string(buffer, string); // Load a string buffer into locally defined string/length variables.
 
 $ make$                                                                         // Make a $
  ()                                                                             //
@@ -71,8 +72,8 @@ static void addn_$_string                                                       
 static void add$_$_$                                                            // Add a string buffer
  (const $ buffer,                                                               // Target $
   const $ add)                                                                  // Source $
- {N ◁ add ▷ length; char a[N+1]; add ▷ string(a);
-  buffer ▷ add(a);
+ {makeLocalCopyOf$(a, N, add);                                                  // Make a local copy of the buffer to be added in case the source and target buffers are the same
+  buffer ▷ add(a);                                                              // Add copy of source to target
  }
 
 static void addVaFormat_$_string_va                                             // Add a variadic argument formatted string
@@ -143,8 +144,7 @@ static void join_$                                                              
  (const $ old)                                                                  // $
  {C ◁ old.string ▷ countChildren;                                               // Number of sub strings
   if (C <= 1) return;                                                           // Already joined
-  N ◁ old ▷ length;                                                             // Length of joined string
-  char b[N+1]; old ▷ string(b);
+  makeLocalCopyOf$(b, N, old);                                                  // Local copy of string
   new ◁ make$();                                                                // New string buffer
   new ▷ add(b);                                                                 // Load new buffer from joined string
   old.string ▷ swap(new.string);                                                // Swap arenas so that the old becomes the new
@@ -154,8 +154,7 @@ static void join_$                                                              
 static StringBuffer splitLines                                                  // Split the specified $ on any new line characters and return the split text as a new $
  (const $ string)                                                               // $
  {r ◁ make$();                                                                  // Results
-  N ◁ string ▷ length;                                                          // Length of current string
-  char s[N+1]; string ▷ string(s);                                              // Linearize current string
+  makeLocalCopyOf$(s, N, string);                                               // Local copy of string
   size_t i = 0, j = 0;                                                          // Line start and end
   void save()                                                                   // Save a string
    {r ▷ addn(s+j, i - j + 1);
@@ -169,8 +168,7 @@ static StringBuffer splitLines                                                  
 static StringBuffer splitWords                                                  // Split the specified $ into words delimited by spaces and return the split text as a new $
  (const $ string)                                                               // $
  {r ◁ make$();                                                                  // Results
-  N ◁ string ▷ length;                                                          // Length of current string
-  char s[N+1]; string ▷ string(s);                                              // Linearize current string
+  makeLocalCopyOf$(s, N, string);                                               // Local copy of string
   size_t i = 0, j = 0;                                                          // Line start and end
   void save()                                                                   // Save a string
    {if (i > j) r ▷ addn(s+j, i - j);
@@ -203,28 +201,28 @@ static int equals_$_$                                                           
 static int equalsString_$_string                                                // Checks whether a $ is equal to a specified zero terminated string.
  (const $            buffer,                                                    // $
   const char * const string)                                                    // String
- {const size_t l = strlen(string);
-  if (buffer ▷ length != l) return 0;
-  char B[l+1]; buffer ▷ string(B);
-  return !strcmp(B, string);
+ {const size_t l = strlen(string);                                              // Length of comparison
+  makeLocalCopyOf$(b, N, buffer);                                               // Local copy
+  if (l != N) return 0;                                                         // Strings differ in length and so cannot be equal
+  return !strncmp(b, string, l);                                                // Check strings are equal
  }
 
 static int contains_$_$                                                         // Checks whether the first $ contains the second $
  (const $ a,                                                                    // First $
   const $ b)                                                                    // Second $
- {const size_t la = a ▷ length, lb = b ▷ length;
+ {makeLocalCopyOf$(A, la, a);                                                   // Local copy of first
+  makeLocalCopyOf$(B, lb, b);                                                   // Local copy of second
   if (la < lb) return 0;                                                        // Cannot be contained in a shorter string
-  char A[la+1], B[lb+1]; a ▷ string(A); b ▷ string(B);
   return !!strstr(A, B);
  }
 
 static int containsString_$_$                                                   // Checks whether a $ contains a specified zero terminated string.
  (const $            buffer,                                                    // $
   const char * const string)                                                    // String
- {const size_t l = strlen(string), lb = buffer ▷ length;
+ {const size_t l = strlen(string);                                              // Length of string to be found
+  makeLocalCopyOf$(b, lb, buffer);                                              // Local copy of string to be searched
   if (lb < l) return 0;                                                         // Cannot be contained in a shorter string
-  char B[lb+1]; buffer ▷ string(B);
-  return !!strstr(B, string);
+  return !!strstr(b, string);
  }
 
 static int substringEquals_int_$_int_int_string                                 // Checks whether a sub string of the specified $ is equal to the specified zero terminated string.
@@ -254,10 +252,9 @@ static size_t substring_size_$_int_int_string                                   
   const size_t start,                                                           // Offset to start of string
   const size_t length,                                                          // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
   char * const string)                                                          // String to load with enough space for the string and its terminating zero
- {const size_t l = buffer ▷ length;                                             // Length of source string
+ {makeLocalCopyOf$(s, l, buffer);                                               // Local copy
   *string        = 0;                                                           // Start with an empty output string
   if (start >= l) return 0;                                                     // Substring starts beyond the end of the string
-  char s[l+1]; buffer ▷ string(s);                                              // Buffer as a single string
   const size_t n = start + length < l ? length : l - start;                     // Amount we can copy
   strncpy(string, s + start, n);                                                // Copy out as much of the sub string as we can
   string[n] = 0;                                                                // Zero terminate sub string
@@ -267,9 +264,8 @@ static size_t substring_size_$_int_int_string                                   
 static void apply_$_function                                                    // Apply a function to a string.
  (const $ string,                                                               // $
   void (*action)(char *string, size_t length))                                  // Action to apply
- {length ◁ string ▷ length;                                                     // Length of string
-  char s[length + 1]; string ▷ string(s);                                       // Place string on stack
-  action(s, length);                                                            // Perform action on string
+ {makeLocalCopyOf$(s, l, string);                                               // Local copy
+  action(s, l);                                                                 // Perform action on string
  }
 
 static  void system_$_$                                                         // Replace a $ containing a system command with the results of executing that command.
@@ -346,8 +342,7 @@ static $ readFile_$_string                                                      
    {buffer ▷ addn(location, length);                                            // Place content in $
     return 0;                                                                   // Success is now determined by the content of the $
    }
-  N ◁ fileName ▷ length;                                                        // Length of file name
-  char f[N+1]; fileName ▷ string(f);
+  makeLocalCopyOf$(f, n, fileName);                                             // Local copy
   readFile(f, reader);                                                          // Read file
   return buffer;                                                                // Content read
  }
