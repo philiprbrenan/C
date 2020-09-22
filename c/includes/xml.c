@@ -172,7 +172,7 @@ static XmlParse makeXmlParseFromString                                          
  (const char * const string)                                                    // String of xml
  {const typeof(makeStringBufferFromString(string)) f = makeStringBufferFromString(string);                                       // File base name
   const typeof(f.proto->writeTemporaryFile(f, "zzz.xml")) t = f.proto->writeTemporaryFile(f, "zzz.xml");                                        // Create a temporary file
-  char T[t.proto->length(t) + 1]; t.proto->string(t, T);                                        // Name of temporary file
+  makeLocalCopyOfStringBuffer(T, l, t);                                         // Local copy
   const typeof(makeXmlParseFromFile(T)) x = makeXmlParseFromFile(T);                                                    // Parse temporary file
   unlink(T); f.proto->free(f); t.proto->free(t);                                                // Unlink temporary file and free string buffers
   return x;
@@ -523,8 +523,7 @@ static int prettyPrintsAs_int_Xml_string                                        
  {const typeof(xml.proto->prettyPrint(xml)) s = xml.proto->prettyPrint(xml);
 
   if (!s.proto->equalsString(s, expected))                                              // Strings do not match
-   {const typeof(s.proto->length(s)) N = s.proto->length(s);
-    char S[N+1]; s.proto->string(s, S);
+   {makeLocalCopyOfStringBuffer(S, N, s);                                         // Local copy
     for(size_t i = 0; i < N; ++i)
      {const char a = *(S+i), b = *(expected+i);
       if (a != b)
@@ -545,8 +544,7 @@ static int prettyPrintsAs_int_XmlTag_string                                     
  {const typeof(tag.proto->prettyPrint(tag)) s = tag.proto->prettyPrint(tag);
 
   if (!s.proto->equalsString(s, expected))                                              // Strings do not match
-   {const typeof(s.proto->length(s)) N = s.proto->length(s);
-    char S[N+1]; s.proto->string(s, S);
+   {makeLocalCopyOfStringBuffer(S, N, s);                                         // Local copy
     for(size_t i = 0; i < N; ++i)
      {const char a = *(S+i), b = *(expected+i);
       if (a != b)
@@ -561,7 +559,7 @@ static int prettyPrintsAs_int_XmlTag_string                                     
   s.proto->free(s);
   return 1;
  }
-#line 511 "/home/phil/c/z/xml/xml.c"
+#line 510 "/home/phil/c/z/xml/xml.c"
 
 static void prettyPrintAssert_XmlTag                                              // Pretty print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
