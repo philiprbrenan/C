@@ -58,18 +58,30 @@ static PangoRectangle draw_text
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
 
-void createImage
- (void (*draw)(cairo_t *cr))
- {cairo_surface_t * surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, SIZE, SIZE);
+void createImage                                                                // Create an image by drawing on a surface
+ (void (*draw)(cairo_t *cr),
+  int x,
+  int y,
+  const char * const imageFile)
+ {cairo_surface_t * surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, x, y);
   cairo_t         *    cr   = cairo_create (surface);
   cairo_set_antialias (cr, CAIRO_ANTIALIAS_BEST);
   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
   cairo_paint         (cr);
   draw                (cr);
   cairo_destroy       (cr);
-  cairo_surface_write_to_png(surface, "pango.png");
+  cairo_surface_write_to_png(surface, imageFile);
   cairo_surface_destroy (surface);
-}
+ }
+
+void assertResult                                                               // Check the results via a digest
+ (const char * const imageFile,
+  const char * const digest)
+ {const typeof(makeStringBufferFromVaFormat("b2sum %s", imageFile)) c = makeStringBufferFromVaFormat("b2sum %s", imageFile);
+  c.proto->system(c);
+  assert(c.proto->containsString(c, digest));
+  c.proto->free(c);
+ }
 
 void test0()
  {void draw(cairo_t *cr)
@@ -77,11 +89,8 @@ void test0()
     cairo_set_source_rgb(cr, 0, 1.0, 1.0);
     draw_text(cr, "Noto Bold 400", "World");
    }
-  createImage(draw);
-  const typeof(makeStringBufferFromString("b2sum pango.png")) c = makeStringBufferFromString("b2sum pango.png");
-  c.proto->system(c);
-  assert(c.proto->containsString(c, "fade60d"));
-  c.proto->free(c);
+  createImage(draw, 2000, 2000, "pango.png");
+  assertResult("pango.png", "fade60d");
  }
 
 int main (void)
