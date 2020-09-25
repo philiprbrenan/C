@@ -1,32 +1,35 @@
 //------------------------------------------------------------------------------
-// String buffer
+// String buffer - a string made of a list of sub strings.
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
+/*
+ A string made up of a list of sub strings.
+*/
 #define _GNU_SOURCE
 #include <ctype.h>
-#include <arenaTree.c>
+#include <arenaList.c>
 #include <utilities.c>
 
-//D1 Structures                                                                 // Structures describing an Arena Tree.
+//D1 Structures                                                                 // Structures describing an $.
 
 #ifndef $_included_$
 #define $_included_$
 typedef struct $                                                                // $
  {const struct ProtoTypes_$ *proto;                                             // Prototypes for methods
-  ArenaTree     string;                                                         // String being built
+  ArenaList     string;                                                         // String being built
  } $;
 #endif
 
 #ifndef $_included
 #define $_included
 #include <$$_prototypes.h>
-#define $fe( child, parent) for(ArenaTreeNode child = parent.string ▷ first; child ▷ valid; child = child ▷ next) // Each child in a parent from first to last
-#define $fer(child, parent) for(ArenaTreeNode child = parent.string ▷ last ; child ▷ valid; child = child ▷ prev) // Each child in a parent from last to first
+#define $fe( child, parent) for(ArenaListNode child = parent.string ▷ first; child ▷ valid; child = child ▷ next) // Each child in a parent from first to last
+#define $fer(child, parent) for(ArenaListNode child = parent.string ▷ last ; child ▷ valid; child = child ▷ prev) // Each child in a parent from last to first
 #define makeLocalCopyOf$(string,length,buffer) const size_t length = length_StringBuffer(buffer); char string[length+1]; string_StringBuffer_string(buffer, string); // Load a string buffer into locally defined string/length variables.
 
 $ make$                                                                         // Make a $
  ()                                                                             //
- {ArenaTree string = makeArenaTree();
+ {ArenaList string = makeArenaList();
   return new$(string: string);
  }
 
@@ -57,7 +60,7 @@ static void free_$                                                              
 static void add_$_string                                                        // Concatenate a string
  (const $ buffer,                                                               // $
   const char * const string)                                                    // Zero terminated string
- {const ArenaTreeNode s = buffer.string ▷ node(string);
+ {s ◁ buffer.string ▷ node(string, strlen(string));
   s ▷ putTreeLast;
  }
 
@@ -65,15 +68,15 @@ static void addn_$_string                                                       
  (const $            buffer,                                                    // $
   const char * const string,                                                    // String
   const size_t       length)                                                    // String length
- {s ◁ buffer.string ▷ noden(string, length);
+ {s ◁ buffer.string ▷ node(string, length);
   s ▷ putTreeLast;
  }
 
 static void add$_$_$                                                            // Add a string buffer
  (const $ buffer,                                                               // Target $
   const $ add)                                                                  // Source $
- {makeLocalCopyOf$(a, N, add);                                                  // Make a local copy of the buffer to be added in case the source and target buffers are the same
-  buffer ▷ add(a);                                                              // Add copy of source to target
+ {makeLocalCopyOf$(a, n, add);                                                  // Make a local copy of the buffer to be added in case the source and target buffers are the same
+  buffer ▷ addn(a, n);                                                          // Add copy of source to target
  }
 
 static void addVaFormat_$_string_va                                             // Add a variadic argument formatted string
@@ -84,15 +87,11 @@ static void addVaFormat_$_string_va                                             
   const int N = 1024;                                                           // Guess a reasonable size                                                                               //dx=const Xml x =  for the output string
   char data[N];                                                                 // Space on stack for first attempt
   const int L = vsnprintf(data, N, format, va1);                                // First attempt
-  if (N > L + 1)                                                                // Success on the first attempt
-   {const ArenaTreeNode s = buffer.string ▷ noden(data, L);
-                        s ▷ putTreeLast;
-   }
+  if (N > L) buffer ▷ addn(data, L);                                            // Success on the first attempt
   else                                                                          // Second attempt
    {char data[L+1];
     vsnprintf(data, L+1, format, va2);
-    const ArenaTreeNode s = buffer.string ▷ noden(data, L);
-                        s ▷ putTreeLast;
+    buffer ▷ addn(data, L);                                                     // Success on the first attempt
    }
  }
 
@@ -111,6 +110,13 @@ static void addChar_$_char                                                      
   const char c)                                                                 // Character to add
  {const char s[2] = {c, 0};
   buffer ▷ add(s);
+ }
+
+static void addSpaces                                                           // Add zero or more spaces
+ (const $      buffer,                                                          // $
+  const size_t spaces)                                                          // Number of spaces to add
+ {char s[spaces]; memset(s, ' ', spaces);
+  buffer ▷ addn(s, spaces);
  }
 
 static void addNewLine_$                                                        // Add a new line
@@ -151,7 +157,7 @@ static void join_$                                                              
   new ▷ free;                                                                   // Free old arena
  }
 
-static StringBuffer splitLines                                                  // Split the specified $ on any new line characters and return the split text as a new $
+static void splitLines                                                          // Split the specified $ on any new line characters and return the split text as a new $
  (const $ string)                                                               // $
  {r ◁ make$();                                                                  // Results
   makeLocalCopyOf$(s, N, string);                                               // Local copy of string
@@ -161,22 +167,24 @@ static StringBuffer splitLines                                                  
     j = i+1;
    }
   for(; i < N; ++i) if (s[i] == '\n') save();
-  if (  i > j) save();
-  return r;
+  if (  i > j) {--i; save();}
+  string.string ▷ swap(r.string);                                               // Swap arenas so that the old becomes the new
+  r ▷ free;
  }
 
-static StringBuffer splitWords                                                  // Split the specified $ into words delimited by spaces and return the split text as a new $
+static void splitWords                                                          // Split the specified $ into words delimited by spaces and return the split text as a new $
  (const $ string)                                                               // $
  {r ◁ make$();                                                                  // Results
-  makeLocalCopyOf$(s, N, string);                                               // Local copy of string
+  makeLocalCopyOf$(s, n, string);                                               // Local copy of string
   size_t i = 0, j = 0;                                                          // Line start and end
   void save()                                                                   // Save a string
    {if (i > j) r ▷ addn(s+j, i - j);
     j = i+1;
    }
-  for(; i < N; ++i) if (isspace(s[i])) save();
+  for(; i < n; ++i) if (isspace(s[i])) save();
   save();
-  return r;
+  string.string ▷ swap(r.string);                                               // Swap arenas so that the old becomes the new
+  r ▷ free;
  }
 
 //D1 Statistics                                                                 // Statistics on the contents of the $.
@@ -184,8 +192,8 @@ static StringBuffer splitWords                                                  
 static size_t length_$                                                          // Length of the string held in the buffer
  (const $ buffer)                                                               // $
  {size_t length = 0;
-  ArenaTreeNode  root = buffer.string ▷ root;
-  ArenaTreefe(c, root) length += strlen(c ▷ key);
+  ArenaListNode  root = buffer.string ▷ root;
+  ArenaListfe(c, root) length += c ▷ length;
   return length;
  }
 
@@ -202,8 +210,8 @@ static int equalsString_$_string                                                
  (const $            buffer,                                                    // $
   const char * const string)                                                    // String
  {const size_t l = strlen(string);                                              // Length of comparison
-  makeLocalCopyOf$(b, N, buffer);                                               // Local copy
-  if (l != N) return 0;                                                         // Strings differ in length and so cannot be equal
+  makeLocalCopyOf$(b, n, buffer);                                               // Local copy
+  if (l != n) return 0;                                                         // Strings differ in length and so cannot be equal
   return !strncmp(b, string, l);                                                // Check strings are equal
  }
 
@@ -242,8 +250,11 @@ static void string_$_string                                                     
  (const $        buffer,                                                        // $
   char  * const  string)                                                        // String to load with enough space for the string and its terminating zero
  {char  * p =    string;
-  ArenaTreeNode  root = buffer.string ▷ root;
-  ArenaTreefe(c, root) p = stpcpy(p, c ▷ key);
+  ArenaListNode  root = buffer.string ▷ root;
+  ArenaListfe(c, root)
+   {makeLocalCopyOfArenaListKey(k, l, c);
+    p = memcpy(p, k, l); p += l;
+   }
   *p = 0;
  }
 
@@ -294,8 +305,7 @@ static ssize_t writeToFileHandle                                                
   const char * const fileName)                                                  // The name of the file being written to
  {ssize_t N = 0;
   $fe(line, buffer)
-   {k ◁ line ▷ key;
-    l ◁ strlen(k);
+   {makeLocalCopyOfArenaListKey(k, l, line);
     w ◁ write(d, k, l);
     if (w < 0 || (size_t)w != (size_t)l)
      {printStackBackTrace
@@ -305,6 +315,35 @@ static ssize_t writeToFileHandle                                                
     else N += l;
    }
   return N;
+ }
+
+static void dump_$                                                              //P Write a $ to stderr.
+ (const $ buffer)                                                               // $
+ {say("Dump of $:\n");
+  $fe(line, buffer)
+   {makeLocalCopyOfArenaListKey(k, l, line);
+    say("%s\n", k);
+   }
+ }
+
+static void dumpHex_$                                                           //P Write a $ to stderr in hexadecimal.
+ (const $ buffer)                                                               // $
+ {const size_t L = 16;                                                          // Line length
+  say("Dump of $ in hex:\n");
+  size_t n = 0;
+  $fe(line, buffer)
+   {makeLocalCopyOfArenaListKey(k, l, line);
+    char a[L+1]; memset(a, 0, L);
+    for(size_t i = 0; i < l; ++i)
+     {if (i && i % 4  == 0)  say("  ");
+      say("%02x ", (unsigned int)k[i]);
+      a[i % L] = isspace(k[i]) ? ' ' : k[i];
+      if (i && i % 16 == 0) {say("=%s=\n", a); memset(a, 0, L);}
+      ++n;
+     }
+    if (a[0]) say("=%s=\n", a);
+   }
+  if (!n) say("$ is empty\n");
  }
 
 static  $ writeTemporaryFile_$_string                                           // Write a $ as a string to a temporary file with the specified base name and return the full name of the file created as a string buffer.
@@ -409,22 +448,28 @@ void test2()                                                                    
 
 void test3()                                                                    //TsplitLines //Tmake$FromString
  {a  ◁ make$FromString("a\nbb\nccc\ndddd\n");
-  s  ◁ a ▷ splitLines;
-  s1 ◁ s.string ▷ first; assert(s1 ▷ equalsString("a\n"));
-  s2 ◁ s1 ▷ next;        assert(s2 ▷ equalsString("bb\n"));
-  s3 ◁ s2 ▷ next;        assert(s3 ▷ equalsString("ccc\n"));
-  s4 ◁ s3 ▷ next;        assert(s4 ▷ equalsString("dddd\n"));
-  a  ▷ free; s ▷ free;
+  a  ▷ splitLines;
+  a1 ◁ a.string ▷ first; assert(a1 ▷ equalsString("a\n"));
+  a2 ◁ a1 ▷ next;        assert(a2 ▷ equalsString("bb\n"));
+  a3 ◁ a2 ▷ next;        assert(a3 ▷ equalsString("ccc\n"));
+  a4 ◁ a3 ▷ next;        assert(a4 ▷ equalsString("dddd\n"));
+  a  ▷ free;
+
+  b  ◁ make$FromString("abc");
+  b  ▷ splitLines;
+  b1 ◁ b.string ▷ first;
+  assert(b1 ▷ equalsString("abc"));
+  b  ▷ free;
  }
 
 void test4()                                                                    //TsplitWords
  {a  ◁ make$FromString("  a\nbb   ccc dddd\n\n  ");
-  s  ◁ a ▷ splitWords;
-  s1 ◁ s.string ▷ first; assert(s1 ▷ equalsString("a"));
-  s2 ◁ s1 ▷ next;        assert(s2 ▷ equalsString("bb"));
-  s3 ◁ s2 ▷ next;        assert(s3 ▷ equalsString("ccc"));
-  s4 ◁ s3 ▷ next;        assert(s4 ▷ equalsString("dddd"));
-  a  ▷ free; s ▷ free;
+  a  ▷ splitWords;
+  a1 ◁ a.string ▷ first; assert(a1 ▷ equalsString("a"));
+  a2 ◁ a1 ▷ next;        assert(a2 ▷ equalsString("bb"));
+  a3 ◁ a2 ▷ next;        assert(a3 ▷ equalsString("ccc"));
+  a4 ◁ a3 ▷ next;        assert(a4 ▷ equalsString("dddd"));
+  a  ▷ free;
  }
 
 void test5()                                                                    //TreadFile //TwriteTemporaryFile
@@ -476,7 +521,6 @@ void test7()                                                                    
 void test8()                                                                    //Tapply
  {const char * const c = "Hello World";
   a ◁ make$FromString(c);
-
   void check(char * s, size_t l)
    {assert(l == strlen(c));
     assert(!strcmp(c, s));
@@ -485,7 +529,15 @@ void test8()                                                                    
   a ▷ free;
  }
 
-void test9()                                                                    //Tsystem //Tmake$VaFormat
+void test9()                                                                    //TaddSpaces
+ {a ◁ make$();
+  a ▷ add("a"); a ▷ addSpaces(2); a ▷ add("A");
+  makeLocalCopyOf$(s, l, a);
+  assert(!strcmp(s, "a  A"));
+  a ▷ free;
+ }
+
+void test10()                                                                   //Tsystem //Tmake$VaFormat
  {a ◁ make$FromString("uname");
   a ▷ system;
   assert(a ▷ containsString("Linux"));
@@ -494,7 +546,7 @@ void test9()                                                                    
 
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7, test8, test9, 0};
+                           test6, test7, test8, test9, test10, 0};
   run_tests("$", 1, tests);
   return 0;
  }
