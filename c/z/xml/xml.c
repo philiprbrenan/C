@@ -18,14 +18,17 @@ char $tagName[256];                                                             
 
 typedef struct $Parse                                                           // $ parse tree
  {const struct ProtoTypes_$Parse *proto;                                        // Prototypes for methods
-  const StringBuffer      fileName;                                             // Source file containing $ to be parsed
-  const StringBuffer      data;                                                 // $ to be parsed
+  const StringBuffer      fileName;                                             // Source file containing $ to be parsed or zero if there is no file associated with the parse
   const ArenaList         tree;                                                 // Parse tree created from $ being parsed
   const ArenaList         errors;                                               // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is $Error
+ } $Parse;
+
+typedef struct $Validate                                                        // $ single step validation
+ {const struct ProtoTypes_$Validate *proto;                                     // Prototypes for methods
   const ArenaTree         possibilities;                                        // Possibility sets for each Dita tag
   const ArenaTree         first;                                                // First set of possibilities for each Dita tag
   const ArenaTree         next;                                                 // Next set of possibilities for each Dita child tag under a given parent tag
- } $Parse;
+ } $Validate;
 
 typedef struct $Tag                                                             // Tag in an $ parse tree
  {const struct ProtoTypes_$Tag *proto;                                          // Prototypes for methods
@@ -49,18 +52,40 @@ static $Tag make$Tag_$Parse_ArenaListNode                                       
  }
 
 static $Parse make$ParseFromFile                                                // Make a parse $ from the contents of a file
- (const char * const sourceFileName)                                            // Name of file holding $
- {sourceFN      ◁ makeStringBufferFromString(sourceFileName);                   // File to parse
-  sourceBuffer  ◁ sourceFN ▷ readFile;                                          // String to parse
-  t             ◁ makeArenaList();                                              // Parse tree,
-  errors        ◁ makeArenaList();                                              // Errors list
-  possibilities ◁ makeArenaTree();                                              // Single Step Validation
+ (const char * const sourceFileName)                                            // Name of file holding $ to be parsed
+ {$Parse p;                                                                     // The resulting parse
+
+  ssize_t reader(char * location, size_t length)                                // Function to process the mapped file. Return non negative on success, negative on failure: this value will be returned to the caller.
+   {$Parse q = make$ParseFromString(sourceFileName, location, length);          // Parse file contents
+    memcpy((void *)&p, (void *)&q, sizeof($Parse));                             // Temporarily subvert the const settings
+    return 1;
+   }
+
+  readFile(sourceFileName, reader);                                             // Read the source and parse it
+
+  return p;
+ }
+
+static $Validate make$Validate()                                                // Make an $ single step validator
+ {possibilities ◁ makeArenaTree();                                              // Single Step Validation
   first         ◁ makeArenaTreeWithWidth(sizeof(size_t));                       // First set of possibilities for each tag
   next          ◁ makeArenaTreeWithWidth(sizeof(size_t));                       // Next set of possibilities for each Dita child tag under a given parent tag
-  const $Parse  x = {data: sourceBuffer, fileName: sourceFN, tree: t, errors: errors, possibilities: possibilities, first: first, next: next, proto: &ProtoTypes_$Parse};
-  P ◀ t ▷ root;                                                                 // Current parent node
+  $Validate valid = {possibilities: possibilities,
+    first: first, next: next, proto: &ProtoTypes_$Validate};
+  return valid;
+ }
 
-  makeLocalCopyOfStringBuffer(source, sourceLength, sourceBuffer);              // The source to parse
+static $Parse make$ParseFromString                                              // Make a parse $ from the contents of a file presented as a string
+ (const char * const sourceFileName,                                            // Name of file holding $ or zero if no file is associated with this source
+  char       * const source,                                                    // Source text to be parsed
+  const size_t       length)                                                    // Length of source text to be parsed
+ {sourceFN      ◁ makeStringBufferFromString(sourceFileName ? : "");            // File to parse
+  parseTree     ◁ makeArenaList();                                              // Parse tree,
+  errors        ◁ makeArenaListWithWidth(sizeof(size_t));                       // Errors list with location of error
+  $Parse xml    = {fileName: sourceFN, tree: parseTree,                         // Create $ descriptor
+                   errors: errors, proto: &ProtoTypes_$Parse};
+
+  currentParent ◀ parseTree ▷ root;                                             // Current parent node
 
   $Parse error                                                                  // Report an error message adding the file name involved on the following line
    (const char * const p,                                                       // Pointer to position at which the error occurred
@@ -69,19 +94,20 @@ static $Parse make$ParseFromFile                                                
 
     m ◁ makeStringBuffer();                                                     // Build the error message
     o ◁ p - source;                                                             // Offset of the error
-    va_start(va, format);
-    m ▷ addVaFormat(format, va);                                                // Format error message in a buffer of adequate size
-    va_end(va);
+
+    va_start(va, format); m ▷ addVaFormat(format, va); va_end(va);              // Format error message in a buffer of adequate size
+
     m ▷ add      ("\n  File     : "); m ▷ addStringBuffer(sourceFN);            // Add file name
     m ▷ addFormat("\n  At offset: %lu\n", o);                                   // Add offset in file
     makeLocalCopyOfStringBuffer(M, L, m);                                       // The error message
 
     n ◁ errors ▷ node(M, L);                                                    // Save the error message
     n ▷ putTreeLast;                                                            // Add the error to the error list
-// NEED TO SAVE OFFSET AT WHICH ERROR OCCURED
+    *(size_t *)(n ▷ data) = o;                                                  // Save offset of error
+
     m ▷ free;                                                                   // Free string buffer
 
-    return x;
+    return xml;
    } // error
 
   if  (*source != $Open) return error(0, "$ must start with: %c", $Open);       // Insist that the first character is <
@@ -89,8 +115,9 @@ static $Parse make$ParseFromFile                                                
   int remainderIsWhiteSpace(const char *p)                                      // Find the next non space character in a zero terminated string
    {for(; *p; ++p) if (!isspace(*p)) return 0;                                  // Non white space
     return 1;                                                                   // Its all white sace
-   }
+   } // remainderIsWhiteSpace
 
+  assert(!source[length]);                                                      // Check we have a trailing zero so that the following loop terminates
   for(char * p = source; *p;)                                                   // Break out tags and text
    {o ◁ strchr(p, $Open);                                                       // Find next open
 
@@ -102,30 +129,34 @@ static $Parse make$ParseFromFile                                                
           }
 
         if (!allBlank())                                                        // Save the  text as the key of the node
-         {n ◁ t ▷ node(p, o - p);                                               // Create node
-          P ▷ putLast(n);                                                       // Save node in parse tree
-//        P ▷ setData(p - source);                                              // Save text offset
+         {n ◁ parseTree ▷ node(p, o - p);                                       // Create node
+          currentParent ▷ putLast(n);                                           // Save node in parse tree
          }
        }
-
           c ◁ strchr(o, $Close);                                                // Save tag: find corresponding close
       if (c)                                                                    // Found closing >
-       {ArenaListNode save(void)                                                // Save tag as a new node
-         {n ◁ t ▷ node(o, c - o + 1);                                           // Create node
-          P ▷ putLast(n);                                                       // Save node in parse tree
-//        P ▷ setData(o - source);                                              // Save text offset in parse tree
-          return n;
+       {void save(void)                                                         // Save tag as a new node
+         {n ◁ parseTree ▷ node(o, c - o + 1);                                   // Create node
+          currentParent ▷ putLast(n);                                           // Save node in parse tree
+          currentParent = n;
+         }
+        void saveSingleton(void)                                                // Save singleton
+         {const size_t l = c - o + 1;                                           // Length of current tag string
+          char b[l+1]; memcpy(b, o, l);                                         // Copy tag string
+          b[l-1] = 0; b[l-2] = $Close;                                          // Convert from singleton to opener
+          n ◁ parseTree ▷ node(b, l-1);                                         // Create node
+          currentParent ▷ putLast(n);                                           // Save node in parse tree
          }
 
         void end(void)                                                          // End tag
-         {lsprintf(a, 256, "%s", parse$TagName(P ▷ key));                       // Start tag name
+         {lsprintf(a, 256, "%s", parse$TagName(currentParent ▷ key));           // Start tag name
           lsprintf(b, 256, "%s", parse$TagName(o));                             // End tag name
 
           if (strcmp(a, b))                                                     // Tag name mismatch
            {error(o, "End tag: %s does not match start tag: %s", b, a);
            }
 
-          if (!P ▷ isRoot) P = P ▷ parent;                                      // Go up one level if possible
+          if (!currentParent ▷ isRoot) currentParent = currentParent ▷ parent;  // Go up one level if possible
           else if (remainderIsWhiteSpace(p)) {}                                 // On root - ignore trailing white space
           else error(o, "Ignoring text beyond closing tag");                    // On root with remaining text
          }
@@ -134,8 +165,8 @@ static $Parse make$ParseFromFile                                                
         if        (oo == $Slash)     end();                                     // Closing tag
         else if   (oo == $Question) {}                                          // Ignore ?xml
         else if   (oo == $Exclaim)  {}                                          // Ignore !DOCTYPE
-        else if   (cc == $Slash)     save();                                    // Unitag
-        else P = save();                                                        // Opening tag - make current node the current parent
+        else if   (cc == $Slash)     saveSingleton();                           // Singleton
+        else save();                                                            // Opening tag - make current node the current parent
         p = c + 1;                                                              // Start of text
        }
 
@@ -148,41 +179,36 @@ static $Parse make$ParseFromFile                                                
    }
 
   if (1)                                                                        // Confirm there is exactly one root node
-   {root ◁ t ▷ root;
+   {root ◁ parseTree ▷ root;
     N ◁ root ▷ countChildren;
     if (N == 0)     return error(source, "No xml root tag found");
     else if (N > 1) return error(source, "More than one root xml tag found");
    }
 
   if (0)                                                                        // Make the single root xml tag the root of the parse tree
-   {r ◁ t ▷ root;
+   {r ◁ parseTree ▷ root;
     f ◁ r ▷ first;
     ArenaListContent * const a = r ▷ content, * const b = f ▷ content;
     *a = *b;
     ArenaListfe(c, r) c ▷ setUp(r);
    }
 
-  sourceFN ▷ free; sourceBuffer ▷ free;                                         // Free mapped input file as we can now reconstruct it from the parse tree
-
-  return x;
+  return xml;
  } // make$ParseFromFile
 
-static $Parse make$ParseFromString                                              // Make a parse $ from a string.
- (const char * const string)                                                    // String of xml
- {f ◁ makeStringBufferFromString(string);                                       // File base name
-  t ◁ f ▷ writeTemporaryFile("zzz.xml");                                        // Create a temporary file
-  makeLocalCopyOfStringBuffer(T, l, t);                                         // Local copy
-  x ◁ make$ParseFromFile(T);                                                    // Parse temporary file
-  unlink(T); f ▷ free; t ▷ free;                                                // Unlink temporary file and free string buffers
-  return x;
+static $Parse parse$FromString                                                  // Make a parse $ from a string.
+ (char * string)                                                                // String of $
+ {return make$ParseFromString(0, string, strlen(string));
  }
 
-static void free_$Parse                                                         // Free an xml parse
+static void free_$Parse                                                         // Free an $ parse
  (const $Parse x)                                                               // $ descriptor
- {t ◁ x.tree; e ◁ x.errors;
-  p ◁ x.possibilities;
-  f ◁ x.first; n ◁ x.next;
-  t ▷ free; e ▷ free; p ▷ free; f ▷ free; n ▷ free;
+ {x.tree ▷ free; x.errors ▷ free; x.fileName ▷ free;
+ }
+
+static void free_$Validate                                                      // Free an $ validator
+ (const $Validate x)                                                               // $ validator
+ {x.possibilities ▷ free; x.first ▷ free; x.next ▷ free;
  }
 
 static size_t errors_$Parse                                                     // Number of errors encountered while creating an $ parse tree.
@@ -276,18 +302,12 @@ static int isText_$Tag                                                          
   return c[0] != $Open;
  }
 
-static char * text_string_$Tag                                                  // Return the text of a text tag if we are on a text tag.
- (const $Tag tag)                                                               // Tag
- {char * const k = tag ▷ tagString;
-  return *k == $Open ? 0 : k;                                                   // If the start of the key is not < then it must be text
- }
-
 static int onlyText_$Tag                                                        // Return true if a tag contains just one text element and nothing else
  (const $Tag parent)                                                            // Tag
  {n ◁ parent ▷ countChildren;
   if (n != 1) return 0;                                                         // If there is more than one tag than there must be a non text tag present to separate the text
   f ◁ parent ▷ first;
-  return !!f ▷ text;
+  return f ▷ isText;
  }
 
 //D1 Statistics                                                                 // Counts on the tag
@@ -297,27 +317,14 @@ static int empty_$Tag                                                           
  {return !parent ▷ countChildren;
  }
 
-static size_t openChildren_$Tag                                                 // Count the number of child tags that are open tags
- (const $Tag parent)                                                            // Parent tag
- {size_t n = 0;
-  $fe(child, parent) if (child ▷ countChildren > 0) ++n;
-  return n;
- }
-
-static int opener_$Tag                                                          // Check that the tag has children
+static int isTag                                                                // Check that the tag is a tag rather than text
  (const $Tag tag)                                                               // Parent tag
- {return tag ▷ countChildren > 0;
+ {return !tag ▷ isText;
  }
 
 static int singleton_$Tag                                                       // Check that the tag has no children
  (const $Tag tag)                                                               // Parent tag
- {return tag ▷ countChildren == 0;
- }
-
-static int isInSingletonFormat_$Tag                                             // Check that the tag is in singleton format
- (const $Tag tag)                                                               // Parent tag
- {makeLocalCopyOf$TagString(s, l, tag);
-  return l >= 3 && s[0] == $Open && s[l-1] == $Close &&  s[l-2] == $Slash;
+ {return tag ▷ empty;
  }
 
 //D1 Search                                                                     // Search the $ parse tree
@@ -341,7 +348,7 @@ static $Tag findFirstChild_$Tag_$Parse_string                                   
   const char * const key)                                                       // Name of the tag to find
  {    root ◁ xml ▷ root;                                                        // Root tag
   f ◁ root ▷ first;
-  return f ▷ findFirstChild(key);                                            // Each child of the parent
+  return f ▷ findFirstChild(key);                                               // Each child of the parent
  }
 
 static $Tag findFirstTag_$Tag_$Tag_string                                       // Find the first tag with the specified name in the $ parse tree starting at the specified tag.
@@ -443,6 +450,7 @@ static void changeName_$Tag                                                     
  {oldName ◁ tag ▷ tagName;                                                      // Old name
   string  ◁ tag ▷ tagString;                                                    // Tag string
   o ◁ strlen(oldName); n ◁ strlen(newName); l ◁ strlen(string);
+  if (n > o) printStackBackTraceAndExit(1, "New code needed to deal with the case where the new name is longer than the old name\n");
 
   char key[l + n + 1], * p = key, * const q = strstr(string, oldName);
   p = stpncpy(p, string, q - string);
@@ -481,20 +489,21 @@ static StringBuffer print_stringBuffer_$Tag                                     
 
   void print(const $Tag parent, const int depth)                                // Print the specified parent and its children
    {void open()                                                                 // Add open tag
-     {if (parent ▷ opener || parent ▷ isText ||
-        (parent ▷ singleton && parent ▷ isInSingletonFormat))
+     {if (parent ▷  isText)
        {p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
        }
-      else
-       {assert(parent ▷ singleton);
-        makeLocalCopyOf$TagString(s, l, parent);
+      else if (parent ▷ singleton)                                              // Write tag with no children as a singleton
+       {makeLocalCopyOf$TagString(s, l, parent);
         p ▷ addChar($Open);
         p ▷ addn(s+1, l-2);
         p ▷ addFormat("%c%c", $Slash, $Close);
        }
+      else                                                                      // Opener
+       {p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
+       }
      }
     void close()                                                                // Add close tag unless we are on text
-     {if (parent ▷ opener)
+     {if (parent ▷ isTag && !parent ▷ empty)
        {p ▷ addFormat("%c%c%s%c", $Open, $Slash, parent ▷ tagName, $Close);
        }
      }
@@ -543,7 +552,7 @@ static int printsAs_int_$_string                                                
  }
 duplicate s/_\$_/_\$Tag_/,s/Parse\sxml/Tag\x20tag/,s/xml/tag/
 
-static void printAssert_$Tag                                                    // Print the $ parse tree starting at the specified tag as an assert statement
+static void printAssert_$Tag                                                    //P Print the $ parse tree starting at the specified tag as an assert statement
  (const $Tag         tag,                                                       // Starting tag
   const char * const variable)                                                  // The name of the variable preceding this call
  {t ◁ tag ▷ print;
@@ -564,7 +573,7 @@ static void printAssert_$Tag                                                    
   t ▷ free; s ▷ free;
  }
 
-static void printAssert_$_string                                                // Pretty print the $ parse tree as an assert statement
+static void printAssert_$_string                                                //P Pretty print the $ parse tree as an assert statement
  (const $Parse       xml,                                                       // $
   const char * const variable)                                                  // The name of the variable preceding this call
  {const $Tag t = xml ▷ root;
@@ -579,103 +588,104 @@ static int develop()                                                            
  {return !strcmp(getenv("HOME"), "/home/phil");
  }
 
-void test0()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //Tmake$ParseFromFile
- {$Parse x = make$ParseFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h");
-//x ▷ printAssert("x");
-  assert(x ▷ printsAs("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></a>"));
+void test0()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //Tmake$ParseFromFile //Tempty //TisTag //tText
+ {x ◁ parse$FromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h");
+  ✓ x ▷ printsAs("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></a>");
 
   if (1)
    {ArenaList e = x.errors;
-    assert(x ▷ errors == 2);
-    assert(e ▷ printContains("End tag: A does not match start tag: a"));
-    assert(e ▷ printContains("Ignoring text at end"));
+    ✓ x ▷ errors == 2;
+    ✓ e ▷ printContains("End tag: A does not match start tag: a");
+    ✓ e ▷ printContains("Ignoring text at end");
    }
 
-  b ◁ x ▷ findFirstTag("b"); assert(b ▷ valid); assert(b ▷ tagNameEquals("b")); assert(!b ▷ tagNameEquals("B"));
-  c ◁ x ▷ findFirstTag("c"); assert(c ▷ valid); assert(c ▷ tagNameEquals("c")); assert(!c ▷ tagNameEquals("C"));
-  d ◁ x ▷ findFirstTag("d"); assert(d ▷ valid); assert(d ▷ tagNameEquals("d")); assert(!d ▷ tagNameEquals("D"));
-  e ◁ d ▷ first;             assert(e ▷ valid); assert(e ▷ tagNameEquals("e")); assert(!e ▷ tagNameEquals("E"));
-  g ◁ d ▷ last;              assert(g ▷ valid); assert(g ▷ tagNameEquals("g")); assert(!g ▷ tagNameEquals("G"));
-  f ◁ g ▷ prev;              assert(f ▷ valid); assert(f ▷ tagNameEquals("f")); assert(!f ▷ tagNameEquals("F"));
-  h ◁ x ▷ findFirstTag("h"); assert(h ▷ valid); assert(h ▷ tagNameEquals("h")); assert(!h ▷ tagNameEquals("H"));
-  i ◁ x ▷ findFirstTag("i"); assert(i ▷ valid); assert(i ▷ tagNameEquals("i")); assert(!i ▷ tagNameEquals("I"));
+  b ◁ x ▷ findFirstTag("b"); ✓b ▷ valid; ✓b ▷ tagNameEquals("b"); ✓!b ▷ tagNameEquals("B");
+  c ◁ x ▷ findFirstTag("c"); ✓c ▷ valid; ✓c ▷ tagNameEquals("c"); ✓!c ▷ tagNameEquals("C");
+  d ◁ x ▷ findFirstTag("d"); ✓d ▷ valid; ✓d ▷ tagNameEquals("d"); ✓!d ▷ tagNameEquals("D");
+  e ◁ d ▷ first;             ✓e ▷ valid; ✓e ▷ tagNameEquals("e"); ✓!e ▷ tagNameEquals("E");
+  g ◁ d ▷ last;              ✓g ▷ valid; ✓g ▷ tagNameEquals("g"); ✓!g ▷ tagNameEquals("G");
+  f ◁ g ▷ prev;              ✓f ▷ valid; ✓f ▷ tagNameEquals("f"); ✓!f ▷ tagNameEquals("F");
+  h ◁ x ▷ findFirstTag("h"); ✓h ▷ valid; ✓h ▷ tagNameEquals("h"); ✓!h ▷ tagNameEquals("H");
+  i ◁ x ▷ findFirstTag("i"); ✓i ▷ valid; ✓i ▷ tagNameEquals("i"); ✓!i ▷ tagNameEquals("I");
 
-  assert(e ▷ equals(f ▷ prev));
+  ✓!b ▷ empty;
+  ✓ b ▷ isTag;
+  ✓ c ▷ empty;
+  ✓ e ▷ equals(f ▷ prev);
 
-  B ◁ b ▷ first; assert(B ▷ valid); assert(B ▷ tagNameEquals("text")); assert(B ▷ tagStringEquals("bb"));
+    B ◁ b ▷ first;
+  ✓ B ▷ isText;
+  ✓!B ▷ isTag;
+  ✓ B ▷ tagNameEquals("text");
+  ✓ B ▷ tagStringEquals("bb");
 
   x ▷ free;
  } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tmake$ParseFromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName
- {const char * const xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
-  $Parse x = make$ParseFromString(xml);
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tparse$FromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //Tsingleton //TtagStringLength //TisText //TisFirst //TisLast //TisRoot
+ {char * xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
+  x ◁ parse$FromString(xml);
 
-  assert(!x ▷ errors);
+  ✓ !x ▷ errors;
 //        x ▷ printAssert("x");
-  assert(x ▷ printsAs("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>"));
+  ✓ x ▷ printsAs("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>");
 
-  r ◁ x ▷ root;
-  a ◁ r ▷ first;               assert( a ▷ valid); assert(a ▷ tagNameEquals("a"));
-  b ◁ x ▷ findFirstTag  ("b"); assert( b ▷ valid); assert(b ▷ tagNameEquals("b")); assert(a ▷ equals(b ▷ parent));
-  c ◁ x ▷ findFirstTag  ("c"); assert( c ▷ valid); assert(c ▷ tagNameEquals("c")); assert(b ▷ equals(c ▷ parent));
-  d ◁ b ▷ findFirstChild("d"); assert( d ▷ valid); assert(d ▷ tagNameEquals("d")); assert(b ▷ equals(d ▷ parent));
-  e ◁ d ▷ findFirstChild("e"); assert( e ▷ valid); assert(e ▷ tagNameEquals("e")); assert(d ▷ equals(e ▷ parent));
-  f ◁ d ▷ findFirstChild("f"); assert( f ▷ valid); assert(f ▷ tagNameEquals("f")); assert(d ▷ equals(f ▷ parent));
-  g ◁ d ▷ findFirstChild("g"); assert( g ▷ valid); assert(g ▷ tagNameEquals("g")); assert(d ▷ equals(g ▷ parent));
-  h ◁ b ▷ findFirstChild("h"); assert( h ▷ valid); assert(h ▷ tagNameEquals("h")); assert(b ▷ equals(h ▷ parent));
-  i ◁ x ▷ findFirstTag  ("i"); assert( i ▷ valid); assert(i ▷ tagNameEquals("i")); assert(a ▷ equals(i ▷ parent));
-  j ◁ x ▷ findFirstTag  ("j"); assert( j ▷ valid); assert(j ▷ tagNameEquals("j")); assert(a ▷ equals(j ▷ parent));
+  r ◁ x ▷ root;                ✓r ▷ isRoot;
+  a ◁ r ▷ first;               ✓a ▷ valid; ✓a ▷ tagNameEquals("a");
+  b ◁ x ▷ findFirstTag  ("b"); ✓b ▷ valid; ✓b ▷ tagNameEquals("b"); ✓a ▷ equals(b ▷ parent);
+  c ◁ x ▷ findFirstTag  ("c"); ✓c ▷ valid; ✓c ▷ tagNameEquals("c"); ✓b ▷ equals(c ▷ parent);
+  d ◁ b ▷ findFirstChild("d"); ✓d ▷ valid; ✓d ▷ tagNameEquals("d"); ✓b ▷ equals(d ▷ parent);
+  e ◁ d ▷ findFirstChild("e"); ✓e ▷ valid; ✓e ▷ tagNameEquals("e"); ✓d ▷ equals(e ▷ parent);
+  f ◁ d ▷ findFirstChild("f"); ✓f ▷ valid; ✓f ▷ tagNameEquals("f"); ✓d ▷ equals(f ▷ parent);
+  g ◁ d ▷ findFirstChild("g"); ✓g ▷ valid; ✓g ▷ tagNameEquals("g"); ✓d ▷ equals(g ▷ parent);
+  h ◁ b ▷ findFirstChild("h"); ✓h ▷ valid; ✓h ▷ tagNameEquals("h"); ✓b ▷ equals(h ▷ parent);
+  i ◁ x ▷ findFirstTag  ("i"); ✓i ▷ valid; ✓i ▷ tagNameEquals("i"); ✓a ▷ equals(i ▷ parent);
+  j ◁ x ▷ findFirstTag  ("j"); ✓j ▷ valid; ✓j ▷ tagNameEquals("j"); ✓a ▷ equals(j ▷ parent);
 
-  assert(b ▷ equals(a ▷ first));
-  assert(c ▷ equals(b ▷ first));
-  assert(h ▷ equals(b ▷ last));
-  assert(j ▷ equals(a ▷ last));
+  ✓ b ▷ equals(a ▷ first);  ✓  b ▷ isFirst;   ✓ !d ▷ isFirst; ✓ !b ▷ isRoot;
+  ✓ c ▷ equals(b ▷ first);  ✓  c ▷ singleton;
+  ✓ h ▷ equals(b ▷ last);   ✓  h ▷ isLast;    ✓ !d ▷ isLast;
+  ✓ j ▷ equals(a ▷ last);
 
-  assert(h ▷ equals(d ▷ next));
-  assert(c ▷ equals(d ▷ prev));
+  ✓ h ▷ equals(d ▷ next);
+  ✓ c ▷ equals(d ▷ prev);
 
-  assert(a ▷ count         == 14);
+  ✓ a ▷ count         == 14;
 
-  assert(a ▷ countChildren == 4);
+  ✓ a ▷ countChildren == 4;
 
-  assert(b ▷ count         == 10);
-  assert(b ▷ countChildren == 3);
+  ✓ b ▷ count         == 10;
+  ✓ b ▷ countChildren == 3;
 
-  assert(!strcmp(parse$TagName(b.node ▷ key), "b"));
-  assert(!strcmp(b ▷ tagName,                 "b"));
+  ✓ !strcmp(parse$TagName(b.node ▷ key), "b");
+  ✓ !strcmp(b ▷ tagName,                 "b");
 
-  assert(!strncmp(b ▷ tagString, "<b>",  b ▷ tagStringLength ));
-  assert(!strncmp(c ▷ tagString, "<c/>", c ▷ tagStringLength));
-  assert(b ▷ tagStringEquals(   "<b>" ));
-  assert(c ▷ tagStringEquals(   "<c/>"));
+  ✓ !strncmp(b ▷ tagString, "<b>", b ▷ tagStringLength);
+  ✓ !strncmp(c ▷ tagString, "<c>", c ▷ tagStringLength);                  // Singletons are converted to empty openers
+  ✓ b ▷ tagStringEquals(    "<b>" );
+  ✓ c ▷ tagStringEquals(    "<c>");
 
-  $Tag H = h ▷ first;
-  assert(H.node ▷ equalsString("h"));
-  assert(!strcmp(H   ▷ tagName, "text"));
+  H ◁ h ▷ first;
+  ✓          H ▷ isText;
+  ✓          H.node ▷ equalsString("h");
+  ✓ !strcmp (H ▷ tagName, "text");
 
-  assert(!strncmp( H ▷ tagString,         "h", H ▷ tagStringLength));
-  assert(          H ▷ tagStringEquals(   "h"));
+  ✓ !strncmp(H ▷ tagString,      "h", H ▷ tagStringLength);
+  ✓          H ▷ tagStringEquals("h");
 
-  assert(a ▷ equals(b ▷ parent));
+  ✓ a ▷ equals(b ▷ parent);
 
-  $Tag F = f ▷ wrap("FFFF id='1'");
+  F ◁ f ▷ wrap("FFFF id='1'");
 //d ▷ printAssert("d");
-  assert(printsAs_int_$Tag_string(d,
-"<d><e/>e<FFFF id='1'><f/></FFFF>f<g>g</g></d>"
-));
+  ✓ printsAs_int_$Tag_string(d, "<d><e/>e<FFFF id='1'><f/></FFFF>f<g>g</g></d>");
 
   F ▷ changeName("NNNN");
 //d ▷ printAssert("d");
-  assert(printsAs_int_$Tag_string(d,
-"<d><e/>e<NNNN id='1'><f/></NNNN>f<g>g</g></d>"
-));
+  ✓ printsAs_int_$Tag_string(d, "<d><e/>e<NNNN id='1'><f/></NNNN>f<g>g</g></d>");
 
   F ▷ unwrap;
 //d ▷ printAssert("d");
-  assert(printsAs_int_$Tag_string(d,
-"<d><e/>e<f/>f<g>g</g></d>"
-));
+  ✓ printsAs_int_$Tag_string(d, "<d><e/>e<f/>f<g>g</g></d>");
 
   x ▷ free;
  } // test1
@@ -684,60 +694,81 @@ void test2()                                                                    
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
   if (!develop()) strcpy(file, "/home/runner/work/C/C/c/z/xml/samples/foreword.dita");
 
-  $Parse x = make$ParseFromFile(file);
+  x ◁ make$ParseFromFile(file);
 
-  $Tag p = x ▷ findFirstTag("p"), c = x ▷ findFirstTag("conbody");
+  p ◁ x ▷ findFirstTag("p"); c ◁ x ▷ findFirstTag("conbody");
 
-  assert( p ▷ valid);
-//  assert( p ▷ printContains("<p>DITA represents a fundamental shift"));
-//  assert(!p ▷ printContains("Define the markup that"));
-  assert( p ▷ tagNameEquals("p"));
+  ✓ p ▷ valid;
+  ✓ p ▷ tagNameEquals("p");
 
-  assert( c ▷ valid);
-//  assert( c ▷ printContains("<p>DITA represents a fundamental shift"));
-//  assert( c ▷ printContains("Define the markup that"));
-  assert( c ▷ tagNameEquals("conbody"));
+  ✓ c ▷ valid;
+  ✓ c ▷ tagNameEquals("conbody");
 
   x ▷ free;
  } // test2
 
-void test3()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
+void test3()                                                                    //Tmake$ParseFromString //TprintsAs //TonlyText //Tby
+ {xml ◁ "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>";
+    x ◁ make$ParseFromString(0, (void *)xml, strlen(xml));
+
+  ✓ x ▷ printsAs("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>");
+
+    h ◁ x ▷ findFirstTag("h");
+  ✓ h ▷ valid;
+  ✓ h ▷ onlyText;
+
+    s ◁ makeStringBuffer();
+
+    void action(const $Tag tag)
+     {if (tag ▷ isTag) s ▷ add(tag ▷ tagName);
+     }
+
+    x ▷ by(action);
+    s ▷ joinWith(" ");
+  ✓ s ▷ equalsString("c e f g d h b i j a");
+
+    x ▷ free; s ▷ free;
+ } // test3
+
+void test4()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {file ◁       "/home/phil/c/z/xml/validation/validation.xml";
   if (!develop()) return;                                                       // Does not work on gitHub - possibly out of memory or Cpu?
-  xml ◁ make$ParseFromFile(file);
 
-         possibilities ◁ xml ▷ findFirstChild("possibilities");                 // The possibilities possibilitiesArray assigns a number to each set of possible tags
-  assert(possibilities ▷ valid);
+  xml ◁ make$ParseFromFile((char *)file);
+  validate ◁ make$Validate();
 
-         possibilitiesArray ◁ possibilities ▷ findFirstChild("array");
-  assert(possibilitiesArray ▷ valid);
-         possibilitiesCount ◁ possibilitiesArray ▷ countChildren;
-  assert(possibilitiesCount == 383);
+    possibilities ◁ xml ▷ findFirstChild("possibilities");                      // The possibilities possibilitiesArray assigns a number to each set of possible tags
+  ✓ possibilities ▷ valid;
 
-         first ◁ xml ▷ findFirstChild("first");                                 // The tags that can come first under a specified parent tag
-  assert(first ▷ valid);
+    possibilitiesArray ◁ possibilities ▷ findFirstChild("array");
+  ✓ possibilitiesArray ▷ valid;
+    possibilitiesCount ◁ possibilitiesArray ▷ countChildren;
+  ✓ possibilitiesCount == 383;
 
-         firstHash ◁ first ▷ findFirstChild("hash");
-  assert(firstHash ▷ valid);
-  assert(firstHash ▷ countChildren == 374);
+    first ◁ xml ▷ findFirstChild("first");                                      // The tags that can come first under a specified parent tag
+  ✓ first ▷ valid;
 
-         next ◁ xml ▷ findFirstChild("next");                                   // The tags that can come next under a specified parent tag
-  assert(next ▷ valid);
+    firstHash ◁ first ▷ findFirstChild("hash");
+  ✓ firstHash ▷ valid;
+  ✓ firstHash ▷ countChildren == 374;
 
-         nextParentHash ◁ next ▷ findFirstChild("hash");
-  assert(nextParentHash ▷ valid);
-  assert(nextParentHash ▷ countChildren == 374);
+    next ◁ xml ▷ findFirstChild("next");                                        // The tags that can come next under a specified parent tag
+  ✓ next ▷ valid;
+
+    nextParentHash ◁ next ▷ findFirstChild("hash");
+  ✓ nextParentHash ▷ valid;
+  ✓ nextParentHash ▷ countChildren == 374;
 
   if (1)                                                                        // Possibilities possibilitiesArray
-   {char buffer[256];
-    ArenaTreeNode pa[possibilitiesCount];
-    assert(xml.possibilities ▷ count == 0);
+   {ArenaTreeNode pa[possibilitiesCount];
+    ✓ validate.possibilities ▷ count == 0;
     size_t i = 0;
 
     $fe(element, possibilitiesArray)                                            // Load possibilities
-     {sprintf(buffer, "%lu", i);                                                // Offset as string for use as a key
-      f ◁ xml.possibilities ▷ add(buffer, strlen(buffer));                      // Possibility set number
-      assert(f ▷ valid);
+     {char buffer[256];
+      sprintf(buffer, "%lu", i);                                                // Offset as string for use as a key
+      f ◁ validate.possibilities ▷ add(buffer, strlen(buffer));                 // Possibility set number
+      ✓ f ▷ valid;
       pa[i] = f;                                                                // Cache node offset
 
       $fe(hash, element)                                                        // Array of hashes
@@ -754,53 +785,52 @@ void test3()                                                                    
       makeLocalCopyOf$TagString(t, n, value);
       a ◁ strtol(t, 0, 0);                                                      // Possibility number
       N ◁ firstTag  ▷ tagName;                                                  // Name of tag
-      f ◁ xml.first ▷ add(N, strlen(N));                                        // First possibilities for this tag
-      size_t * u = f ▷ data;                                                    // Save the offset of the possibilities set for the first possible tag
-             * u = pa[a].offset;
+      f ◁ validate.first ▷ add(N, strlen(N));                                   // First possibilities for this tag
+      *(size_t *)(f ▷ data) = pa[a].offset;                                     // Save the offset of the possibilities set for the first possible tag
      }
 
     $fe(nextParentTag, nextParentHash)                                          // Load next parents
-     {char * tag = nextParentTag ▷ tagName;                                     // Next parent tag
-      ArenaTreeNode f = xml.next ▷ add(tag, strlen(tag));                       // Add next parent tag to next tree
-      assert(f ▷ valid);
+     {tag  ◁ nextParentTag ▷ tagName;                                           // Next parent tag
+        nt ◁ validate.next ▷ add(tag, strlen(tag));                             // Add next parent tag to next tree
+      ✓ nt ▷ valid;
 
-      $Tag nextChildHash = nextParentTag ▷ findFirstChild("hash");
+      nextChildHash ◁ nextParentTag ▷ findFirstChild("hash");
 
       $fe(nextChildTag, nextChildHash)                                          // Load next children
-       {$Tag value = nextChildTag ▷ first;                                      // Value tag
+       {value ◁ nextChildTag ▷ first;                                           // Value tag
         makeLocalCopyOf$TagString(t, n, value);
-        size_t a = strtol(t, 0, 0);                                             // Possibility number
-        char * name = nextChildTag ▷ tagName;                                   // Next possibilities for the child tag
-        ArenaTreeNode F = f ▷ add(name, strlen(name));                          // Next possibilities for the child tag
-        assert(F ▷ valid);
-        size_t * u = F ▷ data; *u = pa[a].offset;                               // Save the offset of the possibilities set for the next possible tag
+        a ◁ strtol(t, 0, 0);                                                    // Possibility number
+        name ◁ nextChildTag ▷ tagName;                                          // Next possibilities for the child tag
+          F ◁ nt ▷ add(name, strlen(name));                                     // Next possibilities for the child tag
+        ✓ F ▷ valid;
+        *(size_t *)(F ▷ data) = pa[a].offset;                                   // Save the offset of the possibilities set for the next possible tag
        }
      }
    }
 
   if (1)                                                                        // Check that 'appendix' is a possible first element of 'appendices'.
-   {ArenaTreeNode f = xml.first ▷ locate("appendices", 10);
-                   assert(f ▷ valid);
+   {  f ◁ validate.first ▷ locate("appendices", 10);
+    ✓ f ▷ valid;
 
-    ArenaTreeNode n = xml.possibilities ▷ nodeFromOffset(*(size_t *)(f ▷ data));// Create a node representing the Appendices Tag first possibilities set
-    assert(n ▷ equalsString("8"));                                              // Appendices is tag 8
-    ArenaTreeNode p = n ▷ locate("appendix", 8);                                // Check whether Appendix is in the set of first tag possibilities for Appendices
-           assert(p ▷ valid);                                                   // Appendix is in the first tag set of Appendices
+      n ◁ validate.possibilities ▷ nodeFromOffset(*(size_t *)(f ▷ data));       // Create a node representing the Appendices Tag first possibilities set
+    ✓ n ▷ equalsString("8");                                                    // Appendices is tag 8
+      p ◁ n ▷ locate("appendix", 8);                                            // Check whether Appendix is in the set of first tag possibilities for Appendices
+    ✓ p ▷ valid;                                                                // Appendix is in the first tag set of Appendices
    }
 
   if (1)                                                                        // Check that 'dd' can follow child 'dt' under parent 'dlentry'.
-   {ArenaTreeNode F = xml.next ▷ ll("dlentry", "dt", 0);                        // Parent + child
-           assert(F ▷ valid);
-    ArenaTreeNode n = xml.possibilities ▷ nodeFromOffset(*(size_t *)(F ▷ data));// Next child possibilities under parent
-    ArenaTreeNode p = n ▷ locate("dd", 2);
-           assert(p ▷ valid);                                                   // Check whether 'dd' can follow 'dt' under 'dlentry'
+   {  F ◁ validate.next ▷ ll("dlentry", "dt", 0);                               // Parent + child
+    ✓ F ▷ valid;
+      n ◁ validate.possibilities ▷ nodeFromOffset(*(size_t *)(F ▷ data));       // Next child possibilities under parent
+      p ◁ n ▷ locate("dd", 2);
+    ✓ p ▷ valid;                                                                // Check whether 'dd' can follow 'dt' under 'dlentry'
    }
 
-  xml ▷ free;
- } // test3
+  xml ▷ free; validate ▷ free;
+ } // test4
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, test3, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0};
 //{void (*tests[])(void) = {test0, 0};
   run_tests("$", 1, tests);
   return 0;
