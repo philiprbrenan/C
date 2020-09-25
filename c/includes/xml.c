@@ -5,8 +5,8 @@
 //------------------------------------------------------------------------------
 #define _GNU_SOURCE
 #include <ctype.h>
-#include <arenaRedBlackTree.c>
 #include <arenaTree.c>
+#include <arenaList.c>
 #include <stringBuffer.c>
 #include <utilities.c>
 
@@ -21,20 +21,21 @@ typedef struct XmlParse                                                         
  {const struct ProtoTypes_XmlParse *proto;                                        // Prototypes for methods
   const StringBuffer      fileName;                                             // Source file containing Xml to be parsed
   const StringBuffer      data;                                                 // Xml to be parsed
-  const ArenaTree         tree;                                                 // Parse tree created from Xml being parsed
-  const ArenaTree         errors;                                               // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is XmlError
-  const ArenaRedBlackTree possibilities;                                        // Possibility sets for each Dita tag
-  const ArenaRedBlackTree first;                                                // First set of possibilities for each Dita tag
-  const ArenaRedBlackTree next;                                                 // Next set of possibilities for each Dita child tag under a given parent tag
+  const ArenaList         tree;                                                 // Parse tree created from Xml being parsed
+  const ArenaList         errors;                                               // List of errors in the xml source - the key of the node is the text of the error message, the extra data after the node is XmlError
+  const ArenaTree         possibilities;                                        // Possibility sets for each Dita tag
+  const ArenaTree         first;                                                // First set of possibilities for each Dita tag
+  const ArenaTree         next;                                                 // Next set of possibilities for each Dita child tag under a given parent tag
  } XmlParse;
 
 typedef struct XmlTag                                                             // Tag in an Xml parse tree
  {const struct ProtoTypes_XmlTag *proto;                                          // Prototypes for methods
   const XmlParse            xml;                                                  // Xml parse tree
-  ArenaTreeNode           node;                                                 // Arena tree node in the xml parse tree that contains this tag
+  ArenaListNode           node;                                                 // Arena tree node in the xml parse tree that contains this tag
  } XmlTag;
 
 #include <xml_prototypes.h>
+#define makeLocalCopyOfXmlTagString(string,stringLength,tag) const size_t stringLength = content_ArenaListNode(tag.node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer_ArenaListNode(tag.node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 #define XmlOpen     '<'                                                           // Important Xml characters
 #define XmlClose    '>'
@@ -42,9 +43,9 @@ typedef struct XmlTag                                                           
 #define XmlQuestion '?'
 #define XmlExclaim  '!'
 
-static XmlTag makeXmlTag_XmlParse_ArenaTreeNode                                       //P Make a tag descriptor from a parse tree node holding the tag
+static XmlTag makeXmlTag_XmlParse_ArenaListNode                                       //P Make a tag descriptor from a parse tree node holding the tag
  (const XmlParse        xml,                                                      // Xml parse tree
-  const ArenaTreeNode node)                                                     // Node holding tag
+  const ArenaListNode node)                                                     // Node holding tag
  {return newXmlTag(({struct XmlTag t = {xml: xml, node: node, proto: &ProtoTypes_XmlTag}; t;}));
  }
 
@@ -52,16 +53,15 @@ static XmlParse makeXmlParseFromFile                                            
  (const char * const sourceFileName)                                            // Name of file holding Xml
  {const typeof(makeStringBufferFromString(sourceFileName)) sourceFN = makeStringBufferFromString(sourceFileName);                   // File to parse
   const typeof(sourceFN.proto->readFile(sourceFN)) sourceBuffer = sourceFN.proto->readFile(sourceFN);                                          // String to parse
-  const typeof(makeArenaTree()) t = makeArenaTree();                                              // Parse tree,
-  const typeof(makeArenaTree()) errors = makeArenaTree();                                              // Errors list
-  const typeof(makeArenaRedBlackTree()) possibilities = makeArenaRedBlackTree();                                      // Single Step Validation
-  const typeof(makeArenaRedBlackTree()) first = makeArenaRedBlackTree();                                      // First set of possibilities for each tag
-  const typeof(makeArenaRedBlackTree()) next = makeArenaRedBlackTree();                                      // Next set of possibilities for each Dita child tag under a given parent tag
+  const typeof(makeArenaList()) t = makeArenaList();                                              // Parse tree,
+  const typeof(makeArenaList()) errors = makeArenaList();                                              // Errors list
+  const typeof(makeArenaTree()) possibilities = makeArenaTree();                                              // Single Step Validation
+  const typeof(makeArenaTreeWithWidth(sizeof(size_t))) first = makeArenaTreeWithWidth(sizeof(size_t));                       // First set of possibilities for each tag
+  const typeof(makeArenaTreeWithWidth(sizeof(size_t))) next = makeArenaTreeWithWidth(sizeof(size_t));                       // Next set of possibilities for each Dita child tag under a given parent tag
   const XmlParse  x = {data: sourceBuffer, fileName: sourceFN, tree: t, errors: errors, possibilities: possibilities, first: first, next: next, proto: &ProtoTypes_XmlParse};
   typeof(t.proto->root(t)) P = t.proto->root(t);                                                                 // Current parent node
 
-  const typeof(sourceBuffer.string.proto->first(sourceBuffer.string)) sourceBufferFirst = sourceBuffer.string.proto->first(sourceBuffer.string);                              // First node in the strin buffer holding the source to be parsed
-  typeof(sourceBufferFirst.proto->key(sourceBufferFirst)) source = sourceBufferFirst.proto->key(sourceBufferFirst);                                // The source is all in one node so we use it in the string buffer rather than copying it out.
+  makeLocalCopyOfStringBuffer(source, sourceLength, sourceBuffer);              // The source to parse
 
   XmlParse error                                                                  // Report an error message adding the file name involved on the following line
    (const char * const p,                                                       // Pointer to position at which the error occurred
@@ -75,17 +75,17 @@ static XmlParse makeXmlParseFromFile                                            
     va_end(va);
     m.proto->add(m, "\n  File     : "); m.proto->addStringBuffer(m, sourceFN);            // Add file name
     m.proto->addFormat(m, "\n  At offset: %lu\n", o);                                   // Add offset in file
+    makeLocalCopyOfStringBuffer(M, L, m);                                       // The error message
 
-    const typeof(errors.proto->nodeFromStringBuffer(errors, m)) n = errors.proto->nodeFromStringBuffer(errors, m);                                       // Save the text of the error message as the key of a node
-    n.proto->setData(n, o);                                                             // Save the offset of the error in the node data offset.
+    const typeof(errors.proto->node(errors, M, L)) n = errors.proto->node(errors, M, L);                                                    // Save the error message
     n.proto->putTreeLast(n);                                                            // Add the error to the error list
+// NEED TO SAVE OFFSET AT WHICH ERROR OCCURED
     m.proto->free(m);                                                                   // Free string buffer
 
     return x;
    } // error
 
-  typeof(source) p = source;                                                                   // Start of text to be parsed
-  if  (*p != XmlOpen) return error(p, "Xml must start with: %c", XmlOpen);            // Insist that the first character is <
+  if  (*source != XmlOpen) return error(0, "Xml must start with: %c", XmlOpen);       // Insist that the first character is <
 
   int remainderIsWhiteSpace(const char *p)                                      // Find the next non space character in a zero terminated string
    {for(; *p; ++p) if (!isspace(*p)) return 0;                                  // Non white space
@@ -103,18 +103,18 @@ static XmlParse makeXmlParseFromFile                                            
           }
 
         if (!allBlank())                                                        // Save the  text as the key of the node
-         {const typeof(t.proto->noden(t, p, o - p)) n = t.proto->noden(t, p, o - p);                                              // Create node
+         {const typeof(t.proto->node(t, p, o - p)) n = t.proto->node(t, p, o - p);                                               // Create node
           P.proto->putLast(P, n);                                                       // Save node in parse tree
-          P.proto->setData(P, p - source);                                              // Save text offset
+//        P.proto->setData(P, p - source);                                              // Save text offset
          }
        }
 
           const typeof(strchr(o, XmlClose)) c = strchr(o, XmlClose);                                                // Save tag: find corresponding close
       if (c)                                                                    // Found closing >
-       {ArenaTreeNode save(void)                                                // Save tag as a new node
-         {const typeof(t.proto->noden(t, o, c - o + 1)) n = t.proto->noden(t, o, c - o + 1);                                          // Create node
+       {ArenaListNode save(void)                                                // Save tag as a new node
+         {const typeof(t.proto->node(t, o, c - o + 1)) n = t.proto->node(t, o, c - o + 1);                                           // Create node
           P.proto->putLast(P, n);                                                       // Save node in parse tree
-          P.proto->setData(P, o - source);                                              // Save text offset in parse tree
+//        P.proto->setData(P, o - source);                                              // Save text offset in parse tree
           return n;
          }
 
@@ -155,12 +155,12 @@ static XmlParse makeXmlParseFromFile                                            
     else if (N > 1) return error(source, "More than one root xml tag found");
    }
 
-  if (1)                                                                        // Make the single root xml tag the root of the parse tree
+  if (0)                                                                        // Make the single root xml tag the root of the parse tree
    {const typeof(t.proto->root(t)) r = t.proto->root(t);
     const typeof(r.proto->first(r)) f = r.proto->first(r);
-    ArenaTreeContent * const a = r.proto->content(r), * const b = f.proto->content(f);
+    ArenaListContent * const a = r.proto->content(r), * const b = f.proto->content(f);
     *a = *b;
-    ArenaTreefe(c, r) c.proto->setUp(c, r);
+    ArenaListfe(c, r) c.proto->setUp(c, r);
    }
 
   sourceFN.proto->free(sourceFN); sourceBuffer.proto->free(sourceBuffer);                                         // Free mapped input file as we can now reconstruct it from the parse tree
@@ -225,10 +225,15 @@ static char * tagString_XmlTag                                                  
  {return tag.node.proto->key(tag.node);
  }
 
+static size_t tagStringLength_XmlTag                                              // Get the length of the entire tag
+ (const XmlTag tag)                                                               // Tag
+ {return tag.node.proto->length(tag.node);
+ }
+
 static int tagStringEquals_XmlTag_string                                          // Check the string of a tag.
  (const XmlTag         tag,                                                       // Tag
   const char * const expected)                                                  // Expected name of tag
- {return !strcmp(tag.proto->tagString(tag), expected);
+ {return tag.node.proto->equalsString(tag.node, expected);
  }
 
 //D1 Navigation                                                                 // Navigate through an Xml parse tree.
@@ -244,22 +249,22 @@ static XmlTag last_XmlTag                                                       
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->last(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 242 "/home/phil/c/z/xml/xml.c"
+#line 247 "/home/phil/c/z/xml/xml.c"
 static XmlTag next_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->next(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 242 "/home/phil/c/z/xml/xml.c"
+#line 247 "/home/phil/c/z/xml/xml.c"
 static XmlTag prev_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->prev(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 242 "/home/phil/c/z/xml/xml.c"
+#line 247 "/home/phil/c/z/xml/xml.c"
 static XmlTag parent_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->parent(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 242 "/home/phil/c/z/xml/xml.c"
+#line 247 "/home/phil/c/z/xml/xml.c"
 
 static XmlTag first_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
  (const XmlParse xml)                                                             // Parent tag
@@ -269,7 +274,7 @@ static XmlTag last_XmlParse                                                     
  (const XmlParse xml)                                                             // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: xml, node: xml.tree.proto->last(xml.tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 248 "/home/phil/c/z/xml/xml.c"
+#line 253 "/home/phil/c/z/xml/xml.c"
 
 //D1 Location                                                                   // Check the current location in the Xml parse tre
 
@@ -292,9 +297,15 @@ static int isLast_XmlTag                                                        
   const typeof(parent.proto->last(parent)) f = parent.proto->last(parent);
   return f.proto->equals(f, tag);
  }
-#line 264 "/home/phil/c/z/xml/xml.c"
+#line 269 "/home/phil/c/z/xml/xml.c"
 
 //D1 Text methods                                                               // Methods that operate on text tags
+
+static int isText_XmlTag                                                          // Check whether we are on a text element
+ (const XmlTag tag)                                                               // Tag
+ {const char * const c = tag.proto->tagString(tag);
+  return c[0] != XmlOpen;
+ }
 
 static char * text_string_XmlTag                                                  // Return the text of a text tag if we are on a text tag.
  (const XmlTag tag)                                                               // Tag
@@ -317,11 +328,27 @@ static int empty_XmlTag                                                         
  {return !parent.proto->countChildren(parent);
  }
 
-static size_t openChildren_XmlTag                                                 // Count the nunber of child tags that are open tags
+static size_t openChildren_XmlTag                                                 // Count the number of child tags that are open tags
  (const XmlTag parent)                                                            // Parent tag
  {size_t n = 0;
   Xmlfe(child, parent) if (child.proto->countChildren(child) > 0) ++n;
   return n;
+ }
+
+static int opener_XmlTag                                                          // Check that the tag has children
+ (const XmlTag tag)                                                               // Parent tag
+ {return tag.proto->countChildren(tag) > 0;
+ }
+
+static int singleton_XmlTag                                                       // Check that the tag has no children
+ (const XmlTag tag)                                                               // Parent tag
+ {return tag.proto->countChildren(tag) == 0;
+ }
+
+static int isInSingletonFormat_XmlTag                                             // Check that the tag is in singleton format
+ (const XmlTag tag)                                                               // Parent tag
+ {makeLocalCopyOfXmlTagString(s, l, tag);
+  return l >= 3 && s[0] == XmlOpen && s[l-1] == XmlClose &&  s[l-2] == XmlSlash;
  }
 
 //D1 Search                                                                     // Search the Xml parse tree
@@ -343,8 +370,9 @@ static XmlTag findFirstChild_XmlTag_XmlTag_string                               
 static XmlTag findFirstChild_XmlTag_XmlParse_string                                   // Find the first child tag with the specified name under the root tag of the specified parse tree.
  (const XmlParse xml,                                                             // Parent
   const char * const key)                                                       // Name of the tag to find
- {       const typeof(xml.proto->root(xml)) root = xml.proto->root(xml);                                                     // Root tag
-  return root.proto->findFirstChild(root, key);                                            // Each child of the parent
+ {    const typeof(xml.proto->root(xml)) root = xml.proto->root(xml);                                                        // Root tag
+  const typeof(root.proto->first(root)) f = root.proto->first(root);
+  return f.proto->findFirstChild(f, key);                                            // Each child of the parent
  }
 
 static XmlTag findFirstTag_XmlTag_XmlTag_string                                       // Find the first tag with the specified name in the Xml parse tree starting at the specified tag.
@@ -402,7 +430,7 @@ static int equals_XmlTag_XmlTag                                                 
 static void by_XmlTag_sub                                                         // Traverse the Xml parse tree rooted at the specified tag in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
  (const XmlTag tag,                                                               // Starting tag
   void (* const function) (const XmlTag tag))                                     // Function to call on each tag
- {void f(const ArenaTreeNode node)
+ {void f(const ArenaListNode node)
    {function(newXmlTag(({struct XmlTag t = {xml: tag.xml, node: node, proto: &ProtoTypes_XmlTag}; t;})));
    }
   tag.node.proto->by(tag.node, f);
@@ -411,7 +439,7 @@ static void by_XmlTag_sub                                                       
 static void by_XmlParse_sub                                                       // Traverse the Xml parse tree in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
  (const XmlParse xml,                                                             // Xml parse tree
   void (* const function) (const XmlTag tag))                                     // Function to call on each tag
- {void f(const ArenaTreeNode node)
+ {void f(const ArenaListNode node)
    {function(newXmlTag(({struct XmlTag t = {xml: xml, node: node, proto: &ProtoTypes_XmlTag}; t;})));
    }
   xml.tree.proto->by(xml.tree, f);
@@ -451,7 +479,7 @@ static void changeName_XmlTag                                                   
   p = stpncpy(p, string, q - string);
   p = stpcpy (p, newName);
   p = stpcpy (p, q + o);
-  tag.node.proto->setKey(tag.node, key);
+  tag.node.proto->setKey(tag.node, key, strlen(key));
  }
 
 //D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
@@ -466,7 +494,7 @@ static XmlTag wrap_XmlTag_string                                                
   *p++ = XmlClose;
   *p   = 0;
 
-  const ArenaTreeNode n =  tag.node.proto->wrap(tag.node, s);
+  const ArenaListNode n =  tag.node.proto->wrap(tag.node, s);
   return newXmlTag(({struct XmlTag t = {xml: tag.xml, node: n, proto: &ProtoTypes_XmlTag}; t;}));
  }
 
@@ -478,57 +506,63 @@ static XmlTag unwrap_XmlTag                                                     
 
 //D1 Print                                                                      // Print an Xml parse tree starting at the specified tag.
 
-static StringBuffer prettyPrint_stringBuffer_XmlTag                               // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
+static StringBuffer print_stringBuffer_XmlTag                                     // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
  (const XmlTag tag)                                                               // Starting tag
  {const StringBuffer p = makeStringBuffer();
 
   void print(const XmlTag parent, const int depth)                                // Print the specified parent and its children
-   {void space()                                                                // Format with white space
-     {p.proto->add(p, "\n");
-      for(int i = 0; i < depth; ++i) p.proto->add(p, " ");
+   {void open()                                                                 // Add open tag
+     {if (parent.proto->opener(parent) || parent.proto->isText(parent) ||
+        (parent.proto->singleton(parent) && parent.proto->isInSingletonFormat(parent)))
+       {p.proto->addn(p, parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+       }
+      else
+       {assert(parent.proto->singleton(parent));
+        makeLocalCopyOfXmlTagString(s, l, parent);
+        p.proto->addChar(p, XmlOpen);
+        p.proto->addn(p, s+1, l-2);
+        p.proto->addFormat(p, "%c%c", XmlSlash, XmlClose);
+       }
      }
-    void open()                                                                 // Add close tag
-     {p.proto->add(p, parent.proto->tagString(parent));
+    void close()                                                                // Add close tag unless we are on text
+     {if (parent.proto->opener(parent))
+       {p.proto->addFormat(p, "%c%c%s%c", XmlOpen, XmlSlash, parent.proto->tagName(parent), XmlClose);
+       }
      }
-    void close()                                                                // Add close tag
-     {p.proto->addFormat(p, "%c%c%s%c", XmlOpen, XmlSlash, parent.proto->tagName(parent), XmlClose);
-     }
-    if      ( parent.proto->empty(parent)) open();                                           // Parent is empty
-    else if (!parent.proto->openChildren(parent))                                            // Parent contains only text and singletons
-     {open();
-      Xmlfe(child, parent) p.proto->add(p, child.proto->tagString(child));
-      close();
-     }
-    else                                                                        // Parent contains open tags
-     {space(); open();
-      Xmlfe(child, parent) print(child, depth+1);
-      space(); close();
-      if (!parent.proto->isLast(parent)) space();                                            // If we are last the next end tag will be offset anyway
-     }
+
+    open();
+    Xmlfe(child, parent) print(child, depth+1);
+    close();
    }
 
   print(tag, 0);
   return p;
  }
 
-static StringBuffer prettyPrint_stringBuffer_Xml                                  // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
+static StringBuffer print_stringBuffer_Xml                                        // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
  (const XmlParse xml)                                                             // Xml parse tree
- {       const typeof(xml.proto->root(xml)) root = xml.proto->root(xml);
-  return root.proto->prettyPrint(root);
+ {    const typeof(xml.proto->root(xml)) root = xml.proto->root(xml);
+  const typeof(root.proto->first(root)) f = root.proto->first(root);
+  return f.proto->print(f);
  }
 
-static int prettyPrintsAs_int_Xml_string                                          // Check that the Xml parse tree prints as expected
+static int printsAs_int_Xml_string                                                // Check that the Xml parse tree prints as expected
  (const XmlParse xml,                                                             // Xml parse tree
-  const char * const expected)                                                  // Expected pretty print
- {const typeof(xml.proto->prettyPrint(xml)) s = xml.proto->prettyPrint(xml);
+  const char * const expected)                                                  // Expected print
+ {const typeof(xml.proto->print(xml)) s = xml.proto->print(xml);
 
   if (!s.proto->equalsString(s, expected))                                              // Strings do not match
-   {makeLocalCopyOfStringBuffer(S, N, s);                                         // Local copy
+   {makeLocalCopyOfStringBuffer(S, N, s);                                       // Local copy
     for(size_t i = 0; i < N; ++i)
      {const char a = *(S+i), b = *(expected+i);
       if (a != b)
-       {say("Strings differ in prettyPrintsAs"
-            " at position: %lu on characters:  %c and %c\n", i, a, b);
+       {say("Strings differ at position: %lu on characters:"
+            " %d=%c and %d=%c\n", i+1, a, a, b, b);
+        say("Have:%s\nWant:%s\n", S, expected);
+        say("     ");
+        for(int i = 0; i < 10; ++i) say("0 2 4 6 8 ");     say("\n");
+        say("     ");
+        for(int i = 0; i < 10; ++i) say("%d         ", i); say("\n");
         s.proto->free(s);
         return 0;
        }
@@ -538,18 +572,23 @@ static int prettyPrintsAs_int_Xml_string                                        
   s.proto->free(s);
   return 1;
  }
-static int prettyPrintsAs_int_XmlTag_string                                          // Check that the Xml parse tree prints as expected
+static int printsAs_int_XmlTag_string                                                // Check that the Xml parse tree prints as expected
  (const XmlTag tag,                                                             // Xml parse tree
-  const char * const expected)                                                  // Expected pretty print
- {const typeof(tag.proto->prettyPrint(tag)) s = tag.proto->prettyPrint(tag);
+  const char * const expected)                                                  // Expected print
+ {const typeof(tag.proto->print(tag)) s = tag.proto->print(tag);
 
   if (!s.proto->equalsString(s, expected))                                              // Strings do not match
-   {makeLocalCopyOfStringBuffer(S, N, s);                                         // Local copy
+   {makeLocalCopyOfStringBuffer(S, N, s);                                       // Local copy
     for(size_t i = 0; i < N; ++i)
      {const char a = *(S+i), b = *(expected+i);
       if (a != b)
-       {say("Strings differ in prettyPrintsAs"
-            " at position: %lu on characters:  %c and %c\n", i, a, b);
+       {say("Strings differ at position: %lu on characters:"
+            " %d=%c and %d=%c\n", i+1, a, a, b, b);
+        say("Have:%s\nWant:%s\n", S, expected);
+        say("     ");
+        for(int i = 0; i < 10; ++i) say("0 2 4 6 8 ");     say("\n");
+        say("     ");
+        for(int i = 0; i < 10; ++i) say("%d         ", i); say("\n");
         s.proto->free(s);
         return 0;
        }
@@ -559,20 +598,18 @@ static int prettyPrintsAs_int_XmlTag_string                                     
   s.proto->free(s);
   return 1;
  }
-#line 510 "/home/phil/c/z/xml/xml.c"
+#line 544 "/home/phil/c/z/xml/xml.c"
 
-static void prettyPrintAssert_XmlTag                                              // Pretty print the Xml parse tree starting at the specified tag as an assert statement
+static void printAssert_XmlTag                                                    // Print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
   const char * const variable)                                                  // The name of the variable preceding this call
- {const typeof(tag.proto->prettyPrint(tag)) t = tag.proto->prettyPrint(tag);
+ {const typeof(tag.proto->print(tag)) t = tag.proto->print(tag);
   t.proto->splitLines(t);
-
   const typeof(makeStringBuffer()) s = makeStringBuffer();
-  s.proto->addFormat(s, "assert(prettyPrintsAs_int_Xml_string(%s,\n", variable);
-  ArenaTreefe(line, t.string)
-   {const typeof(line.proto->key(line)) k = line.proto->key(line);
-    const typeof(strlen(k)) N = strlen(k);
-    char l[N]; strncpy(l, k, N); if (l[N-1] == '\n') l[N-1] = 0;                // Remove any end of line
+  s.proto->addFormat(s, "assert(printsAs_int_Xml_string(%s,\n", variable);
+  ArenaListfe(line, t.string)
+   {makeLocalCopyOfArenaListKey(l, n, line);
+    if (l[n-1] == '\n') l[n-1] = 0;                                             // Remove any end of line
     s.proto->addDoubleQuote(s);
     s.proto->add(s, l);
     s.proto->addQuotedNewLine(s);
@@ -584,60 +621,11 @@ static void prettyPrintAssert_XmlTag                                            
   t.proto->free(t); s.proto->free(s);
  }
 
-static void prettyPrintAssert_Xml_string                                          // Pretty print the Xml parse tree as an assert statement
+static void printAssert_Xml_string                                                // Pretty print the Xml parse tree as an assert statement
  (const XmlParse       xml,                                                       // Xml
   const char * const variable)                                                  // The name of the variable preceding this call
  {const XmlTag t = xml.proto->root(xml);
-  t.proto->prettyPrintAssert(t, variable);
- }
-
-static StringBuffer print_stringBuffer_XmlTag                                     // Print the parse tree as a string buffer starting at the specified tag.
- (const XmlTag tag)                                                               // Starting tag
- {const ArenaTreeNode n = tag.node;
-  return              n.proto->print(n);
- }
-
-static StringBuffer print_stringBuffer_XmlParse                                   // Print an entire Xml parse tree as a string.
- (const XmlParse        xml)                                                      // Xml parse tree
- {const ArenaTree     t = xml.tree;
-  const ArenaTreeNode r = t.proto->root(t);
-  return              r.proto->print(r);
- }
-
-static int printsAs_XmlTag                                                        // Check the print of an Xml parse tree starting at the specified tag is as expected.
- (const XmlTag          tag,                                                      // Starting tag
-  const char *  const expected)                                                 // Expected string
- {const StringBuffer s = tag.proto->print(tag);
-  const int       r = s.proto->equalsString(s, expected);
-  s.proto->free(s);
-  return r;
- }
-
-static int printsAs_XmlParse                                                      // Check the print of an Xml parse tree is as expected.
- (const XmlParse       xml,                                                       // Xml parse tree
-  const char * const expected)                                                  // Expected string
- {const StringBuffer s = xml.proto->print(xml);
-  const int       r = s.proto->equalsString(s, expected);
-  s.proto->free(s);
-  return r;
- }
-
-static int printContains_XmlTag                                                   // Check the print of an Xml parse tree starting at the specified tag contains the expected string
- (const XmlTag    tag,                                                            // Starting tag
-  const char *  const expected)                                                 // Expected string
- {const StringBuffer s = tag.proto->print(tag);
-  const int       r = s.proto->containsString(s, expected);
-  s.proto->free(s);
-  return r;
- }
-
-static int printContains_XmlParse                                                 // Check the print of an Xml parse tree contains the expected string.
- (const XmlParse       xml,                                                       // Xml parse tree
-  const char * const expected)                                                  // Expected string
- {const StringBuffer s = xml.proto->print(xml);
-  const int       r = s.proto->containsString(s, expected);
-  s.proto->free(s);
-  return r;
+  t.proto->printAssert(t, variable);
  }
 #endif
 
@@ -648,58 +636,44 @@ static int develop()                                                            
  {return !strcmp(getenv("HOME"), "/home/phil");
  }
 
-void test0()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //TmakeXmlParseFromFile
+void test0()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //TmakeXmlParseFromFile
  {XmlParse x = makeXmlParseFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h");
-
-  assert(x.proto->prettyPrintsAs(x, "\n"
-"<a>aa<b>bb<c/>cc</b>dd\n"
-" <d><e/><f>F</f><g/>\n"
-" </d>\n"
-" <h/><i/>\n"
-"</a>\n"));
+//x.proto->printAssert(x, "x");
+  assert(x.proto->printsAs(x, "<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></a>"));
 
   if (1)
-   {ArenaTree e = x.errors;
+   {ArenaList e = x.errors;
     assert(x.proto->errors(x) == 2);
     assert(e.proto->printContains(e, "End tag: A does not match start tag: a"));
     assert(e.proto->printContains(e, "Ignoring text at end"));
    }
 
-  XmlTag b = x.proto->findFirstTag(x, "b"); assert(b.proto->valid(b)); assert(b.proto->tagNameEquals(b, "b")); assert(!b.proto->tagNameEquals(b, "B"));
-  XmlTag c = x.proto->findFirstTag(x, "c"); assert(c.proto->valid(c)); assert(c.proto->tagNameEquals(c, "c")); assert(!c.proto->tagNameEquals(c, "C"));
-  XmlTag d = x.proto->findFirstTag(x, "d"); assert(d.proto->valid(d)); assert(d.proto->tagNameEquals(d, "d")); assert(!d.proto->tagNameEquals(d, "D"));
-  XmlTag e = d.proto->first(d);             assert(e.proto->valid(e)); assert(e.proto->tagNameEquals(e, "e")); assert(!e.proto->tagNameEquals(e, "E"));
-  XmlTag g = d.proto->last(d);              assert(g.proto->valid(g)); assert(g.proto->tagNameEquals(g, "g")); assert(!g.proto->tagNameEquals(g, "G"));
-  XmlTag f = g.proto->prev(g);              assert(f.proto->valid(f)); assert(f.proto->tagNameEquals(f, "f")); assert(!f.proto->tagNameEquals(f, "F"));
-  XmlTag h = x.proto->findFirstTag(x, "h"); assert(h.proto->valid(h)); assert(h.proto->tagNameEquals(h, "h")); assert(!h.proto->tagNameEquals(h, "H"));
-  XmlTag i = x.proto->findFirstTag(x, "i"); assert(i.proto->valid(i)); assert(i.proto->tagNameEquals(i, "i")); assert(!i.proto->tagNameEquals(i, "I"));
+  const typeof(x.proto->findFirstTag(x, "b")) b = x.proto->findFirstTag(x, "b"); assert(b.proto->valid(b)); assert(b.proto->tagNameEquals(b, "b")); assert(!b.proto->tagNameEquals(b, "B"));
+  const typeof(x.proto->findFirstTag(x, "c")) c = x.proto->findFirstTag(x, "c"); assert(c.proto->valid(c)); assert(c.proto->tagNameEquals(c, "c")); assert(!c.proto->tagNameEquals(c, "C"));
+  const typeof(x.proto->findFirstTag(x, "d")) d = x.proto->findFirstTag(x, "d"); assert(d.proto->valid(d)); assert(d.proto->tagNameEquals(d, "d")); assert(!d.proto->tagNameEquals(d, "D"));
+  const typeof(d.proto->first(d)) e = d.proto->first(d);             assert(e.proto->valid(e)); assert(e.proto->tagNameEquals(e, "e")); assert(!e.proto->tagNameEquals(e, "E"));
+  const typeof(d.proto->last(d)) g = d.proto->last(d);              assert(g.proto->valid(g)); assert(g.proto->tagNameEquals(g, "g")); assert(!g.proto->tagNameEquals(g, "G"));
+  const typeof(g.proto->prev(g)) f = g.proto->prev(g);              assert(f.proto->valid(f)); assert(f.proto->tagNameEquals(f, "f")); assert(!f.proto->tagNameEquals(f, "F"));
+  const typeof(x.proto->findFirstTag(x, "h")) h = x.proto->findFirstTag(x, "h"); assert(h.proto->valid(h)); assert(h.proto->tagNameEquals(h, "h")); assert(!h.proto->tagNameEquals(h, "H"));
+  const typeof(x.proto->findFirstTag(x, "i")) i = x.proto->findFirstTag(x, "i"); assert(i.proto->valid(i)); assert(i.proto->tagNameEquals(i, "i")); assert(!i.proto->tagNameEquals(i, "I"));
 
   assert(e.proto->equals(e, f.proto->prev(f)));
 
-  XmlTag B = b.proto->first(b);             assert(B.proto->valid(B)); assert(B.proto->tagNameEquals(B, "text")); assert(B.proto->tagStringEquals(B, "bb"));
+  const typeof(b.proto->first(b)) B = b.proto->first(b); assert(B.proto->valid(B)); assert(B.proto->tagNameEquals(B, "text")); assert(B.proto->tagStringEquals(B, "bb"));
 
   x.proto->free(x);
  } // test0
 
 void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TmakeXmlParseFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName
- {XmlParse x = makeXmlParseFromString
-   ("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>");
+ {const char * const xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
+  XmlParse x = makeXmlParseFromString(xml);
 
   assert(!x.proto->errors(x));
-//        x.proto->prettyPrintAssert(x, "x");
-  assert(prettyPrintsAs_int_Xml_string(x,
-"\n"
-"<a>\n"
-" <b><c/>\n"
-"  <d><e/>e<f/>f<g>g</g>\n"
-"  </d>\n"
-"  <h>h</h>\n"
-" </b>\n"
-" <i/>i<j>\n"
-"</a>\n"
-));
+//        x.proto->printAssert(x, "x");
+  assert(x.proto->printsAs(x, "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>"));
 
-  const typeof(x.proto->root(x)) a = x.proto->root(x);                assert(!a.proto->valid(a)); assert(a.proto->tagNameEquals(a, "a"));
+  const typeof(x.proto->root(x)) r = x.proto->root(x);
+  const typeof(r.proto->first(r)) a = r.proto->first(r);               assert( a.proto->valid(a)); assert(a.proto->tagNameEquals(a, "a"));
   const typeof(x.proto->findFirstTag(x, "b")) b = x.proto->findFirstTag(x, "b"); assert( b.proto->valid(b)); assert(b.proto->tagNameEquals(b, "b")); assert(a.proto->equals(a, b.proto->parent(b)));
   const typeof(x.proto->findFirstTag(x, "c")) c = x.proto->findFirstTag(x, "c"); assert( c.proto->valid(c)); assert(c.proto->tagNameEquals(c, "c")); assert(b.proto->equals(b, c.proto->parent(c)));
   const typeof(b.proto->findFirstChild(b, "d")) d = b.proto->findFirstChild(b, "d"); assert( d.proto->valid(d)); assert(d.proto->tagNameEquals(d, "d")); assert(b.proto->equals(b, d.proto->parent(d)));
@@ -710,16 +684,17 @@ void test1()                                                                    
   const typeof(x.proto->findFirstTag(x, "i")) i = x.proto->findFirstTag(x, "i"); assert( i.proto->valid(i)); assert(i.proto->tagNameEquals(i, "i")); assert(a.proto->equals(a, i.proto->parent(i)));
   const typeof(x.proto->findFirstTag(x, "j")) j = x.proto->findFirstTag(x, "j"); assert( j.proto->valid(j)); assert(j.proto->tagNameEquals(j, "j")); assert(a.proto->equals(a, j.proto->parent(j)));
 
-  assert(b.proto->equals(b, x.proto->first(x)));
+  assert(b.proto->equals(b, a.proto->first(a)));
   assert(c.proto->equals(c, b.proto->first(b)));
   assert(h.proto->equals(h, b.proto->last(b)));
-  assert(j.proto->equals(j, x.proto->last(x)));
+  assert(j.proto->equals(j, a.proto->last(a)));
 
   assert(h.proto->equals(h, d.proto->next(d)));
   assert(c.proto->equals(c, d.proto->prev(d)));
 
-  assert(x.proto->count(x)         == 14);
-  assert(x.proto->countChildren(x) == 3);
+  assert(a.proto->count(a)         == 14);
+
+  assert(a.proto->countChildren(a) == 4);
 
   assert(b.proto->count(b)         == 10);
   assert(b.proto->countChildren(b) == 3);
@@ -727,42 +702,36 @@ void test1()                                                                    
   assert(!strcmp(parseXmlTagName(b.node.proto->key(b.node)), "b"));
   assert(!strcmp(b.proto->tagName(b),                 "b"));
 
-  assert(!strcmp(b.proto->tagString(b), "<b>" ));
-  assert(!strcmp(c.proto->tagString(c), "<c/>"));
+  assert(!strncmp(b.proto->tagString(b), "<b>",  b.proto->tagStringLength(b) ));
+  assert(!strncmp(c.proto->tagString(c), "<c/>", c.proto->tagStringLength(c)));
   assert(b.proto->tagStringEquals(b,    "<b>" ));
   assert(c.proto->tagStringEquals(c,    "<c/>"));
 
   XmlTag H = h.proto->first(h);
-  assert(!strcmp(H.node.proto->key(H.node),     "h"));
+  assert(H.node.proto->equalsString(H.node, "h"));
   assert(!strcmp(H.proto->tagName(H), "text"));
 
-  assert(!strcmp(  H.proto->tagString(H),         "h" ));
+  assert(!strncmp( H.proto->tagString(H),         "h", H.proto->tagStringLength(H)));
   assert(          H.proto->tagStringEquals(H,    "h"));
 
   assert(a.proto->equals(a, b.proto->parent(b)));
 
   XmlTag F = f.proto->wrap(f, "FFFF id='1'");
-//d.proto->prettyPrintAssert(d, "d");
-  assert(prettyPrintsAs_int_XmlTag_string(d,
-"\n"
-"<d><e/>e<FFFF id='1'><f/></FFFF>f<g>g</g>\n"
-"</d>\n"
+//d.proto->printAssert(d, "d");
+  assert(printsAs_int_XmlTag_string(d,
+"<d><e/>e<FFFF id='1'><f/></FFFF>f<g>g</g></d>"
 ));
 
   F.proto->changeName(F, "NNNN");
-//d.proto->prettyPrintAssert(d, "d");
-  assert(prettyPrintsAs_int_XmlTag_string(d,
-"\n"
-"<d><e/>e<NNNN id='1'><f/></NNNN>f<g>g</g>\n"
-"</d>\n"
+//d.proto->printAssert(d, "d");
+  assert(printsAs_int_XmlTag_string(d,
+"<d><e/>e<NNNN id='1'><f/></NNNN>f<g>g</g></d>"
 ));
 
   F.proto->unwrap(F);
-//d.proto->prettyPrintAssert(d, "d");
-  assert(prettyPrintsAs_int_XmlTag_string(d,
-"\n"
-"<d><e/>e<f/>f<g>g</g>\n"
-"</d>\n"
+//d.proto->printAssert(d, "d");
+  assert(printsAs_int_XmlTag_string(d,
+"<d><e/>e<f/>f<g>g</g></d>"
 ));
 
   x.proto->free(x);
@@ -777,114 +746,111 @@ void test2()                                                                    
   XmlTag p = x.proto->findFirstTag(x, "p"), c = x.proto->findFirstTag(x, "conbody");
 
   assert( p.proto->valid(p));
-  assert( p.proto->printContains(p, "<p>DITA represents a fundamental shift"));
-  assert(!p.proto->printContains(p, "Define the markup that"));
+//  assert( p.proto->printContains(p, "<p>DITA represents a fundamental shift"));
+//  assert(!p.proto->printContains(p, "Define the markup that"));
   assert( p.proto->tagNameEquals(p, "p"));
 
   assert( c.proto->valid(c));
-  assert( c.proto->printContains(c, "<p>DITA represents a fundamental shift"));
-  assert( c.proto->printContains(c, "Define the markup that"));
+//  assert( c.proto->printContains(c, "<p>DITA represents a fundamental shift"));
+//  assert( c.proto->printContains(c, "Define the markup that"));
   assert( c.proto->tagNameEquals(c, "conbody"));
 
   x.proto->free(x);
  } // test2
 
-void test3()                                                                    //TnewArenaTree //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
- {char *file =       "/home/phil/c/z/xml/validation/validation.xml";
+void test3()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
+ {const typeof("/home/phil/c/z/xml/validation/validation.xml") file = "/home/phil/c/z/xml/validation/validation.xml";
   if (!develop()) return;                                                       // Does not work on gitHub - possibly out of memory or Cpu?
-  XmlParse xml = makeXmlParseFromFile(file);
+  const typeof(makeXmlParseFromFile(file)) xml = makeXmlParseFromFile(file);
 
-  XmlTag possibilities = xml.proto->findFirstChild(xml, "possibilities");                   // The possibilities possibilitiesArray assigns a number to each set of possible tags
+         const typeof(xml.proto->findFirstChild(xml, "possibilities")) possibilities = xml.proto->findFirstChild(xml, "possibilities");                 // The possibilities possibilitiesArray assigns a number to each set of possible tags
   assert(possibilities.proto->valid(possibilities));
 
-  XmlTag possibilitiesArray = possibilities.proto->findFirstChild(possibilities, "array");
+         const typeof(possibilities.proto->findFirstChild(possibilities, "array")) possibilitiesArray = possibilities.proto->findFirstChild(possibilities, "array");
   assert(possibilitiesArray.proto->valid(possibilitiesArray));
-  size_t possibilitiesCount = possibilitiesArray.proto->countChildren(possibilitiesArray);
+         const typeof(possibilitiesArray.proto->countChildren(possibilitiesArray)) possibilitiesCount = possibilitiesArray.proto->countChildren(possibilitiesArray);
   assert(possibilitiesCount == 383);
 
-  XmlTag first = xml.proto->findFirstChild(xml, "first");                                   // The tags that can come first under a specified parent tag
+         const typeof(xml.proto->findFirstChild(xml, "first")) first = xml.proto->findFirstChild(xml, "first");                                 // The tags that can come first under a specified parent tag
   assert(first.proto->valid(first));
 
-  XmlTag firstHash = first.proto->findFirstChild(first, "hash");
+         const typeof(first.proto->findFirstChild(first, "hash")) firstHash = first.proto->findFirstChild(first, "hash");
   assert(firstHash.proto->valid(firstHash));
   assert(firstHash.proto->countChildren(firstHash) == 374);
 
-  XmlTag next = xml.proto->findFirstChild(xml, "next");                                     // The tags that can come next under a specified parent tag
+         const typeof(xml.proto->findFirstChild(xml, "next")) next = xml.proto->findFirstChild(xml, "next");                                   // The tags that can come next under a specified parent tag
   assert(next.proto->valid(next));
 
-  XmlTag nextParentHash = next.proto->findFirstChild(next, "hash");
+         const typeof(next.proto->findFirstChild(next, "hash")) nextParentHash = next.proto->findFirstChild(next, "hash");
   assert(nextParentHash.proto->valid(nextParentHash));
   assert(nextParentHash.proto->countChildren(nextParentHash) == 374);
 
   if (1)                                                                        // Possibilities possibilitiesArray
    {char buffer[256];
-    ArenaRedBlackTreeNode pa[possibilitiesCount];
+    ArenaTreeNode pa[possibilitiesCount];
     assert(xml.possibilities.proto->count(xml.possibilities) == 0);
     size_t i = 0;
 
     Xmlfe(element, possibilitiesArray)                                            // Load possibilities
      {sprintf(buffer, "%lu", i);                                                // Offset as string for use as a key
-      ArenaRedBlackTreeNode f = xml.possibilities.proto->add(xml.possibilities, buffer);                // Possibility set number
+      const typeof(xml.possibilities.proto->add(xml.possibilities, buffer, strlen(buffer))) f = xml.possibilities.proto->add(xml.possibilities, buffer, strlen(buffer));                      // Possibility set number
       assert(f.proto->valid(f));
       pa[i] = f;                                                                // Cache node offset
 
       Xmlfe(hash, element)                                                        // Array of hashes
        {Xmlfe(hashKey, hash)                                                      // Keys in each hash
-         {char * name = hashKey.proto->tagName(hashKey);
-          if (strcmp(name, "text")) f.proto->add(f, hashKey.proto->tagName(hashKey));
+         {const typeof(hashKey.proto->tagName(hashKey)) name = hashKey.proto->tagName(hashKey);
+          if (strcmp(name, "text")) f.proto->add(f, name, strlen(name));
          }
        }
       ++i;
      }
 
     Xmlfe(firstTag, firstHash)                                                    // Load first tags
-     {XmlTag value = firstTag.proto->first(firstTag);                                            // Value tag
-      char * t = value.proto->tagString(value);                                             // Possibility number as string
-      size_t a = strtol(t, 0, 0);                                               // Possibility number
-      ArenaRedBlackTreeNode f = xml.first.proto->add(xml.first, firstTag.proto->tagName(firstTag));            // First possibilities for this tag
-      f.proto->setData(f, pa[a].offset);                                                // The first sub tag possibilities for this tag
+     {const typeof(firstTag.proto->first(firstTag)) value = firstTag.proto->first(firstTag);                                                 // Value tag
+      makeLocalCopyOfXmlTagString(t, n, value);
+      const typeof(strtol(t, 0, 0)) a = strtol(t, 0, 0);                                                      // Possibility number
+      const typeof(firstTag.proto->tagName(firstTag)) N = firstTag.proto->tagName(firstTag);                                                  // Name of tag
+      const typeof(xml.first.proto->add(xml.first, N, strlen(N))) f = xml.first.proto->add(xml.first, N, strlen(N));                                        // First possibilities for this tag
+      size_t * u = f.proto->data(f);                                                    // Save the offset of the possibilities set for the first possible tag
+             * u = pa[a].offset;
      }
 
     Xmlfe(nextParentTag, nextParentHash)                                          // Load next parents
      {char * tag = nextParentTag.proto->tagName(nextParentTag);                                     // Next parent tag
-      ArenaRedBlackTreeNode f = xml.next.proto->add(xml.next, tag);                            // Add next parent tag to next tree
+      ArenaTreeNode f = xml.next.proto->add(xml.next, tag, strlen(tag));                       // Add next parent tag to next tree
       assert(f.proto->valid(f));
 
       XmlTag nextChildHash = nextParentTag.proto->findFirstChild(nextParentTag, "hash");
 
       Xmlfe(nextChildTag, nextChildHash)                                          // Load next children
        {XmlTag value = nextChildTag.proto->first(nextChildTag);                                      // Value tag
-        char * t = value.proto->tagString(value);                                           // Possibility number as string
+        makeLocalCopyOfXmlTagString(t, n, value);
         size_t a = strtol(t, 0, 0);                                             // Possibility number
-        ArenaRedBlackTreeNode F = f.proto->add(f, nextChildTag.proto->tagName(nextChildTag));              // Next possibilities for the child tag
+        char * name = nextChildTag.proto->tagName(nextChildTag);                                   // Next possibilities for the child tag
+        ArenaTreeNode F = f.proto->add(f, name, strlen(name));                          // Next possibilities for the child tag
         assert(F.proto->valid(F));
-        F.proto->setData(F, pa[a].offset);                                              // The next possibilities for this child under this parent
+        size_t * u = F.proto->data(F); *u = pa[a].offset;                               // Save the offset of the possibilities set for the next possible tag
        }
      }
    }
 
-  assert(xml.possibilities.proto->used(xml.possibilities)    == 192344);
-  assert(xml.first.proto->used(xml.first)    ==  14128);
-  assert(xml.next.proto->used(xml.next)    == 330562);
-
-
   if (1)                                                                        // Check that 'appendix' is a possible first element of 'appendices'.
-   {ArenaRedBlackTreeNode f = xml.first.proto->locate(xml.first, "appendices");
+   {ArenaTreeNode f = xml.first.proto->locate(xml.first, "appendices", 10);
                    assert(f.proto->valid(f));
-                   assert(f.proto->getData(f) == 4771);                                 // Offset to set of first possibilities for Appendices tag
 
-    ArenaRedBlackTreeNode  n = xml.possibilities.proto->nodeFromOffset(xml.possibilities, f.proto->getData(f)); // Create a node representing the Appendices Tag first possibilities set
+    ArenaTreeNode n = xml.possibilities.proto->nodeFromOffset(xml.possibilities, *(size_t *)(f.proto->data(f)));// Create a node representing the Appendices Tag first possibilities set
     assert(n.proto->equalsString(n, "8"));                                              // Appendices is tag 8
-    ArenaRedBlackTreeNode p = n.proto->locate(n, "appendix");                           // Check whether Appendix is in the set of first tag possibilities for Appendices
-                   assert(p.proto->valid(p));                                           // Appendix is in the first tag set of Appendices
+    ArenaTreeNode p = n.proto->locate(n, "appendix", 8);                                // Check whether Appendix is in the set of first tag possibilities for Appendices
+           assert(p.proto->valid(p));                                                   // Appendix is in the first tag set of Appendices
    }
 
   if (1)                                                                        // Check that 'dd' can follow child 'dt' under parent 'dlentry'.
-   {ArenaRedBlackTreeNode F = xml.next.proto->ll(xml.next, "dlentry", "dt", 0);                // Parent + child
-                   assert(F.proto->valid(F));
-    ArenaRedBlackTreeNode n = xml.possibilities.proto->nodeFromOffset(xml.possibilities, F.proto->getData(F));  // Next child possibilities under parent
-    ArenaRedBlackTreeNode p = n.proto->locate(n, "dd");
-                   assert(p.proto->valid(p));                                           // Check whether 'dd' can follow 'dt' under 'dlentry'
+   {ArenaTreeNode F = xml.next.proto->ll(xml.next, "dlentry", "dt", 0);                        // Parent + child
+           assert(F.proto->valid(F));
+    ArenaTreeNode n = xml.possibilities.proto->nodeFromOffset(xml.possibilities, *(size_t *)(F.proto->data(F)));// Next child possibilities under parent
+    ArenaTreeNode p = n.proto->locate(n, "dd", 2);
+           assert(p.proto->valid(p));                                                   // Check whether 'dd' can follow 'dt' under 'dlentry'
    }
 
   xml.proto->free(xml);
