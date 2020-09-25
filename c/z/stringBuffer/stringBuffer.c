@@ -420,7 +420,7 @@ void test0()                                                                    
   s ▷ free;
  }
 
-void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //Tsubstring //TsubstringEquals //Tjoin //Tcount
+void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //Tsubstring //TsubstringEquals //Tjoin //Tcount //TjoinWith
  {$ a = make$();   $ b = make$(); $ c = make$();
     a ▷ add("ab");   b ▷ add("a");  c ▷ add("aba");
     a ▷ add("c");    b ▷ add("bc"); c ▷ add("bc");
