@@ -170,6 +170,11 @@ ssize_t __attribute__ ((unused)) writeFile                                      
 
 //D1 Testing                                                                    // Methods for testing other methods
 
+long microSecondsSince                                                          // Microseconds since the specified time
+ (clock_t start)                                                                // Start time
+ {return (long)(((double) (clock() - start)) / CLOCKS_PER_SEC * 1000000.0);
+ }
+
 int run_tests                                                                   // Run tests
  (char     *title,                                                              // Title of the tests
   const int repetitions,                                                        // Number of times to test
@@ -186,8 +191,7 @@ int run_tests                                                                   
    }
 
   say("SUCCESS: All %d %s tests passed successfully in %lu microseconds\n",     // Run time
-      n, title,
-     (long)(((double) (clock() - start)) / CLOCKS_PER_SEC * 1000000.0));
+      n, title, microSecondsSince(start));
 
   return n;
  }
