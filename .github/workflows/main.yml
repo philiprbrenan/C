@@ -31,11 +31,11 @@ jobs:
       run: |
         tree
 
-    - name: Run arenaRedBlackTree
+    - name: Run arenaList
       if: always()
       run: |
-        (cd /home/runner/work/C/C/c/z/arenaRedBlackTree/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/arenaRedBlackTree//arenaRedBlackTree.c --cIncludes /home/runner/work/C/C/c/includes)
-        (cd /home/runner/work/C/C/c/z/arenaRedBlackTree/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/arenaRedBlackTree//arenaRedBlackTree.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
+        (cd /home/runner/work/C/C/c/z/arenaList/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/arenaList//arenaList.c --cIncludes /home/runner/work/C/C/c/includes)
+        (cd /home/runner/work/C/C/c/z/arenaList/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/arenaList//arenaList.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
 
     - name: Run arenaTree
       if: always()
@@ -60,9 +60,4 @@ jobs:
       run: |
         (cd /home/runner/work/C/C/c/z/utilities/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/utilities//utilities.c --cIncludes /home/runner/work/C/C/c/includes)
         (cd /home/runner/work/C/C/c/z/utilities/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/utilities//utilities.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
-
-    - name: Run pangoText
-      if: always()
-      run: |
-        (cd /home/runner/work/C/C/c/g/pangoText/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/g/pangoText//pangoText.c --cIncludes /home/runner/work/C/C/c/includes)
 
