@@ -7,6 +7,7 @@
 #include <arenaTree.c>
 #include <arenaList.c>
 #include <stringBuffer.c>
+#include <cairoText.c>
 #include <utilities.c>
 
 #ifndef $_included
@@ -280,6 +281,13 @@ duplicate s/first/last/
 
 //D1 Location                                                                   // Check the current location in the $ parse tre
 
+static int depth_$Tag                                                           // The depth of a tag
+ (const $Tag tag)                                                               // Tag
+ {i ◀ 0;
+  for($Tag t = tag; t ▷ valid; t.node.offset = t ▷ parent.node.offset) ++i;     // Count up to root
+  return i - 1;                                                                 // We have included the root node
+ }
+
 static int isRoot_$Tag                                                          // Check whether the specified tag is the root tag
  (const $Tag tag)                                                               // Tag
  {return !tag ▷ valid;
@@ -419,6 +427,24 @@ static void by_$Parse_sub                                                       
    {function(new $Tag(xml: xml, node: node));
    }
   xml.tree ▷ by(f);
+ }
+
+static void scan_$Tag_sub                                                       // Traverse the $ parse tree rooted at the specified tag calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
+ (const $Tag tag,                                                               // Starting tag
+  void (* const function) ($Tag tag, int start))                                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {void f(const ArenaListNode node,   int start)
+   {function(new $Tag(xml: tag.xml, node: node), start);
+   }
+  tag.node ▷ scan(f);
+ }
+
+static void scan_$Parse_sub                                                     // Traverse the $ parse tree calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
+ (const $Parse xml,                                                             // $ parse tree
+  void (* const function) ($Tag tag, int start))                                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {void f(const ArenaListNode node,   int start)
+   {function(new $Tag(xml: xml, node: node), start);
+   }
+  xml.tree ▷ scan(f);
  }
 
 static  size_t countChildren_size_$                                             // Count the number of tags at the first level in an xml parse tree.
@@ -716,6 +742,7 @@ void test3()                                                                    
     h ◁ x ▷ findFirstTag("h");
   ✓ h ▷ valid;
   ✓ h ▷ onlyText;
+  ✓ h ▷ depth == 2;
 
     s ◁ makeStringBuffer();
 
@@ -829,8 +856,37 @@ void test4()                                                                    
   xml ▷ free; validate ▷ free;
  } // test4
 
+void test5()
+ {char * xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
+     x ◁ parse$FromString(xml);
+  ✓ !x ▷ errors;
+
+  void draw(CairoTextImage i)
+   {cr ◀ i.cr;
+    cairo_set_font_size (cr, 40);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_font_extents_t fontExtents;
+    cairo_font_extents  (cr, &fontExtents);
+
+    line ◀ 0ul;
+
+    void drawXml(const $Tag tag, int start)
+     {makeLocalCopyOf$TagString(t, l, tag);
+      cairo_move_to     (cr, fontExtents.max_x_advance * tag ▷ depth,
+                    line++ * fontExtents.height);
+      cairo_show_text   (cr, t);
+     }
+
+    x ▷ scan(drawXml);
+   }
+
+  i ◁ createCairoTextImage(draw, 2000, 2000, "xml1.png", "a");                  // Create image containing some text and check its digest
+  i ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4,
+                           test5, 0};
 //{void (*tests[])(void) = {test0, 0};
   run_tests("$", 1, tests);
   return 0;
