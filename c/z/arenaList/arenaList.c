@@ -212,12 +212,7 @@ static $Node node_$Node_$_string                                                
   c ◁ n ▷ content;                                                              // Address content
   c->length = length;                                                           // Save key length
   memcpy(n ▷ key, key, length);                                                 // Copy in key
-  assert(!memcmp(n ▷ key, key, length));
-  makeLocalCopyOf$Key(k, l, n);
-//say("AAAA %lu %lu %lu %lu  %s\n", strlen(k), length, l, n ▷ width, n ▷ key);
-    assert(l == length);
-    assert(!memcmp(n ▷ key, key, length));
-  return list ▷ nodeFromOffset(n.offset);                                       // Return node
+  return n;                                                                     // Return node
  }
 
 static void setKey_$Node_pointer                                                // Set the key of a node to a different value as long as there is enough room from the last setting.
@@ -813,20 +808,20 @@ void test0()                                                                    
     c2 ◁ t ▷ node(&c, 1); root ▷ putFirst(c2);
     c = 'A'+i; c2 ▷ setKey(&c, 1);
     makeLocalCopyOf$Key(k2, l2, c2);
-    assert(k2[0] == c);
+    ✓k2[0] == c;
    }
 
   if (1)                                                                        // For each
    {char l[t ▷ count + 1]; *l = 0;
     $fe (child, root) strncat(l, child ▷ key, child ▷ length);
 
-    assert(strcmp(l, "JIHGFEDCBAabcdefghij") == 0);
+    ✓ !strcmp(l, "JIHGFEDCBAabcdefghij");
    }
 
   if (1)                                                                        // For each in reverse
    {char l[t ▷ count + 1]; *l = 0;
     $fer(child, root) strncat(l, child ▷ key, child ▷ length);
-    assert(strcmp(l, "jihgfedcbaABCDEFGHIJ") == 0);
+    ✓strcmp(l, "jihgfedcbaABCDEFGHIJ") == 0;
    }
 
   t ▷ free;
@@ -834,8 +829,8 @@ void test0()                                                                    
 
 void test1()                                                                    //Troot //Tfirst //Tlast //Tnext //Tprev //Tparent //Tequals //Tprint //TprintWithBrackets //TfromLetters //TprintsAs
  {t ◁ make$();    t ▷ fromLetters("b(c(de)f)g(hi)j");
-  assert(t ▷ printsWithBracketsAs("(b(c(de)f)g(hi)j)"));
-  assert(t ▷ printsAs("bcdefghij"));
+  ✓t ▷ printsWithBracketsAs("(b(c(de)f)g(hi)j)");
+  ✓t ▷ printsAs("bcdefghij");
 
   a ◁ t ▷ root;
   b ◁ a ▷ first;
@@ -844,25 +839,25 @@ void test1()                                                                    
   d ◁ e ▷ prev;
 
   char * k = d ▷ key;
-  assert(k[0] == 'd');
+  ✓k[0] == 'd';
   b ▷ printsWithBracketsAs("b(c(de)f)");
   c ▷ printsWithBracketsAs(  "c(de)");
 
-  assert(c ▷ equals(d ▷ parent));
-  assert(b ▷ equals(c ▷ parent));
-  assert(a ▷ equals(b ▷ parent));
-  assert(a ▷ equals(t ▷ root));
+  ✓c ▷ equals(d ▷ parent);
+  ✓b ▷ equals(c ▷ parent);
+  ✓a ▷ equals(b ▷ parent);
+  ✓a ▷ equals(t ▷ root);
 
-  assert(c ▷ printsAs("cde"));
-  assert(t ▷ printsAs("bcdefghij"));
+  ✓c ▷ printsAs("cde");
+  ✓t ▷ printsAs("bcdefghij");
 
   t ▷ free;
  }
 
 void test2()                                                                    //Tby //TprintsWithBracketsAs //TprintContains
  {t ◁ make$();     t ▷ fromLetters("b(c(de)f)g(hi)j");
-  assert(t ▷ printsWithBracketsAs("(b(c(de)f)g(hi)j)"));
-  assert(t ▷ printContains("def"));
+  ✓t ▷ printsWithBracketsAs("(b(c(de)f)g(hi)j)");
+  ✓t ▷ printContains("def");
 
   char l[t ▷ count + 2], *p = l;
 
@@ -872,87 +867,87 @@ void test2()                                                                    
    }
 
   t ▷ by(process);
-  assert(strcmp(l, "decfbhigj") == 0);
+  ✓strcmp(l, "decfbhigj") == 0;
 
   t ▷ free;
  }
 
 void test3()                                                                    //TisFirst //TisLast //TisEmpty //TisRoot //TisOnlyChild //Tcontext //TcheckKey //Tvalid
  {t ◁ make$();     t ▷ fromLetters("b(c(de(f)gh)i)j");
-  assert(t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)"));
+  ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
-  a ◁ t ▷ root;  assert(a ▷ equalsString(""));                                  assert(a ▷ printsWithBracketsAs( "(b(c(de(f)gh)i)j)"));
-  b ◁ a ▷ first; assert(b ▷ equalsString("b")); assert(a ▷ equals(b ▷ parent)); assert(b ▷ printsWithBracketsAs( "b(c(de(f)gh)i)"));
-  c ◁ b ▷ first; assert(c ▷ equalsString("c")); assert(b ▷ equals(c ▷ parent)); assert(c ▷ printsWithBracketsAs(   "c(de(f)gh)"));
-  d ◁ c ▷ first; assert(d ▷ equalsString("d")); assert(c ▷ equals(d ▷ parent)); assert(d ▷ printsWithBracketsAs(     "d"));
-  e ◁ d ▷ next;  assert(e ▷ equalsString("e")); assert(c ▷ equals(e ▷ parent)); assert(e ▷ printsWithBracketsAs(      "e(f)"));
-  f ◁ e ▷ last;  assert(f ▷ equalsString("f")); assert(e ▷ equals(f ▷ parent)); assert(f ▷ printsWithBracketsAs(        "f"));
-  g ◁ e ▷ next;  assert(g ▷ equalsString("g")); assert(c ▷ equals(g ▷ parent)); assert(g ▷ printsWithBracketsAs(          "g"));
-  h ◁ g ▷ next;  assert(h ▷ equalsString("h")); assert(c ▷ equals(h ▷ parent)); assert(h ▷ printsWithBracketsAs(           "h"));
-  i ◁ c ▷ next;  assert(i ▷ equalsString("i")); assert(b ▷ equals(i ▷ parent)); assert(i ▷ printsWithBracketsAs(             "i"));
-  j ◁ b ▷ next;  assert(j ▷ equalsString("j")); assert(a ▷ equals(j ▷ parent)); assert(j ▷ printsWithBracketsAs(               "j"));
+  a ◁ t ▷ root;  ✓a ▷ equalsString("");                                  ✓a ▷ printsWithBracketsAs( "(b(c(de(f)gh)i)j)");
+  b ◁ a ▷ first; ✓b ▷ equalsString("b"); ✓a ▷ equals(b ▷ parent); ✓b ▷ printsWithBracketsAs( "b(c(de(f)gh)i)");
+  c ◁ b ▷ first; ✓c ▷ equalsString("c"); ✓b ▷ equals(c ▷ parent); ✓c ▷ printsWithBracketsAs(   "c(de(f)gh)");
+  d ◁ c ▷ first; ✓d ▷ equalsString("d"); ✓c ▷ equals(d ▷ parent); ✓d ▷ printsWithBracketsAs(     "d");
+  e ◁ d ▷ next;  ✓e ▷ equalsString("e"); ✓c ▷ equals(e ▷ parent); ✓e ▷ printsWithBracketsAs(      "e(f)");
+  f ◁ e ▷ last;  ✓f ▷ equalsString("f"); ✓e ▷ equals(f ▷ parent); ✓f ▷ printsWithBracketsAs(        "f");
+  g ◁ e ▷ next;  ✓g ▷ equalsString("g"); ✓c ▷ equals(g ▷ parent); ✓g ▷ printsWithBracketsAs(          "g");
+  h ◁ g ▷ next;  ✓h ▷ equalsString("h"); ✓c ▷ equals(h ▷ parent); ✓h ▷ printsWithBracketsAs(           "h");
+  i ◁ c ▷ next;  ✓i ▷ equalsString("i"); ✓b ▷ equals(i ▷ parent); ✓i ▷ printsWithBracketsAs(             "i");
+  j ◁ b ▷ next;  ✓j ▷ equalsString("j"); ✓a ▷ equals(j ▷ parent); ✓j ▷ printsWithBracketsAs(               "j");
 
-  assert(!a ▷ valid);
-  assert( b ▷ isFirst);
-  assert( j ▷ isLast);
-  assert( f ▷ isFirst);
-  assert( f ▷ isLast);
+  ✓ !a ▷ valid;
+  ✓  b ▷ isFirst;
+  ✓  j ▷ isLast;
+  ✓  f ▷ isFirst;
+  ✓  f ▷ isLast;
 
-  assert( f ▷ isEmpty);
-  assert( f ▷ isOnlyChild);
-  assert(!e ▷ isOnlyChild);
-  assert( a ▷ isRoot);
+  ✓  f ▷ isEmpty;
+  ✓  f ▷ isOnlyChild;
+  ✓ !e ▷ isOnlyChild;
+  ✓  a ▷ isRoot;
 
   $Node A, C, E;
-  assert( f ▷ context(&E, "e"));
-  assert( E ▷ context(&C, "c"));
-  assert(!a ▷ context(&A, "a"));
+  ✓  f ▷ context(&E, "e");
+  ✓  E ▷ context(&C, "c");
+  ✓ !a ▷ context(&A, "a");
 
   t ▷ free;
  }
 
 void test4()                                                                    //Tcut //TfindFirst //TcountChildren //TequalsString //TfindFirstChild
  {t ◁ make$();     t ▷ fromLetters("b(c(de(f)gh)i)j");
-  assert(t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)"));
+  ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
   c ◁ t ▷ findFirst("c");
 
-  assert(c ▷ equalsString("c"));
-  d ◁ t ▷ findFirst("d"); assert(d ▷ equalsString("d"));
-  e ◁ t ▷ findFirst("e"); assert(e ▷ equalsString("e"));
-  f ◁ t ▷ findFirst("f"); assert(f ▷ equalsString("f"));
-  g ◁ t ▷ findFirst("g"); assert(g ▷ equalsString("g"));
-  h ◁ t ▷ findFirst("h"); assert(h ▷ equalsString("h"));
+  ✓c ▷ equalsString("c");
+  d ◁ t ▷ findFirst("d"); ✓d ▷ equalsString("d");
+  e ◁ t ▷ findFirst("e"); ✓e ▷ equalsString("e");
+  f ◁ t ▷ findFirst("f"); ✓f ▷ equalsString("f");
+  g ◁ t ▷ findFirst("g"); ✓g ▷ equalsString("g");
+  h ◁ t ▷ findFirst("h"); ✓h ▷ equalsString("h");
 
-  assert(g ▷ equals(c ▷ findFirstChild("g")));
-  assert(c ▷ countChildren == 4);
-  assert(e ▷ countChildren == 1);
+  ✓g ▷ equals(c ▷ findFirstChild("g"));
+  ✓c ▷ countChildren == 4;
+  ✓e ▷ countChildren == 1;
 
-  f ▷ cut;           assert(t ▷ printsWithBracketsAs("(b(c(degh)i)j)"));
-  e ▷ putFirst(f);   assert(t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)"));
+  f ▷ cut;           ✓t ▷ printsWithBracketsAs("(b(c(degh)i)j)");
+  e ▷ putFirst(f);   ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
-  e ▷ cut;           assert(t ▷ printsWithBracketsAs("(b(c(dgh)i)j)"));
-  d ▷ putNext(e);    assert(t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)"));
+  e ▷ cut;           ✓t ▷ printsWithBracketsAs("(b(c(dgh)i)j)");
+  d ▷ putNext(e);    ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
-  d ▷ cut;           assert(t ▷ printsWithBracketsAs("(b(c(e(f)gh)i)j)"));
-  e ▷ putPrev(d);    assert(t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)"));
+  d ▷ cut;           ✓t ▷ printsWithBracketsAs("(b(c(e(f)gh)i)j)");
+  e ▷ putPrev(d);    ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
-  h ▷ cut;           assert(t ▷ printsWithBracketsAs("(b(c(de(f)g)i)j)"));
-  g ▷ putNext(h);    assert(t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)"));
+  h ▷ cut;           ✓t ▷ printsWithBracketsAs("(b(c(de(f)g)i)j)");
+  g ▷ putNext(h);    ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
   t ▷ free;
  }
 
 void test5()                                                                    //TreadArenaTree //Twrite
  {t ◁ make$();     t ▷ fromLetters("b(c(de(f)gh)i)j");
-  assert(t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)"));
+  ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
-         f ◁ "/tmp/arenaTreeTest.data";
-  assert(t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)"));
-         t ▷ write(f);
+   f ◁ "/tmp/arenaTreeTest.data";
+  ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
+   t ▷ write(f);
 
-         u ◁ read$(f);
-  assert(u ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)"));
+   u ◁ read$(f);
+  ✓u ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
   t ▷ free;
   u ▷ free;
@@ -961,27 +956,27 @@ void test5()                                                                    
 
 void test6()                                                                    //Tunwrap //Twrap //Tcount
  {t ◁ make$();     t ▷ fromLetters("bce");
-  assert(t ▷ printsWithBracketsAs("(bce)"));
-  assert(t ▷ count == 3);
+  ✓ t ▷ printsWithBracketsAs("(bce)");
+  ✓ t ▷ count == 3;
 
          c ◁ t ▷ findFirst("c");
-  assert(c ▷ valid);
+  ✓ c ▷ valid;
 
-     d ◁ c ▷ wrap("d");
-  assert(t ▷ printsWithBracketsAs("(bd(c)e)"));
-  assert(t ▷ count == 4);
+    d ◁ c ▷ wrap("d");
+  ✓ t ▷ printsWithBracketsAs("(bd(c)e)");
+  ✓ t ▷ count == 4;
 
-         d ▷ unwrap;
-  assert(t ▷ printsWithBracketsAs("(bce)"));
-  assert(t ▷ count == 3);
-         t ▷ free;
+    d ▷ unwrap;
+  ✓ t ▷ printsWithBracketsAs("(bce)");
+  ✓ t ▷ count == 3;
+    t ▷ free;
  }
 
 void test7()                                                                    //TputNext //TputPrev
  {t ◁ make$();    t ▷ fromLetters("A");
               a ◁ t ▷ root;
           A ◁ a ▷ first;
-  assert(A ▷ equalsString("A"));
+  ✓A ▷ equalsString("A");
 
   for(int i = 0; i < 10; ++i)
    {char c = '0'+i;
@@ -989,7 +984,7 @@ void test7()                                                                    
     A ▷ putPrev(t ▷ node(&c, 1));
    }
 
-  assert(t ▷ printsWithBracketsAs("(0123456789A9876543210)"));
+  ✓t ▷ printsWithBracketsAs("(0123456789A9876543210)");
 
   t ▷ free;
  }
@@ -1002,13 +997,13 @@ void test8()                                                                    
   b ◁ t ▷ node("b", 1); b ▷ putTreeFirst;
 
   b ▷ setKey("B", 1);
-  assert( b ▷ length == 1);
-  assert(*(char *)(b ▷ key) == 'B');
-  assert(b ▷ keyEquals("B", 1));
+  ✓ b ▷ length == 1;
+  ✓ *(char *)(b ▷ key) == 'B';
+  ✓ b ▷ keyEquals("B", 1);
 
-  assert(t ▷ used == 99);
+  ✓ t ▷ used == 99;
 
-  assert(t ▷ printsWithBracketsAs("(Bcd)"));
+  ✓ t ▷ printsWithBracketsAs("(Bcd)");
 
   t ▷ free;
  }
@@ -1016,11 +1011,11 @@ void test8()                                                                    
 void test9()                                                                    //Tswap
  {s ◁ make$(); s ▷ fromLetters("s");
   t ◁ make$(); t ▷ fromLetters("t");
-  assert(s ▷ printsWithBracketsAs("(s)"));
-  assert(t ▷ printsWithBracketsAs("(t)"));
+  ✓s ▷ printsWithBracketsAs("(s)");
+  ✓t ▷ printsWithBracketsAs("(t)");
   s ▷ swap(t);
-  assert(t ▷ printsWithBracketsAs("(s)"));
-  assert(s ▷ printsWithBracketsAs("(t)"));
+  ✓t ▷ printsWithBracketsAs("(s)");
+  ✓s ▷ printsWithBracketsAs("(t)");
   s ▷ free;
   t ▷ free;
  }
@@ -1028,10 +1023,10 @@ void test9()                                                                    
 void test10()                                                                   //Tdata //Tmake$WithWidth //Twidth //TgetData //TsetData
  {size_t D[] = {0,1,2,3};
   t ◁ make$WithWidth (sizeof(D));
-  assert(t ▷ width == sizeof(D));
+  ✓t ▷ width == sizeof(D);
 
   n ◁ t ▷ first;
-  assert(n ▷ width == sizeof(D));
+  ✓n ▷ width == sizeof(D);
 
   for(size_t i = 0; i < 10; ++i)
    {char c = '0'+i;
@@ -1043,11 +1038,11 @@ void test10()                                                                   
   root ◁ t ▷ root;
   $fe(n, root)
    {char d[sizeof(D)]; n ▷ getData(d);
-    assert(!memcmp(d,        D, sizeof(D)));
-    assert(!memcmp(n ▷ data, D, sizeof(D)));
+    ✓!memcmp(d,        D, sizeof(D));
+    ✓!memcmp(n ▷ data, D, sizeof(D));
    }
 
-  assert(t ▷ printsWithBracketsAs("(0123456789)"));
+  ✓t ▷ printsWithBracketsAs("(0123456789)");
   t ▷ free;
  }
 
