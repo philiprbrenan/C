@@ -1,33 +1,36 @@
 #line 1 "/home/phil/c/z/stringBuffer/stringBuffer.c"
 //------------------------------------------------------------------------------
-// String buffer
+// String buffer - a string made of a list of sub strings.
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
+/*
+ A string made up of a list of sub strings.
+*/
 #define _GNU_SOURCE
 #include <ctype.h>
-#include <arenaTree.c>
+#include <arenaList.c>
 #include <utilities.c>
 
-//D1 Structures                                                                 // Structures describing an Arena Tree.
+//D1 Structures                                                                 // Structures describing an StringBuffer.
 
 #ifndef StringBuffer_included_StringBuffer
 #define StringBuffer_included_StringBuffer
 typedef struct StringBuffer                                                                // StringBuffer
  {const struct ProtoTypes_StringBuffer *proto;                                             // Prototypes for methods
-  ArenaTree     string;                                                         // String being built
+  ArenaList     string;                                                         // String being built
  } StringBuffer;
 #endif
 
 #ifndef StringBuffer_included
 #define StringBuffer_included
 #include <stringBuffer_prototypes.h>
-#define StringBufferfe( child, parent) for(ArenaTreeNode child = parent.string.proto->first(parent.string); child.proto->valid(child); child = child.proto->next(child)) // Each child in a parent from first to last
-#define StringBufferfer(child, parent) for(ArenaTreeNode child = parent.string.proto->last(parent.string) ; child.proto->valid(child); child = child.proto->prev(child)) // Each child in a parent from last to first
+#define StringBufferfe( child, parent) for(ArenaListNode child = parent.string.proto->first(parent.string); child.proto->valid(child); child = child.proto->next(child)) // Each child in a parent from first to last
+#define StringBufferfer(child, parent) for(ArenaListNode child = parent.string.proto->last(parent.string) ; child.proto->valid(child); child = child.proto->prev(child)) // Each child in a parent from last to first
 #define makeLocalCopyOfStringBuffer(string,length,buffer) const size_t length = length_StringBuffer(buffer); char string[length+1]; string_StringBuffer_string(buffer, string); // Load a string buffer into locally defined string/length variables.
 
 StringBuffer makeStringBuffer                                                                         // Make a StringBuffer
  ()                                                                             //
- {ArenaTree string = makeArenaTree();
+ {ArenaList string = makeArenaList();
   return newStringBuffer(({struct StringBuffer t = {string: string, proto: &ProtoTypes_StringBuffer}; t;}));
  }
 
@@ -58,7 +61,7 @@ static void free_StringBuffer                                                   
 static void add_StringBuffer_string                                                        // Concatenate a string
  (const StringBuffer buffer,                                                               // StringBuffer
   const char * const string)                                                    // Zero terminated string
- {const ArenaTreeNode s = buffer.string.proto->node(buffer.string, string);
+ {const typeof(buffer.string.proto->node(buffer.string, string, strlen(string))) s = buffer.string.proto->node(buffer.string, string, strlen(string));
   s.proto->putTreeLast(s);
  }
 
@@ -66,15 +69,15 @@ static void addn_StringBuffer_string                                            
  (const StringBuffer            buffer,                                                    // StringBuffer
   const char * const string,                                                    // String
   const size_t       length)                                                    // String length
- {const typeof(buffer.string.proto->noden(buffer.string, string, length)) s = buffer.string.proto->noden(buffer.string, string, length);
+ {const typeof(buffer.string.proto->node(buffer.string, string, length)) s = buffer.string.proto->node(buffer.string, string, length);
   s.proto->putTreeLast(s);
  }
 
 static void addStringBuffer_StringBuffer_StringBuffer                                                            // Add a string buffer
  (const StringBuffer buffer,                                                               // Target StringBuffer
   const StringBuffer add)                                                                  // Source StringBuffer
- {makeLocalCopyOfStringBuffer(a, N, add);                                                  // Make a local copy of the buffer to be added in case the source and target buffers are the same
-  buffer.proto->add(buffer, a);                                                              // Add copy of source to target
+ {makeLocalCopyOfStringBuffer(a, n, add);                                                  // Make a local copy of the buffer to be added in case the source and target buffers are the same
+  buffer.proto->addn(buffer, a, n);                                                          // Add copy of source to target
  }
 
 static void addVaFormat_StringBuffer_string_va                                             // Add a variadic argument formatted string
@@ -85,15 +88,11 @@ static void addVaFormat_StringBuffer_string_va                                  
   const int N = 1024;                                                           // Guess a reasonable size                                                                               //dx=const Xml x =  for the output string
   char data[N];                                                                 // Space on stack for first attempt
   const int L = vsnprintf(data, N, format, va1);                                // First attempt
-  if (N > L + 1)                                                                // Success on the first attempt
-   {const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, data, L);
-                        s.proto->putTreeLast(s);
-   }
+  if (N > L) buffer.proto->addn(buffer, data, L);                                            // Success on the first attempt
   else                                                                          // Second attempt
    {char data[L+1];
     vsnprintf(data, L+1, format, va2);
-    const ArenaTreeNode s = buffer.string.proto->noden(buffer.string, data, L);
-                        s.proto->putTreeLast(s);
+    buffer.proto->addn(buffer, data, L);                                                     // Success on the first attempt
    }
  }
 
@@ -112,6 +111,13 @@ static void addChar_StringBuffer_char                                           
   const char c)                                                                 // Character to add
  {const char s[2] = {c, 0};
   buffer.proto->add(buffer, s);
+ }
+
+static void addSpaces                                                           // Add zero or more spaces
+ (const StringBuffer      buffer,                                                          // StringBuffer
+  const size_t spaces)                                                          // Number of spaces to add
+ {char s[spaces]; memset(s, ' ', spaces);
+  buffer.proto->addn(buffer, s, spaces);
  }
 
 static void addNewLine_StringBuffer                                                        // Add a new line
@@ -152,7 +158,7 @@ static void join_StringBuffer                                                   
   new.proto->free(new);                                                                   // Free old arena
  }
 
-static StringBuffer splitLines                                                  // Split the specified StringBuffer on any new line characters and return the split text as a new StringBuffer
+static void splitLines                                                          // Split the specified StringBuffer on any new line characters and return the split text as a new StringBuffer
  (const StringBuffer string)                                                               // StringBuffer
  {const typeof(makeStringBuffer()) r = makeStringBuffer();                                                                  // Results
   makeLocalCopyOfStringBuffer(s, N, string);                                               // Local copy of string
@@ -162,22 +168,24 @@ static StringBuffer splitLines                                                  
     j = i+1;
    }
   for(; i < N; ++i) if (s[i] == '\n') save();
-  if (  i > j) save();
-  return r;
+  if (  i > j) {--i; save();}
+  string.string.proto->swap(string.string, r.string);                                               // Swap arenas so that the old becomes the new
+  r.proto->free(r);
  }
 
-static StringBuffer splitWords                                                  // Split the specified StringBuffer into words delimited by spaces and return the split text as a new StringBuffer
+static void splitWords                                                          // Split the specified StringBuffer into words delimited by spaces and return the split text as a new StringBuffer
  (const StringBuffer string)                                                               // StringBuffer
  {const typeof(makeStringBuffer()) r = makeStringBuffer();                                                                  // Results
-  makeLocalCopyOfStringBuffer(s, N, string);                                               // Local copy of string
+  makeLocalCopyOfStringBuffer(s, n, string);                                               // Local copy of string
   size_t i = 0, j = 0;                                                          // Line start and end
   void save()                                                                   // Save a string
    {if (i > j) r.proto->addn(r, s+j, i - j);
     j = i+1;
    }
-  for(; i < N; ++i) if (isspace(s[i])) save();
+  for(; i < n; ++i) if (isspace(s[i])) save();
   save();
-  return r;
+  string.string.proto->swap(string.string, r.string);                                               // Swap arenas so that the old becomes the new
+  r.proto->free(r);
  }
 
 //D1 Statistics                                                                 // Statistics on the contents of the StringBuffer.
@@ -185,8 +193,8 @@ static StringBuffer splitWords                                                  
 static size_t length_StringBuffer                                                          // Length of the string held in the buffer
  (const StringBuffer buffer)                                                               // StringBuffer
  {size_t length = 0;
-  ArenaTreeNode  root = buffer.string.proto->root(buffer.string);
-  ArenaTreefe(c, root) length += strlen(c.proto->key(c));
+  ArenaListNode  root = buffer.string.proto->root(buffer.string);
+  ArenaListfe(c, root) length += c.proto->length(c);
   return length;
  }
 
@@ -203,8 +211,8 @@ static int equalsString_StringBuffer_string                                     
  (const StringBuffer            buffer,                                                    // StringBuffer
   const char * const string)                                                    // String
  {const size_t l = strlen(string);                                              // Length of comparison
-  makeLocalCopyOfStringBuffer(b, N, buffer);                                               // Local copy
-  if (l != N) return 0;                                                         // Strings differ in length and so cannot be equal
+  makeLocalCopyOfStringBuffer(b, n, buffer);                                               // Local copy
+  if (l != n) return 0;                                                         // Strings differ in length and so cannot be equal
   return !strncmp(b, string, l);                                                // Check strings are equal
  }
 
@@ -243,8 +251,11 @@ static void string_StringBuffer_string                                          
  (const StringBuffer        buffer,                                                        // StringBuffer
   char  * const  string)                                                        // String to load with enough space for the string and its terminating zero
  {char  * p =    string;
-  ArenaTreeNode  root = buffer.string.proto->root(buffer.string);
-  ArenaTreefe(c, root) p = stpcpy(p, c.proto->key(c));
+  ArenaListNode  root = buffer.string.proto->root(buffer.string);
+  ArenaListfe(c, root)
+   {makeLocalCopyOfArenaListKey(k, l, c);
+    p = memcpy(p, k, l); p += l;
+   }
   *p = 0;
  }
 
@@ -295,8 +306,7 @@ static ssize_t writeToFileHandle                                                
   const char * const fileName)                                                  // The name of the file being written to
  {ssize_t N = 0;
   StringBufferfe(line, buffer)
-   {const typeof(line.proto->key(line)) k = line.proto->key(line);
-    const typeof(strlen(k)) l = strlen(k);
+   {makeLocalCopyOfArenaListKey(k, l, line);
     const typeof(write(d, k, l)) w = write(d, k, l);
     if (w < 0 || (size_t)w != (size_t)l)
      {printStackBackTrace
@@ -306,6 +316,35 @@ static ssize_t writeToFileHandle                                                
     else N += l;
    }
   return N;
+ }
+
+static void dump_StringBuffer                                                              //P Write a StringBuffer to stderr.
+ (const StringBuffer buffer)                                                               // StringBuffer
+ {say("Dump of StringBuffer:\n");
+  StringBufferfe(line, buffer)
+   {makeLocalCopyOfArenaListKey(k, l, line);
+    say("%s\n", k);
+   }
+ }
+
+static void dumpHex_StringBuffer                                                           //P Write a StringBuffer to stderr in hexadecimal.
+ (const StringBuffer buffer)                                                               // StringBuffer
+ {const size_t L = 16;                                                          // Line length
+  say("Dump of StringBuffer in hex:\n");
+  size_t n = 0;
+  StringBufferfe(line, buffer)
+   {makeLocalCopyOfArenaListKey(k, l, line);
+    char a[L+1]; memset(a, 0, L);
+    for(size_t i = 0; i < l; ++i)
+     {if (i && i % 4  == 0)  say("  ");
+      say("%02x ", (unsigned int)k[i]);
+      a[i % L] = isspace(k[i]) ? ' ' : k[i];
+      if (i && i % 16 == 0) {say("=%s=\n", a); memset(a, 0, L);}
+      ++n;
+     }
+    if (a[0]) say("=%s=\n", a);
+   }
+  if (!n) say("StringBuffer is empty\n");
  }
 
 static  StringBuffer writeTemporaryFile_StringBuffer_string                                           // Write a StringBuffer as a string to a temporary file with the specified base name and return the full name of the file created as a string buffer.
@@ -410,22 +449,28 @@ void test2()                                                                    
 
 void test3()                                                                    //TsplitLines //TmakeStringBufferFromString
  {const typeof(makeStringBufferFromString("a\nbb\nccc\ndddd\n")) a = makeStringBufferFromString("a\nbb\nccc\ndddd\n");
-  const typeof(a.proto->splitLines(a)) s = a.proto->splitLines(a);
-  const typeof(s.string.proto->first(s.string)) s1 = s.string.proto->first(s.string); assert(s1.proto->equalsString(s1, "a\n"));
-  const typeof(s1.proto->next(s1)) s2 = s1.proto->next(s1);        assert(s2.proto->equalsString(s2, "bb\n"));
-  const typeof(s2.proto->next(s2)) s3 = s2.proto->next(s2);        assert(s3.proto->equalsString(s3, "ccc\n"));
-  const typeof(s3.proto->next(s3)) s4 = s3.proto->next(s3);        assert(s4.proto->equalsString(s4, "dddd\n"));
-  a.proto->free(a); s.proto->free(s);
+  a.proto->splitLines(a);
+  const typeof(a.string.proto->first(a.string)) a1 = a.string.proto->first(a.string); assert(a1.proto->equalsString(a1, "a\n"));
+  const typeof(a1.proto->next(a1)) a2 = a1.proto->next(a1);        assert(a2.proto->equalsString(a2, "bb\n"));
+  const typeof(a2.proto->next(a2)) a3 = a2.proto->next(a2);        assert(a3.proto->equalsString(a3, "ccc\n"));
+  const typeof(a3.proto->next(a3)) a4 = a3.proto->next(a3);        assert(a4.proto->equalsString(a4, "dddd\n"));
+  a.proto->free(a);
+
+  const typeof(makeStringBufferFromString("abc")) b = makeStringBufferFromString("abc");
+  b.proto->splitLines(b);
+  const typeof(b.string.proto->first(b.string)) b1 = b.string.proto->first(b.string);
+  assert(b1.proto->equalsString(b1, "abc"));
+  b.proto->free(b);
  }
 
 void test4()                                                                    //TsplitWords
  {const typeof(makeStringBufferFromString("  a\nbb   ccc dddd\n\n  ")) a = makeStringBufferFromString("  a\nbb   ccc dddd\n\n  ");
-  const typeof(a.proto->splitWords(a)) s = a.proto->splitWords(a);
-  const typeof(s.string.proto->first(s.string)) s1 = s.string.proto->first(s.string); assert(s1.proto->equalsString(s1, "a"));
-  const typeof(s1.proto->next(s1)) s2 = s1.proto->next(s1);        assert(s2.proto->equalsString(s2, "bb"));
-  const typeof(s2.proto->next(s2)) s3 = s2.proto->next(s2);        assert(s3.proto->equalsString(s3, "ccc"));
-  const typeof(s3.proto->next(s3)) s4 = s3.proto->next(s3);        assert(s4.proto->equalsString(s4, "dddd"));
-  a.proto->free(a); s.proto->free(s);
+  a.proto->splitWords(a);
+  const typeof(a.string.proto->first(a.string)) a1 = a.string.proto->first(a.string); assert(a1.proto->equalsString(a1, "a"));
+  const typeof(a1.proto->next(a1)) a2 = a1.proto->next(a1);        assert(a2.proto->equalsString(a2, "bb"));
+  const typeof(a2.proto->next(a2)) a3 = a2.proto->next(a2);        assert(a3.proto->equalsString(a3, "ccc"));
+  const typeof(a3.proto->next(a3)) a4 = a3.proto->next(a3);        assert(a4.proto->equalsString(a4, "dddd"));
+  a.proto->free(a);
  }
 
 void test5()                                                                    //TreadFile //TwriteTemporaryFile
@@ -477,7 +522,6 @@ void test7()                                                                    
 void test8()                                                                    //Tapply
  {const char * const c = "Hello World";
   const typeof(makeStringBufferFromString(c)) a = makeStringBufferFromString(c);
-
   void check(char * s, size_t l)
    {assert(l == strlen(c));
     assert(!strcmp(c, s));
@@ -486,7 +530,15 @@ void test8()                                                                    
   a.proto->free(a);
  }
 
-void test9()                                                                    //Tsystem //TmakeStringBufferVaFormat
+void test9()                                                                    //TaddSpaces
+ {const typeof(makeStringBuffer()) a = makeStringBuffer();
+  a.proto->add(a, "a"); a.proto->addSpaces(a, 2); a.proto->add(a, "A");
+  makeLocalCopyOfStringBuffer(s, l, a);
+  assert(!strcmp(s, "a  A"));
+  a.proto->free(a);
+ }
+
+void test10()                                                                   //Tsystem //TmakeStringBufferVaFormat
  {const typeof(makeStringBufferFromString("uname")) a = makeStringBufferFromString("uname");
   a.proto->system(a);
   assert(a.proto->containsString(a, "Linux"));
@@ -495,7 +547,7 @@ void test9()                                                                    
 
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7, test8, test9, 0};
+                           test6, test7, test8, test9, test10, 0};
   run_tests("StringBuffer", 1, tests);
   return 0;
  }
