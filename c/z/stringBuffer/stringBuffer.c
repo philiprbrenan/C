@@ -148,13 +148,32 @@ static size_t count_$                                                           
 
 static void join_$                                                              // Join in place - join all the sub strings in the specified string buffer and replace them with one string.
  (const $ old)                                                                  // $
- {C ◁ old.string ▷ countChildren;                                               // Number of sub strings
-  if (C <= 1) return;                                                           // Already joined
-  makeLocalCopyOf$(b, N, old);                                                  // Local copy of string
+ {N ◁ old.string ▷ countChildren;                                               // Number of sub strings
+  if (N <= 1) return;                                                           // Already joined
+  makeLocalCopyOf$(b, l, old);                                                  // Local copy of string
   new ◁ make$();                                                                // New string buffer
-  new ▷ add(b);                                                                 // Load new buffer from joined string
+  new ▷ addn(b, l);                                                             // Load new buffer from joined string
   old.string ▷ swap(new.string);                                                // Swap arenas so that the old becomes the new
-  new ▷ free;                                                                   // Free old arena
+  new ▷ free;                                                                   // Free new arena
+ }
+
+static void joinWith_$                                                          // Join in place - join all the sub strings in the specified string buffer with the specified string and replace the string buffer with the result.
+ (const $ old,                                                                  // $
+  const char * const string)                                                    // String to separate the items being joined
+ {S ◁ strlen(string);                                                           // Length of joining string
+  if (S < 1) {old ▷ join; return;}                                              // Empty joining string
+  N ◁ old.string ▷ countChildren;                                               // Number of sub strings
+  if (N <= 1) return;                                                           // Already joined
+  new ◁ make$();                                                                // New string buffer
+  n ◀ 0ul;
+  $fe(word, old)
+   {makeLocalCopyOfArenaListKey(w, l, word);                                    // Local copy of word
+    new ▷ addn(w, l);                                                            // Copy word
+    if (++n < N) new ▷ addn(string, S);                                         // Add joining string
+   }
+  new ▷ join;                                                                   // Join
+  old.string ▷ swap(new.string);                                                // Swap arenas so that the old becomes the new
+  new ▷ free;                                                                   // Free new arena
  }
 
 static void splitLines                                                          // Split the specified $ on any new line characters and return the split text as a new $
@@ -393,11 +412,11 @@ static $ readFile_$_string                                                      
 
 void test0()                                                                    //Tmake$ //Tadd //TaddFormat //TaddStringBuffer //Tfree
  {s ◁ make$();
-  s ▷ add("Hello"); assert(s ▷ length == 5);
+  s ▷ add("Hello"); ✓ s ▷ length == 5;
   s ▷ add(" ");
   s ▷ addStringBuffer(s);
   s ▷ addFormat("%s", "World");
-  assert(s ▷ equalsString("Hello Hello World"));
+  ✓ s ▷ equalsString("Hello Hello World");
   s ▷ free;
  }
 
@@ -406,34 +425,38 @@ void test1()                                                                    
     a ▷ add("ab");   b ▷ add("a");  c ▷ add("aba");
     a ▷ add("c");    b ▷ add("bc"); c ▷ add("bc");
 
-  assert( a ▷ equals         (b));
-  assert( a ▷ equalsString   ("abc"));
-  assert(!a ▷ equals         (c));
-  assert( c ▷ contains       (a));
-  assert(!a ▷ contains       (c));
-  assert( c ▷ containsString("bab"));
+  ✓  a ▷ equals         (b);
+  ✓  a ▷ equalsString   ("abc");
+  ✓ !a ▷ equals         (c);
+  ✓  c ▷ contains       (a);
+  ✓ !a ▷ contains       (c);
+  ✓  c ▷ containsString("bab");
 
-  assert( c ▷ substringEquals(1, 0, ""));
-  assert( c ▷ substringEquals(1, 1, "b"));
-  assert( c ▷ substringEquals(1, 2, "ba"));
-  assert( c ▷ substringEquals(1, 3, "bab"));
-  assert( c ▷ substringEquals(1, 4, "babc"));
-  assert( c ▷ substringEquals(1, 5, "babc"));
+  ✓  c ▷ substringEquals(1, 0, "");
+  ✓  c ▷ substringEquals(1, 1, "b");
+  ✓  c ▷ substringEquals(1, 2, "ba");
+  ✓  c ▷ substringEquals(1, 3, "bab");
+  ✓  c ▷ substringEquals(1, 4, "babc");
+  ✓  c ▷ substringEquals(1, 5, "babc");
 
-  assert( c ▷ substringEquals(5, 0, ""));
-  assert( c ▷ substringEquals(5, 1, ""));
+  ✓  c ▷ substringEquals(5, 0, "");
+  ✓  c ▷ substringEquals(5, 1, "");
 
   if (1)
    {char buffer[16];
     c ▷ substring(1, 3, buffer);
-    assert(!strcmp(buffer, "bab"));
+    ✓ !strcmp(buffer, "bab");
    }
 
   c ▷ join;
-  assert(c ▷ count <= 1);
-  assert(c ▷ equalsString("ababc"));
+  ✓ c ▷ count == 1;
+  ✓ c ▷ equalsString("ababc");
 
-  a ▷ free; b ▷ free; c ▷ free; //A ▷ free; B ▷ free;
+  b ▷ joinWith("--");
+  ✓ b ▷ count == 1;
+  ✓ b ▷ equalsString("a--bc");
+
+  a ▷ free; b ▷ free; c ▷ free;
  }
 
 void test2()                                                                    //TaddChar //TaddNewLine //Tb2SumW8 //TaddDoubleQuote //TaddSingleQuote
@@ -442,33 +465,33 @@ void test2()                                                                    
   a ▷ addNewLine;
   a ▷ addSingleQuote;
   a ▷ addDoubleQuote;
-  assert(a ▷ equalsString("a\n'\""));
+  ✓ a ▷ equalsString("a\n'\"");
   a ▷ free;
  }
 
 void test3()                                                                    //TsplitLines //Tmake$FromString
  {a  ◁ make$FromString("a\nbb\nccc\ndddd\n");
   a  ▷ splitLines;
-  a1 ◁ a.string ▷ first; assert(a1 ▷ equalsString("a\n"));
-  a2 ◁ a1 ▷ next;        assert(a2 ▷ equalsString("bb\n"));
-  a3 ◁ a2 ▷ next;        assert(a3 ▷ equalsString("ccc\n"));
-  a4 ◁ a3 ▷ next;        assert(a4 ▷ equalsString("dddd\n"));
+  a1 ◁ a.string ▷ first; ✓ a1 ▷ equalsString("a\n");
+  a2 ◁ a1 ▷ next;        ✓ a2 ▷ equalsString("bb\n");
+  a3 ◁ a2 ▷ next;        ✓ a3 ▷ equalsString("ccc\n");
+  a4 ◁ a3 ▷ next;        ✓ a4 ▷ equalsString("dddd\n");
   a  ▷ free;
 
   b  ◁ make$FromString("abc");
   b  ▷ splitLines;
   b1 ◁ b.string ▷ first;
-  assert(b1 ▷ equalsString("abc"));
+  ✓ b1 ▷ equalsString("abc");
   b  ▷ free;
  }
 
 void test4()                                                                    //TsplitWords
  {a  ◁ make$FromString("  a\nbb   ccc dddd\n\n  ");
   a  ▷ splitWords;
-  a1 ◁ a.string ▷ first; assert(a1 ▷ equalsString("a"));
-  a2 ◁ a1 ▷ next;        assert(a2 ▷ equalsString("bb"));
-  a3 ◁ a2 ▷ next;        assert(a3 ▷ equalsString("ccc"));
-  a4 ◁ a3 ▷ next;        assert(a4 ▷ equalsString("dddd"));
+  a1 ◁ a.string ▷ first; ✓ a1 ▷ equalsString("a");
+  a2 ◁ a1 ▷ next;        ✓ a2 ▷ equalsString("bb");
+  a3 ◁ a2 ▷ next;        ✓ a3 ▷ equalsString("ccc");
+  a4 ◁ a3 ▷ next;        ✓ a4 ▷ equalsString("dddd");
   a  ▷ free;
  }
 
@@ -477,7 +500,7 @@ void test5()                                                                    
   a ◁ make$FromString(c);
   f ◁ a ▷ writeTemporaryFile("a.txt");
   b ◁ f ▷ readFile;
-  assert(b ▷ equalsString(c));
+  ✓ b ▷ equalsString(c);
   a ▷ free; b ▷ free; f ▷ free;
  }
 
@@ -492,10 +515,10 @@ void test6()                                                                    
 
   f ◁ make$(); f ▷ add(F);
   b ◁ f ▷ readFile;
-  assert(b ▷ equalsString(c));
-  assert(b ▷ length == strlen(c));
+  ✓ b ▷ equalsString(c);
+  ✓ b ▷ length == strlen(c);
 
-  char C[b ▷ length + 1]; b ▷ string(C); assert(!strcmp(c, C));
+  char C[b ▷ length + 1]; b ▷ string(C); ✓ !strcmp(c, C);
 
   a ▷ free; b ▷ free; f ▷ free; unlink(F);
  }
@@ -513,7 +536,7 @@ void test7()                                                                    
   add("%s %s", "Hello", "World");
   a ▷ addQuotedNewLine;
 
-  assert(a ▷ equalsString("Hello World\\n"));
+  ✓ a ▷ equalsString("Hello World\\n");
 
   a ▷ free;
  }
@@ -522,8 +545,8 @@ void test8()                                                                    
  {const char * const c = "Hello World";
   a ◁ make$FromString(c);
   void check(char * s, size_t l)
-   {assert(l == strlen(c));
-    assert(!strcmp(c, s));
+   {✓ l == strlen(c);
+    ✓ !strcmp(c, s);
    }
 
   a ▷ free;
@@ -533,14 +556,14 @@ void test9()                                                                    
  {a ◁ make$();
   a ▷ add("a"); a ▷ addSpaces(2); a ▷ add("A");
   makeLocalCopyOf$(s, l, a);
-  assert(!strcmp(s, "a  A"));
+  ✓ !strcmp(s, "a  A");
   a ▷ free;
  }
 
 void test10()                                                                   //Tsystem //Tmake$VaFormat
  {a ◁ make$FromString("uname");
   a ▷ system;
-  assert(a ▷ containsString("Linux"));
+  ✓ a ▷ containsString("Linux");
   a ▷ free;
  }
 
