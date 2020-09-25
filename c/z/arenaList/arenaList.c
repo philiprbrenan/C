@@ -488,14 +488,16 @@ static void by_$Node_sub                                                        
  {void children(const $Node parent)                                             // Process the children of the specified parent
    {if (!parent ▷ valid) return;                                                // Empty child
     N ◁ parent ▷ countChildren;                                                 // Number of children
-    size_t c[N+1];                                                              // Array of children terminated by a trailing zero
-    size_t n = 0; $fe(child, parent) c[n++] = child.offset;                     // Load each child into an array
-    for(size_t i = 0; i < N; ++i)                                               // Process each child allowing it to change its position without changing the traversal
-     {children(new $Node(list: parent.list, offset: c[i]));
+    if (N)                                                                      // Process children if there are any
+     {size_t c[N+1];                                                            // Array of children terminated by a trailing zero
+      size_t n = 0; $fe(child, parent) c[n++] = child.offset;                   // Load each child into an array
+      for(size_t i = 0; i < N; ++i)                                             // Process each child allowing it to change its position without changing the traversal
+       {children(new $Node(list: parent.list, offset: c[i]));
+       }
      }
     function(parent);                                                           // Process the parent
    }
-  children(node);                                                               // Start at the specified root node
+  children(node);                                                               // Start at the specified node
  }
 
 static void by_$_sub                                                            // Traverse a $ in post-order calling the specified function to process each child node.  The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
@@ -503,13 +505,53 @@ static void by_$_sub                                                            
   void (* const function) (const $Node node))                                   // Function
  {root ◁ list ▷ root;                                                           // Root node
   N    ◁ list ▷ countChildren;                                                  // Number of children under root
-  size_t c[N+1];                                                                // Array of children terminated by a trailing zero
-  size_t n = 0; $fe(child, root) c[n++] = child.offset;                         // Load each child into an array
-  for(size_t i = 0; i < N; ++i)
-   {$Node n = new $Node(list: list, offset: c[i]);                              // Process each child allowing it to change position
-    n ▷ by(function);
+  if (N)                                                                        // Process children under root if there are any
+   {size_t c[N+1];                                                              // Array of children terminated by a trailing zero
+    size_t n = 0; $fe(child, root) c[n++] = child.offset;                       // Load each child into an array
+    for(size_t i = 0; i < N; ++i)
+     {$Node n = new $Node(list: list, offset: c[i]);                            // Process each child allowing it to change position
+      n ▷ by(function);
+     }
    }
-  function(root);
+  function(root);                                                               // Start at the root
+ }
+
+static void scan_$Node_sub                                                      // Traverse the $ rooted at the specified node calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
+ ($Node node,                                                                   // Node
+  void (* const function) ($Node node, int start))                              // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {void children($Node parent)                                                   // Process the children of the specified parent
+   {if (!parent ▷ valid) return;                                                // Empty child
+    N ◁ parent ▷ countChildren;                                                 // Number of children
+    if (N)                                                                      // Process children if there are any
+     {size_t c[N+1];                                                            // Array of children terminated by a trailing zero
+      size_t n = 0; $fe(child, parent) c[n++] = child.offset;                   // Load each child into an array
+      function(parent, 1);                                                      // Call before
+      for(size_t i = 0; i < N; ++i)                                             // Process each child allowing it to change its position without changing the traversal
+       {children(new $Node(list: parent.list, offset: c[i]));
+       }
+      function(parent, -1);                                                     // Call after
+     }
+    else function(parent, 0);                                                   // Call once as there are no child nodes
+   }
+  children(node);                                                               // Start at the root node
+ }
+
+static void scan_$_sub                                                          // Traverse a $ calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
+ (const $ list,                                                                 // $
+  void (* const function) ($Node node, int start))                              // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {root ◁ list ▷ root;                                                           // Root node
+  N    ◁ list ▷ countChildren;                                                  // Number of children under root
+  if (N)                                                                        // Process children under root if there are any
+   {size_t c[N+1];                                                              // Array of children terminated by a trailing zero
+    size_t n = 0; $fe(child, root) c[n++] = child.offset;                       // Load each child into an array
+    function(root, 1);                                                          // Call before
+    for(size_t i = 0; i < N; ++i)
+     {$Node n = new $Node(list: list, offset: c[i]);                            // Process each child allowing it to change position
+      n ▷ scan(function);
+     }
+    function(root, -1);                                                         // Call after
+   }
+  else function(root, 0);                                                       // Call once as the root has no children
  }
 
 static  size_t countChildren_size_$                                             // Count the number of children directly under a parent.
@@ -854,20 +896,34 @@ void test1()                                                                    
   t ▷ free;
  }
 
-void test2()                                                                    //Tby //TprintsWithBracketsAs //TprintContains
- {t ◁ make$();     t ▷ fromLetters("b(c(de)f)g(hi)j");
-  ✓t ▷ printsWithBracketsAs("(b(c(de)f)g(hi)j)");
-  ✓t ▷ printContains("def");
+void test2()                                                                    //Tby //TprintsWithBracketsAs //TprintContains //Tscan
+ {  t ◁ make$(); t ▷ fromLetters("b(c(de)f)g(hi)j");
+  ✓ t ▷ printsWithBracketsAs   ("(b(c(de)f)g(hi)j)");
+  ✓ t ▷ printContains("def");
 
-  char l[t ▷ count + 2], *p = l;
+  if (1)
+   {char l[1024], *p = l;
 
-  void process($Node n)
-   {makeLocalCopyOf$Key(k, l, n);
-    strncpy(p, k, l); p += l; *p = 0;
+    void process($Node n)
+     {makeLocalCopyOf$Key(k, l, n);
+      strncpy(p, k, l); p += l; *p = 0;
+     }
+
+    t ▷ by(process);
+    ✓ !strcmp(l, "decfbhigj");
    }
 
-  t ▷ by(process);
-  ✓strcmp(l, "decfbhigj") == 0;
+  if (1)
+   {char l[1024], *p = l;
+
+    void process($Node n, int start)
+     {makeLocalCopyOf$Key(k, l, n);
+      p += sprintf(p, "%s(%d)", k, start);
+     }
+
+    t ▷ scan(process);
+    ✓ !strcmp(l, "(1)b(1)c(1)d(0)e(0)c(-1)f(0)b(-1)g(1)h(0)i(0)g(-1)j(0)(-1)");
+   }
 
   t ▷ free;
  }
