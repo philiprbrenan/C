@@ -41,7 +41,14 @@ static PangoRectangle draw_text
   pango_font_description_free(font);
 
   pango_layout_set_text(layout, text, -1);
+
+  clock_t s1 = clock();                                                         // Start time
   pango_cairo_show_layout(cr, layout);
+  t1 ◁ microSecondsSince(s1);
+
+  clock_t s2 = clock();                                                         // Start time
+  pango_cairo_show_layout(cr, layout);
+  t2 ◁ microSecondsSince(s2);
 
   PangoRectangle extents;                                                       // Bound previous letter
   pango_layout_get_pixel_extents(layout, 0, &extents);
@@ -49,6 +56,8 @@ static PangoRectangle draw_text
   cairo_stroke(cr);
 
   g_object_unref (layout);
+
+say("AAAA %lu %lu\n", t1, t2);
 
   return extents;
  }
