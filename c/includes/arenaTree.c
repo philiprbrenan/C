@@ -180,20 +180,15 @@ static ArenaTreeNode node_ArenaTreeNode_ArenaTree_string                        
   const typeof(n.proto->content(n)) c = n.proto->content(n);                                                              // Address content
   c->length = length;                                                           // Save key length
   memcpy(n.proto->key(n), key, length);                                                 // Copy in key
-  assert(!memcmp(n.proto->key(n), key, length));
-  makeLocalCopyOfArenaTreeKey(k, l, n);
-//say("AAAA %lu %lu %lu %lu  %s\n", strlen(k), length, l, n.proto->width(n), n.proto->key(n));
-    assert(l == length);
-    assert(!memcmp(n.proto->key(n), key, length));
-  return list.proto->nodeFromOffset(list, n.offset);                                       // Return node
+  return n;                                                                     // Return node
  }
-#line 312 "/home/phil/c/z/arenaList/arenaList.c"
+#line 307 "/home/phil/c/z/arenaList/arenaList.c"
 static int equalsString_ArenaTreeNode_string                                            //I Check that the key of a node equals a string
  (const ArenaTreeNode        node,                                                      // Node
   const char * const key)                                                       // Key
  {return node.proto->keyEquals(node, key, strlen(key));
  }
-#line 629 "/home/phil/c/z/arenaList/arenaList.c"
+#line 624 "/home/phil/c/z/arenaList/arenaList.c"
 static void dump_ArenaTreeNode                                                          //IP Dump a ArenaTreeNode on stderr
  (const ArenaTreeNode node)                                                             // ArenaTreeNode
  {makeLocalCopyOfArenaTreeKey(k, l, node);                                              // Local copy of key
@@ -585,19 +580,19 @@ void test0()                                                                    
 
   const typeof(t.proto->root(t)) b = t.proto->root(t); const typeof(b.proto->left(b)) a = b.proto->left(b); const typeof(b.proto->right(b)) c = b.proto->right(b); const typeof(c.proto->left(c)) bb = c.proto->left(c); const typeof(c.proto->right(c)) cc = c.proto->right(c);
 
-  assert( b.proto->keyEquals(b, "b",  1));
-  assert( a.proto->keyEquals(a, "a",  1));
-  assert( c.proto->keyEquals(c, "c",  1));
-  assert( bb.proto->keyEquals(bb, "bb", 2));
-  assert( cc.proto->keyEquals(cc, "cc", 2));
-  assert( b.proto->isRoot(b));
-  assert( b.proto->equals(b, a.proto->up(a)));
-  assert( b.proto->equals(b, c.proto->up(c)));
-  assert( c.proto->equals(c, bb.proto->up(bb)));
-  assert( c.proto->equals(c, cc.proto->up(cc)));
+  assert(  b.proto->keyEquals(b, "b",  1));
+  assert(  a.proto->keyEquals(a, "a",  1));
+  assert(  c.proto->keyEquals(c, "c",  1));
+  assert(  bb.proto->keyEquals(bb, "bb", 2));
+  assert(  cc.proto->keyEquals(cc, "cc", 2));
+  assert(  b.proto->isRoot(b));
+  assert(  b.proto->equals(b, a.proto->up(a)));
+  assert(  b.proto->equals(b, c.proto->up(c)));
+  assert(  c.proto->equals(c, bb.proto->up(bb)));
+  assert(  c.proto->equals(c, cc.proto->up(cc)));
 
-  assert(!t.proto->find(t, "cc", 2).different);
-  assert( t.proto->find(t, "dd", 2).different);
+  assert( !t.proto->find(t, "cc", 2).different);
+  assert(  t.proto->find(t, "dd", 2).different);
 
   t.proto->free(t);
  }
@@ -612,26 +607,26 @@ void test1()                                                                    
 
   const typeof(b.proto->ownedTreeRoot(b)) b4 = b.proto->ownedTreeRoot(b); const typeof(b4.proto->left(b4)) b2 = b4.proto->left(b4); const typeof(b4.proto->right(b4)) b6 = b4.proto->right(b4);
   const typeof(b2.proto->left(b2)) b1 = b2.proto->left(b2); const typeof(b2.proto->right(b2)) b3 = b2.proto->right(b2); const typeof(b6.proto->left(b6)) b5 = b6.proto->left(b6); const typeof(b6.proto->right(b6)) b7 = b6.proto->right(b6);
-  assert(b4.proto->equalsString(b4, "4"));
-  assert(b2.proto->equalsString(b2, "2"));
-  assert(b6.proto->equalsString(b6, "6"));
-  assert(b1.proto->equalsString(b1, "1"));
-  assert(b3.proto->equalsString(b3, "3"));
-  assert(b5.proto->equalsString(b5, "5"));
-  assert(b7.proto->equalsString(b7, "7"));
-  assert(b4.proto->up(b4).offset == 0);
-  assert(b4.proto->equals(b4, b2.proto->up(b2)));
-  assert(b4.proto->equals(b4, b6.proto->up(b6)));
-  assert(b2.proto->equals(b2, b1.proto->up(b1)));
-  assert(b2.proto->equals(b2, b3.proto->up(b3)));
-  assert(b6.proto->equals(b6, b5.proto->up(b5)));
-  assert(b6.proto->equals(b6, b7.proto->up(b7)));
+  assert( b4.proto->equalsString(b4, "4"));
+  assert( b2.proto->equalsString(b2, "2"));
+  assert( b6.proto->equalsString(b6, "6"));
+  assert( b1.proto->equalsString(b1, "1"));
+  assert( b3.proto->equalsString(b3, "3"));
+  assert( b5.proto->equalsString(b5, "5"));
+  assert( b7.proto->equalsString(b7, "7"));
+  assert( b4.proto->up(b4).offset == 0);
+  assert( b4.proto->equals(b4, b2.proto->up(b2)));
+  assert( b4.proto->equals(b4, b6.proto->up(b6)));
+  assert( b2.proto->equals(b2, b1.proto->up(b1)));
+  assert( b2.proto->equals(b2, b3.proto->up(b3)));
+  assert( b6.proto->equals(b6, b5.proto->up(b5)));
+  assert( b6.proto->equals(b6, b7.proto->up(b7)));
 
-  assert(!b.proto->find(b, "7", 1).different);
-  assert( b.proto->find(b, "8", 1).different);
+  assert( !b.proto->find(b, "7", 1).different);
+  assert(  b.proto->find(b, "8", 1).different);
 
   const typeof(t.proto->ll(t, "b", "7", 0)) f = t.proto->ll(t, "b", "7", 0);
-  assert(f.offset == b7.offset);
+  assert( f.offset == b7.offset);
 
   t.proto->free(t);
  }
@@ -645,14 +640,14 @@ void test2()                                                                    
     t.proto->add(t, c, strlen(c));
    }
 
-  assert(t.proto->count(t) == N);
+  assert( t.proto->count(t) == N);
 
   const typeof(t.proto->root(t)) r = t.proto->root(t);
   const typeof(t.proto->locate(t, "28", 2)) n28 = t.proto->locate(t, "28", 2); const typeof(n28.proto->up(n28)) n27 = n28.proto->up(n28); const typeof(n27.proto->up(n27)) n25 = n27.proto->up(n27); const typeof(n25.proto->up(n25)) n23 = n25.proto->up(n25);
 
-  assert(r.proto->equalsString(r, "3"));
-  assert(r.proto->height(r) == 11);
-  assert(n23.proto->equalsString(n23, "23"));
+  assert( r.proto->equalsString(r, "3"));
+  assert( r.proto->height(r) == 11);
+  assert( n23.proto->equalsString(n23, "23"));
 
   t.proto->check(t);
   t.proto->free(t);
@@ -665,18 +660,18 @@ void test3()
   for(int i = 0; i < N; ++i)
    {char c[256]; sprintf(c, "%x", i); t.proto->add(t, c, strlen(c));
    }
-  assert(t.proto->count(t) == (size_t)N);
+  assert( t.proto->count(t) == (size_t)N);
   t.proto->check(t);
          const typeof(t.proto->root(t)) r = t.proto->root(t);
-  assert(r.proto->equalsString(r, "3"));
-  assert(r.proto->height(r) == 33);
+  assert( r.proto->equalsString(r, "3"));
+  assert( r.proto->height(r) == 33);
 
   t.proto->free(t);
  }
 
 void test4()                                                                    //Theight //Tlocate //Troot
  {const typeof(makeArenaTree()) t = makeArenaTree();
-  const typeof(t.proto->locate(t, "0", 1)) n = t.proto->locate(t, "0", 1); assert(!n.proto->valid(n));
+  const typeof(t.proto->locate(t, "0", 1)) n = t.proto->locate(t, "0", 1); assert( !n.proto->valid(n));
 
   char c[4]; memset(c, 0, sizeof(c));
 
@@ -687,13 +682,13 @@ void test4()                                                                    
      }
    }
 
-         const typeof(t.proto->root(t)) r = t.proto->root(t);
-  assert(r.proto->equalsString(r, "31"));
-  assert(r.proto->height(r) == 11);
+    const typeof(t.proto->root(t)) r = t.proto->root(t);
+  assert( r.proto->equalsString(r, "31"));
+  assert( r.proto->height(r) == 11);
 
-         const typeof(t.proto->locate(t, "85", 2)) f = t.proto->locate(t, "85", 2);
-  assert(f.proto->valid(f));
-  assert(f.proto->height(f) == 2);
+    const typeof(t.proto->locate(t, "85", 2)) f = t.proto->locate(t, "85", 2);
+  assert( f.proto->valid(f));
+  assert( f.proto->height(f) == 2);
 
   t.proto->free(t);
  }
@@ -705,7 +700,9 @@ void test5()                                                                    
 
   for(size_t i = 0; i < N; ++i)
    {sprintf(c, "%lu", i);
-    const typeof(t.proto->add(t, c, strlen(c))) n = t.proto->add(t, c, strlen(c)); const typeof(n.proto->locate(n, "0", 1)) e = n.proto->locate(n, "0", 1); assert(!e.proto->valid(e));
+       const typeof(t.proto->add(t, c, strlen(c))) n = t.proto->add(t, c, strlen(c));
+       const typeof(n.proto->locate(n, "0", 1)) e = n.proto->locate(n, "0", 1);
+    assert( !e.proto->valid(e));
     for(size_t j = 0; j < N; ++j)
      {sprintf(c, "%lu-%lu", i, j);
       n.proto->add(n, c, strlen(c));
@@ -714,7 +711,8 @@ void test5()                                                                    
 
   const char *a[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", 0};
   for(const char * const *p = a; *p; ++p)
-   {const typeof(t.proto->locate(t, *p, 1)) n = t.proto->locate(t, *p, 1); assert(n.proto->equalsString(n, *p));
+   {  const typeof(t.proto->locate(t, *p, 1)) n = t.proto->locate(t, *p, 1);
+    assert( n.proto->equalsString(n, *p));
    }
 
   t.proto->free(t);
@@ -730,14 +728,16 @@ void test6()
    }
   const typeof(t.proto->root(t)) r = t.proto->root(t);
 
-  assert(r.proto->keyEquals(r, "16", 2));
-  assert(r.proto->height(r) == 12);
+  assert( r.proto->keyEquals(r, "16", 2));
+  assert( r.proto->height(r) == 12);
 
   const typeof(t.proto->locate(t, "86", 2)) n86 = t.proto->locate(t, "86", 2);
   const typeof(n86.proto->up(n86)) n810 = n86.proto->up(n86);
-  const typeof(n810.proto->up(n810)) n76 = n810.proto->up(n810); const typeof(n76.proto->up(n76)) n66 = n76.proto->up(n76);
-  const typeof(n66.proto->up(n66)) n56 = n66.proto->up(n66); const typeof(n56.proto->up(n56)) n36 = n56.proto->up(n56);
-  assert(n36.proto->equalsString(n36, "36"));
+  const typeof(n810.proto->up(n810)) n76 = n810.proto->up(n810);
+  const typeof(n76.proto->up(n76)) n66 = n76.proto->up(n76);
+  const typeof(n66.proto->up(n66)) n56 = n66.proto->up(n66);
+  const typeof(n56.proto->up(n56)) n36 = n56.proto->up(n56);
+  assert( n36.proto->equalsString(n36, "36"));
 
   t.proto->free(t);
  }
@@ -757,19 +757,19 @@ void test7()                                                                    
 
   const typeof(t.proto->root(t)) r = t.proto->root(t);
 
-  assert(r.proto->isRoot(r));
-  assert(r.proto->keyEquals(r, "19", 2));
-  assert(r.proto->height(r) == 6);
+  assert( r.proto->isRoot(r));
+  assert( r.proto->keyEquals(r, "19", 2));
+  assert( r.proto->height(r) == 6);
 
   t.proto->free(t);
  }
 
 void test8()                                                                    //Tvalid //TcmpArenaTree
- {ArenaTreeNode n = newArenaTreeNode(({struct ArenaTreeNode t = {proto: &ProtoTypes_ArenaTreeNode};   t;})); assert(!n.proto->valid(n));
+ {ArenaTreeNode n = newArenaTreeNode(({struct ArenaTreeNode t = {proto: &ProtoTypes_ArenaTreeNode};   t;})); assert( !n.proto->valid(n));
 
-  assert(cmpArenaTree("aa", 2, "aa", 1) ==  1);
-  assert(cmpArenaTree("aa", 2, "aa", 2) ==  0);
-  assert(cmpArenaTree("aa", 1, "aa", 2) == -1);
+  assert( cmpArenaTree("aa", 2, "aa", 1) ==  1);
+  assert( cmpArenaTree("aa", 2, "aa", 2) ==  0);
+  assert( cmpArenaTree("aa", 1, "aa", 2) == -1);
  }
 
 void test9()
@@ -778,10 +778,10 @@ void test9()
   for  (size_t i = 0; i < 2; ++i)
    {sprintf(c, "%lu", i);
            const typeof(t.proto->add(t, c, strlen(c))) n = t.proto->add(t, c, strlen(c));
-    assert(n.proto->valid(n));
-    assert(n.proto->equalsString(n, c));
+    assert( n.proto->valid(n));
+    assert( n.proto->equalsString(n, c));
    }
-  assert(t.proto->count(t) == 2);
+  assert( t.proto->count(t) == 2);
   t.proto->check(t);
   t.proto->free(t);
  }
