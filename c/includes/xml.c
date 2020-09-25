@@ -8,6 +8,7 @@
 #include <arenaTree.c>
 #include <arenaList.c>
 #include <stringBuffer.c>
+#include <cairoText.c>
 #include <utilities.c>
 
 #ifndef Xml_included
@@ -275,22 +276,22 @@ static XmlTag last_XmlTag                                                       
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->last(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 273 "/home/phil/c/z/xml/xml.c"
+#line 274 "/home/phil/c/z/xml/xml.c"
 static XmlTag next_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->next(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 273 "/home/phil/c/z/xml/xml.c"
+#line 274 "/home/phil/c/z/xml/xml.c"
 static XmlTag prev_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->prev(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 273 "/home/phil/c/z/xml/xml.c"
+#line 274 "/home/phil/c/z/xml/xml.c"
 static XmlTag parent_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->parent(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 273 "/home/phil/c/z/xml/xml.c"
+#line 274 "/home/phil/c/z/xml/xml.c"
 
 static XmlTag first_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
  (const XmlParse xml)                                                             // Parent tag
@@ -300,9 +301,16 @@ static XmlTag last_XmlParse                                                     
  (const XmlParse xml)                                                             // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: xml, node: xml.tree.proto->last(xml.tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 279 "/home/phil/c/z/xml/xml.c"
+#line 280 "/home/phil/c/z/xml/xml.c"
 
 //D1 Location                                                                   // Check the current location in the Xml parse tre
+
+static int depth_XmlTag                                                           // The depth of a tag
+ (const XmlTag tag)                                                               // Tag
+ {typeof(0) i = 0;
+  for(XmlTag t = tag; t.proto->valid(t); t.node.offset = t.proto->parent(t).node.offset) ++i;     // Count up to root
+  return i - 1;                                                                 // We have included the root node
+ }
 
 static int isRoot_XmlTag                                                          // Check whether the specified tag is the root tag
  (const XmlTag tag)                                                               // Tag
@@ -323,7 +331,7 @@ static int isLast_XmlTag                                                        
   const typeof(parent.proto->last(parent)) f = parent.proto->last(parent);
   return f.proto->equals(f, tag);
  }
-#line 295 "/home/phil/c/z/xml/xml.c"
+#line 303 "/home/phil/c/z/xml/xml.c"
 
 //D1 Text methods                                                               // Methods that operate on text tags
 
@@ -450,6 +458,24 @@ static void by_XmlParse_sub                                                     
    {function(newXmlTag(({struct XmlTag t = {xml: xml, node: node, proto: &ProtoTypes_XmlTag}; t;})));
    }
   xml.tree.proto->by(xml.tree, f);
+ }
+
+static void scan_XmlTag_sub                                                       // Traverse the Xml parse tree rooted at the specified tag calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The Xml is buffered allowing changes to be made to the structure of the Xml without disruption as long as each child checks its context.
+ (const XmlTag tag,                                                               // Starting tag
+  void (* const function) (XmlTag tag, int start))                                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {void f(const ArenaListNode node,   int start)
+   {function(newXmlTag(({struct XmlTag t = {xml: tag.xml, node: node, proto: &ProtoTypes_XmlTag}; t;})), start);
+   }
+  tag.node.proto->scan(tag.node, f);
+ }
+
+static void scan_XmlParse_sub                                                     // Traverse the Xml parse tree calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The Xml is buffered allowing changes to be made to the structure of the Xml without disruption as long as each child checks its context.
+ (const XmlParse xml,                                                             // Xml parse tree
+  void (* const function) (XmlTag tag, int start))                                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {void f(const ArenaListNode node,   int start)
+   {function(newXmlTag(({struct XmlTag t = {xml: xml, node: node, proto: &ProtoTypes_XmlTag}; t;})), start);
+   }
+  xml.tree.proto->scan(xml.tree, f);
  }
 
 static  size_t countChildren_size_Xml                                             // Count the number of tags at the first level in an xml parse tree.
@@ -607,7 +633,7 @@ static int printsAs_int_XmlTag_string                                           
   s.proto->free(s);
   return 1;
  }
-#line 553 "/home/phil/c/z/xml/xml.c"
+#line 579 "/home/phil/c/z/xml/xml.c"
 
 static void printAssert_XmlTag                                                    //P Print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
@@ -773,6 +799,7 @@ void test3()                                                                    
     const typeof(x.proto->findFirstTag(x, "h")) h = x.proto->findFirstTag(x, "h");
   assert( h.proto->valid(h));
   assert( h.proto->onlyText(h));
+  assert( h.proto->depth(h) == 2);
 
     const typeof(makeStringBuffer()) s = makeStringBuffer();
 
@@ -886,8 +913,37 @@ void test4()                                                                    
   xml.proto->free(xml); validate.proto->free(validate);
  } // test4
 
+void test5()
+ {char * xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
+     const typeof(parseXmlFromString(xml)) x = parseXmlFromString(xml);
+  assert( !x.proto->errors(x));
+
+  void draw(CairoTextImage i)
+   {typeof(i.cr) cr = i.cr;
+    cairo_set_font_size (cr, 40);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_font_extents_t fontExtents;
+    cairo_font_extents  (cr, &fontExtents);
+
+    typeof(0ul) line = 0ul;
+
+    void drawXml(const XmlTag tag, int start)
+     {makeLocalCopyOfXmlTagString(t, l, tag);
+      cairo_move_to     (cr, fontExtents.max_x_advance * tag.proto->depth(tag),
+                    line++ * fontExtents.height);
+      cairo_show_text   (cr, t);
+     }
+
+    x.proto->scan(x, drawXml);
+   }
+
+  const typeof(createCairoTextImage(draw, 2000, 2000, "xml1.png", "a")) i = createCairoTextImage(draw, 2000, 2000, "xml1.png", "a");                  // Create image containing some text and check its digest
+  i.proto->free(i);
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4,
+                           test5, 0};
 //{void (*tests[])(void) = {test0, 0};
   run_tests("Xml", 1, tests);
   return 0;
