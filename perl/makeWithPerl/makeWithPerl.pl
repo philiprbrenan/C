@@ -229,7 +229,7 @@ END
      $lp .= " -lX11" if $file =~ m(/x/);                                        # X windows
 
   if ($file =~ m(/g/))                                                          # GTK options and libraries if we are in a graphics folder
-   {for my $lib(qw(gtk+-3.0 glib-2.0))
+   {for my $lib(qw(gtk+-3.0 glib-2.0 freetype2))
      {$cp .= ' '.trim(qx(pkg-config --cflags $lib));
       $lp .= ' '.trim(qx(pkg-config --libs   $lib));
      }
@@ -280,7 +280,8 @@ END
       lll qq($c);
       my $result = qx($c);
       lll $result;
-      exit(1) unless $result =~ m(ERROR SUMMARY: 0 errors from 0 contexts)
+      exit(1) unless $result =~ m(ERROR SUMMARY: 0 errors from 0 contexts);
+      lll "SUCCESS: no memory leaks"
      }
    }
  }
