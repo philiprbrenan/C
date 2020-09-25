@@ -28,7 +28,7 @@ my $compile = q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);                  
 my $dir     = fpd($home, q(c/));                                                # Directories to upload
 
 my @cz      =  grep {!/\A#/} split /\s+/, <<END;                                # z files to run
-arenaRedBlackTree
+arenaList
 arenaTree
 stringBuffer
 xml
@@ -36,7 +36,8 @@ utilities
 END
 
 my @cg      =  grep {!/\A#/} split /\s+/, <<END;                                # g files to run
-pangoText
+cairoText
+example-4
 END
 
 if (1)                                                                          # Upload files
