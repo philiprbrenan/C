@@ -104,7 +104,7 @@ void execSystemCommand                                                          
 
 ssize_t __attribute__ ((unused)) readFile                                       // Map the specified file then pass its location and length to the specified reader function.  Return non negative on success, negative on failure after writing a stack back trace.
  (const char * const file,                                                      // File name
-  ssize_t (*reader)(char *location, size_t length))                             // Function to process the mapped file. Return non negative on success, negative on failure: this value will be returned to the caller.
+  ssize_t (*reader)(char * location, size_t length))                            // Function to process the mapped file. Return non negative on success, negative on failure: this value will be returned to the caller. The file is mapped into an area at least one byte larger than the file size so that the content of the file appears to have a trailing zero.
  {struct stat buf;
   if (stat(file, &buf))                                                         // Get file size
    {printStackBackTrace("Unable to stat file because %m, file:\n%s\n", file);
@@ -132,7 +132,7 @@ ssize_t __attribute__ ((unused)) readFile                                       
 
 ssize_t __attribute__ ((unused)) makeTemporaryFileWithContent                   // Create a temporary file with the specified base name and extension then load it via the specified function.  Return non negative on success, negative on failure after writing a stack back trace.
  (const char * const fileName,                                                  // Base name and extension of the file
-  ssize_t (*writer)(int d, char *fileName))                                     // Function to write to a file handle. Return non negative on success, negative on failure: this value will be returned to the caller.
+  ssize_t (*writer)(int d, char * fileName))                                    // Function to write to a file handle. Return non negative on success, negative on failure: this value will be returned to the caller.
  {lsprintf(dir, 1024, "/tmp/%d/", getpid());                                    // Create a temporary folder for this process
   const typeof(mkdir(dir, S_IRWXU)) m = mkdir(dir, S_IRWXU);                                                      // Create folder
   if (m && errno != EEXIST)                                                     // Its ok if the temporary folder already exists
@@ -199,28 +199,28 @@ int run_tests                                                                   
 
 #if __INCLUDE_LEVEL__ == 0
 void test1()                                                                    //TnextPowerOfTwo //TnextMultipleOf4
- {assert(nextPowerOfTwo(0) == 1);
-  assert(nextPowerOfTwo(1) == 1);
-  assert(nextPowerOfTwo(2) == 2);
-  assert(nextPowerOfTwo(3) == 4);
-  assert(nextPowerOfTwo(4) == 4);
-  assert(nextPowerOfTwo(5) == 8);
+ {assert( nextPowerOfTwo(0) == 1);
+  assert( nextPowerOfTwo(1) == 1);
+  assert( nextPowerOfTwo(2) == 2);
+  assert( nextPowerOfTwo(3) == 4);
+  assert( nextPowerOfTwo(4) == 4);
+  assert( nextPowerOfTwo(5) == 8);
 
-  assert(nextMultipleOf4(0) == 0);
-  assert(nextMultipleOf4(1) == 4);
-  assert(nextMultipleOf4(2) == 4);
-  assert(nextMultipleOf4(3) == 4);
-  assert(nextMultipleOf4(4) == 4);
-  assert(nextMultipleOf4(5) == 8);
+  assert( nextMultipleOf4(0) == 0);
+  assert( nextMultipleOf4(1) == 4);
+  assert( nextMultipleOf4(2) == 4);
+  assert( nextMultipleOf4(3) == 4);
+  assert( nextMultipleOf4(4) == 4);
+  assert( nextMultipleOf4(5) == 8);
  }
 
 void test2()                                                                    //Talloc
  {free(alloc(4));
   char a[4]; a[0] = 'a'; a[1] = 'b'; a[2] = 0;
   lsprintf(aa, 2, "%s%s", a, a);
-  assert(!strcmp(aa, "abab"));
-  lsprintf(bb, 5, "%s%s", a, a);
-  assert(!strcmp(bb, "abab"));
+  assert( !strcmp(aa, "abab"));
+   lsprintf(bb, 5, "%s%s", a, a);
+  assert( !strcmp(bb, "abab"));
  }
 
 void test3()                                                                    //TreadFile //TwriteFile
@@ -231,15 +231,15 @@ void test3()                                                                    
    {file = strdup(f);
     return write(d, data, strlen(data));
    }
-  assert(makeTemporaryFileWithContent("a.txt", w) >= 0);
+  assert( makeTemporaryFileWithContent("a.txt", w) >= 0);
 
   ssize_t r(char * location, size_t length)                                     // Read
-   {assert(!strcmp(data, location));
+   {assert( length == strlen(data));
+    assert( !strcmp(data, location));
     return 1;
-    if (0) length = length;
    }
 
-  assert(readFile(file, r));
+  readFile(file, r);
   free(file);
  }
 
