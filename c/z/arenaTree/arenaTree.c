@@ -431,19 +431,19 @@ void test0()                                                                    
 
   b ◁ t ▷ root; a ◁ b ▷ left; c ◁ b ▷ right; bb ◁ c ▷ left; cc ◁ c ▷ right;
 
-  assert( b  ▷ keyEquals("b",  1));
-  assert( a  ▷ keyEquals("a",  1));
-  assert( c  ▷ keyEquals("c",  1));
-  assert( bb ▷ keyEquals("bb", 2));
-  assert( cc ▷ keyEquals("cc", 2));
-  assert( b  ▷ isRoot);
-  assert( b  ▷ equals(a  ▷ up));
-  assert( b  ▷ equals(c  ▷ up));
-  assert( c  ▷ equals(bb ▷ up));
-  assert( c  ▷ equals(cc ▷ up));
+  ✓  b  ▷ keyEquals("b",  1);
+  ✓  a  ▷ keyEquals("a",  1);
+  ✓  c  ▷ keyEquals("c",  1);
+  ✓  bb ▷ keyEquals("bb", 2);
+  ✓  cc ▷ keyEquals("cc", 2);
+  ✓  b  ▷ isRoot;
+  ✓  b  ▷ equals(a  ▷ up);
+  ✓  b  ▷ equals(c  ▷ up);
+  ✓  c  ▷ equals(bb ▷ up);
+  ✓  c  ▷ equals(cc ▷ up);
 
-  assert(!t  ▷ find("cc", 2).different);
-  assert( t  ▷ find("dd", 2).different);
+  ✓ !t  ▷ find("cc", 2).different;
+  ✓  t  ▷ find("dd", 2).different;
 
   t ▷ free;
  }
@@ -458,26 +458,26 @@ void test1()                                                                    
 
   b4 ◁ b  ▷ ownedTreeRoot; b2 ◁ b4 ▷ left; b6 ◁ b4 ▷ right;
   b1 ◁ b2 ▷ left; b3 ◁ b2 ▷ right; b5 ◁ b6 ▷ left; b7 ◁ b6 ▷ right;
-  assert(b4 ▷ equalsString("4"));
-  assert(b2 ▷ equalsString("2"));
-  assert(b6 ▷ equalsString("6"));
-  assert(b1 ▷ equalsString("1"));
-  assert(b3 ▷ equalsString("3"));
-  assert(b5 ▷ equalsString("5"));
-  assert(b7 ▷ equalsString("7"));
-  assert(b4 ▷ up.offset == 0);
-  assert(b4 ▷ equals(b2 ▷ up));
-  assert(b4 ▷ equals(b6 ▷ up));
-  assert(b2 ▷ equals(b1 ▷ up));
-  assert(b2 ▷ equals(b3 ▷ up));
-  assert(b6 ▷ equals(b5 ▷ up));
-  assert(b6 ▷ equals(b7 ▷ up));
+  ✓ b4 ▷ equalsString("4");
+  ✓ b2 ▷ equalsString("2");
+  ✓ b6 ▷ equalsString("6");
+  ✓ b1 ▷ equalsString("1");
+  ✓ b3 ▷ equalsString("3");
+  ✓ b5 ▷ equalsString("5");
+  ✓ b7 ▷ equalsString("7");
+  ✓ b4 ▷ up.offset == 0;
+  ✓ b4 ▷ equals(b2 ▷ up);
+  ✓ b4 ▷ equals(b6 ▷ up);
+  ✓ b2 ▷ equals(b1 ▷ up);
+  ✓ b2 ▷ equals(b3 ▷ up);
+  ✓ b6 ▷ equals(b5 ▷ up);
+  ✓ b6 ▷ equals(b7 ▷ up);
 
-  assert(!b ▷ find("7", 1).different);
-  assert( b ▷ find("8", 1).different);
+  ✓ !b ▷ find("7", 1).different;
+  ✓  b ▷ find("8", 1).different;
 
   f ◁ t ▷ ll("b", "7", 0);
-  assert(f.offset == b7.offset);
+  ✓ f.offset == b7.offset;
 
   t ▷ free;
  }
@@ -491,14 +491,14 @@ void test2()                                                                    
     t ▷ add(c, strlen(c));
    }
 
-  assert(t ▷ count == N);
+  ✓ t ▷ count == N;
 
   r   ◁ t ▷ root;
   n28 ◁ t ▷ locate("28", 2); n27 ◁ n28 ▷ up; n25 ◁ n27 ▷ up; n23 ◁ n25 ▷ up;
 
-  assert(r   ▷ equalsString("3"));
-  assert(r   ▷ height == 11);
-  assert(n23 ▷ equalsString("23"));
+  ✓ r   ▷ equalsString("3");
+  ✓ r   ▷ height == 11;
+  ✓ n23 ▷ equalsString("23");
 
   t ▷ check;
   t ▷ free;
@@ -511,18 +511,18 @@ void test3()
   for(int i = 0; i < N; ++i)
    {char c[256]; sprintf(c, "%x", i); t ▷ add(c, strlen(c));
    }
-  assert(t ▷ count == (size_t)N);
+  ✓ t ▷ count == (size_t)N;
   t ▷ check;
          r ◁ t ▷ root;
-  assert(r ▷ equalsString("3"));
-  assert(r ▷ height == 33);
+  ✓ r ▷ equalsString("3");
+  ✓ r ▷ height == 33;
 
   t ▷ free;
  }
 
 void test4()                                                                    //Theight //Tlocate //Troot
  {t ◁ make$();
-  n ◁ t ▷ locate("0", 1); assert(!n ▷ valid);
+  n ◁ t ▷ locate("0", 1); ✓ !n ▷ valid;
 
   char c[4]; memset(c, 0, sizeof(c));
 
@@ -533,13 +533,13 @@ void test4()                                                                    
      }
    }
 
-         r ◁ t ▷ root;
-  assert(r ▷ equalsString("31"));
-  assert(r ▷ height == 11);
+    r ◁ t ▷ root;
+  ✓ r ▷ equalsString("31");
+  ✓ r ▷ height == 11;
 
-         f ◁ t ▷ locate("85", 2);
-  assert(f ▷ valid);
-  assert(f ▷ height == 2);
+    f ◁ t ▷ locate("85", 2);
+  ✓ f ▷ valid;
+  ✓ f ▷ height == 2;
 
   t ▷ free;
  }
@@ -551,7 +551,9 @@ void test5()                                                                    
 
   for(size_t i = 0; i < N; ++i)
    {sprintf(c, "%lu", i);
-    n ◁ t ▷ add(c, strlen(c)); e ◁ n ▷ locate("0", 1); assert(!e ▷ valid);
+       n ◁ t ▷ add(c, strlen(c));
+       e ◁ n ▷ locate("0", 1);
+    ✓ !e ▷ valid;
     for(size_t j = 0; j < N; ++j)
      {sprintf(c, "%lu-%lu", i, j);
       n ▷ add(c, strlen(c));
@@ -560,7 +562,8 @@ void test5()                                                                    
 
   const char *a[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", 0};
   for(const char * const *p = a; *p; ++p)
-   {n ◁ t ▷ locate(*p, 1); assert(n ▷ equalsString(*p));
+   {  n ◁ t ▷ locate(*p, 1);
+    ✓ n ▷ equalsString(*p);
    }
 
   t ▷ free;
@@ -576,14 +579,16 @@ void test6()
    }
   r ◁ t ▷ root;
 
-  assert(r ▷ keyEquals("16", 2));
-  assert(r ▷ height == 12);
+  ✓ r ▷ keyEquals("16", 2);
+  ✓ r ▷ height == 12;
 
   n86 ◁ t   ▷ locate("86", 2);
-  n810 ◁ n86 ▷ up;
-  n76 ◁ n810 ▷ up; n66 ◁ n76 ▷ up;
-  n56 ◁ n66 ▷ up; n36 ◁ n56 ▷ up;
-  assert(n36 ▷ equalsString("36"));
+  n810 ◁ n86  ▷ up;
+  n76  ◁ n810 ▷ up;
+  n66  ◁ n76  ▷ up;
+  n56  ◁ n66  ▷ up;
+  n36  ◁ n56  ▷ up;
+  ✓ n36 ▷ equalsString("36");
 
   t ▷ free;
  }
@@ -603,19 +608,19 @@ void test7()                                                                    
 
   r ◁ t ▷ root;
 
-  assert(r ▷ isRoot);
-  assert(r ▷ keyEquals("19", 2));
-  assert(r ▷ height == 6);
+  ✓ r ▷ isRoot;
+  ✓ r ▷ keyEquals("19", 2);
+  ✓ r ▷ height == 6;
 
   t ▷ free;
  }
 
 void test8()                                                                    //Tvalid //Tcmp$
- {$Node n = new $Node; assert(!n ▷ valid);
+ {$Node n = new $Node; ✓ !n ▷ valid;
 
-  assert(cmp$("aa", 2, "aa", 1) ==  1);
-  assert(cmp$("aa", 2, "aa", 2) ==  0);
-  assert(cmp$("aa", 1, "aa", 2) == -1);
+  ✓ cmp$("aa", 2, "aa", 1) ==  1;
+  ✓ cmp$("aa", 2, "aa", 2) ==  0;
+  ✓ cmp$("aa", 1, "aa", 2) == -1;
  }
 
 void test9()
@@ -624,10 +629,10 @@ void test9()
   for  (size_t i = 0; i < 2; ++i)
    {sprintf(c, "%lu", i);
            n ◁ t ▷ add(c, strlen(c));
-    assert(n ▷ valid);
-    assert(n ▷ equalsString(c));
+    ✓ n ▷ valid;
+    ✓ n ▷ equalsString(c);
    }
-  assert(t ▷ count == 2);
+  ✓ t ▷ count == 2;
   t ▷ check;
   t ▷ free;
  }
