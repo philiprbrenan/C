@@ -36,8 +36,6 @@ utilities
 END
 
 my @cg      =  grep {!/\A#/} split /\s+/, <<END;                                # g files to run
-cairoText
-example-4
 END
 
 if (1)                                                                          # Upload files
