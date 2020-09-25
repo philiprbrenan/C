@@ -228,7 +228,7 @@ END
   my $lp  = ' -lm';                                                             # Linker options - math lib
      $lp .= " -lX11" if $file =~ m(/x/);                                        # X windows
 
-  if ($file =~ m(/g/))                                                          # GTK options and libraries if we are in a graphics folder
+  if (1)                                                                        # GTK options and libraries
    {for my $lib(qw(gtk+-3.0 glib-2.0 freetype2))
      {$cp .= ' '.trim(qx(pkg-config --cflags $lib));
       $lp .= ' '.trim(qx(pkg-config --libs   $lib));
