@@ -149,13 +149,32 @@ static size_t count_StringBuffer                                                
 
 static void join_StringBuffer                                                              // Join in place - join all the sub strings in the specified string buffer and replace them with one string.
  (const StringBuffer old)                                                                  // StringBuffer
- {const typeof(old.string.proto->countChildren(old.string)) C = old.string.proto->countChildren(old.string);                                               // Number of sub strings
-  if (C <= 1) return;                                                           // Already joined
-  makeLocalCopyOfStringBuffer(b, N, old);                                                  // Local copy of string
+ {const typeof(old.string.proto->countChildren(old.string)) N = old.string.proto->countChildren(old.string);                                               // Number of sub strings
+  if (N <= 1) return;                                                           // Already joined
+  makeLocalCopyOfStringBuffer(b, l, old);                                                  // Local copy of string
   const typeof(makeStringBuffer()) new = makeStringBuffer();                                                                // New string buffer
-  new.proto->add(new, b);                                                                 // Load new buffer from joined string
+  new.proto->addn(new, b, l);                                                             // Load new buffer from joined string
   old.string.proto->swap(old.string, new.string);                                                // Swap arenas so that the old becomes the new
-  new.proto->free(new);                                                                   // Free old arena
+  new.proto->free(new);                                                                   // Free new arena
+ }
+
+static void joinWith_StringBuffer                                                          // Join in place - join all the sub strings in the specified string buffer with the specified string and replace the string buffer with the result.
+ (const StringBuffer old,                                                                  // StringBuffer
+  const char * const string)                                                    // String to separate the items being joined
+ {const typeof(strlen(string)) S = strlen(string);                                                           // Length of joining string
+  if (S < 1) {old.proto->join(old); return;}                                              // Empty joining string
+  const typeof(old.string.proto->countChildren(old.string)) N = old.string.proto->countChildren(old.string);                                               // Number of sub strings
+  if (N <= 1) return;                                                           // Already joined
+  const typeof(makeStringBuffer()) new = makeStringBuffer();                                                                // New string buffer
+  typeof(0ul) n = 0ul;
+  StringBufferfe(word, old)
+   {makeLocalCopyOfArenaListKey(w, l, word);                                    // Local copy of word
+    new.proto->addn(new, w, l);                                                            // Copy word
+    if (++n < N) new.proto->addn(new, string, S);                                         // Add joining string
+   }
+  new.proto->join(new);                                                                   // Join
+  old.string.proto->swap(old.string, new.string);                                                // Swap arenas so that the old becomes the new
+  new.proto->free(new);                                                                   // Free new arena
  }
 
 static void splitLines                                                          // Split the specified StringBuffer on any new line characters and return the split text as a new StringBuffer
@@ -394,11 +413,11 @@ static StringBuffer readFile_StringBuffer_string                                
 
 void test0()                                                                    //TmakeStringBuffer //Tadd //TaddFormat //TaddStringBuffer //Tfree
  {const typeof(makeStringBuffer()) s = makeStringBuffer();
-  s.proto->add(s, "Hello"); assert(s.proto->length(s) == 5);
+  s.proto->add(s, "Hello"); assert( s.proto->length(s) == 5);
   s.proto->add(s, " ");
   s.proto->addStringBuffer(s, s);
   s.proto->addFormat(s, "%s", "World");
-  assert(s.proto->equalsString(s, "Hello Hello World"));
+  assert( s.proto->equalsString(s, "Hello Hello World"));
   s.proto->free(s);
  }
 
@@ -407,34 +426,38 @@ void test1()                                                                    
     a.proto->add(a, "ab");   b.proto->add(b, "a");  c.proto->add(c, "aba");
     a.proto->add(a, "c");    b.proto->add(b, "bc"); c.proto->add(c, "bc");
 
-  assert( a.proto->equals(a, b));
-  assert( a.proto->equalsString(a, "abc"));
-  assert(!a.proto->equals(a, c));
-  assert( c.proto->contains(c, a));
-  assert(!a.proto->contains(a, c));
-  assert( c.proto->containsString(c, "bab"));
+  assert(  a.proto->equals(a, b));
+  assert(  a.proto->equalsString(a, "abc"));
+  assert( !a.proto->equals(a, c));
+  assert(  c.proto->contains(c, a));
+  assert( !a.proto->contains(a, c));
+  assert(  c.proto->containsString(c, "bab"));
 
-  assert( c.proto->substringEquals(c, 1, 0, ""));
-  assert( c.proto->substringEquals(c, 1, 1, "b"));
-  assert( c.proto->substringEquals(c, 1, 2, "ba"));
-  assert( c.proto->substringEquals(c, 1, 3, "bab"));
-  assert( c.proto->substringEquals(c, 1, 4, "babc"));
-  assert( c.proto->substringEquals(c, 1, 5, "babc"));
+  assert(  c.proto->substringEquals(c, 1, 0, ""));
+  assert(  c.proto->substringEquals(c, 1, 1, "b"));
+  assert(  c.proto->substringEquals(c, 1, 2, "ba"));
+  assert(  c.proto->substringEquals(c, 1, 3, "bab"));
+  assert(  c.proto->substringEquals(c, 1, 4, "babc"));
+  assert(  c.proto->substringEquals(c, 1, 5, "babc"));
 
-  assert( c.proto->substringEquals(c, 5, 0, ""));
-  assert( c.proto->substringEquals(c, 5, 1, ""));
+  assert(  c.proto->substringEquals(c, 5, 0, ""));
+  assert(  c.proto->substringEquals(c, 5, 1, ""));
 
   if (1)
    {char buffer[16];
     c.proto->substring(c, 1, 3, buffer);
-    assert(!strcmp(buffer, "bab"));
+    assert( !strcmp(buffer, "bab"));
    }
 
   c.proto->join(c);
-  assert(c.proto->count(c) <= 1);
-  assert(c.proto->equalsString(c, "ababc"));
+  assert( c.proto->count(c) == 1);
+  assert( c.proto->equalsString(c, "ababc"));
 
-  a.proto->free(a); b.proto->free(b); c.proto->free(c); //A.proto->free(A); B.proto->free(B);
+  b.proto->joinWith(b, "--");
+  assert( b.proto->count(b) == 1);
+  assert( b.proto->equalsString(b, "a--bc"));
+
+  a.proto->free(a); b.proto->free(b); c.proto->free(c);
  }
 
 void test2()                                                                    //TaddChar //TaddNewLine //Tb2SumW8 //TaddDoubleQuote //TaddSingleQuote
@@ -443,33 +466,33 @@ void test2()                                                                    
   a.proto->addNewLine(a);
   a.proto->addSingleQuote(a);
   a.proto->addDoubleQuote(a);
-  assert(a.proto->equalsString(a, "a\n'\""));
+  assert( a.proto->equalsString(a, "a\n'\""));
   a.proto->free(a);
  }
 
 void test3()                                                                    //TsplitLines //TmakeStringBufferFromString
  {const typeof(makeStringBufferFromString("a\nbb\nccc\ndddd\n")) a = makeStringBufferFromString("a\nbb\nccc\ndddd\n");
   a.proto->splitLines(a);
-  const typeof(a.string.proto->first(a.string)) a1 = a.string.proto->first(a.string); assert(a1.proto->equalsString(a1, "a\n"));
-  const typeof(a1.proto->next(a1)) a2 = a1.proto->next(a1);        assert(a2.proto->equalsString(a2, "bb\n"));
-  const typeof(a2.proto->next(a2)) a3 = a2.proto->next(a2);        assert(a3.proto->equalsString(a3, "ccc\n"));
-  const typeof(a3.proto->next(a3)) a4 = a3.proto->next(a3);        assert(a4.proto->equalsString(a4, "dddd\n"));
+  const typeof(a.string.proto->first(a.string)) a1 = a.string.proto->first(a.string); assert( a1.proto->equalsString(a1, "a\n"));
+  const typeof(a1.proto->next(a1)) a2 = a1.proto->next(a1);        assert( a2.proto->equalsString(a2, "bb\n"));
+  const typeof(a2.proto->next(a2)) a3 = a2.proto->next(a2);        assert( a3.proto->equalsString(a3, "ccc\n"));
+  const typeof(a3.proto->next(a3)) a4 = a3.proto->next(a3);        assert( a4.proto->equalsString(a4, "dddd\n"));
   a.proto->free(a);
 
   const typeof(makeStringBufferFromString("abc")) b = makeStringBufferFromString("abc");
   b.proto->splitLines(b);
   const typeof(b.string.proto->first(b.string)) b1 = b.string.proto->first(b.string);
-  assert(b1.proto->equalsString(b1, "abc"));
+  assert( b1.proto->equalsString(b1, "abc"));
   b.proto->free(b);
  }
 
 void test4()                                                                    //TsplitWords
  {const typeof(makeStringBufferFromString("  a\nbb   ccc dddd\n\n  ")) a = makeStringBufferFromString("  a\nbb   ccc dddd\n\n  ");
   a.proto->splitWords(a);
-  const typeof(a.string.proto->first(a.string)) a1 = a.string.proto->first(a.string); assert(a1.proto->equalsString(a1, "a"));
-  const typeof(a1.proto->next(a1)) a2 = a1.proto->next(a1);        assert(a2.proto->equalsString(a2, "bb"));
-  const typeof(a2.proto->next(a2)) a3 = a2.proto->next(a2);        assert(a3.proto->equalsString(a3, "ccc"));
-  const typeof(a3.proto->next(a3)) a4 = a3.proto->next(a3);        assert(a4.proto->equalsString(a4, "dddd"));
+  const typeof(a.string.proto->first(a.string)) a1 = a.string.proto->first(a.string); assert( a1.proto->equalsString(a1, "a"));
+  const typeof(a1.proto->next(a1)) a2 = a1.proto->next(a1);        assert( a2.proto->equalsString(a2, "bb"));
+  const typeof(a2.proto->next(a2)) a3 = a2.proto->next(a2);        assert( a3.proto->equalsString(a3, "ccc"));
+  const typeof(a3.proto->next(a3)) a4 = a3.proto->next(a3);        assert( a4.proto->equalsString(a4, "dddd"));
   a.proto->free(a);
  }
 
@@ -478,7 +501,7 @@ void test5()                                                                    
   const typeof(makeStringBufferFromString(c)) a = makeStringBufferFromString(c);
   const typeof(a.proto->writeTemporaryFile(a, "a.txt")) f = a.proto->writeTemporaryFile(a, "a.txt");
   const typeof(f.proto->readFile(f)) b = f.proto->readFile(f);
-  assert(b.proto->equalsString(b, c));
+  assert( b.proto->equalsString(b, c));
   a.proto->free(a); b.proto->free(b); f.proto->free(f);
  }
 
@@ -493,10 +516,10 @@ void test6()                                                                    
 
   const typeof(makeStringBuffer()) f = makeStringBuffer(); f.proto->add(f, F);
   const typeof(f.proto->readFile(f)) b = f.proto->readFile(f);
-  assert(b.proto->equalsString(b, c));
-  assert(b.proto->length(b) == strlen(c));
+  assert( b.proto->equalsString(b, c));
+  assert( b.proto->length(b) == strlen(c));
 
-  char C[b.proto->length(b) + 1]; b.proto->string(b, C); assert(!strcmp(c, C));
+  char C[b.proto->length(b) + 1]; b.proto->string(b, C); assert( !strcmp(c, C));
 
   a.proto->free(a); b.proto->free(b); f.proto->free(f); unlink(F);
  }
@@ -514,7 +537,7 @@ void test7()                                                                    
   add("%s %s", "Hello", "World");
   a.proto->addQuotedNewLine(a);
 
-  assert(a.proto->equalsString(a, "Hello World\\n"));
+  assert( a.proto->equalsString(a, "Hello World\\n"));
 
   a.proto->free(a);
  }
@@ -523,8 +546,8 @@ void test8()                                                                    
  {const char * const c = "Hello World";
   const typeof(makeStringBufferFromString(c)) a = makeStringBufferFromString(c);
   void check(char * s, size_t l)
-   {assert(l == strlen(c));
-    assert(!strcmp(c, s));
+   {assert( l == strlen(c));
+    assert( !strcmp(c, s));
    }
 
   a.proto->free(a);
@@ -534,14 +557,14 @@ void test9()                                                                    
  {const typeof(makeStringBuffer()) a = makeStringBuffer();
   a.proto->add(a, "a"); a.proto->addSpaces(a, 2); a.proto->add(a, "A");
   makeLocalCopyOfStringBuffer(s, l, a);
-  assert(!strcmp(s, "a  A"));
+  assert( !strcmp(s, "a  A"));
   a.proto->free(a);
  }
 
 void test10()                                                                   //Tsystem //TmakeStringBufferVaFormat
  {const typeof(makeStringBufferFromString("uname")) a = makeStringBufferFromString("uname");
   a.proto->system(a);
-  assert(a.proto->containsString(a, "Linux"));
+  assert( a.proto->containsString(a, "Linux"));
   a.proto->free(a);
  }
 
