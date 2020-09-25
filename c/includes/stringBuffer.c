@@ -421,7 +421,7 @@ void test0()                                                                    
   s.proto->free(s);
  }
 
-void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //Tsubstring //TsubstringEquals //Tjoin //Tcount
+void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //Tsubstring //TsubstringEquals //Tjoin //Tcount //TjoinWith
  {StringBuffer a = makeStringBuffer();   StringBuffer b = makeStringBuffer(); StringBuffer c = makeStringBuffer();
     a.proto->add(a, "ab");   b.proto->add(b, "a");  c.proto->add(c, "aba");
     a.proto->add(a, "c");    b.proto->add(b, "bc"); c.proto->add(c, "bc");
