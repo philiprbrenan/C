@@ -597,22 +597,15 @@ void test8()
    }
 
   a ◁ t ▷ locate("86", 2);
-  b ◁ a ▷ up;
-  c ◁ b ▷ up;
-  d ◁ c ▷ up;
-  e ◁ d ▷ up;
-  f ◁ e ▷ up;
-  g ◁ f ▷ up;
+               ✓ a ▷ valid;  ✓ a ▷ height ==  6;  ✓ a ▷ equalsString("86");
+  b ◁ a ▷ up;  ✓ b ▷ valid;  ✓ b ▷ height ==  7;  ✓ b ▷ equalsString("810");
+  c ◁ b ▷ up;  ✓ c ▷ valid;  ✓ c ▷ height ==  8;  ✓ c ▷ equalsString("76");
+  d ◁ c ▷ up;  ✓ d ▷ valid;  ✓ d ▷ height ==  9;  ✓ d ▷ equalsString("66");
+  e ◁ d ▷ up;  ✓ e ▷ valid;  ✓ e ▷ height == 10;  ✓ e ▷ equalsString("56");
+  f ◁ e ▷ up;  ✓ f ▷ valid;  ✓ f ▷ height == 11;  ✓ f ▷ equalsString("36");
+  g ◁ f ▷ up;  ✓ g ▷ valid;  ✓ g ▷ height == 12;  ✓ g ▷ equalsString("16");
 
-  ✓ a ▷ valid;  ✓ a ▷ height ==  6;  ✓ a ▷ equalsString("86");
-  ✓ b ▷ valid;  ✓ b ▷ height ==  7;  ✓ b ▷ equalsString("810");
-  ✓ c ▷ valid;  ✓ c ▷ height ==  8;  ✓ c ▷ equalsString("76");
-  ✓ d ▷ valid;  ✓ d ▷ height ==  9;  ✓ d ▷ equalsString("66");
-  ✓ e ▷ valid;  ✓ e ▷ height == 10;  ✓ e ▷ equalsString("56");
-  ✓ f ▷ valid;  ✓ f ▷ height == 11;  ✓ f ▷ equalsString("36");
-  ✓ g ▷ valid;  ✓ g ▷ height == 12;  ✓ g ▷ equalsString("16");
-
-  ✓ g ▷ equals(t ▷ root);
+  ✓ g ▷ equals(t ▷ root);    ✓ g ▷ isRoot;
 
   ✓ t ▷ check;
     t ▷ free;
