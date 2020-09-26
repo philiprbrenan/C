@@ -153,8 +153,7 @@ static void join_$                                                              
   makeLocalCopyOf$(b, l, old);                                                  // Local copy of string
   new ◁ make$();                                                                // New string buffer
   new ▷ addn(b, l);                                                             // Load new buffer from joined string
-  old.string ▷ swap(new.string);                                                // Swap arenas so that the old becomes the new
-  new ▷ free;                                                                   // Free new arena
+  old ▷ swap(new);                                                              // Swap arenas so that the old becomes the new
  }
 
 static void joinWith_$                                                          // Join in place - join all the sub strings in the specified string buffer with the specified string and replace the string buffer with the result.
@@ -172,8 +171,7 @@ static void joinWith_$                                                          
     if (++n < N) new ▷ addn(string, S);                                         // Add joining string
    }
   new ▷ join;                                                                   // Join
-  old.string ▷ swap(new.string);                                                // Swap arenas so that the old becomes the new
-  new ▷ free;                                                                   // Free new arena
+  old ▷ swap(new);                                                              // Swap arenas so that the old becomes the new
  }
 
 static void splitLines                                                          // Split the specified $ on any new line characters and return the split text as a new $
@@ -187,8 +185,7 @@ static void splitLines                                                          
    }
   for(; i < N; ++i) if (s[i] == '\n') save();
   if (  i > j) {--i; save();}
-  string.string ▷ swap(r.string);                                               // Swap arenas so that the old becomes the new
-  r ▷ free;
+  string ▷ swap(r);                                                             // Swap arenas so that the old becomes the new
  }
 
 static void splitWords                                                          // Split the specified $ into words delimited by spaces and return the split text as a new $
@@ -202,8 +199,7 @@ static void splitWords                                                          
    }
   for(; i < n; ++i) if (isspace(s[i])) save();
   save();
-  string.string ▷ swap(r.string);                                               // Swap arenas so that the old becomes the new
-  r ▷ free;
+  string ▷ swap(r);                                                             // Swap arenas so that the old becomes the new
  }
 
 //D1 Statistics                                                                 // Statistics on the contents of the $.
@@ -311,9 +307,8 @@ static  void system_$_$                                                         
    }
 
   command ▷ apply(execString);                                                  // Execute command in string buffer
-  r ◁ t ▷ readFile;                                                             // Load the results
-  r.string ▷ swap(command.string);                                              // Overwrite the input command with the results
-  t ▷ free; r ▷ free;                                                           // Free file name and command
+  t ▷ readFile;                                                             // Load the results
+  command ▷ swap(t);                                                            // Overwrite the input command with the results
  }
 
 //D1 Read and Write                                                             // Read/write a string buffer from/to named and temporary files.
@@ -393,7 +388,7 @@ static void writeStderr_$                                                       
  {buffer ▷ writeToFileHandle(fileno(stderr), "stderr");
  }
 
-static $ readFile_$_string                                                      // Read a file and returns its content as a string buffer.
+static void readFile_$_string                                                   // Read a file and returns its content as a string buffer.
  (const $ fileName)                                                             // Name of the file as the content of a string buffer
  {buffer ◁ make$();                                                             // Content will appear here
   ssize_t reader(char * location, size_t length)                                // File content
@@ -402,7 +397,16 @@ static $ readFile_$_string                                                      
    }
   makeLocalCopyOf$(f, n, fileName);                                             // Local copy
   readFile(f, reader);                                                          // Read file
-  return buffer;                                                                // Content read
+  fileName ▷ swap(buffer);                                                      // Replace file name with contents of file name
+ }
+
+//D1 Swap                                                                       // Swap two string buffers
+
+static void swap_$                                                              // Swap two string buffers and free the new one so that the old one is renewed.
+ (const $ old,                                                                  // $ Old
+  const $ new)                                                                  // $ New
+ {old.string ▷ swap(new.string);                                                // Swap arenas so that the old becomes the new
+  new ▷ free;
  }
 
 #endif
@@ -496,31 +500,31 @@ void test4()                                                                    
  }
 
 void test5()                                                                    //TreadFile //TwriteTemporaryFile
- {c ◁ "a\nbb\nccc\ndddd\n";
-  a ◁ make$FromString(c);
-  f ◁ a ▷ writeTemporaryFile("a.txt");
-  b ◁ f ▷ readFile;
-  ✓ b ▷ equalsString(c);
-  a ▷ free; b ▷ free; f ▷ free;
+ {  c ◁ "a\nbb\nccc\ndddd\n";
+    a ◁ make$FromString(c);
+    f ◁ a ▷ writeTemporaryFile("a.txt");
+    f ▷ readFile;
+  ✓ f ▷ equalsString(c);
+  a ▷ free; f ▷ free;
  }
 
 void test6()                                                                    //TwriteFile //Tlength //Tstring //Taddn
- {F ◁ "a.txt";
-  c ◁ "a\nbb\nccc\ndddd\n";
+ {  F ◁ "a.txt";
+    c ◁ "a\nbb\nccc\ndddd\n";
 
-  a ◁ make$();
-  a ▷ addn(c, strlen(c));
+    a ◁ make$();
+    a ▷ addn(c, strlen(c));
 
-  a ▷ writeFile(F);
+    a ▷ writeFile(F);
 
-  f ◁ make$(); f ▷ add(F);
-  b ◁ f ▷ readFile;
-  ✓ b ▷ equalsString(c);
-  ✓ b ▷ length == strlen(c);
+    f ◁ make$(); f ▷ add(F);
+    f ▷ readFile;
+  ✓ f ▷ equalsString(c);
+  ✓ f ▷ length == strlen(c);
 
-  char C[b ▷ length + 1]; b ▷ string(C); ✓ !strcmp(c, C);
+  char C[f ▷ length + 1]; f ▷ string(C); ✓ !strcmp(c, C);
 
-  a ▷ free; b ▷ free; f ▷ free; unlink(F);
+  a ▷ free; f ▷ free; unlink(F);
  }
 
 void test7()                                                                    //TaddVaFormat //TaddQuotedNewLine
