@@ -36,7 +36,12 @@ utilities
 END
 
 my @cg      =  grep {!/\A#/} split /\s+/, <<END;                                # g files to run
+cairoText
 END
+
+lll GitHub::Crud::writeFileFromFileUsingSavedToken($user, $repo,                        # Upload font file
+  "fonts/NotoSansMono-Regular.ttf",
+  "/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf") if 0;
 
 if (1)                                                                          # Upload files
  {my @files = $compile;
