@@ -1065,24 +1065,24 @@ void test8()                                                                    
  }
 
 void test9()                                                                    //Tswap
- {s ◁ make$(); s ▷ fromLetters("s");
-  t ◁ make$(); t ▷ fromLetters("t");
-  ✓s ▷ printsWithBracketsAs("(s)");
-  ✓t ▷ printsWithBracketsAs("(t)");
-  s ▷ swap(t);
-  ✓t ▷ printsWithBracketsAs("(s)");
-  ✓s ▷ printsWithBracketsAs("(t)");
-  s ▷ free;
-  t ▷ free;
+ {  s ◁ make$(); s ▷ fromLetters("s");
+    t ◁ make$(); t ▷ fromLetters("t");
+  ✓ s ▷ printsWithBracketsAs("(s)");
+  ✓ t ▷ printsWithBracketsAs("(t)");
+    s ▷ swap(t);
+  ✓ t ▷ printsWithBracketsAs("(s)");
+  ✓ s ▷ printsWithBracketsAs("(t)");
+    s ▷ free;
+    t ▷ free;
  }
 
 void test10()                                                                   //Tdata //Tmake$WithWidth //Twidth //TgetData //TsetData
  {size_t D[] = {0,1,2,3};
-  t ◁ make$WithWidth (sizeof(D));
-  ✓t ▷ width == sizeof(D);
+    t ◁ make$WithWidth (sizeof(D));
+  ✓ t ▷ width == sizeof(D);
 
-  n ◁ t ▷ first;
-  ✓n ▷ width == sizeof(D);
+    n ◁ t ▷ first;
+  ✓ n ▷ width == sizeof(D);
 
   for(size_t i = 0; i < 10; ++i)
    {char c = '0'+i;
@@ -1094,12 +1094,12 @@ void test10()                                                                   
   root ◁ t ▷ root;
   $fe(n, root)
    {char d[sizeof(D)]; n ▷ getData(d);
-    ✓!memcmp(d,        D, sizeof(D));
-    ✓!memcmp(n ▷ data, D, sizeof(D));
+    ✓ !memcmp(d,        D, sizeof(D));
+    ✓ !memcmp(n ▷ data, D, sizeof(D));
    }
 
-  ✓t ▷ printsWithBracketsAs("(0123456789)");
-  t ▷ free;
+  ✓ t ▷ printsWithBracketsAs("(0123456789)");
+    t ▷ free;
  }
 
 int main(void)                                                                  // Run tests
