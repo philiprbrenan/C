@@ -240,7 +240,7 @@ static int printsAs_$_string                                                    
     return 0;
    }
 
-  nl ◀ 0ul;                                                               // Count new lines in expected string
+  nl ◀ 0ul;                                                                     // Count new lines in expected string
   for(i ◀ 0ul; i < l; ++i)
    {if (expected[i] == '\n')
     {++nl;
@@ -466,7 +466,7 @@ void test0()                                                                    
   s ▷ free;
  }
 
-void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //Tsubstring //TsubstringEquals //Tjoin //Tcount //TjoinWith
+void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //Tsubstring //TsubstringEquals //Tjoin //Tcount //TjoinWith //Tswap
  {$ a = make$();   $ b = make$(); $ c = make$();
     a ▷ add("ab");   b ▷ add("a");  c ▷ add("aba");
     a ▷ add("c");    b ▷ add("bc"); c ▷ add("bc");
@@ -502,7 +502,11 @@ void test1()                                                                    
   ✓ b ▷ count == 1;
   ✓ b ▷ equalsString("a--bc");
 
-  a ▷ free; b ▷ free; c ▷ free;
+  a ▷ swap(b);
+  ✓ a ▷ count == 1;
+  ✓ a ▷ equalsString("a--bc");
+
+  a ▷ free; c ▷ free;
  }
 
 void test2()                                                                    //TaddChar //TaddNewLine //Tb2SumW8 //TaddDoubleQuote //TaddSingleQuote
@@ -606,11 +610,14 @@ void test9()                                                                    
   a ▷ free;
  }
 
-void test10()                                                                   //Tsystem //Tmake$VaFormat
- {a ◁ make$FromString("uname");
-  a ▷ system;
+void test10()                                                                   //Tsystem //TprintsAs
+ {  a ◁ make$FromString("uname");
+    a ▷ system;
   ✓ a ▷ containsString("Linux");
-  a ▷ free;
+  ✓ a ▷ printsAs(◉);
+Linux
+◉
+    a ▷ free;
  }
 
 int main(void)                                                                  // Run tests
