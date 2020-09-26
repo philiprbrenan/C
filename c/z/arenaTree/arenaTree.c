@@ -449,15 +449,21 @@ void test0()                                                                    
  }
 
 void test1()                                                                    //Tll
- {t ◁ make$();
-  t ▷ add("a", 1); t ▷ add("b", 1);
-  a ◁ t ▷ root; b ◁ a ▷ right;
+ {t  ◁ make$();
+  t  ▷ add("a", 1); t ▷ add("b", 1);
+  a  ◁ t ▷ root; b ◁ a ▷ right;
 
-  b ▷ add("4", 1); b ▷ add("2", 1); b ▷ add("6", 1);
-  b ▷ add("1", 1); b ▷ add("3", 1); b ▷ add("5", 1); b ▷ add("7", 1);
+  b  ▷ add("4", 1); b ▷ add("2", 1); b ▷ add("6", 1);
+  b  ▷ add("1", 1); b ▷ add("3", 1); b ▷ add("5", 1); b ▷ add("7", 1);
 
-  b4 ◁ b  ▷ ownedTreeRoot; b2 ◁ b4 ▷ left; b6 ◁ b4 ▷ right;
-  b1 ◁ b2 ▷ left; b3 ◁ b2 ▷ right; b5 ◁ b6 ▷ left; b7 ◁ b6 ▷ right;
+  b4 ◁ b  ▷ ownedTreeRoot;
+  b2 ◁ b4 ▷ left;
+  b6 ◁ b4 ▷ right;
+  b1 ◁ b2 ▷ left;
+  b3 ◁ b2 ▷ right;
+  b5 ◁ b6 ▷ left;
+  b7 ◁ b6 ▷ right;
+
   ✓ b4 ▷ equalsString("4");
   ✓ b2 ▷ equalsString("2");
   ✓ b6 ▷ equalsString("6");
@@ -476,10 +482,10 @@ void test1()                                                                    
   ✓ !b ▷ find("7", 1).different;
   ✓  b ▷ find("8", 1).different;
 
-  f ◁ t ▷ ll("b", "7", 0);
+    f  ◁ t ▷ ll("b", "7", 0);
   ✓ f.offset == b7.offset;
 
-  t ▷ free;
+    t  ▷ free;
  }
 
 void test2()                                                                    //Tcount
@@ -500,8 +506,8 @@ void test2()                                                                    
   ✓ r   ▷ height == 11;
   ✓ n23 ▷ equalsString("23");
 
-  t ▷ check;
-  t ▷ free;
+      t ▷ check;
+      t ▷ free;
  }
 
 void test3()
@@ -512,7 +518,7 @@ void test3()
    {char c[256]; sprintf(c, "%x", i); t ▷ add(c, strlen(c));
    }
   ✓ t ▷ count == (size_t)N;
-  t ▷ check;
+    t ▷ check;
          r ◁ t ▷ root;
   ✓ r ▷ equalsString("3");
   ✓ r ▷ height == 33;
@@ -577,12 +583,12 @@ void test6()
       t ▷ add(c, l);
      }
    }
-  r ◁ t ▷ root;
+    r ◁ t ▷ root;
 
   ✓ r ▷ keyEquals("16", 2);
   ✓ r ▷ height == 12;
 
-  n86 ◁ t   ▷ locate("86", 2);
+  n86  ◁ t    ▷ locate("86", 2);
   n810 ◁ n86  ▷ up;
   n76  ◁ n810 ▷ up;
   n66  ◁ n76  ▷ up;
@@ -604,9 +610,9 @@ void test7()                                                                    
     sprintf(c, "%lu", 2*N - i);
     t ▷ add(c, strlen(c));
    }
-  t ▷ check;
+    t ▷ check;
 
-  r ◁ t ▷ root;
+    r ◁ t ▷ root;
 
   ✓ r ▷ isRoot;
   ✓ r ▷ keyEquals("19", 2);
@@ -633,8 +639,8 @@ void test9()
     ✓ n ▷ equalsString(c);
    }
   ✓ t ▷ count == 2;
-  t ▷ check;
-  t ▷ free;
+    t ▷ check;
+    t ▷ free;
  }
 
 int main(void)                                                                  // Run tests
