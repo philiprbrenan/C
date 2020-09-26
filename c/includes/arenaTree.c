@@ -780,16 +780,19 @@ void test8()                                                                    
 
 void test9()
  {const typeof(makeArenaTree()) t = makeArenaTree();
+
   char c[4]; memset(c, 0, sizeof(c));
+
   for  (size_t i = 0; i < 2; ++i)
    {sprintf(c, "%lu", i);
-           const typeof(t.proto->add(t, c, strlen(c))) n = t.proto->add(t, c, strlen(c));
+      const typeof(t.proto->add(t, c, strlen(c))) n = t.proto->add(t, c, strlen(c));
     assert( n.proto->valid(n));
     assert( n.proto->equalsString(n, c));
    }
-  assert( t.proto->count(t) == 2);
-    t.proto->check(t);
-    t.proto->free(t);
+
+    assert( t.proto->count(t) == 2);
+      t.proto->check(t);
+      t.proto->free(t);
  }
 
 int main(void)                                                                  // Run tests
