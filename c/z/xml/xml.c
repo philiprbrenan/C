@@ -290,7 +290,8 @@ static int depth_$Tag                                                           
 
 static int isRoot_$Tag                                                          // Check whether the specified tag is the root tag
  (const $Tag tag)                                                               // Tag
- {return !tag ▷ valid;
+ {p ◁ tag ▷ parent;                                                             // Possibly the root of the ArenaList
+  return !p ▷ valid;                                                            // The root of the xml tree is one level below the root of the ArenaList
  }
 
 static int isFirst_$Tag                                                         // Check that the specified tag is first under its parent
@@ -333,6 +334,14 @@ static int isTag                                                                
 static int hasText_$Tag                                                         // Check whether the tag contains a text element
  (const $Tag parent)                                                            // Parent tag
  {$fe(child, parent) if (child ▷ isText) return 1;
+  return 0;
+ }
+
+static int stayInLine_$Tag                                                      // Check whether a tag is text or is preceded or followed by text
+ (const $Tag tag)                                                               // Tag
+ {if ( tag ▷ isText)                   return 1;
+  if (!tag ▷ isFirst) {p ◁ tag ▷ prev; return p ▷ isText;}
+  if (!tag ▷ isLast)  {n ◁ tag ▷ next; return n ▷ isText;}
   return 0;
  }
 
@@ -510,6 +519,54 @@ static $Tag unwrap_$Tag                                                         
 
 //D1 Print                                                                      // Print an $ parse tree starting at the specified tag.
 
+static StringBuffer prettyPrint_stringBuffer_$Tag                               // Pretty print the $ parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
+ (const $Tag tag)                                                               // Starting tag
+ {const StringBuffer p = makeStringBuffer();
+
+  void print(const $Tag parent, const int depth)                                // Print the specified parent and its children
+   {void open()                                                                 // Add open tag
+     {if (parent ▷  isText)
+       {p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
+       }
+      else if (parent ▷ empty)                                                  // Write tag with no children as a singleton
+       {makeLocalCopyOf$TagString(s, l, parent);
+        p ▷ addChar($Open);
+        p ▷ addn(s+1, l-2);
+        p ▷ addFormat("%c%c", $Slash, $Close);
+       }
+      else if (parent ▷ stayInLine || parent ▷ isRoot)                          // Opener preceded or followed by text
+       {p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
+       }
+      else                                                                      // Opener
+       {p ▷ addNewLine; p ▷ addSpaces(depth*2);
+        p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
+       }
+     }
+    void close()                                                                // Add close tag unless we are on text
+     {if (parent ▷ isTag && !parent ▷ empty)
+       {if (!parent ▷ stayInLine) {p ▷ addNewLine; p ▷ addSpaces(depth*2);}
+        p ▷ addFormat("%c%c%s%c", $Open, $Slash, parent ▷ tagName, $Close);
+       }
+     }
+
+    open();
+    $fe(child, parent) print(child, depth+1);
+    close();
+   }
+
+  print(tag, 0);
+  p ▷ addNewLine;                                                             // Terminating new line
+  p ▷ join;
+  return p;
+ } // prettyPrint
+
+static StringBuffer prettyPrint_stringBuffer_$                                  // Pretty print the $ parse tree with additional spacing between tags to make the tree easier to read.
+ (const $Parse xml)                                                             // $ parse tree
+ {    root ◁ xml ▷ root;
+  f ◁ root ▷ first;
+  return f ▷ prettyPrint;
+ } // prettyPrint
+
 static StringBuffer print_stringBuffer_$Tag                                     // Print the $ parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
  (const $Tag tag)                                                               // Starting tag
  {const StringBuffer p = makeStringBuffer();
@@ -555,27 +612,9 @@ static int printsAs_int_$_string                                                
  (const $Parse xml,                                                             // $ parse tree
   const char * const expected)                                                  // Expected print
  {s ◁ xml ▷ print;
-
-  if (!s ▷ equalsString(expected))                                              // Strings do not match
-   {makeLocalCopyOfStringBuffer(S, N, s);                                       // Local copy
-    for(size_t i = 0; i < N; ++i)
-     {const char a = *(S+i), b = *(expected+i);
-      if (a != b)
-       {say("Strings differ at position: %lu on characters:"
-            " %d=%c and %d=%c\n", i+1, a, a, b, b);
-        say("Have:%s\nWant:%s\n", S, expected);
-        say("     ");
-        for(int i = 0; i < 10; ++i) say("0 2 4 6 8 ");     say("\n");
-        say("     ");
-        for(int i = 0; i < 10; ++i) say("%d         ", i); say("\n");
-        s ▷ free;
-        return 0;
-       }
-     }
-   }
-
+  r ◁ s ▷ printsAs(expected);
   s ▷ free;
-  return 1;
+  return r;
  }
 duplicate s/_\$_/_\$Tag_/,s/Parse\sxml/Tag\x20tag/,s/xml/tag/
 
@@ -853,12 +892,27 @@ void test4()                                                                    
   xml ▷ free; validate ▷ free;
  } // test4
 
-void test5()                                                                    //ThasText
- {char * xml = "<a><b>bb bb <c/> ccc </b><d> <i/> <j> jj <k/> kk </j> </d></a>";
+void test5()                                                                    //ThasText //TstayInline
+ {char * xml = "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>";  // Many text editorsd, Geany included, strip trailing blanks which can make here documents with trailing blanks difficult to deal with.
 
   x ◁ parse$FromString(xml);  ✓ ! x ▷ errors;
   b ◁ x ▷ findFirstTag("b");  ✓   b ▷ hasText;
+                              ✓ ! b ▷ stayInLine;
+  c ◁ x ▷ findFirstTag("c");  ✓   c ▷ stayInLine;
+  C ◁ c ▷ next;               ✓   C ▷ stayInLine;
   d ◁ x ▷ findFirstTag("d");  ✓ ! d ▷ hasText;
+
+    p ◁ x ▷ prettyPrint;
+  ✓ p ▷ printsAs(◉);
+<a>
+  <b>bb bb <c/> ccc
+  </b>
+  <d><i/>
+    <j> jj <k/> kk
+    </j>
+  </d>
+</a>
+◉
 
   x ▷ free;
  }
