@@ -209,11 +209,11 @@ static void free_XmlParse                                                       
  }
 
 static void free_XmlValidate                                                      // Free an Xml validator
- (const XmlValidate x)                                                               // Xml validator
+ (const XmlValidate x)                                                            // Xml validator
  {x.possibilities.proto->free(x.possibilities); x.first.proto->free(x.first); x.next.proto->free(x.next);
  }
 
-static size_t errors_XmlParse                                                     // Number of errors encountered while creating an Xml parse tree.
+static size_t errors_size_XmlParse                                                // Number of errors encountered while creating an Xml parse tree.
  (const XmlParse x)                                                               // Xml descriptor
  {return x.errors.proto->count(x.errors);
  }
@@ -236,28 +236,28 @@ static char  * parseXmlTagName                                                  
   return strcpy(XmltagName, "text");                                              // In a text tag
  }
 
-static char * tagName_XmlTag                                                      // Get the tag name from a node in the Xml parse tree. The tag name is returned in a reused static buffer that the caller should not free.
+static char * tagName_string_XmlTag                                               // Get the tag name from a node in the Xml parse tree. The tag name is returned in a reused static buffer that the caller should not free.
  (const XmlTag tag)                                                               // Tag
  {return parseXmlTagName(tag.node.proto->key(tag.node));
  }
 
-static int tagNameEquals_XmlTag_string                                            // Check the name of a tag.
+static int tagNameEquals_int_XmlTag_string                                        // Check the name of a tag.
  (const XmlTag         tag,                                                       // Tag
   const char * const expected)                                                  // Expected name of tag
  {return !strcmp(tag.proto->tagName(tag), expected);
  }
 
-static char * tagString_XmlTag                                                    //V Get the entire tag from a node in the Xml parse tree.
+static char * tagString_string_XmlTag                                             //V Get the entire tag from a node in the Xml parse tree.
  (const XmlTag tag)                                                               // Tag
  {return tag.node.proto->key(tag.node);
  }
 
-static size_t tagStringLength_XmlTag                                              // Get the length of the entire tag
+static size_t tagStringLength_size_XmlTag                                         // Get the length of the entire tag
  (const XmlTag tag)                                                               // Tag
  {return tag.node.proto->length(tag.node);
  }
 
-static int tagStringEquals_XmlTag_string                                          // Check the string of a tag.
+static int tagStringEquals_int_XmlTag_string                                      // Check the string of a tag.
  (const XmlTag         tag,                                                       // Tag
   const char * const expected)                                                  // Expected name of tag
  {return tag.node.proto->equalsString(tag.node, expected);
@@ -305,27 +305,27 @@ static XmlTag last_XmlParse                                                     
 
 //D1 Location                                                                   // Check the current location in the Xml parse tre
 
-static int depth_XmlTag                                                           // The depth of a tag
+static int depth_int_XmlTag                                                       // The depth of a tag
  (const XmlTag tag)                                                               // Tag
  {typeof(0) i = 0;
   for(XmlTag t = tag; t.proto->valid(t); t.node.offset = t.proto->parent(t).node.offset) ++i;     // Count up to root
   return i - 1;                                                                 // We have included the root node
  }
 
-static int isRoot_XmlTag                                                          // Check whether the specified tag is the root tag
+static int isRoot_int_XmlTag                                                      // Check whether the specified tag is the root tag
  (const XmlTag tag)                                                               // Tag
  {const typeof(tag.proto->parent(tag)) p = tag.proto->parent(tag);                                                             // Possibly the root of the ArenaList
   return !p.proto->valid(p);                                                            // The root of the xml tree is one level below the root of the ArenaList
  }
 
-static int isFirst_XmlTag                                                         // Check that the specified tag is first under its parent
+static int isFirst_int_XmlTag                                                     // Check that the specified tag is first under its parent
  (const XmlTag tag)                                                               // Tag
  {if (tag.proto->isRoot(tag)) return 1;                                                   // The root tag is always first
       const typeof(tag.proto->parent(tag)) parent = tag.proto->parent(tag);
   const typeof(parent.proto->first(parent)) f = parent.proto->first(parent);
   return f.proto->equals(f, tag);
  }
-static int isLast_XmlTag                                                         // Check that the specified tag is last under its parent
+static int isLast_int_XmlTag                                                     // Check that the specified tag is last under its parent
  (const XmlTag tag)                                                               // Tag
  {if (tag.proto->isRoot(tag)) return 1;                                                   // The root tag is always last
       const typeof(tag.proto->parent(tag)) parent = tag.proto->parent(tag);
@@ -336,7 +336,7 @@ static int isLast_XmlTag                                                        
 
 //D1 Text methods                                                               // Methods that operate on text tags
 
-static int isText_XmlTag                                                          // Check whether we are on a text element
+static int isText_int_XmlTag                                                      // Check whether we are on a text element
  (const XmlTag tag)                                                               // Tag
  {const char * const c = tag.proto->tagString(tag);
   return c[0] != XmlOpen;
@@ -352,23 +352,23 @@ static int onlyText_XmlTag                                                      
 
 //D1 Statistics                                                                 // Counts on the tag
 
-static int empty_XmlTag                                                           // Check whether the specified parent tag is empty
+static int empty_int_XmlTag                                                       // Check whether the specified parent tag is empty
  (const XmlTag parent)                                                            // Parent tag
  {return !parent.proto->countChildren(parent);
  }
 
-static int isTag                                                                // Check that the tag is a tag not text
+static int isTag_int_tag                                                        // Check that the tag is a tag not text
  (const XmlTag tag)                                                               // Parent tag
  {return !tag.proto->isText(tag);
  }
 
-static int hasText_XmlTag                                                         // Check whether the tag contains a text element
+static int hasText_int_XmlTag                                                     // Check whether the tag contains a text element
  (const XmlTag parent)                                                            // Parent tag
  {Xmlfe(child, parent) if (child.proto->isText(child)) return 1;
   return 0;
  }
 
-static int stayInLine_XmlTag                                                      // Check whether a tag is text or is preceded or followed by text
+static int stayInLine_int_XmlTag                                                  // Check whether a tag is text or is preceded or followed by text
  (const XmlTag tag)                                                               // Tag
  {if ( tag.proto->isText(tag))                   return 1;
   if (!tag.proto->isFirst(tag)) {const typeof(tag.proto->prev(tag)) p = tag.proto->prev(tag); return p.proto->isText(p);}
@@ -378,7 +378,7 @@ static int stayInLine_XmlTag                                                    
 
 //D1 Search                                                                     // Search the Xml parse tree
 
-static int valid_XmlTag                                                           // Check that a tag is valid.
+static int valid_int_XmlTag                                                       // Check that a tag is valid.
  (const XmlTag tag)                                                               // Tag
  {return tag.node.offset;                                                       // A tag is valid unless it is the root node of the arena tree backing the Xml parse tree.
  }
