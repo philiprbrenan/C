@@ -52,7 +52,7 @@ $Image create$Image                                                             
   if (e2 == FT_Err_Unknown_File_Format) printStackBackTraceAndExit
    (1, "FontFace not supported: %s\n", fontFile);
   else if (e2) printStackBackTraceAndExit
-   (1, "FontFace failed: %d\n", e2);
+   (1, "FontFace failed: %d %s\n", e2, fontFile);
 
   cairoFontFace ◁ cairo_ft_font_face_create_for_ft_face(freeTypeFontFace, 0);   // Load free type into cairo
   cairo_set_font_face (cr, cairoFontFace);
