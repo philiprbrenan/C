@@ -325,7 +325,7 @@ static int empty_$Tag                                                           
  {return !parent ▷ countChildren;
  }
 
-static int isTag                                                                // Check that the tag is a tag rather than text
+static int isTag                                                                // Check that the tag is a tag not text
  (const $Tag tag)                                                               // Parent tag
  {return !tag ▷ isText;
  }
@@ -333,6 +333,12 @@ static int isTag                                                                
 static int singleton_$Tag                                                       // Check that the tag has no children
  (const $Tag tag)                                                               // Parent tag
  {return tag ▷ empty;
+ }
+
+static int hasText_$Tag                                                         // Check whether the tag contains a text element
+ (const $Tag parent)                                                            // Parent tag
+ {$fe(child, parent) if (child ▷ isText) return 1;
+  return 0;
  }
 
 //D1 Search                                                                     // Search the $ parse tree
@@ -729,7 +735,7 @@ void test2()                                                                    
   x ▷ free;
  } // test2
 
-void test3()                                                                    //Tmake$ParseFromString //TprintsAs //TonlyText //Tby
+void test3()                                                                    //Tmake$ParseFromString //TprintsAs //TonlyText //Tby //Tdepth
  {xml ◁ "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>";
     x ◁ make$ParseFromString(0, (void *)xml, strlen(xml));
 
@@ -852,7 +858,17 @@ void test4()                                                                    
   xml ▷ free; validate ▷ free;
  } // test4
 
-void test5()
+void test5()                                                                    //ThasText
+ {char * xml = "<a><b>bb bb <c/> ccc </b><d> <i/> <j> jj <k/> kk </j> </d></a>";
+
+  x ◁ parse$FromString(xml);  ✓ ! x ▷ errors;
+  b ◁ x ▷ findFirstTag("b");  ✓   b ▷ hasText;
+  d ◁ x ▷ findFirstTag("d");  ✓ ! d ▷ hasText;
+
+  x ▷ free;
+ }
+
+void test6()                                                                    //Tscan
  {char * xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
      x ◁ parse$FromString(xml);
   ✓ !x ▷ errors;
@@ -883,7 +899,7 @@ void test5()
 
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4,
-                           test5, 0};
+                           test5, test6, 0};
 //{void (*tests[])(void) = {test0, 0};
   run_tests("$", 1, tests);
   return 0;
