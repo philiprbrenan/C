@@ -61,3 +61,8 @@ jobs:
         (cd /home/runner/work/C/C/c/z/utilities/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/utilities//utilities.c --cIncludes /home/runner/work/C/C/c/includes)
         (cd /home/runner/work/C/C/c/z/utilities/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/utilities//utilities.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
 
+    - name: Run cairoText
+      if: always()
+      run: |
+        (cd /home/runner/work/C/C/c/g/cairoText/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/g/cairoText//cairoText.c --cIncludes /home/runner/work/C/C/c/includes)
+
