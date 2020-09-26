@@ -366,6 +366,12 @@ static int singleton_XmlTag                                                     
  {return tag.proto->empty(tag);
  }
 
+static int hasText_XmlTag                                                         // Check whether the tag contains a text element
+ (const XmlTag parent)                                                            // Parent tag
+ {Xmlfe(child, parent) if (child.proto->isText(child)) return 1;
+  return 0;
+ }
+
 //D1 Search                                                                     // Search the Xml parse tree
 
 static int valid_XmlTag                                                           // Check that a tag is valid.
@@ -633,7 +639,7 @@ static int printsAs_int_XmlTag_string                                           
   s.proto->free(s);
   return 1;
  }
-#line 579 "/home/phil/c/z/xml/xml.c"
+#line 585 "/home/phil/c/z/xml/xml.c"
 
 static void printAssert_XmlTag                                                    //P Print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
@@ -786,7 +792,7 @@ void test2()                                                                    
   x.proto->free(x);
  } // test2
 
-void test3()                                                                    //TmakeXmlParseFromString //TprintsAs //TonlyText //Tby
+void test3()                                                                    //TmakeXmlParseFromString //TprintsAs //TonlyText //Tby //Tdepth
  {const typeof("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>") xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>";
     const typeof(makeXmlParseFromString(0, (void *)xml, strlen(xml))) x = makeXmlParseFromString(0, (void *)xml, strlen(xml));
 
@@ -909,7 +915,17 @@ void test4()                                                                    
   xml.proto->free(xml); validate.proto->free(validate);
  } // test4
 
-void test5()
+void test5()                                                                    //ThasText
+ {char * xml = "<a><b>bb bb <c/> ccc </b><d> <i/> <j> jj <k/> kk </j> </d></a>";
+
+  const typeof(parseXmlFromString(xml)) x = parseXmlFromString(xml);  assert( ! x.proto->errors(x));
+  const typeof(x.proto->findFirstTag(x, "b")) b = x.proto->findFirstTag(x, "b");  assert(   b.proto->hasText(b));
+  const typeof(x.proto->findFirstTag(x, "d")) d = x.proto->findFirstTag(x, "d");  assert( ! d.proto->hasText(d));
+
+  x.proto->free(x);
+ }
+
+void test6()                                                                    //Tscan
  {char * xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
      const typeof(parseXmlFromString(xml)) x = parseXmlFromString(xml);
   assert( !x.proto->errors(x));
@@ -940,7 +956,7 @@ void test5()
 
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4,
-                           test5, 0};
+                           test5, test6, 0};
 //{void (*tests[])(void) = {test0, 0};
   run_tests("Xml", 1, tests);
   return 0;
