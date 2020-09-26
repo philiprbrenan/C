@@ -55,7 +55,6 @@ jobs:
       if: always()
       run: |
         (cd /home/runner/work/C/C/c/z/xml/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/xml//xml.c --cIncludes /home/runner/work/C/C/c/includes)
-        (cd /home/runner/work/C/C/c/z/xml/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/xml//xml.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
 
     - name: Run utilities
       if: always()
