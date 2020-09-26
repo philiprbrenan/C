@@ -241,7 +241,7 @@ static int printsAs_StringBuffer_string                                         
     return 0;
    }
 
-  typeof(0ul) nl = 0ul;                                                               // Count new lines in expected string
+  typeof(0ul) nl = 0ul;                                                                     // Count new lines in expected string
   for(typeof(0ul) i = 0ul; i < l; ++i)
    {if (expected[i] == '\n')
     {++nl;
@@ -467,7 +467,7 @@ void test0()                                                                    
   s.proto->free(s);
  }
 
-void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //Tsubstring //TsubstringEquals //Tjoin //Tcount //TjoinWith
+void test1()                                                                    //Tequals //TequalsString //Tcontains //TcontainsString //Tsubstring //TsubstringEquals //Tjoin //Tcount //TjoinWith //Tswap
  {StringBuffer a = makeStringBuffer();   StringBuffer b = makeStringBuffer(); StringBuffer c = makeStringBuffer();
     a.proto->add(a, "ab");   b.proto->add(b, "a");  c.proto->add(c, "aba");
     a.proto->add(a, "c");    b.proto->add(b, "bc"); c.proto->add(c, "bc");
@@ -503,7 +503,11 @@ void test1()                                                                    
   assert( b.proto->count(b) == 1);
   assert( b.proto->equalsString(b, "a--bc"));
 
-  a.proto->free(a); b.proto->free(b); c.proto->free(c);
+  a.proto->swap(a, b);
+  assert( a.proto->count(a) == 1);
+  assert( a.proto->equalsString(a, "a--bc"));
+
+  a.proto->free(a); c.proto->free(c);
  }
 
 void test2()                                                                    //TaddChar //TaddNewLine //Tb2SumW8 //TaddDoubleQuote //TaddSingleQuote
@@ -607,11 +611,14 @@ void test9()                                                                    
   a.proto->free(a);
  }
 
-void test10()                                                                   //Tsystem //TmakeStringBufferVaFormat
- {const typeof(makeStringBufferFromString("uname")) a = makeStringBufferFromString("uname");
-  a.proto->system(a);
+void test10()                                                                   //Tsystem //TprintsAs
+ {  const typeof(makeStringBufferFromString("uname")) a = makeStringBufferFromString("uname");
+    a.proto->system(a);
   assert( a.proto->containsString(a, "Linux"));
-  a.proto->free(a);
+  assert( a.proto->printsAs(a, 
+"Linux\n"
+));
+    a.proto->free(a);
  }
 
 int main(void)                                                                  // Run tests
