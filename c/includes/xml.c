@@ -723,7 +723,7 @@ void test0()                                                                    
   x.proto->free(x);
  } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TparseXmlFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TparseXmlFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot //TstayInLine
  {char * xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
   const typeof(parseXmlFromString(xml)) x = parseXmlFromString(xml);
 
@@ -744,7 +744,7 @@ void test1()                                                                    
   const typeof(x.proto->findFirstTag(x, "j")) j = x.proto->findFirstTag(x, "j"); assert(j.proto->valid(j)); assert(j.proto->tagNameEquals(j, "j")); assert(a.proto->equals(a, j.proto->parent(j)));
 
   assert( b.proto->equals(b, a.proto->first(a)));  assert(  b.proto->isFirst(b));   assert( !d.proto->isFirst(d)); assert( !b.proto->isRoot(b));
-  assert( c.proto->equals(c, b.proto->first(b)));  assert(  c.proto->empty(c));
+  assert( c.proto->equals(c, b.proto->first(b)));  assert(  c.proto->empty(c));     assert( !c.proto->stayInLine(c));
   assert( h.proto->equals(h, b.proto->last(b)));   assert(  h.proto->isLast(h));    assert( !d.proto->isLast(d));
   assert( j.proto->equals(j, a.proto->last(a)));
 
@@ -931,7 +931,7 @@ void test4()                                                                    
   xml.proto->free(xml); validate.proto->free(validate);
  } // test4
 
-void test5()                                                                    //ThasText //TstayInline
+void test5()                                                                    //ThasText //TstayInline //TprettyPrint
  {char * xml = "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>";  // Many text editorsd, Geany included, strip trailing blanks which can make here documents with trailing blanks difficult to deal with.
 
   const typeof(parseXmlFromString(xml)) x = parseXmlFromString(xml);  assert( ! x.proto->errors(x));
