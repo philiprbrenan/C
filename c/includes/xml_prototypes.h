@@ -59,8 +59,6 @@ static int empty_XmlTag
  (const XmlTag parent);
 static int isTag
  (const XmlTag tag);
-static int singleton_XmlTag
- (const XmlTag tag);
 static int hasText_XmlTag
  (const XmlTag parent);
 static int valid_XmlTag
@@ -204,7 +202,7 @@ struct ProtoTypes_XmlTag {
     const XmlTag tag);                                                          // Tag
   int  (*isRoot)(                                                               // Check whether the specified tag is the root tag
     const XmlTag tag);                                                          // Tag
-  int  (*isTag)(                                                                // Check that the tag is a tag rather than text
+  int  (*isTag)(                                                                // Check that the tag is a tag not text
     const XmlTag tag);                                                          // Parent tag
   int  (*isText)(                                                               // Check whether we are on a text element
     const XmlTag tag);                                                          // Tag
@@ -231,8 +229,6 @@ struct ProtoTypes_XmlTag {
   void  (*scan)(                                                                // Traverse the Xml parse tree rooted at the specified tag calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The Xml is buffered allowing changes to be made to the structure of the Xml without disruption as long as each child checks its context.
     const XmlTag tag,                                                           // Starting tag
     void (* const function) (XmlTag tag, int start));                           // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
-  int  (*singleton)(                                                            // Check that the tag has no children
-    const XmlTag tag);                                                          // Parent tag
   int  (*tagNameEquals)(                                                        // Check the name of a tag.
     const XmlTag tag,                                                           // Tag
     const char * const expected);                                               // Expected name of tag
@@ -253,7 +249,7 @@ struct ProtoTypes_XmlTag {
     const XmlTag tag,                                                           // Tag
     const char * const string);                                                 // Wrapper without the leading < or trailing or >
  } const ProtoTypes_XmlTag =
-{by_XmlTag_sub, changeName_XmlTag, countChildren_size_XmlTag, count_size_XmlTag, depth_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, hasText_XmlTag, isFirst_XmlTag, isLast_XmlTag, isRoot_XmlTag, isTag, isText_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, parent_XmlTag, prev_XmlTag, printAssert_XmlTag, print_stringBuffer_XmlTag, printsAs_int_XmlTag_string, root_XmlTag, scan_XmlTag_sub, singleton_XmlTag, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagStringLength_XmlTag, tagString_XmlTag, unwrap_XmlTag, valid_XmlTag, wrap_XmlTag_string};
+{by_XmlTag_sub, changeName_XmlTag, countChildren_size_XmlTag, count_size_XmlTag, depth_XmlTag, empty_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, hasText_XmlTag, isFirst_XmlTag, isLast_XmlTag, isRoot_XmlTag, isTag, isText_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, parent_XmlTag, prev_XmlTag, printAssert_XmlTag, print_stringBuffer_XmlTag, printsAs_int_XmlTag_string, root_XmlTag, scan_XmlTag_sub, tagNameEquals_XmlTag_string, tagName_XmlTag, tagStringEquals_XmlTag_string, tagStringLength_XmlTag, tagString_XmlTag, unwrap_XmlTag, valid_XmlTag, wrap_XmlTag_string};
 XmlTag newXmlTag(XmlTag allocator) {return allocator;}
 
 struct ProtoTypes_XmlValidate {
