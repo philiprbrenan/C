@@ -684,7 +684,7 @@ void test0()                                                                    
   x ▷ free;
  } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tparse$FromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tparse$FromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot //TstayInLine
  {char * xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
   x ◁ parse$FromString(xml);
 
@@ -705,7 +705,7 @@ void test1()                                                                    
   j ◁ x ▷ findFirstTag  ("j"); ✓j ▷ valid; ✓j ▷ tagNameEquals("j"); ✓a ▷ equals(j ▷ parent);
 
   ✓ b ▷ equals(a ▷ first);  ✓  b ▷ isFirst;   ✓ !d ▷ isFirst; ✓ !b ▷ isRoot;
-  ✓ c ▷ equals(b ▷ first);  ✓  c ▷ empty;
+  ✓ c ▷ equals(b ▷ first);  ✓  c ▷ empty;     ✓ !c ▷ stayInLine;
   ✓ h ▷ equals(b ▷ last);   ✓  h ▷ isLast;    ✓ !d ▷ isLast;
   ✓ j ▷ equals(a ▷ last);
 
@@ -892,7 +892,7 @@ void test4()                                                                    
   xml ▷ free; validate ▷ free;
  } // test4
 
-void test5()                                                                    //ThasText //TstayInline
+void test5()                                                                    //ThasText //TstayInline //TprettyPrint
  {char * xml = "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>";  // Many text editorsd, Geany included, strip trailing blanks which can make here documents with trailing blanks difficult to deal with.
 
   x ◁ parse$FromString(xml);  ✓ ! x ▷ errors;
