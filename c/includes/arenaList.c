@@ -1118,24 +1118,24 @@ void test8()                                                                    
  }
 
 void test9()                                                                    //Tswap
- {const typeof(makeArenaList()) s = makeArenaList(); s.proto->fromLetters(s, "s");
-  const typeof(makeArenaList()) t = makeArenaList(); t.proto->fromLetters(t, "t");
-  assert(s.proto->printsWithBracketsAs(s, "(s)"));
-  assert(t.proto->printsWithBracketsAs(t, "(t)"));
-  s.proto->swap(s, t);
-  assert(t.proto->printsWithBracketsAs(t, "(s)"));
-  assert(s.proto->printsWithBracketsAs(s, "(t)"));
-  s.proto->free(s);
-  t.proto->free(t);
+ {  const typeof(makeArenaList()) s = makeArenaList(); s.proto->fromLetters(s, "s");
+    const typeof(makeArenaList()) t = makeArenaList(); t.proto->fromLetters(t, "t");
+  assert( s.proto->printsWithBracketsAs(s, "(s)"));
+  assert( t.proto->printsWithBracketsAs(t, "(t)"));
+    s.proto->swap(s, t);
+  assert( t.proto->printsWithBracketsAs(t, "(s)"));
+  assert( s.proto->printsWithBracketsAs(s, "(t)"));
+    s.proto->free(s);
+    t.proto->free(t);
  }
 
 void test10()                                                                   //Tdata //TmakeArenaListWithWidth //Twidth //TgetData //TsetData
  {size_t D[] = {0,1,2,3};
-  const typeof(makeArenaListWithWidth (sizeof(D))) t = makeArenaListWithWidth (sizeof(D));
-  assert(t.proto->width(t) == sizeof(D));
+    const typeof(makeArenaListWithWidth (sizeof(D))) t = makeArenaListWithWidth (sizeof(D));
+  assert( t.proto->width(t) == sizeof(D));
 
-  const typeof(t.proto->first(t)) n = t.proto->first(t);
-  assert(n.proto->width(n) == sizeof(D));
+    const typeof(t.proto->first(t)) n = t.proto->first(t);
+  assert( n.proto->width(n) == sizeof(D));
 
   for(size_t i = 0; i < 10; ++i)
    {char c = '0'+i;
@@ -1147,12 +1147,12 @@ void test10()                                                                   
   const typeof(t.proto->root(t)) root = t.proto->root(t);
   ArenaListfe(n, root)
    {char d[sizeof(D)]; n.proto->getData(n, d);
-    assert(!memcmp(d,        D, sizeof(D)));
-    assert(!memcmp(n.proto->data(n), D, sizeof(D)));
+    assert( !memcmp(d,        D, sizeof(D)));
+    assert( !memcmp(n.proto->data(n), D, sizeof(D)));
    }
 
-  assert(t.proto->printsWithBracketsAs(t, "(0123456789)"));
-  t.proto->free(t);
+  assert( t.proto->printsWithBracketsAs(t, "(0123456789)"));
+    t.proto->free(t);
  }
 
 int main(void)                                                                  // Run tests
