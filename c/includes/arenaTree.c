@@ -188,7 +188,7 @@ static int equalsString_ArenaTreeNode_string                                    
   const char * const key)                                                       // Key
  {return node.proto->keyEquals(node, key, strlen(key));
  }
-#line 624 "/home/phil/c/z/arenaList/arenaList.c"
+#line 666 "/home/phil/c/z/arenaList/arenaList.c"
 static void dump_ArenaTreeNode                                                          //IP Dump a ArenaTreeNode on stderr
  (const ArenaTreeNode node)                                                             // ArenaTreeNode
  {makeLocalCopyOfArenaTreeKey(k, l, node);                                              // Local copy of key
