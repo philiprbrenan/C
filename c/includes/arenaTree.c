@@ -605,8 +605,14 @@ void test1()                                                                    
   b.proto->add(b, "4", 1); b.proto->add(b, "2", 1); b.proto->add(b, "6", 1);
   b.proto->add(b, "1", 1); b.proto->add(b, "3", 1); b.proto->add(b, "5", 1); b.proto->add(b, "7", 1);
 
-  const typeof(b.proto->ownedTreeRoot(b)) b4 = b.proto->ownedTreeRoot(b); const typeof(b4.proto->left(b4)) b2 = b4.proto->left(b4); const typeof(b4.proto->right(b4)) b6 = b4.proto->right(b4);
-  const typeof(b2.proto->left(b2)) b1 = b2.proto->left(b2); const typeof(b2.proto->right(b2)) b3 = b2.proto->right(b2); const typeof(b6.proto->left(b6)) b5 = b6.proto->left(b6); const typeof(b6.proto->right(b6)) b7 = b6.proto->right(b6);
+  const typeof(b.proto->ownedTreeRoot(b)) b4 = b.proto->ownedTreeRoot(b);
+  const typeof(b4.proto->left(b4)) b2 = b4.proto->left(b4);
+  const typeof(b4.proto->right(b4)) b6 = b4.proto->right(b4);
+  const typeof(b2.proto->left(b2)) b1 = b2.proto->left(b2);
+  const typeof(b2.proto->right(b2)) b3 = b2.proto->right(b2);
+  const typeof(b6.proto->left(b6)) b5 = b6.proto->left(b6);
+  const typeof(b6.proto->right(b6)) b7 = b6.proto->right(b6);
+
   assert( b4.proto->equalsString(b4, "4"));
   assert( b2.proto->equalsString(b2, "2"));
   assert( b6.proto->equalsString(b6, "6"));
@@ -625,10 +631,10 @@ void test1()                                                                    
   assert( !b.proto->find(b, "7", 1).different);
   assert(  b.proto->find(b, "8", 1).different);
 
-  const typeof(t.proto->ll(t, "b", "7", 0)) f = t.proto->ll(t, "b", "7", 0);
+    const typeof(t.proto->ll(t, "b", "7", 0)) f = t.proto->ll(t, "b", "7", 0);
   assert( f.offset == b7.offset);
 
-  t.proto->free(t);
+    t.proto->free(t);
  }
 
 void test2()                                                                    //Tcount
@@ -649,8 +655,8 @@ void test2()                                                                    
   assert( r.proto->height(r) == 11);
   assert( n23.proto->equalsString(n23, "23"));
 
-  t.proto->check(t);
-  t.proto->free(t);
+      t.proto->check(t);
+      t.proto->free(t);
  }
 
 void test3()
@@ -661,7 +667,7 @@ void test3()
    {char c[256]; sprintf(c, "%x", i); t.proto->add(t, c, strlen(c));
    }
   assert( t.proto->count(t) == (size_t)N);
-  t.proto->check(t);
+    t.proto->check(t);
          const typeof(t.proto->root(t)) r = t.proto->root(t);
   assert( r.proto->equalsString(r, "3"));
   assert( r.proto->height(r) == 33);
@@ -726,7 +732,7 @@ void test6()
       t.proto->add(t, c, l);
      }
    }
-  const typeof(t.proto->root(t)) r = t.proto->root(t);
+    const typeof(t.proto->root(t)) r = t.proto->root(t);
 
   assert( r.proto->keyEquals(r, "16", 2));
   assert( r.proto->height(r) == 12);
@@ -753,9 +759,9 @@ void test7()                                                                    
     sprintf(c, "%lu", 2*N - i);
     t.proto->add(t, c, strlen(c));
    }
-  t.proto->check(t);
+    t.proto->check(t);
 
-  const typeof(t.proto->root(t)) r = t.proto->root(t);
+    const typeof(t.proto->root(t)) r = t.proto->root(t);
 
   assert( r.proto->isRoot(r));
   assert( r.proto->keyEquals(r, "19", 2));
@@ -782,8 +788,8 @@ void test9()
     assert( n.proto->equalsString(n, c));
    }
   assert( t.proto->count(t) == 2);
-  t.proto->check(t);
-  t.proto->free(t);
+    t.proto->check(t);
+    t.proto->free(t);
  }
 
 int main(void)                                                                  // Run tests
