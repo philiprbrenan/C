@@ -314,7 +314,8 @@ static int depth_XmlTag                                                         
 
 static int isRoot_XmlTag                                                          // Check whether the specified tag is the root tag
  (const XmlTag tag)                                                               // Tag
- {return !tag.proto->valid(tag);
+ {const typeof(tag.proto->parent(tag)) p = tag.proto->parent(tag);                                                             // Possibly the root of the ArenaList
+  return !p.proto->valid(p);                                                            // The root of the xml tree is one level below the root of the ArenaList
  }
 
 static int isFirst_XmlTag                                                         // Check that the specified tag is first under its parent
@@ -331,7 +332,7 @@ static int isLast_XmlTag                                                        
   const typeof(parent.proto->last(parent)) f = parent.proto->last(parent);
   return f.proto->equals(f, tag);
  }
-#line 303 "/home/phil/c/z/xml/xml.c"
+#line 304 "/home/phil/c/z/xml/xml.c"
 
 //D1 Text methods                                                               // Methods that operate on text tags
 
@@ -364,6 +365,14 @@ static int isTag                                                                
 static int hasText_XmlTag                                                         // Check whether the tag contains a text element
  (const XmlTag parent)                                                            // Parent tag
  {Xmlfe(child, parent) if (child.proto->isText(child)) return 1;
+  return 0;
+ }
+
+static int stayInLine_XmlTag                                                      // Check whether a tag is text or is preceded or followed by text
+ (const XmlTag tag)                                                               // Tag
+ {if ( tag.proto->isText(tag))                   return 1;
+  if (!tag.proto->isFirst(tag)) {const typeof(tag.proto->prev(tag)) p = tag.proto->prev(tag); return p.proto->isText(p);}
+  if (!tag.proto->isLast(tag))  {const typeof(tag.proto->next(tag)) n = tag.proto->next(tag); return n.proto->isText(n);}
   return 0;
  }
 
@@ -541,6 +550,54 @@ static XmlTag unwrap_XmlTag                                                     
 
 //D1 Print                                                                      // Print an Xml parse tree starting at the specified tag.
 
+static StringBuffer prettyPrint_stringBuffer_XmlTag                               // Pretty print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
+ (const XmlTag tag)                                                               // Starting tag
+ {const StringBuffer p = makeStringBuffer();
+
+  void print(const XmlTag parent, const int depth)                                // Print the specified parent and its children
+   {void open()                                                                 // Add open tag
+     {if (parent.proto->isText(parent))
+       {p.proto->addn(p, parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+       }
+      else if (parent.proto->empty(parent))                                                  // Write tag with no children as a singleton
+       {makeLocalCopyOfXmlTagString(s, l, parent);
+        p.proto->addChar(p, XmlOpen);
+        p.proto->addn(p, s+1, l-2);
+        p.proto->addFormat(p, "%c%c", XmlSlash, XmlClose);
+       }
+      else if (parent.proto->stayInLine(parent) || parent.proto->isRoot(parent))                          // Opener preceded or followed by text
+       {p.proto->addn(p, parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+       }
+      else                                                                      // Opener
+       {p.proto->addNewLine(p); p.proto->addSpaces(p, depth*2);
+        p.proto->addn(p, parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+       }
+     }
+    void close()                                                                // Add close tag unless we are on text
+     {if (parent.proto->isTag(parent) && !parent.proto->empty(parent))
+       {if (!parent.proto->stayInLine(parent)) {p.proto->addNewLine(p); p.proto->addSpaces(p, depth*2);}
+        p.proto->addFormat(p, "%c%c%s%c", XmlOpen, XmlSlash, parent.proto->tagName(parent), XmlClose);
+       }
+     }
+
+    open();
+    Xmlfe(child, parent) print(child, depth+1);
+    close();
+   }
+
+  print(tag, 0);
+  p.proto->addNewLine(p);                                                             // Terminating new line
+  p.proto->join(p);
+  return p;
+ } // prettyPrint
+
+static StringBuffer prettyPrint_stringBuffer_Xml                                  // Pretty print the Xml parse tree with additional spacing between tags to make the tree easier to read.
+ (const XmlParse xml)                                                             // Xml parse tree
+ {    const typeof(xml.proto->root(xml)) root = xml.proto->root(xml);
+  const typeof(root.proto->first(root)) f = root.proto->first(root);
+  return f.proto->prettyPrint(f);
+ } // prettyPrint
+
 static StringBuffer print_stringBuffer_XmlTag                                     // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
  (const XmlTag tag)                                                               // Starting tag
  {const StringBuffer p = makeStringBuffer();
@@ -586,55 +643,19 @@ static int printsAs_int_Xml_string                                              
  (const XmlParse xml,                                                             // Xml parse tree
   const char * const expected)                                                  // Expected print
  {const typeof(xml.proto->print(xml)) s = xml.proto->print(xml);
-
-  if (!s.proto->equalsString(s, expected))                                              // Strings do not match
-   {makeLocalCopyOfStringBuffer(S, N, s);                                       // Local copy
-    for(size_t i = 0; i < N; ++i)
-     {const char a = *(S+i), b = *(expected+i);
-      if (a != b)
-       {say("Strings differ at position: %lu on characters:"
-            " %d=%c and %d=%c\n", i+1, a, a, b, b);
-        say("Have:%s\nWant:%s\n", S, expected);
-        say("     ");
-        for(int i = 0; i < 10; ++i) say("0 2 4 6 8 ");     say("\n");
-        say("     ");
-        for(int i = 0; i < 10; ++i) say("%d         ", i); say("\n");
-        s.proto->free(s);
-        return 0;
-       }
-     }
-   }
-
+  const typeof(s.proto->printsAs(s, expected)) r = s.proto->printsAs(s, expected);
   s.proto->free(s);
-  return 1;
+  return r;
  }
 static int printsAs_int_XmlTag_string                                                // Check that the Xml parse tree prints as expected
  (const XmlTag tag,                                                             // Xml parse tree
   const char * const expected)                                                  // Expected print
  {const typeof(tag.proto->print(tag)) s = tag.proto->print(tag);
-
-  if (!s.proto->equalsString(s, expected))                                              // Strings do not match
-   {makeLocalCopyOfStringBuffer(S, N, s);                                       // Local copy
-    for(size_t i = 0; i < N; ++i)
-     {const char a = *(S+i), b = *(expected+i);
-      if (a != b)
-       {say("Strings differ at position: %lu on characters:"
-            " %d=%c and %d=%c\n", i+1, a, a, b, b);
-        say("Have:%s\nWant:%s\n", S, expected);
-        say("     ");
-        for(int i = 0; i < 10; ++i) say("0 2 4 6 8 ");     say("\n");
-        say("     ");
-        for(int i = 0; i < 10; ++i) say("%d         ", i); say("\n");
-        s.proto->free(s);
-        return 0;
-       }
-     }
-   }
-
+  const typeof(s.proto->printsAs(s, expected)) r = s.proto->printsAs(s, expected);
   s.proto->free(s);
-  return 1;
+  return r;
  }
-#line 580 "/home/phil/c/z/xml/xml.c"
+#line 619 "/home/phil/c/z/xml/xml.c"
 
 static void printAssert_XmlTag                                                    //P Print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
@@ -910,12 +931,27 @@ void test4()                                                                    
   xml.proto->free(xml); validate.proto->free(validate);
  } // test4
 
-void test5()                                                                    //ThasText
- {char * xml = "<a><b>bb bb <c/> ccc </b><d> <i/> <j> jj <k/> kk </j> </d></a>";
+void test5()                                                                    //ThasText //TstayInline
+ {char * xml = "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>";  // Many text editorsd, Geany included, strip trailing blanks which can make here documents with trailing blanks difficult to deal with.
 
   const typeof(parseXmlFromString(xml)) x = parseXmlFromString(xml);  assert( ! x.proto->errors(x));
   const typeof(x.proto->findFirstTag(x, "b")) b = x.proto->findFirstTag(x, "b");  assert(   b.proto->hasText(b));
+                              assert( ! b.proto->stayInLine(b));
+  const typeof(x.proto->findFirstTag(x, "c")) c = x.proto->findFirstTag(x, "c");  assert(   c.proto->stayInLine(c));
+  const typeof(c.proto->next(c)) C = c.proto->next(c);               assert(   C.proto->stayInLine(C));
   const typeof(x.proto->findFirstTag(x, "d")) d = x.proto->findFirstTag(x, "d");  assert( ! d.proto->hasText(d));
+
+    const typeof(x.proto->prettyPrint(x)) p = x.proto->prettyPrint(x);
+  assert( p.proto->printsAs(p, 
+"<a>\n"
+"  <b>bb bb <c/> ccc\n"
+"  </b>\n"
+"  <d><i/>\n"
+"    <j> jj <k/> kk\n"
+"    </j>\n"
+"  </d>\n"
+"</a>\n"
+));
 
   x.proto->free(x);
  }
