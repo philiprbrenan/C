@@ -610,10 +610,6 @@ static void printAssert_$_string                                                
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
 
-static int develop()                                                            // Test whether we are local or on github
- {return !strcmp(getenv("HOME"), "/home/phil");
- }
-
 void test0()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //Tmake$ParseFromFile //Tempty //TisTag //tText
  {x ◁ parse$FromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h");
   ✓ x ▷ printsAs("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></a>");
@@ -718,7 +714,7 @@ void test1()                                                                    
 
 void test2()                                                                    //Tprint
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
-  if (!develop()) strcpy(file, "/home/runner/work/C/C/c/z/xml/samples/foreword.dita");
+  if (!developmentMode()) strcpy(file, "/home/runner/work/C/C/c/z/xml/samples/foreword.dita");
 
   x ◁ make$ParseFromFile(file);
 
@@ -759,7 +755,7 @@ void test3()                                                                    
 
 void test4()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {file ◁       "/home/phil/c/z/xml/validation/validation.xml";
-  if (!develop()) return;                                                       // Does not work on gitHub - possibly out of memory or Cpu?
+  if (!developmentMode()) return;                                               // Does not work on gitHub - possibly out of memory or Cpu?
 
   xml ◁ make$ParseFromFile((char *)file);
   validate ◁ make$Validate();
@@ -875,6 +871,7 @@ void test5()
       cairo_move_to     (cr, fontExtents.max_x_advance * tag ▷ depth,
                     line++ * fontExtents.height);
       cairo_show_text   (cr, t);
+      if(0)start=start;
      }
 
     x ▷ scan(drawXml);
