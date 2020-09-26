@@ -397,22 +397,53 @@ static  size_t count_size_$                                                     
 
 //D1 Print                                                                      // Print a $.
 
+static StringBuffer print_$Node                                                 // Print the tree below the specified node as a string.
+ (const $Node node)                                                             // Node
+ {height ◀ 0ul;                                                                 // Height of root
+  p ◁ makeStringBuffer();                                                       // Print to this string buffer
+
+  void print(const $Node node, size_t depth)                                    // Print to allocated string
+   {if (!node  ▷ valid) return;                                                 // No such node
+    print(node ▷ left, depth+1);                                                // Print left
+    p ▷ addFormat("%lu ", depth);                                               // Depth
+    p ▷ addSpaces(2 * depth);                                                   // Spacer
+    makeLocalCopyOf$Key(k, l, node);                                            // Local copy of key
+    p ▷ add(k);                                                                 // Print key
+    for(size_t i = 0; i < height - depth; ++i) p ▷ add("..");                   // Separator
+    p ▷ addNewLine;
+    print(node ▷ right, depth+1);                                               // Print right
+   }
+
+  height = node ▷ height;                                                       // Height of node
+  print(node, 0);                                                               // Print to buffer
+  p ▷ join;
+  return p;
+ }
+
+static StringBuffer print_$                                                     // Print the specified $ as a string.
+ (const $ tree)                                                                 // $
+ {root   ◁ tree ▷ root;                                                         // Start at root
+  return root ▷ print;                                                          // Print to buffer
+ }
+
 static void dump_$                                                              //P Print a $ on stderr
  (const $ tree)                                                                 // $
- {void print(const $Node node, size_t depth)                                    // Print to allocated string
+ {height ◀ 0ul;                                                                 // Height of root
+
+  void print(const $Node node, size_t depth)                                    // Print to allocated string
    {if (!node  ▷ valid) return;                                                 // No such node
     print(node ▷ left, depth+1);                                                // Print left
     say("%lu ", depth);                                                         // Depth
     for(size_t i = 0; i < depth; ++i) say("  ");                                // Spacer
     makeLocalCopyOf$Key(k, l, node);                                            // Local copy of key
     say("%s", k);
-    const size_t N = depth > 80 ? 80 : 80 - depth;                              // Separator size
-    for(size_t i = 0; i < N; ++i) say("..");                                    // Separator
+    for(size_t i = 0; i < height - depth; ++i) say("..");                       // Separator
     say("\n");
     print(node ▷ right, depth+1);                                               // Print right
    }
 
-  root ◁ tree ▷ root;                                                           // Start at root
+  root   ◁ tree ▷ root;                                                         // Start at root
+  height = root ▷ height;
   print(root, 0);                                                               // Print to buffer
  }
 #endif
@@ -607,6 +638,13 @@ void test8()
 
   ✓ g ▷ equals(t ▷ root);    ✓ g ▷ isRoot;
 
+    h ◁ t ▷ locate("98", 2);
+    H ◁ h ▷ print;
+  ✓ H ▷ printsAs(◉);
+1   97..
+0 98....
+1   99..
+◉
   ✓ t ▷ check;
     t ▷ free;
  }
