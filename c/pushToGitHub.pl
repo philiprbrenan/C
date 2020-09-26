@@ -105,6 +105,8 @@ jobs:
       run: |
         echo \$HOME
         pwd
+        ls -la fonts/NotoSansMono-Regular.ttf
+        md5dum fonts/NotoSansMono-Regular.ttf
 
     - name: Install
       run: |
