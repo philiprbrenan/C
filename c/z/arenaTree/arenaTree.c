@@ -419,17 +419,15 @@ static void dump_$                                                              
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
 
-#define TEST_TREE_SIZE 10
-
 void test0()                                                                    //Tnew$ //Tadd //Tleft //Tright //Tkey //Tup //Tfree
- {t ◁ make$();
-  t ▷ add("b",  1);
-  t ▷ add("a",  1);
-  t ▷ add("c",  1);
-  t ▷ add("bb", 2);
-  t ▷ add("cc", 2);
+ {   t ◁ make$();
+     t ▷ add("b",  1);
+     t ▷ add("a",  1);
+     t ▷ add("c",  1);
+     t ▷ add("bb", 2);
+     t ▷ add("cc", 2);
 
-  b ◁ t ▷ root; a ◁ b ▷ left; c ◁ b ▷ right; bb ◁ c ▷ left; cc ◁ c ▷ right;
+     b ◁ t ▷ root; a ◁ b ▷ left; c ◁ b ▷ right; bb ◁ c ▷ left; cc ◁ c ▷ right;
 
   ✓  b  ▷ keyEquals("b",  1);
   ✓  a  ▷ keyEquals("a",  1);
@@ -445,24 +443,21 @@ void test0()                                                                    
   ✓ !t  ▷ find("cc", 2).different;
   ✓  t  ▷ find("dd", 2).different;
 
-  t ▷ free;
+     t ▷ free;
  }
 
 void test1()                                                                    //Tll
- {t  ◁ make$();
-  t  ▷ add("a", 1); t ▷ add("b", 1);
-  a  ◁ t ▷ root; b ◁ a ▷ right;
+ {  t  ◁ make$();
+    t  ▷ add("a", 1);  t ▷ add("b", 1);
+    a  ◁ t ▷ root; b ◁ a ▷ right;
 
-  b  ▷ add("4", 1); b ▷ add("2", 1); b ▷ add("6", 1);
-  b  ▷ add("1", 1); b ▷ add("3", 1); b ▷ add("5", 1); b ▷ add("7", 1);
+    b  ▷ add("4", 1); b ▷ add("2", 1); b ▷ add("6", 1);
+    b  ▷ add("1", 1); b ▷ add("3", 1); b ▷ add("5", 1); b ▷ add("7", 1);
 
-  b4 ◁ b  ▷ ownedTreeRoot;
-  b2 ◁ b4 ▷ left;
-  b6 ◁ b4 ▷ right;
-  b1 ◁ b2 ▷ left;
-  b3 ◁ b2 ▷ right;
-  b5 ◁ b6 ▷ left;
-  b7 ◁ b6 ▷ right;
+    b4 ◁ b  ▷ ownedTreeRoot;
+    b2 ◁ b4 ▷ left;  b6 ◁ b4 ▷ right;
+    b1 ◁ b2 ▷ left;  b3 ◁ b2 ▷ right;
+    b5 ◁ b6 ▷ left;  b7 ◁ b6 ▷ right;
 
   ✓ b4 ▷ equalsString("4");
   ✓ b2 ▷ equalsString("2");
@@ -471,6 +466,7 @@ void test1()                                                                    
   ✓ b3 ▷ equalsString("3");
   ✓ b5 ▷ equalsString("5");
   ✓ b7 ▷ equalsString("7");
+
   ✓ b4 ▷ up.offset == 0;
   ✓ b4 ▷ equals(b2 ▷ up);
   ✓ b4 ▷ equals(b6 ▷ up);
@@ -482,25 +478,23 @@ void test1()                                                                    
   ✓ !b ▷ find("7", 1).different;
   ✓  b ▷ find("8", 1).different;
 
-    f  ◁ t ▷ ll("b", "7", 0);
-  ✓ f.offset == b7.offset;
+    f  ◁ t ▷ ll("b", "7", 0);  ✓ f.offset == b7.offset;
 
     t  ▷ free;
  }
 
 void test2()                                                                    //Tcount
- {size_t N = 100;
-  t ◁ make$();
+ {t ◁ make$(); N ◁ 100ul; char c[256];
 
-  for(size_t i = 0; i < N; ++i)
-   {char c[256]; sprintf(c, "%lu", i);
-    t ▷ add(c, strlen(c));
-   }
+  for(i ◀ 0ul; i < N; ++i) t ▷ add(c, sprintf(c, "%lu", i));
 
-  ✓ t ▷ count == N;
+  ✓ t   ▷ count == N;
 
-  r   ◁ t ▷ root;
-  n28 ◁ t ▷ locate("28", 2); n27 ◁ n28 ▷ up; n25 ◁ n27 ▷ up; n23 ◁ n25 ▷ up;
+    r   ◁ t ▷ root;
+    n28 ◁ t ▷ locate("28", 2);
+    n27 ◁ n28 ▷ up;
+    n25 ◁ n27 ▷ up;
+    n23 ◁ n25 ▷ up;
 
   ✓ r   ▷ equalsString("3");
   ✓ r   ▷ height == 11;
@@ -511,31 +505,26 @@ void test2()                                                                    
  }
 
 void test3()
- {int N = 256*256;
-  t ◁ make$();
+ {t ◁ make$(); N ◁ 256*256ul; char c[256];
 
-  for(int i = 0; i < N; ++i)
-   {char c[256]; sprintf(c, "%x", i); t ▷ add(c, strlen(c));
-   }
-  ✓ t ▷ count == (size_t)N;
+  for(i ◀ 0ul; i < N; ++i) t ▷ add(c, sprintf(c, "%x", i));
+
+  ✓ t ▷ count == N;
     t ▷ check;
-         r ◁ t ▷ root;
+    r ◁ t ▷ root;
   ✓ r ▷ equalsString("3");
   ✓ r ▷ height == 33;
 
-  t ▷ free;
+    t ▷ free;
  }
 
 void test4()                                                                    //Theight //Tlocate //Troot
- {t ◁ make$();
+ {t ◁ make$(); char c[16]; N ◁ 10;
   n ◁ t ▷ locate("0", 1); ✓ !n ▷ valid;
 
-  char c[4]; memset(c, 0, sizeof(c));
-
-  for  (size_t i = 0; i < TEST_TREE_SIZE; ++i)
-   {for(size_t j = 0; j < TEST_TREE_SIZE; ++j)
-     {c[0] = '0' + i; c[1] = '0' + j;
-      t ▷ add(c, strlen(c));
+  for  (i ◀ 0; i < N; ++i)
+   {for(j ◀ 0; j < N; ++j)
+     {t ▷ add(c, sprintf(c, "%d%d", i, j));
      }
    }
 
@@ -547,23 +536,18 @@ void test4()                                                                    
   ✓ f ▷ valid;
   ✓ f ▷ height == 2;
 
-  t ▷ free;
+    t ▷ free;
  }
 
-void test5()                                                                    //Tb2SumW8
- {size_t N = 20;
-  t ◁ make$();
-  char c[16]; memset(c, 0, sizeof(c));
+void test5()
+ {t ◁ make$(); char c[16]; N ◁ 20;
 
-  for(size_t i = 0; i < N; ++i)
-   {sprintf(c, "%lu", i);
-       n ◁ t ▷ add(c, strlen(c));
+  for(i ◀ 0; i < N; ++i)
+   {   n ◁ t ▷ add(c, sprintf(c, "%d", i));
        e ◁ n ▷ locate("0", 1);
-    ✓ !e ▷ valid;
-    for(size_t j = 0; j < N; ++j)
-     {sprintf(c, "%lu-%lu", i, j);
-      n ▷ add(c, strlen(c));
-     }
+    ✓ !e ▷ valid;                                                               // Not present in sub tree
+
+    for(j ◀ 0; j < N; ++j) n ▷ add(c, sprintf(c, "%d-%d", i, j));
    }
 
   const char *a[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", 0};
@@ -575,40 +559,12 @@ void test5()                                                                    
   t ▷ free;
  }
 
-void test6()
- {t ◁ make$();
-  for  (size_t i = 0; i < TEST_TREE_SIZE;        ++i)
-   {for(size_t j =        TEST_TREE_SIZE; j > 0; --j)
-     {char c[256]; const size_t l = sprintf(c, "%lu%lu", i, j);
-      t ▷ add(c, l);
-     }
-   }
-    r ◁ t ▷ root;
+void test6()                                                                    //Tcheck //Tsprint //TisRoot //TkeyEquals
+ {t ◁ make$(); char c[128]; N ◁ 10;
 
-  ✓ r ▷ keyEquals("16", 2);
-  ✓ r ▷ height == 12;
-
-  n86  ◁ t    ▷ locate("86", 2);
-  n810 ◁ n86  ▷ up;
-  n76  ◁ n810 ▷ up;
-  n66  ◁ n76  ▷ up;
-  n56  ◁ n66  ▷ up;
-  n36  ◁ n56  ▷ up;
-  ✓ n36 ▷ equalsString("36");
-
-  t ▷ free;
- }
-
-void test7()                                                                    //Tcheck //Tsprint //TisRoot //TkeyEquals
- {t ◁ make$();
-  const size_t N = 10;
-  char c[128]; memset(c, 0, sizeof(c));
-
-  for  (size_t i = 0; i < N; ++i)
-   {sprintf(c, "%lu", i);
-    t ▷ add(c, strlen(c));
-    sprintf(c, "%lu", 2*N - i);
-    t ▷ add(c, strlen(c));
+  for(i ◀ 0; i < N; ++i)
+   {t ▷ add(c, sprintf(c, "%d", i));
+    t ▷ add(c, sprintf(c, "%d", 2*N - i));
    }
     t ▷ check;
 
@@ -618,10 +574,10 @@ void test7()                                                                    
   ✓ r ▷ keyEquals("19", 2);
   ✓ r ▷ height == 6;
 
-  t ▷ free;
+    t ▷ free;
  }
 
-void test8()                                                                    //Tvalid //Tcmp$
+void test7()                                                                    //Tvalid //Tcmp$
  {$Node n = new $Node; ✓ !n ▷ valid;
 
   ✓ cmp$("aa", 2, "aa", 1) ==  1;
@@ -629,30 +585,34 @@ void test8()                                                                    
   ✓ cmp$("aa", 1, "aa", 2) == -1;
  }
 
-void test9()
- {t ◁ make$();
+void test8()
+ {t ◁ make$(); N ◀ 10;
 
-  char c[4]; memset(c, 0, sizeof(c));
-
-  for  (size_t i = 0; i < 2; ++i)
-   {sprintf(c, "%lu", i);
-      n ◁ t ▷ add(c, strlen(c));
-    ✓ n ▷ valid;
-    ✓ n ▷ equalsString(c);
+  for  (i ◀ 0; i < N; ++i)
+   {for(j ◀ N; j > 0; --j)
+     {char c[256];  t ▷ add(c, sprintf(c, "%d%d", i, j));
+     }
    }
 
-    ✓ t ▷ count == 2;
-      t ▷ check;
-      t ▷ free;
+  r ◁  t ▷ root;  ✓ r ▷ keyEquals("16", 2);  ✓ r ▷ height == 12;
+
+    n86  ◁ t    ▷ locate("86", 2);
+    n810 ◁ n86  ▷ up;
+    n76  ◁ n810 ▷ up;
+    n66  ◁ n76  ▷ up;
+    n56  ◁ n66  ▷ up;
+    n36  ◁ n56  ▷ up;
+
+  ✓ n36  ▷ valid;  ✓ n36 ▷ equalsString("36");  ✓ n36 ▷ height == 11;
+
+  t ▷ free;
  }
 
 int main(void)                                                                  // Run tests
- {const int repetitions = 1;                                                    // Number of times to test
-  void (*tests[])(void) = {test0, test1, test2, test3, test4,
-                           test5, test6, test7, test8, test9, 0};
-//  void (*tests[])(void) = {test6, 0};
-  run_tests("$", repetitions, tests);
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4,
+                           test5, test6, test7, test8, 0};
+  run_tests("$", 1, tests);
   return 0;
  }
 #endif
-// valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree
+// valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/arenaTree/arenaTree
