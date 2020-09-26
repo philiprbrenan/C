@@ -746,22 +746,15 @@ void test8()
    }
 
   const typeof(t.proto->locate(t, "86", 2)) a = t.proto->locate(t, "86", 2);
-  const typeof(a.proto->up(a)) b = a.proto->up(a);
-  const typeof(b.proto->up(b)) c = b.proto->up(b);
-  const typeof(c.proto->up(c)) d = c.proto->up(c);
-  const typeof(d.proto->up(d)) e = d.proto->up(d);
-  const typeof(e.proto->up(e)) f = e.proto->up(e);
-  const typeof(f.proto->up(f)) g = f.proto->up(f);
+               assert( a.proto->valid(a));  assert( a.proto->height(a) ==  6);  assert( a.proto->equalsString(a, "86"));
+  const typeof(a.proto->up(a)) b = a.proto->up(a);  assert( b.proto->valid(b));  assert( b.proto->height(b) ==  7);  assert( b.proto->equalsString(b, "810"));
+  const typeof(b.proto->up(b)) c = b.proto->up(b);  assert( c.proto->valid(c));  assert( c.proto->height(c) ==  8);  assert( c.proto->equalsString(c, "76"));
+  const typeof(c.proto->up(c)) d = c.proto->up(c);  assert( d.proto->valid(d));  assert( d.proto->height(d) ==  9);  assert( d.proto->equalsString(d, "66"));
+  const typeof(d.proto->up(d)) e = d.proto->up(d);  assert( e.proto->valid(e));  assert( e.proto->height(e) == 10);  assert( e.proto->equalsString(e, "56"));
+  const typeof(e.proto->up(e)) f = e.proto->up(e);  assert( f.proto->valid(f));  assert( f.proto->height(f) == 11);  assert( f.proto->equalsString(f, "36"));
+  const typeof(f.proto->up(f)) g = f.proto->up(f);  assert( g.proto->valid(g));  assert( g.proto->height(g) == 12);  assert( g.proto->equalsString(g, "16"));
 
-  assert( a.proto->valid(a));  assert( a.proto->height(a) ==  6);  assert( a.proto->equalsString(a, "86"));
-  assert( b.proto->valid(b));  assert( b.proto->height(b) ==  7);  assert( b.proto->equalsString(b, "810"));
-  assert( c.proto->valid(c));  assert( c.proto->height(c) ==  8);  assert( c.proto->equalsString(c, "76"));
-  assert( d.proto->valid(d));  assert( d.proto->height(d) ==  9);  assert( d.proto->equalsString(d, "66"));
-  assert( e.proto->valid(e));  assert( e.proto->height(e) == 10);  assert( e.proto->equalsString(e, "56"));
-  assert( f.proto->valid(f));  assert( f.proto->height(f) == 11);  assert( f.proto->equalsString(f, "36"));
-  assert( g.proto->valid(g));  assert( g.proto->height(g) == 12);  assert( g.proto->equalsString(g, "16"));
-
-  assert( g.proto->equals(g, t.proto->root(t)));
+  assert( g.proto->equals(g, t.proto->root(t))); assert( g.proto->isRoot(g));
 
   assert( t.proto->check(t));
     t.proto->free(t);
