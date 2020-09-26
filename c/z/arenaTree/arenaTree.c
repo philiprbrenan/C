@@ -646,7 +646,7 @@ void test8()
 1   99..
 ◉
   ✓ t ▷ check;
-    t ▷ free;
+    t ▷ free; H ▷ free;
  }
 
 int main(void)                                                                  // Run tests
