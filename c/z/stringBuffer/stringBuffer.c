@@ -230,6 +230,48 @@ static int equalsString_$_string                                                
   return !strncmp(b, string, l);                                                // Check strings are equal
  }
 
+static int printsAs_$_string                                                    // Checks whether a $ is equal to a specified zero terminated string.
+ (const $            string,                                                    // $
+  const char * const expected)                                                  // String expected
+ {const size_t l = strlen(expected);                                            // Length of comparison
+  makeLocalCopyOf$(s, n, string);                                               // Local copy
+  if (l != n)                                                                   // Strings differ in length and so cannot be equal
+   {say("Lengths differ. Have: %lu want: %lu\n", l, n);
+    return 0;
+   }
+
+  nl ◀ 0ul;                                                               // Count new lines in expected string
+  for(i ◀ 0ul; i < l; ++i)
+   {if (expected[i] == '\n')
+    {++nl;
+    }
+   }
+  line ◀ 1ul; pos ◀ 1ul;
+  for(i ◀ 0ul; i < n; ++i)                                                      // Check each character
+   {const char a = *(s+i), b = *(expected+i);
+    if (a != b)
+     {say("Strings differ at position: %lu in line %lu on characters:"
+            " %d=%c and %d=%c\n", pos, line, a, a, b, b);
+      if (nl > 1)
+       {say("Have (see next line):\n%s\nWant (see next line):\n%s\n", s, expected);
+        for(int i = 0; i < 10; ++i) say(" 2 4 6 8 0");     say("\n");
+        for(int i = 1; i < 10; ++i) say("         %d", i); say("\n");
+        return 0;
+       }
+      else
+       {say("Have:%s\nWant:%s\n", s, expected);
+        say("     ");
+        for(int i = 0; i < 10; ++i) say("0 2 4 6 8 ");     say("\n");
+        say("     ");
+        for(int i = 0; i < 10; ++i) say("%d         ", i); say("\n");
+        return 0;
+       }
+     }
+    ++pos; if (a == '\n') {++line; pos = 1ul;}
+   }
+  return 1;                                                                     // Strings are equal after all
+ }
+
 static int contains_$_$                                                         // Checks whether the first $ contains the second $
  (const $ a,                                                                    // First $
   const $ b)                                                                    // Second $
