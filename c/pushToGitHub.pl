@@ -39,10 +39,6 @@ my @cg      =  grep {!/\A#/} split /\s+/, <<END;                                
 cairoText
 END
 
-lll GitHub::Crud::writeFileFromFileUsingSavedToken($user, $repo,                        # Upload font file
-  "fonts/NotoSansMono-Regular.ttf",
-  "/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf") if 0;
-
 if (1)                                                                          # Upload files
  {my @files = $compile;
 
@@ -106,7 +102,7 @@ jobs:
         echo \$HOME
         pwd
         ls -la fonts/NotoSansMono-Regular.ttf
-        md5dum fonts/NotoSansMono-Regular.ttf
+        md5sum fonts/NotoSansMono-Regular.ttf
 
     - name: Install
       run: |
