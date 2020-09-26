@@ -767,7 +767,7 @@ void test7()                                                                    
   assert( cmpArenaTree("aa", 1, "aa", 2) == -1);
  }
 
-void test8()
+void test8()                                                                    //Tprint
  {const typeof(makeArenaTree()) t = makeArenaTree();  char s[256];  typeof(10) N = 10;
 
   for  (typeof(0) i = 0; i < N; ++i)
