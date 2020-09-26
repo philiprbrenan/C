@@ -208,11 +208,11 @@ static void free_$Parse                                                         
  }
 
 static void free_$Validate                                                      // Free an $ validator
- (const $Validate x)                                                               // $ validator
+ (const $Validate x)                                                            // $ validator
  {x.possibilities ▷ free; x.first ▷ free; x.next ▷ free;
  }
 
-static size_t errors_$Parse                                                     // Number of errors encountered while creating an $ parse tree.
+static size_t errors_size_$Parse                                                // Number of errors encountered while creating an $ parse tree.
  (const $Parse x)                                                               // $ descriptor
  {return x.errors ▷ count;
  }
@@ -235,28 +235,28 @@ static char  * parse$TagName                                                    
   return strcpy($tagName, "text");                                              // In a text tag
  }
 
-static char * tagName_$Tag                                                      // Get the tag name from a node in the $ parse tree. The tag name is returned in a reused static buffer that the caller should not free.
+static char * tagName_string_$Tag                                               // Get the tag name from a node in the $ parse tree. The tag name is returned in a reused static buffer that the caller should not free.
  (const $Tag tag)                                                               // Tag
  {return parse$TagName(tag.node ▷ key);
  }
 
-static int tagNameEquals_$Tag_string                                            // Check the name of a tag.
+static int tagNameEquals_int_$Tag_string                                        // Check the name of a tag.
  (const $Tag         tag,                                                       // Tag
   const char * const expected)                                                  // Expected name of tag
  {return !strcmp(tag ▷ tagName, expected);
  }
 
-static char * tagString_$Tag                                                    //V Get the entire tag from a node in the $ parse tree.
+static char * tagString_string_$Tag                                             //V Get the entire tag from a node in the $ parse tree.
  (const $Tag tag)                                                               // Tag
  {return tag.node ▷ key;
  }
 
-static size_t tagStringLength_$Tag                                              // Get the length of the entire tag
+static size_t tagStringLength_size_$Tag                                         // Get the length of the entire tag
  (const $Tag tag)                                                               // Tag
  {return tag.node ▷ length;
  }
 
-static int tagStringEquals_$Tag_string                                          // Check the string of a tag.
+static int tagStringEquals_int_$Tag_string                                      // Check the string of a tag.
  (const $Tag         tag,                                                       // Tag
   const char * const expected)                                                  // Expected name of tag
  {return tag.node ▷ equalsString(expected);
@@ -281,20 +281,20 @@ duplicate s/first/last/
 
 //D1 Location                                                                   // Check the current location in the $ parse tre
 
-static int depth_$Tag                                                           // The depth of a tag
+static int depth_int_$Tag                                                       // The depth of a tag
  (const $Tag tag)                                                               // Tag
  {i ◀ 0;
   for($Tag t = tag; t ▷ valid; t.node.offset = t ▷ parent.node.offset) ++i;     // Count up to root
   return i - 1;                                                                 // We have included the root node
  }
 
-static int isRoot_$Tag                                                          // Check whether the specified tag is the root tag
+static int isRoot_int_$Tag                                                      // Check whether the specified tag is the root tag
  (const $Tag tag)                                                               // Tag
  {p ◁ tag ▷ parent;                                                             // Possibly the root of the ArenaList
   return !p ▷ valid;                                                            // The root of the xml tree is one level below the root of the ArenaList
  }
 
-static int isFirst_$Tag                                                         // Check that the specified tag is first under its parent
+static int isFirst_int_$Tag                                                     // Check that the specified tag is first under its parent
  (const $Tag tag)                                                               // Tag
  {if (tag ▷ isRoot) return 1;                                                   // The root tag is always first
       parent ◁ tag ▷ parent;
@@ -305,7 +305,7 @@ duplicate s/first/last/g,s/First/Last/g
 
 //D1 Text methods                                                               // Methods that operate on text tags
 
-static int isText_$Tag                                                          // Check whether we are on a text element
+static int isText_int_$Tag                                                      // Check whether we are on a text element
  (const $Tag tag)                                                               // Tag
  {const char * const c = tag ▷ tagString;
   return c[0] != $Open;
@@ -321,23 +321,23 @@ static int onlyText_$Tag                                                        
 
 //D1 Statistics                                                                 // Counts on the tag
 
-static int empty_$Tag                                                           // Check whether the specified parent tag is empty
+static int empty_int_$Tag                                                       // Check whether the specified parent tag is empty
  (const $Tag parent)                                                            // Parent tag
  {return !parent ▷ countChildren;
  }
 
-static int isTag                                                                // Check that the tag is a tag not text
+static int isTag_int_tag                                                        // Check that the tag is a tag not text
  (const $Tag tag)                                                               // Parent tag
  {return !tag ▷ isText;
  }
 
-static int hasText_$Tag                                                         // Check whether the tag contains a text element
+static int hasText_int_$Tag                                                     // Check whether the tag contains a text element
  (const $Tag parent)                                                            // Parent tag
  {$fe(child, parent) if (child ▷ isText) return 1;
   return 0;
  }
 
-static int stayInLine_$Tag                                                      // Check whether a tag is text or is preceded or followed by text
+static int stayInLine_int_$Tag                                                  // Check whether a tag is text or is preceded or followed by text
  (const $Tag tag)                                                               // Tag
  {if ( tag ▷ isText)                   return 1;
   if (!tag ▷ isFirst) {p ◁ tag ▷ prev; return p ▷ isText;}
@@ -347,7 +347,7 @@ static int stayInLine_$Tag                                                      
 
 //D1 Search                                                                     // Search the $ parse tree
 
-static int valid_$Tag                                                           // Check that a tag is valid.
+static int valid_int_$Tag                                                       // Check that a tag is valid.
  (const $Tag tag)                                                               // Tag
  {return tag.node.offset;                                                       // A tag is valid unless it is the root node of the arena tree backing the $ parse tree.
  }
