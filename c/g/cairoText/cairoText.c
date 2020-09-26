@@ -36,6 +36,8 @@ $Image create$Image                                                             
   "/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf":
   "fonts/NotoSansMono-Regular.ttf");
 
+
+
   cairo_surface_t * surface = cairo_image_surface_create                        // Cairo
    (CAIRO_FORMAT_ARGB32, x, y);
   cairo_t         *    cr   = cairo_create (surface);
