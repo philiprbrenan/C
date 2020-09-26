@@ -546,22 +546,53 @@ static  size_t count_size_ArenaTree                                             
 
 //D1 Print                                                                      // Print a ArenaTree.
 
+static StringBuffer print_ArenaTreeNode                                                 // Print the tree below the specified node as a string.
+ (const ArenaTreeNode node)                                                             // Node
+ {typeof(0ul) height = 0ul;                                                                 // Height of root
+  const typeof(makeStringBuffer()) p = makeStringBuffer();                                                       // Print to this string buffer
+
+  void print(const ArenaTreeNode node, size_t depth)                                    // Print to allocated string
+   {if (!node.proto->valid(node)) return;                                                 // No such node
+    print(node.proto->left(node), depth+1);                                                // Print left
+    p.proto->addFormat(p, "%lu ", depth);                                               // Depth
+    p.proto->addSpaces(p, 2 * depth);                                                   // Spacer
+    makeLocalCopyOfArenaTreeKey(k, l, node);                                            // Local copy of key
+    p.proto->add(p, k);                                                                 // Print key
+    for(size_t i = 0; i < height - depth; ++i) p.proto->add(p, "..");                   // Separator
+    p.proto->addNewLine(p);
+    print(node.proto->right(node), depth+1);                                               // Print right
+   }
+
+  height = node.proto->height(node);                                                       // Height of node
+  print(node, 0);                                                               // Print to buffer
+  p.proto->join(p);
+  return p;
+ }
+
+static StringBuffer print_ArenaTree                                                     // Print the specified ArenaTree as a string.
+ (const ArenaTree tree)                                                                 // ArenaTree
+ {const typeof(tree.proto->root(tree)) root = tree.proto->root(tree);                                                         // Start at root
+  return root.proto->print(root);                                                          // Print to buffer
+ }
+
 static void dump_ArenaTree                                                              //P Print a ArenaTree on stderr
  (const ArenaTree tree)                                                                 // ArenaTree
- {void print(const ArenaTreeNode node, size_t depth)                                    // Print to allocated string
+ {typeof(0ul) height = 0ul;                                                                 // Height of root
+
+  void print(const ArenaTreeNode node, size_t depth)                                    // Print to allocated string
    {if (!node.proto->valid(node)) return;                                                 // No such node
     print(node.proto->left(node), depth+1);                                                // Print left
     say("%lu ", depth);                                                         // Depth
     for(size_t i = 0; i < depth; ++i) say("  ");                                // Spacer
     makeLocalCopyOfArenaTreeKey(k, l, node);                                            // Local copy of key
     say("%s", k);
-    const size_t N = depth > 80 ? 80 : 80 - depth;                              // Separator size
-    for(size_t i = 0; i < N; ++i) say("..");                                    // Separator
+    for(size_t i = 0; i < height - depth; ++i) say("..");                       // Separator
     say("\n");
     print(node.proto->right(node), depth+1);                                               // Print right
    }
 
-  const typeof(tree.proto->root(tree)) root = tree.proto->root(tree);                                                           // Start at root
+  const typeof(tree.proto->root(tree)) root = tree.proto->root(tree);                                                         // Start at root
+  height = root.proto->height(root);
   print(root, 0);                                                               // Print to buffer
  }
 #endif
@@ -754,8 +785,15 @@ void test8()
   const typeof(e.proto->up(e)) f = e.proto->up(e);  assert( f.proto->valid(f));  assert( f.proto->height(f) == 11);  assert( f.proto->equalsString(f, "36"));
   const typeof(f.proto->up(f)) g = f.proto->up(f);  assert( g.proto->valid(g));  assert( g.proto->height(g) == 12);  assert( g.proto->equalsString(g, "16"));
 
-  assert( g.proto->equals(g, t.proto->root(t))); assert( g.proto->isRoot(g));
+  assert( g.proto->equals(g, t.proto->root(t)));    assert( g.proto->isRoot(g));
 
+    const typeof(t.proto->locate(t, "98", 2)) h = t.proto->locate(t, "98", 2);
+    const typeof(h.proto->print(h)) H = h.proto->print(h);
+  assert( H.proto->printsAs(H, 
+"1   97..\n"
+"0 98....\n"
+"1   99..\n"
+));
   assert( t.proto->check(t));
     t.proto->free(t);
  }
