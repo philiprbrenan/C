@@ -795,7 +795,7 @@ void test8()
 "1   99..\n"
 ));
   assert( t.proto->check(t));
-    t.proto->free(t);
+    t.proto->free(t); H.proto->free(H);
  }
 
 int main(void)                                                                  // Run tests
