@@ -32,8 +32,9 @@ $Image create$Image                                                             
   int y,                                                                        // Dimension of image in y
   const char * const imageFile,                                                 // Name of output file
   const char * const expected)                                                  // Part of the expected digest of the image produced
- {static const char * const fontFile =                                          // Font file
-  "/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf";
+ {char fontFile[128]; strcpy(fontFile, developmentMode() ?                      // Font file
+  "/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf":
+  "fonts/NotoSansMono-Regular.ttf");
 
   cairo_surface_t * surface = cairo_image_surface_create                        // Cairo
    (CAIRO_FORMAT_ARGB32, x, y);
