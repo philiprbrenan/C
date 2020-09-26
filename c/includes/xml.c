@@ -356,14 +356,9 @@ static int empty_XmlTag                                                         
  {return !parent.proto->countChildren(parent);
  }
 
-static int isTag                                                                // Check that the tag is a tag rather than text
+static int isTag                                                                // Check that the tag is a tag not text
  (const XmlTag tag)                                                               // Parent tag
  {return !tag.proto->isText(tag);
- }
-
-static int singleton_XmlTag                                                       // Check that the tag has no children
- (const XmlTag tag)                                                               // Parent tag
- {return tag.proto->empty(tag);
  }
 
 static int hasText_XmlTag                                                         // Check whether the tag contains a text element
@@ -555,7 +550,7 @@ static StringBuffer print_stringBuffer_XmlTag                                   
      {if (parent.proto->isText(parent))
        {p.proto->addn(p, parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
        }
-      else if (parent.proto->singleton(parent))                                              // Write tag with no children as a singleton
+      else if (parent.proto->empty(parent))                                                  // Write tag with no children as a singleton
        {makeLocalCopyOfXmlTagString(s, l, parent);
         p.proto->addChar(p, XmlOpen);
         p.proto->addn(p, s+1, l-2);
@@ -639,7 +634,7 @@ static int printsAs_int_XmlTag_string                                           
   s.proto->free(s);
   return 1;
  }
-#line 585 "/home/phil/c/z/xml/xml.c"
+#line 580 "/home/phil/c/z/xml/xml.c"
 
 static void printAssert_XmlTag                                                    //P Print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
@@ -707,7 +702,7 @@ void test0()                                                                    
   x.proto->free(x);
  } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TparseXmlFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //Tsingleton //TtagStringLength //TisText //TisFirst //TisLast //TisRoot
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TparseXmlFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot
  {char * xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
   const typeof(parseXmlFromString(xml)) x = parseXmlFromString(xml);
 
@@ -728,7 +723,7 @@ void test1()                                                                    
   const typeof(x.proto->findFirstTag(x, "j")) j = x.proto->findFirstTag(x, "j"); assert(j.proto->valid(j)); assert(j.proto->tagNameEquals(j, "j")); assert(a.proto->equals(a, j.proto->parent(j)));
 
   assert( b.proto->equals(b, a.proto->first(a)));  assert(  b.proto->isFirst(b));   assert( !d.proto->isFirst(d)); assert( !b.proto->isRoot(b));
-  assert( c.proto->equals(c, b.proto->first(b)));  assert(  c.proto->singleton(c));
+  assert( c.proto->equals(c, b.proto->first(b)));  assert(  c.proto->empty(c));
   assert( h.proto->equals(h, b.proto->last(b)));   assert(  h.proto->isLast(h));    assert( !d.proto->isLast(d));
   assert( j.proto->equals(j, a.proto->last(a)));
 
