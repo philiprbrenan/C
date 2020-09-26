@@ -631,16 +631,19 @@ void test8()                                                                    
 
 void test9()
  {t ◁ make$();
+
   char c[4]; memset(c, 0, sizeof(c));
+
   for  (size_t i = 0; i < 2; ++i)
    {sprintf(c, "%lu", i);
-           n ◁ t ▷ add(c, strlen(c));
+      n ◁ t ▷ add(c, strlen(c));
     ✓ n ▷ valid;
     ✓ n ▷ equalsString(c);
    }
-  ✓ t ▷ count == 2;
-    t ▷ check;
-    t ▷ free;
+
+    ✓ t ▷ count == 2;
+      t ▷ check;
+      t ▷ free;
  }
 
 int main(void)                                                                  // Run tests
