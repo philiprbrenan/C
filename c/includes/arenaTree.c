@@ -363,7 +363,7 @@ static ArenaTreeNode locate_ArenaTree_string                                    
   printStackBackTrace("Should not be able to reach here\n");
  }
 
-static void check_ArenaTree                                                             // Check the integrity of the ArenaTree
+static int check_ArenaTree                                                              // Check the integrity of the ArenaTree
  (const ArenaTree tree)                                                                 // ArenaTree to check
  {void check(ArenaTreeNode p)                                                           // Check a node
    {if (!p.proto->valid(p)) return;
@@ -385,6 +385,7 @@ static void check_ArenaTree                                                     
     check(r);                                                                   // Check right
    }
   check(tree.proto->root(tree));                                                           // Check from root
+  return 1;                                                                     // If we get this far the tree is ok
  }
 
 static  ArenaTreeFound find_ArenaTreeFound_ArenaTreeNode_string                                         //P Find a key if it exists within the ArenaTree owned by the specified node.
@@ -649,17 +650,18 @@ void test2()                                                                    
   assert( r.proto->height(r) == 11);
   assert( n23.proto->equalsString(n23, "23"));
 
-      t.proto->check(t);
+  assert(   t.proto->check(t));
       t.proto->free(t);
  }
 
 void test3()
- {const typeof(makeArenaTree()) t = makeArenaTree(); const typeof(256*256) N = 256*256; char c[256];
+ {const typeof(makeArenaTree()) t = makeArenaTree(); const typeof(256*256ul) N = 256*256ul; char c[256];
 
-  for(int i = 0; i < N; ++i) t.proto->add(t, c, sprintf(c, "%x", i));
+  for(typeof(0ul) i = 0ul; i < N; ++i) t.proto->add(t, c, sprintf(c, "%lx", i));
 
-  assert( t.proto->count(t) == (size_t)N);
-    t.proto->check(t);
+  assert( t.proto->count(t) == N);
+  assert( t.proto->check(t));
+
     const typeof(t.proto->root(t)) r = t.proto->root(t);
   assert( r.proto->equalsString(r, "3"));
   assert( r.proto->height(r) == 33);
@@ -715,7 +717,7 @@ void test6()                                                                    
    {t.proto->add(t, c, sprintf(c, "%d", i));
     t.proto->add(t, c, sprintf(c, "%d", 2*N - i));
    }
-    t.proto->check(t);
+  assert( t.proto->check(t));
 
     const typeof(t.proto->root(t)) r = t.proto->root(t);
 
@@ -735,26 +737,34 @@ void test7()                                                                    
  }
 
 void test8()
- {const typeof(makeArenaTree()) t = makeArenaTree(); typeof(10) N = 10;
+ {const typeof(makeArenaTree()) t = makeArenaTree();  char s[256];  typeof(10) N = 10;
 
   for  (typeof(0) i = 0; i < N; ++i)
    {for(typeof(N) j = N; j > 0; --j)
-     {char c[256];  t.proto->add(t, c, sprintf(c, "%d%d", i, j));
+     {t.proto->add(t, s, sprintf(s, "%d%d", i, j));
      }
    }
 
-  const typeof(t.proto->root(t)) r = t.proto->root(t);  assert( r.proto->keyEquals(r, "16", 2));  assert( r.proto->height(r) == 12);
+  const typeof(t.proto->locate(t, "86", 2)) a = t.proto->locate(t, "86", 2);
+  const typeof(a.proto->up(a)) b = a.proto->up(a);
+  const typeof(b.proto->up(b)) c = b.proto->up(b);
+  const typeof(c.proto->up(c)) d = c.proto->up(c);
+  const typeof(d.proto->up(d)) e = d.proto->up(d);
+  const typeof(e.proto->up(e)) f = e.proto->up(e);
+  const typeof(f.proto->up(f)) g = f.proto->up(f);
 
-    const typeof(t.proto->locate(t, "86", 2)) n86 = t.proto->locate(t, "86", 2);
-    const typeof(n86.proto->up(n86)) n810 = n86.proto->up(n86);
-    const typeof(n810.proto->up(n810)) n76 = n810.proto->up(n810);
-    const typeof(n76.proto->up(n76)) n66 = n76.proto->up(n76);
-    const typeof(n66.proto->up(n66)) n56 = n66.proto->up(n66);
-    const typeof(n56.proto->up(n56)) n36 = n56.proto->up(n56);
+  assert( a.proto->valid(a));  assert( a.proto->height(a) ==  6);  assert( a.proto->equalsString(a, "86"));
+  assert( b.proto->valid(b));  assert( b.proto->height(b) ==  7);  assert( b.proto->equalsString(b, "810"));
+  assert( c.proto->valid(c));  assert( c.proto->height(c) ==  8);  assert( c.proto->equalsString(c, "76"));
+  assert( d.proto->valid(d));  assert( d.proto->height(d) ==  9);  assert( d.proto->equalsString(d, "66"));
+  assert( e.proto->valid(e));  assert( e.proto->height(e) == 10);  assert( e.proto->equalsString(e, "56"));
+  assert( f.proto->valid(f));  assert( f.proto->height(f) == 11);  assert( f.proto->equalsString(f, "36"));
+  assert( g.proto->valid(g));  assert( g.proto->height(g) == 12);  assert( g.proto->equalsString(g, "16"));
 
-  assert( n36.proto->valid(n36));  assert( n36.proto->equalsString(n36, "36"));  assert( n36.proto->height(n36) == 11);
+  assert( g.proto->equals(g, t.proto->root(t)));
 
-  t.proto->free(t);
+  assert( t.proto->check(t));
+    t.proto->free(t);
  }
 
 int main(void)                                                                  // Run tests
@@ -764,4 +774,4 @@ int main(void)                                                                  
   return 0;
  }
 #endif
-// valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/arenaRedBlackTree/arenaRedBlackTree
+// valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes /home/phil/c/z/arenaTree/arenaTree
