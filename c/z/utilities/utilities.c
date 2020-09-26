@@ -169,6 +169,10 @@ ssize_t __attribute__ ((unused)) writeFile                                      
 
 //D1 Testing                                                                    // Methods for testing other methods
 
+static int developmentMode()                                                    // Test whether we are local or on github
+ {return !strcmp(getenv("HOME"), "/home/phil");
+ }
+
 long microSecondsSince                                                          // Microseconds since the specified time
  (clock_t start)                                                                // Start time
  {return (long)(((double) (clock() - start)) / CLOCKS_PER_SEC * 1000000.0);
