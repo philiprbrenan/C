@@ -618,7 +618,7 @@ void test7()                                                                    
   ✓ cmp$("aa", 1, "aa", 2) == -1;
  }
 
-void test8()
+void test8()                                                                    //Tprint
  {t ◁ make$();  char s[256];  N ◀ 10;
 
   for  (i ◀ 0; i < N; ++i)
