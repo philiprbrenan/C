@@ -667,10 +667,6 @@ static void printAssert_Xml_string                                              
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
 
-static int develop()                                                            // Test whether we are local or on github
- {return !strcmp(getenv("HOME"), "/home/phil");
- }
-
 void test0()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //TmakeXmlParseFromFile //Tempty //TisTag //tText
  {const typeof(parseXmlFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h")) x = parseXmlFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h");
   assert( x.proto->printsAs(x, "<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></a>"));
@@ -775,7 +771,7 @@ void test1()                                                                    
 
 void test2()                                                                    //Tprint
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
-  if (!develop()) strcpy(file, "/home/runner/work/C/C/c/z/xml/samples/foreword.dita");
+  if (!developmentMode()) strcpy(file, "/home/runner/work/C/C/c/z/xml/samples/foreword.dita");
 
   const typeof(makeXmlParseFromFile(file)) x = makeXmlParseFromFile(file);
 
@@ -816,7 +812,7 @@ void test3()                                                                    
 
 void test4()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
  {const typeof("/home/phil/c/z/xml/validation/validation.xml") file = "/home/phil/c/z/xml/validation/validation.xml";
-  if (!develop()) return;                                                       // Does not work on gitHub - possibly out of memory or Cpu?
+  if (!developmentMode()) return;                                               // Does not work on gitHub - possibly out of memory or Cpu?
 
   const typeof(makeXmlParseFromFile((char *)file)) xml = makeXmlParseFromFile((char *)file);
   const typeof(makeXmlValidate()) validate = makeXmlValidate();
@@ -932,6 +928,7 @@ void test5()
       cairo_move_to     (cr, fontExtents.max_x_advance * tag.proto->depth(tag),
                     line++ * fontExtents.height);
       cairo_show_text   (cr, t);
+      if(0)start=start;
      }
 
     x.proto->scan(x, drawXml);
