@@ -214,7 +214,7 @@ static $Node locate_$_string                                                    
   printStackBackTrace("Should not be able to reach here\n");
  }
 
-static void check_$                                                             // Check the integrity of the $
+static int check_$                                                              // Check the integrity of the $
  (const $ tree)                                                                 // $ to check
  {void check($Node p)                                                           // Check a node
    {if (!p ▷ valid) return;
@@ -236,6 +236,7 @@ static void check_$                                                             
     check(r);                                                                   // Check right
    }
   check(tree ▷ root);                                                           // Check from root
+  return 1;                                                                     // If we get this far the tree is ok
  }
 
 static  $Found find_$Found_$Node_string                                         //P Find a key if it exists within the $ owned by the specified node.
@@ -500,17 +501,18 @@ void test2()                                                                    
   ✓ r   ▷ height == 11;
   ✓ n23 ▷ equalsString("23");
 
-      t ▷ check;
+  ✓   t ▷ check;
       t ▷ free;
  }
 
 void test3()
  {t ◁ make$(); N ◁ 256*256ul; char c[256];
 
-  for(i ◀ 0ul; i < N; ++i) t ▷ add(c, sprintf(c, "%x", i));
+  for(i ◀ 0ul; i < N; ++i) t ▷ add(c, sprintf(c, "%lx", i));
 
   ✓ t ▷ count == N;
-    t ▷ check;
+  ✓ t ▷ check;
+
     r ◁ t ▷ root;
   ✓ r ▷ equalsString("3");
   ✓ r ▷ height == 33;
@@ -566,7 +568,7 @@ void test6()                                                                    
    {t ▷ add(c, sprintf(c, "%d", i));
     t ▷ add(c, sprintf(c, "%d", 2*N - i));
    }
-    t ▷ check;
+  ✓ t ▷ check;
 
     r ◁ t ▷ root;
 
@@ -586,26 +588,34 @@ void test7()                                                                    
  }
 
 void test8()
- {t ◁ make$(); N ◀ 10;
+ {t ◁ make$();  char s[256];  N ◀ 10;
 
   for  (i ◀ 0; i < N; ++i)
    {for(j ◀ N; j > 0; --j)
-     {char c[256];  t ▷ add(c, sprintf(c, "%d%d", i, j));
+     {t ▷ add(s, sprintf(s, "%d%d", i, j));
      }
    }
 
-  r ◁  t ▷ root;  ✓ r ▷ keyEquals("16", 2);  ✓ r ▷ height == 12;
+  a ◁ t ▷ locate("86", 2);
+  b ◁ a ▷ up;
+  c ◁ b ▷ up;
+  d ◁ c ▷ up;
+  e ◁ d ▷ up;
+  f ◁ e ▷ up;
+  g ◁ f ▷ up;
 
-    n86  ◁ t    ▷ locate("86", 2);
-    n810 ◁ n86  ▷ up;
-    n76  ◁ n810 ▷ up;
-    n66  ◁ n76  ▷ up;
-    n56  ◁ n66  ▷ up;
-    n36  ◁ n56  ▷ up;
+  ✓ a ▷ valid;  ✓ a ▷ height ==  6;  ✓ a ▷ equalsString("86");
+  ✓ b ▷ valid;  ✓ b ▷ height ==  7;  ✓ b ▷ equalsString("810");
+  ✓ c ▷ valid;  ✓ c ▷ height ==  8;  ✓ c ▷ equalsString("76");
+  ✓ d ▷ valid;  ✓ d ▷ height ==  9;  ✓ d ▷ equalsString("66");
+  ✓ e ▷ valid;  ✓ e ▷ height == 10;  ✓ e ▷ equalsString("56");
+  ✓ f ▷ valid;  ✓ f ▷ height == 11;  ✓ f ▷ equalsString("36");
+  ✓ g ▷ valid;  ✓ g ▷ height == 12;  ✓ g ▷ equalsString("16");
 
-  ✓ n36  ▷ valid;  ✓ n36 ▷ equalsString("36");  ✓ n36 ▷ height == 11;
+  ✓ g ▷ equals(t ▷ root);
 
-  t ▷ free;
+  ✓ t ▷ check;
+    t ▷ free;
  }
 
 int main(void)                                                                  // Run tests
