@@ -51,6 +51,9 @@ static int equals_StringBuffer_StringBuffer
 static int equalsString_StringBuffer_string
  (const StringBuffer            buffer,
   const char * const string);
+static int printsAs_StringBuffer_string
+ (const StringBuffer            string,
+  const char * const expected);
 static int contains_StringBuffer_StringBuffer
  (const StringBuffer a,
   const StringBuffer b);
@@ -159,6 +162,9 @@ struct ProtoTypes_StringBuffer {
     const StringBuffer old);                                                    // StringBuffer
   size_t  (*length)(                                                            // Length of the string held in the buffer
     const StringBuffer buffer);                                                 // StringBuffer
+  int  (*printsAs)(                                                             // Checks whether a StringBuffer is equal to a specified zero terminated string.
+    const StringBuffer string,                                                  // StringBuffer
+    const char * const expected);                                               // String expected
   void  (*readFile)(                                                            // Read a file and returns its content as a string buffer.
     const StringBuffer fileName);                                               // Name of the file as the content of a string buffer
   void  (*splitLines)(                                                          // Split the specified StringBuffer on any new line characters and return the split text as a new StringBuffer
@@ -196,6 +202,6 @@ struct ProtoTypes_StringBuffer {
     const int d,                                                                // Base name of the file
     const char * const fileName);                                               // The name of the file being written to
  } const ProtoTypes_StringBuffer =
-{addChar_StringBuffer_char, addDoubleQuote_StringBuffer, addFormat_StringBuffer_strings, addNewLine_StringBuffer, addQuotedNewLine_StringBuffer, addSingleQuote_StringBuffer, addSpaces, addStringBuffer_StringBuffer_StringBuffer, addVaFormat_StringBuffer_string_va, add_StringBuffer_string, addn_StringBuffer_string, apply_StringBuffer_function, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, count_StringBuffer, dumpHex_StringBuffer, dump_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, joinWith_StringBuffer, join_StringBuffer, length_StringBuffer, readFile_StringBuffer_string, splitLines, splitWords, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string, swap_StringBuffer, system_StringBuffer_StringBuffer, writeFile_StringBuffer_string, writeStderr_StringBuffer, writeTemporaryFile_StringBuffer_string, writeToFileHandle};
+{addChar_StringBuffer_char, addDoubleQuote_StringBuffer, addFormat_StringBuffer_strings, addNewLine_StringBuffer, addQuotedNewLine_StringBuffer, addSingleQuote_StringBuffer, addSpaces, addStringBuffer_StringBuffer_StringBuffer, addVaFormat_StringBuffer_string_va, add_StringBuffer_string, addn_StringBuffer_string, apply_StringBuffer_function, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, count_StringBuffer, dumpHex_StringBuffer, dump_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, joinWith_StringBuffer, join_StringBuffer, length_StringBuffer, printsAs_StringBuffer_string, readFile_StringBuffer_string, splitLines, splitWords, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string, swap_StringBuffer, system_StringBuffer_StringBuffer, writeFile_StringBuffer_string, writeStderr_StringBuffer, writeTemporaryFile_StringBuffer_string, writeToFileHandle};
 StringBuffer newStringBuffer(StringBuffer allocator) {return allocator;}
 
