@@ -94,7 +94,7 @@ static ArenaTreeNode locate_ArenaTree_string
  (const ArenaTree            tree,
   const char * const key,
   const size_t       length);
-static void check_ArenaTree
+static int check_ArenaTree
  (const ArenaTree tree);
 static  ArenaTreeFound find_ArenaTreeFound_ArenaTreeNode_string
  (const ArenaTreeNode  node,
@@ -131,7 +131,7 @@ struct ProtoTypes_ArenaTree {
   ArenaTreeNode   (*allocate)(                                                  // Allocate memory within the arena of a ArenaTree and clear the allocated memory
     const ArenaTree list,                                                       // ArenaTree in which to allocate
     const size_t size);                                                         // Amount of memory required
-  void  (*check)(                                                               // Check the integrity of the ArenaTree
+  int  (*check)(                                                                // Check the integrity of the ArenaTree
     const ArenaTree tree);                                                      // ArenaTree to check
   size_t  (*count)(                                                             // Count the number of nodes in a ArenaTree
     const ArenaTree tree);                                                      // ArenaTree
