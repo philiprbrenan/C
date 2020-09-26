@@ -330,11 +330,6 @@ static int isTag                                                                
  {return !tag ▷ isText;
  }
 
-static int singleton_$Tag                                                       // Check that the tag has no children
- (const $Tag tag)                                                               // Parent tag
- {return tag ▷ empty;
- }
-
 static int hasText_$Tag                                                         // Check whether the tag contains a text element
  (const $Tag parent)                                                            // Parent tag
  {$fe(child, parent) if (child ▷ isText) return 1;
@@ -524,7 +519,7 @@ static StringBuffer print_stringBuffer_$Tag                                     
      {if (parent ▷  isText)
        {p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
        }
-      else if (parent ▷ singleton)                                              // Write tag with no children as a singleton
+      else if (parent ▷ empty)                                                  // Write tag with no children as a singleton
        {makeLocalCopyOf$TagString(s, l, parent);
         p ▷ addChar($Open);
         p ▷ addn(s+1, l-2);
@@ -650,7 +645,7 @@ void test0()                                                                    
   x ▷ free;
  } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tparse$FromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //Tsingleton //TtagStringLength //TisText //TisFirst //TisLast //TisRoot
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tparse$FromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot
  {char * xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
   x ◁ parse$FromString(xml);
 
@@ -671,7 +666,7 @@ void test1()                                                                    
   j ◁ x ▷ findFirstTag  ("j"); ✓j ▷ valid; ✓j ▷ tagNameEquals("j"); ✓a ▷ equals(j ▷ parent);
 
   ✓ b ▷ equals(a ▷ first);  ✓  b ▷ isFirst;   ✓ !d ▷ isFirst; ✓ !b ▷ isRoot;
-  ✓ c ▷ equals(b ▷ first);  ✓  c ▷ singleton;
+  ✓ c ▷ equals(b ▷ first);  ✓  c ▷ empty;
   ✓ h ▷ equals(b ▷ last);   ✓  h ▷ isLast;    ✓ !d ▷ isLast;
   ✓ j ▷ equals(a ▷ last);
 
