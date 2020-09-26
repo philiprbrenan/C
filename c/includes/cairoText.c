@@ -35,7 +35,7 @@ CairoTextImage createCairoTextImage                                             
   const char * const expected)                                                  // Part of the expected digest of the image produced
  {char fontFile[128]; strcpy(fontFile, developmentMode() ?                      // Font file
   "/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf":
-  "fonts/NotoSansMono-Regular.ttf");
+     "/home/runner/work/C/C/fonts/NotoSansMono-Regular.ttf");
 
   cairo_surface_t * surface = cairo_image_surface_create                        // Cairo
    (CAIRO_FORMAT_ARGB32, x, y);
