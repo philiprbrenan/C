@@ -154,8 +154,7 @@ static void join_StringBuffer                                                   
   makeLocalCopyOfStringBuffer(b, l, old);                                                  // Local copy of string
   const typeof(makeStringBuffer()) new = makeStringBuffer();                                                                // New string buffer
   new.proto->addn(new, b, l);                                                             // Load new buffer from joined string
-  old.string.proto->swap(old.string, new.string);                                                // Swap arenas so that the old becomes the new
-  new.proto->free(new);                                                                   // Free new arena
+  old.proto->swap(old, new);                                                              // Swap arenas so that the old becomes the new
  }
 
 static void joinWith_StringBuffer                                                          // Join in place - join all the sub strings in the specified string buffer with the specified string and replace the string buffer with the result.
@@ -173,8 +172,7 @@ static void joinWith_StringBuffer                                               
     if (++n < N) new.proto->addn(new, string, S);                                         // Add joining string
    }
   new.proto->join(new);                                                                   // Join
-  old.string.proto->swap(old.string, new.string);                                                // Swap arenas so that the old becomes the new
-  new.proto->free(new);                                                                   // Free new arena
+  old.proto->swap(old, new);                                                              // Swap arenas so that the old becomes the new
  }
 
 static void splitLines                                                          // Split the specified StringBuffer on any new line characters and return the split text as a new StringBuffer
@@ -188,8 +186,7 @@ static void splitLines                                                          
    }
   for(; i < N; ++i) if (s[i] == '\n') save();
   if (  i > j) {--i; save();}
-  string.string.proto->swap(string.string, r.string);                                               // Swap arenas so that the old becomes the new
-  r.proto->free(r);
+  string.proto->swap(string, r);                                                             // Swap arenas so that the old becomes the new
  }
 
 static void splitWords                                                          // Split the specified StringBuffer into words delimited by spaces and return the split text as a new StringBuffer
@@ -203,8 +200,7 @@ static void splitWords                                                          
    }
   for(; i < n; ++i) if (isspace(s[i])) save();
   save();
-  string.string.proto->swap(string.string, r.string);                                               // Swap arenas so that the old becomes the new
-  r.proto->free(r);
+  string.proto->swap(string, r);                                                             // Swap arenas so that the old becomes the new
  }
 
 //D1 Statistics                                                                 // Statistics on the contents of the StringBuffer.
@@ -312,9 +308,8 @@ static  void system_StringBuffer_StringBuffer                                   
    }
 
   command.proto->apply(command, execString);                                                  // Execute command in string buffer
-  const typeof(t.proto->readFile(t)) r = t.proto->readFile(t);                                                             // Load the results
-  r.string.proto->swap(r.string, command.string);                                              // Overwrite the input command with the results
-  t.proto->free(t); r.proto->free(r);                                                           // Free file name and command
+  t.proto->readFile(t);                                                             // Load the results
+  command.proto->swap(command, t);                                                            // Overwrite the input command with the results
  }
 
 //D1 Read and Write                                                             // Read/write a string buffer from/to named and temporary files.
@@ -394,7 +389,7 @@ static void writeStderr_StringBuffer                                            
  {buffer.proto->writeToFileHandle(buffer, fileno(stderr), "stderr");
  }
 
-static StringBuffer readFile_StringBuffer_string                                                      // Read a file and returns its content as a string buffer.
+static void readFile_StringBuffer_string                                                   // Read a file and returns its content as a string buffer.
  (const StringBuffer fileName)                                                             // Name of the file as the content of a string buffer
  {const typeof(makeStringBuffer()) buffer = makeStringBuffer();                                                             // Content will appear here
   ssize_t reader(char * location, size_t length)                                // File content
@@ -403,7 +398,16 @@ static StringBuffer readFile_StringBuffer_string                                
    }
   makeLocalCopyOfStringBuffer(f, n, fileName);                                             // Local copy
   readFile(f, reader);                                                          // Read file
-  return buffer;                                                                // Content read
+  fileName.proto->swap(fileName, buffer);                                                      // Replace file name with contents of file name
+ }
+
+//D1 Swap                                                                       // Swap two string buffers
+
+static void swap_StringBuffer                                                              // Swap two string buffers and free the new one so that the old one is renewed.
+ (const StringBuffer old,                                                                  // StringBuffer Old
+  const StringBuffer new)                                                                  // StringBuffer New
+ {old.string.proto->swap(old.string, new.string);                                                // Swap arenas so that the old becomes the new
+  new.proto->free(new);
  }
 
 #endif
@@ -497,31 +501,31 @@ void test4()                                                                    
  }
 
 void test5()                                                                    //TreadFile //TwriteTemporaryFile
- {const typeof("a\nbb\nccc\ndddd\n") c = "a\nbb\nccc\ndddd\n";
-  const typeof(makeStringBufferFromString(c)) a = makeStringBufferFromString(c);
-  const typeof(a.proto->writeTemporaryFile(a, "a.txt")) f = a.proto->writeTemporaryFile(a, "a.txt");
-  const typeof(f.proto->readFile(f)) b = f.proto->readFile(f);
-  assert( b.proto->equalsString(b, c));
-  a.proto->free(a); b.proto->free(b); f.proto->free(f);
+ {  const typeof("a\nbb\nccc\ndddd\n") c = "a\nbb\nccc\ndddd\n";
+    const typeof(makeStringBufferFromString(c)) a = makeStringBufferFromString(c);
+    const typeof(a.proto->writeTemporaryFile(a, "a.txt")) f = a.proto->writeTemporaryFile(a, "a.txt");
+    f.proto->readFile(f);
+  assert( f.proto->equalsString(f, c));
+  a.proto->free(a); f.proto->free(f);
  }
 
 void test6()                                                                    //TwriteFile //Tlength //Tstring //Taddn
- {const typeof("a.txt") F = "a.txt";
-  const typeof("a\nbb\nccc\ndddd\n") c = "a\nbb\nccc\ndddd\n";
+ {  const typeof("a.txt") F = "a.txt";
+    const typeof("a\nbb\nccc\ndddd\n") c = "a\nbb\nccc\ndddd\n";
 
-  const typeof(makeStringBuffer()) a = makeStringBuffer();
-  a.proto->addn(a, c, strlen(c));
+    const typeof(makeStringBuffer()) a = makeStringBuffer();
+    a.proto->addn(a, c, strlen(c));
 
-  a.proto->writeFile(a, F);
+    a.proto->writeFile(a, F);
 
-  const typeof(makeStringBuffer()) f = makeStringBuffer(); f.proto->add(f, F);
-  const typeof(f.proto->readFile(f)) b = f.proto->readFile(f);
-  assert( b.proto->equalsString(b, c));
-  assert( b.proto->length(b) == strlen(c));
+    const typeof(makeStringBuffer()) f = makeStringBuffer(); f.proto->add(f, F);
+    f.proto->readFile(f);
+  assert( f.proto->equalsString(f, c));
+  assert( f.proto->length(f) == strlen(c));
 
-  char C[b.proto->length(b) + 1]; b.proto->string(b, C); assert( !strcmp(c, C));
+  char C[f.proto->length(f) + 1]; f.proto->string(f, C); assert( !strcmp(c, C));
 
-  a.proto->free(a); b.proto->free(b); f.proto->free(f); unlink(F);
+  a.proto->free(a); f.proto->free(f); unlink(F);
  }
 
 void test7()                                                                    //TaddVaFormat //TaddQuotedNewLine
