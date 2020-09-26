@@ -68,7 +68,7 @@ sub test($$)                                                                    
       run: |
         (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes)
 END
-  push @r, <<END  unless $d =~ m(g);                                            # GTK has too may leaks
+  push @r, <<END  unless $d =~ m(g) or $c =~ m(xml);                            # GTK has too may leaks
         (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes --valgrind)
 END
     join '', @r;
