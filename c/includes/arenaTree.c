@@ -558,7 +558,7 @@ static StringBuffer print_ArenaTreeNode                                         
     p.proto->addSpaces(p, 2 * depth);                                                   // Spacer
     makeLocalCopyOfArenaTreeKey(k, l, node);                                            // Local copy of key
     p.proto->add(p, k);                                                                 // Print key
-    for(size_t i = 0; i < height - depth; ++i) p.proto->add(p, "..");                   // Separator
+    for(size_t i = 0; i < height - depth - 1; ++i) p.proto->add(p, "..");               // Separator
     p.proto->addNewLine(p);
     print(node.proto->right(node), depth+1);                                               // Print right
    }
@@ -790,9 +790,9 @@ void test8()                                                                    
     const typeof(t.proto->locate(t, "98", 2)) h = t.proto->locate(t, "98", 2);
     const typeof(h.proto->print(h)) H = h.proto->print(h);
   assert( H.proto->printsAs(H, 
-"1   97..\n"
-"0 98....\n"
-"1   99..\n"
+"1   97\n"
+"0 98..\n"
+"1   99\n"
 ));
   assert( t.proto->check(t));
     t.proto->free(t); H.proto->free(H);
