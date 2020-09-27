@@ -441,18 +441,18 @@ static void by_$Parse_sub                                                       
 
 static void scan_$Tag_sub                                                       // Traverse the $ parse tree rooted at the specified tag calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
  (const $Tag tag,                                                               // Starting tag
-  void (* const function) ($Tag tag, int start))                                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
- {void f(const ArenaListNode node,   int start)
-   {function(new $Tag(xml: tag.xml, node: node), start);
+  void (* const function) ($Tag tag, int start, int depth))                     // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {void f(const ArenaListNode node,   int start, int depth)
+   {function(new $Tag(xml: tag.xml, node: node), start, depth);
    }
   tag.node ▷ scan(f);
  }
 
 static void scan_$Parse_sub                                                     // Traverse the $ parse tree calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
  (const $Parse xml,                                                             // $ parse tree
-  void (* const function) ($Tag tag, int start))                                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
- {void f(const ArenaListNode node,   int start)
-   {function(new $Tag(xml: xml, node: node), start);
+  void (* const function) ($Tag tag, int start, int depth))                     // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {void f(const ArenaListNode node,   int start, int depth)
+   {function(new $Tag(xml: xml, node: node), start, depth);
    }
   xml.tree ▷ scan(f);
  }
@@ -713,18 +713,17 @@ void test1()                                                                    
   ✓ c ▷ equals(d ▷ prev);
 
   ✓ a ▷ count         == 14;
-
-  ✓ a ▷ countChildren == 4;
+  ✓ a ▷ countChildren ==  4;
 
   ✓ b ▷ count         == 10;
-  ✓ b ▷ countChildren == 3;
+  ✓ b ▷ countChildren ==  3;
 
   ✓ !strcmp(parse$TagName(b.node ▷ key), "b");
   ✓ !strcmp(b ▷ tagName,                 "b");
 
   ✓ !strncmp(b ▷ tagString, "<b>", b ▷ tagStringLength);
   ✓ !strncmp(c ▷ tagString, "<c>", c ▷ tagStringLength);                  // Singletons are converted to empty openers
-  ✓ b ▷ tagStringEquals(    "<b>" );
+  ✓ b ▷ tagStringEquals(    "<b>");
   ✓ c ▷ tagStringEquals(    "<c>");
 
   H ◁ h ▷ first;
@@ -931,9 +930,9 @@ void test6()                                                                    
 
     line ◀ 0ul;
 
-    void drawXml(const $Tag tag, int start)
+    void drawXml(const $Tag tag, int start, int depth)
      {makeLocalCopyOf$TagString(t, l, tag);
-      cairo_move_to     (cr, fontExtents.max_x_advance * tag ▷ depth,
+      cairo_move_to     (cr, fontExtents.max_x_advance * depth,
                     line++ * fontExtents.height);
       cairo_show_text   (cr, t);
       if(0)start=start;
@@ -946,9 +945,78 @@ void test6()                                                                    
   i ▷ free;
  }
 
+void test7()
+ {char * xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
+     X ◁ parse$FromString(xml);
+  ✓ !X ▷ errors;
+
+  fontSize ◀ 40;                                                                // Font size
+
+  void draw(CairoTextImage i)                                                   // Draw the xml into an image
+   {cr ◀ i.cr;
+    cairo_set_font_size (cr, fontSize);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_font_extents_t fontExtents;
+    cairo_font_extents  (cr, &fontExtents);
+    cairo_text_extents_t textExtents;
+
+    H ◁ fontExtents.height; double x = H, y = 0.0;
+    cairo_move_to(cr, x, y);
+
+    void drawChar(char c)
+     {char s[2] = {c, 0};
+      cairo_show_text   (cr, s);
+      cairo_text_extents(cr, s, &textExtents);
+      cairo_move_to     (cr, x += textExtents.x_advance, y += 0);
+     }
+
+    void drawString(char *s, size_t l)
+     {for(size_t i = 0; i < l; ++i) drawChar(s[i]);
+     }
+
+    void drawTag(const $Tag parent, const int depth)                            // Print the specified parent and its children
+     {void open()                                                               // Add open tag
+       {if (parent ▷  isText)
+         {drawString(parent ▷ tagString, parent ▷ tagStringLength);
+         }
+        else if (parent ▷ empty)                                                // Write tag with no children as a singleton
+         {makeLocalCopyOf$TagString(s, l, parent);
+          drawChar  ($Open);
+          drawString(s+1, l-2);
+          drawChar  ($Slash);
+          drawChar  ($Close);
+         }
+        else                                                                    // Opener
+         {cairo_move_to(cr, x = H * depth, y += H);
+          drawString(parent ▷ tagString, parent ▷ tagStringLength);
+         }
+       }
+
+      void close()                                                              // Add close tag unless we are on text
+       {if (parent ▷ isTag && !parent ▷ empty)
+         {if (!parent ▷ stayInLine) cairo_move_to(cr, x = H * depth, y += H);
+          drawChar  ($Open);
+          drawChar  ($Slash);
+          drawString($tagName, strlen(parent ▷ tagName));
+          drawChar  ($Close);
+         }
+       }
+
+      open();
+      $fe(child, parent) drawTag(child, depth+1);
+      close();
+     }
+
+    drawTag(X ▷ root, 0);
+   }
+
+  i ◁ createCairoTextImage(draw, 2000, 2000, "xml2.png", "a");                  // Create image containing some text and check its digest
+  i ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4,
-                           test5, test6, 0};
+                           test5, test6, test7, 0};
 //{void (*tests[])(void) = {test0, 0};
   run_tests("$", 1, tests);
   return 0;
