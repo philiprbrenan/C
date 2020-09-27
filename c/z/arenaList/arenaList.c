@@ -518,40 +518,40 @@ static void by_$_sub                                                            
 
 static void scan_$Node_sub                                                      // Traverse the $ rooted at the specified node calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
  ($Node node,                                                                   // Node
-  void (* const function) ($Node node, int start))                              // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
- {void children($Node parent)                                                   // Process the children of the specified parent
+  void (* const function) ($Node node, int start, int depth))                   // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {void children($Node parent, int depth)                                        // Process the children of the specified parent
    {if (!parent ▷ valid) return;                                                // Empty child
-    N ◁ parent ▷ countChildren;                                                 // Number of children
+    N ◁  parent ▷ countChildren;                                                // Number of children
     if (N)                                                                      // Process children if there are any
      {size_t c[N+1];                                                            // Array of children terminated by a trailing zero
       size_t n = 0; $fe(child, parent) c[n++] = child.offset;                   // Load each child into an array
-      function(parent, 1);                                                      // Call before
+      function(parent, 1, depth);                                               // Call before
       for(size_t i = 0; i < N; ++i)                                             // Process each child allowing it to change its position without changing the traversal
-       {children(new $Node(list: parent.list, offset: c[i]));
+       {children(new $Node(list: parent.list, offset: c[i]), depth+1);
        }
-      function(parent, -1);                                                     // Call after
+      function(parent, -1, depth);                                              // Call after
      }
-    else function(parent, 0);                                                   // Call once as there are no child nodes
+    else function(parent, 0, depth);                                            // Call once as there are no child nodes
    }
-  children(node);                                                               // Start at the root node
+  children(node, 1);                                                            // Start at the root node
  }
 
 static void scan_$_sub                                                          // Traverse a $ calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
  (const $ list,                                                                 // $
-  void (* const function) ($Node node, int start))                              // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+  void (* const function) ($Node node, int start, int depth))                   // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
  {root ◁ list ▷ root;                                                           // Root node
   N    ◁ list ▷ countChildren;                                                  // Number of children under root
   if (N)                                                                        // Process children under root if there are any
    {size_t c[N+1];                                                              // Array of children terminated by a trailing zero
     size_t n = 0; $fe(child, root) c[n++] = child.offset;                       // Load each child into an array
-    function(root, 1);                                                          // Call before
+    function(root, 1, 0);                                                       // Call before
     for(size_t i = 0; i < N; ++i)
      {$Node n = new $Node(list: list, offset: c[i]);                            // Process each child allowing it to change position
       n ▷ scan(function);
      }
-    function(root, -1);                                                         // Call after
+    function(root, -1, 0);                                                      // Call after
    }
-  else function(root, 0);                                                       // Call once as the root has no children
+  else function(root, 0, 0);                                                    // Call once as the root has no children
  }
 
 static  size_t countChildren_size_$                                             // Count the number of children directly under a parent.
@@ -916,13 +916,13 @@ void test2()                                                                    
   if (1)
    {char l[1024], *p = l;
 
-    void process($Node n, int start)
+    void process($Node n, int start, int depth)
      {makeLocalCopyOf$Key(k, l, n);
-      p += sprintf(p, "%s(%d)", k, start);
+      p += sprintf(p, "%s(%d,%d)", k, start, depth);
      }
 
     t ▷ scan(process);
-    ✓ !strcmp(l, "(1)b(1)c(1)d(0)e(0)c(-1)f(0)b(-1)g(1)h(0)i(0)g(-1)j(0)(-1)");
+    ✓ !strcmp(l, "(1,0)b(1,1)c(1,2)d(0,3)e(0,3)c(-1,2)f(0,2)b(-1,1)g(1,1)h(0,2)i(0,2)g(-1,1)j(0,1)(-1,0)");
    }
 
   t ▷ free;
