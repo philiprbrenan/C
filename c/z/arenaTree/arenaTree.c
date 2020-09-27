@@ -409,7 +409,7 @@ static StringBuffer print_$Node                                                 
     p ▷ addSpaces(2 * depth);                                                   // Spacer
     makeLocalCopyOf$Key(k, l, node);                                            // Local copy of key
     p ▷ add(k);                                                                 // Print key
-    for(size_t i = 0; i < height - depth; ++i) p ▷ add("..");                   // Separator
+    for(size_t i = 0; i < height - depth - 1; ++i) p ▷ add("..");               // Separator
     p ▷ addNewLine;
     print(node ▷ right, depth+1);                                               // Print right
    }
@@ -641,9 +641,9 @@ void test8()                                                                    
     h ◁ t ▷ locate("98", 2);
     H ◁ h ▷ print;
   ✓ H ▷ printsAs(◉);
-1   97..
-0 98....
-1   99..
+1   97
+0 98..
+1   99
 ◉
   ✓ t ▷ check;
     t ▷ free; H ▷ free;
