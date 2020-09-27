@@ -974,8 +974,8 @@ void test7()
      }
 
     void drawTag(const $Tag parent, const int depth)                            // Print the specified parent and its children
-     {void open()                                                               // Add open tag
-       {if (parent ▷  isText)
+     {void open()                                                               // Add open tag or text
+       {if (parent ▷ isText)                                                    // Text
          {cairo_set_source_rgb(cr, 0, 0, 0);
           drawString(parent ▷ tagString, parent ▷ tagStringLength);
          }
@@ -988,7 +988,7 @@ void test7()
           drawChar  ($Close);
          }
         else                                                                    // Opener
-         {cairo_set_source_rgb(cr, 0, 1, 0);
+         {cairo_set_source_rgb(cr, 0, 0, 1);
           cairo_move_to(cr, x = H * depth, y += H);
           drawString(parent ▷ tagString, parent ▷ tagStringLength);
          }
@@ -1005,9 +1005,7 @@ void test7()
          }
        }
 
-      open();
-      $fe(child, parent) drawTag(child, depth+1);
-      close();
+      open(); $fe(child, parent) drawTag(child, depth+1); close();
      }
 
     drawTag(X ▷ root, 0);
