@@ -1005,10 +1005,10 @@ void test7()
          }
        }
 
-      open(); $fe(child, parent) drawTag(child, depth+1); close();
+      open(); $fe(child, parent) drawTag(child, depth+1); close();              // Draw this level and its children
      }
 
-    drawTag(X ▷ root, 0);
+    drawTag(X ▷ root, 0);                                                       // Start at the root
    }
 
   i ◁ createCairoTextImage(draw, 2000, 2000, "xml2.png", "a");                  // Create image containing some text and check its digest
