@@ -144,10 +144,10 @@ static void by_ArenaList_sub
   void (* const function) (const ArenaListNode node));
 static void scan_ArenaListNode_sub
  (ArenaListNode node,
-  void (* const function) (ArenaListNode node, int start));
+  void (* const function) (ArenaListNode node, int start, int depth));
 static void scan_ArenaList_sub
  (const ArenaList list,
-  void (* const function) (ArenaListNode node, int start));
+  void (* const function) (ArenaListNode node, int start, int depth));
 static  size_t countChildren_size_ArenaList
  (const ArenaList list);
 static  size_t countChildren_size_ArenaListNode
@@ -257,7 +257,7 @@ struct ProtoTypes_ArenaList {
     const ArenaList list);                                                      // ArenaList
   void  (*scan)(                                                                // Traverse a ArenaList calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
     const ArenaList list,                                                       // ArenaList
-    void (* const function) (ArenaListNode node, int start));                   // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+    void (* const function) (ArenaListNode node, int start, int depth));        // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
   void  (*swap)(                                                                // Swap the arenas of two ArenaList
     ArenaList source,                                                           // Source ArenaList
     ArenaList target);                                                          // Target ArenaList
@@ -370,7 +370,7 @@ struct ProtoTypes_ArenaListNode {
     const ArenaListNode node);                                                  // Node
   void  (*scan)(                                                                // Traverse the ArenaList rooted at the specified node calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
     ArenaListNode node,                                                         // Node
-    void (* const function) (ArenaListNode node, int start));                   // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+    void (* const function) (ArenaListNode node, int start, int depth));        // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
   void  (*setData)(                                                             // Set the optional user data associated with a node in an ArenaList
     const ArenaListNode node,                                                   // Node
     const void * const data);                                                   // Data
