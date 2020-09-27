@@ -994,7 +994,6 @@ void test7()
   void draw(CairoTextImage i)                                                   // Draw the xml into an image
    {typeof(i.cr) cr = i.cr;
     cairo_set_font_size (cr, fontSize);
-    cairo_set_source_rgb(cr, 0, 0, 0);
     cairo_font_extents_t fontExtents;
     cairo_font_extents  (cr, &fontExtents);
     cairo_text_extents_t textExtents;
@@ -1016,17 +1015,20 @@ void test7()
     void drawTag(const XmlTag parent, const int depth)                            // Print the specified parent and its children
      {void open()                                                               // Add open tag
        {if (parent.proto->isText(parent))
-         {drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+         {cairo_set_source_rgb(cr, 0, 0, 0);
+          drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
          }
         else if (parent.proto->empty(parent))                                                // Write tag with no children as a singleton
-         {makeLocalCopyOfXmlTagString(s, l, parent);
+         {cairo_set_source_rgb(cr, 1, 0, 0);
+          makeLocalCopyOfXmlTagString(s, l, parent);
           drawChar  (XmlOpen);
           drawString(s+1, l-2);
           drawChar  (XmlSlash);
           drawChar  (XmlClose);
          }
         else                                                                    // Opener
-         {cairo_move_to(cr, x = H * depth, y += H);
+         {cairo_set_source_rgb(cr, 0, 1, 0);
+          cairo_move_to(cr, x = H * depth, y += H);
           drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
          }
        }
@@ -1034,6 +1036,7 @@ void test7()
       void close()                                                              // Add close tag unless we are on text
        {if (parent.proto->isTag(parent) && !parent.proto->empty(parent))
          {if (!parent.proto->stayInLine(parent)) cairo_move_to(cr, x = H * depth, y += H);
+          cairo_set_source_rgb(cr, 0, 0, 1);
           drawChar  (XmlOpen);
           drawChar  (XmlSlash);
           drawString(XmltagName, strlen(parent.proto->tagName(parent)));
