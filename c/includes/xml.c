@@ -1001,20 +1001,20 @@ void test7()
     const typeof(fontExtents.height) H = fontExtents.height; double x = H, y = 0.0;
     cairo_move_to(cr, x, y);
 
-    void drawChar(char c)
+    void drawChar(char c)                                                       // Draw a character
      {char s[2] = {c, 0};
       cairo_show_text   (cr, s);
       cairo_text_extents(cr, s, &textExtents);
       cairo_move_to     (cr, x += textExtents.x_advance, y += 0);
      }
 
-    void drawString(char *s, size_t l)
+    void drawString(char *s, size_t l)                                          // Draw a string
      {for(size_t i = 0; i < l; ++i) drawChar(s[i]);
      }
 
     void drawTag(const XmlTag parent, const int depth)                            // Print the specified parent and its children
-     {void open()                                                               // Add open tag
-       {if (parent.proto->isText(parent))
+     {void open()                                                               // Add open tag or text
+       {if (parent.proto->isText(parent))                                                    // Text
          {cairo_set_source_rgb(cr, 0, 0, 0);
           drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
          }
@@ -1027,7 +1027,7 @@ void test7()
           drawChar  (XmlClose);
          }
         else                                                                    // Opener
-         {cairo_set_source_rgb(cr, 0, 1, 0);
+         {cairo_set_source_rgb(cr, 0, 0, 1);
           cairo_move_to(cr, x = H * depth, y += H);
           drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
          }
@@ -1044,9 +1044,7 @@ void test7()
          }
        }
 
-      open();
-      Xmlfe(child, parent) drawTag(child, depth+1);
-      close();
+      open(); Xmlfe(child, parent) drawTag(child, depth+1); close();
      }
 
     drawTag(X.proto->root(X), 0);
