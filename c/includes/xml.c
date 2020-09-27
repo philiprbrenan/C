@@ -1044,10 +1044,10 @@ void test7()
          }
        }
 
-      open(); Xmlfe(child, parent) drawTag(child, depth+1); close();
+      open(); Xmlfe(child, parent) drawTag(child, depth+1); close();              // Draw this level and its children
      }
 
-    drawTag(X.proto->root(X), 0);
+    drawTag(X.proto->root(X), 0);                                                       // Start at the root
    }
 
   const typeof(createCairoTextImage(draw, 2000, 2000, "xml2.png", "a")) i = createCairoTextImage(draw, 2000, 2000, "xml2.png", "a");                  // Create image containing some text and check its digest
