@@ -472,18 +472,18 @@ static void by_XmlParse_sub                                                     
 
 static void scan_XmlTag_sub                                                       // Traverse the Xml parse tree rooted at the specified tag calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The Xml is buffered allowing changes to be made to the structure of the Xml without disruption as long as each child checks its context.
  (const XmlTag tag,                                                               // Starting tag
-  void (* const function) (XmlTag tag, int start))                                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
- {void f(const ArenaListNode node,   int start)
-   {function(newXmlTag(({struct XmlTag t = {xml: tag.xml, node: node, proto: &ProtoTypes_XmlTag}; t;})), start);
+  void (* const function) (XmlTag tag, int start, int depth))                     // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {void f(const ArenaListNode node,   int start, int depth)
+   {function(newXmlTag(({struct XmlTag t = {xml: tag.xml, node: node, proto: &ProtoTypes_XmlTag}; t;})), start, depth);
    }
   tag.node.proto->scan(tag.node, f);
  }
 
 static void scan_XmlParse_sub                                                     // Traverse the Xml parse tree calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The Xml is buffered allowing changes to be made to the structure of the Xml without disruption as long as each child checks its context.
  (const XmlParse xml,                                                             // Xml parse tree
-  void (* const function) (XmlTag tag, int start))                                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
- {void f(const ArenaListNode node,   int start)
-   {function(newXmlTag(({struct XmlTag t = {xml: xml, node: node, proto: &ProtoTypes_XmlTag}; t;})), start);
+  void (* const function) (XmlTag tag, int start, int depth))                     // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {void f(const ArenaListNode node,   int start, int depth)
+   {function(newXmlTag(({struct XmlTag t = {xml: xml, node: node, proto: &ProtoTypes_XmlTag}; t;})), start, depth);
    }
   xml.tree.proto->scan(xml.tree, f);
  }
@@ -752,18 +752,17 @@ void test1()                                                                    
   assert( c.proto->equals(c, d.proto->prev(d)));
 
   assert( a.proto->count(a)         == 14);
-
-  assert( a.proto->countChildren(a) == 4);
+  assert( a.proto->countChildren(a) ==  4);
 
   assert( b.proto->count(b)         == 10);
-  assert( b.proto->countChildren(b) == 3);
+  assert( b.proto->countChildren(b) ==  3);
 
   assert( !strcmp(parseXmlTagName(b.node.proto->key(b.node)), "b"));
   assert( !strcmp(b.proto->tagName(b),                 "b"));
 
   assert( !strncmp(b.proto->tagString(b), "<b>", b.proto->tagStringLength(b)));
   assert( !strncmp(c.proto->tagString(c), "<c>", c.proto->tagStringLength(c)));                  // Singletons are converted to empty openers
-  assert( b.proto->tagStringEquals(b,     "<b>" ));
+  assert( b.proto->tagStringEquals(b,     "<b>"));
   assert( c.proto->tagStringEquals(c,     "<c>"));
 
   const typeof(h.proto->first(h)) H = h.proto->first(h);
@@ -970,9 +969,9 @@ void test6()                                                                    
 
     typeof(0ul) line = 0ul;
 
-    void drawXml(const XmlTag tag, int start)
+    void drawXml(const XmlTag tag, int start, int depth)
      {makeLocalCopyOfXmlTagString(t, l, tag);
-      cairo_move_to     (cr, fontExtents.max_x_advance * tag.proto->depth(tag),
+      cairo_move_to     (cr, fontExtents.max_x_advance * depth,
                     line++ * fontExtents.height);
       cairo_show_text   (cr, t);
       if(0)start=start;
@@ -985,9 +984,78 @@ void test6()                                                                    
   i.proto->free(i);
  }
 
+void test7()
+ {char * xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
+     const typeof(parseXmlFromString(xml)) X = parseXmlFromString(xml);
+  assert( !X.proto->errors(X));
+
+  typeof(40) fontSize = 40;                                                                // Font size
+
+  void draw(CairoTextImage i)                                                   // Draw the xml into an image
+   {typeof(i.cr) cr = i.cr;
+    cairo_set_font_size (cr, fontSize);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_font_extents_t fontExtents;
+    cairo_font_extents  (cr, &fontExtents);
+    cairo_text_extents_t textExtents;
+
+    const typeof(fontExtents.height) H = fontExtents.height; double x = H, y = 0.0;
+    cairo_move_to(cr, x, y);
+
+    void drawChar(char c)
+     {char s[2] = {c, 0};
+      cairo_show_text   (cr, s);
+      cairo_text_extents(cr, s, &textExtents);
+      cairo_move_to     (cr, x += textExtents.x_advance, y += 0);
+     }
+
+    void drawString(char *s, size_t l)
+     {for(size_t i = 0; i < l; ++i) drawChar(s[i]);
+     }
+
+    void drawTag(const XmlTag parent, const int depth)                            // Print the specified parent and its children
+     {void open()                                                               // Add open tag
+       {if (parent.proto->isText(parent))
+         {drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+         }
+        else if (parent.proto->empty(parent))                                                // Write tag with no children as a singleton
+         {makeLocalCopyOfXmlTagString(s, l, parent);
+          drawChar  (XmlOpen);
+          drawString(s+1, l-2);
+          drawChar  (XmlSlash);
+          drawChar  (XmlClose);
+         }
+        else                                                                    // Opener
+         {cairo_move_to(cr, x = H * depth, y += H);
+          drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+         }
+       }
+
+      void close()                                                              // Add close tag unless we are on text
+       {if (parent.proto->isTag(parent) && !parent.proto->empty(parent))
+         {if (!parent.proto->stayInLine(parent)) cairo_move_to(cr, x = H * depth, y += H);
+          drawChar  (XmlOpen);
+          drawChar  (XmlSlash);
+          drawString(XmltagName, strlen(parent.proto->tagName(parent)));
+          drawChar  (XmlClose);
+         }
+       }
+
+      open();
+      Xmlfe(child, parent) drawTag(child, depth+1);
+      close();
+     }
+
+    drawTag(X.proto->root(X), 0);
+   }
+
+  const typeof(createCairoTextImage(draw, 2000, 2000, "xml2.png", "a")) i = createCairoTextImage(draw, 2000, 2000, "xml2.png", "a");                  // Create image containing some text and check its digest
+  i.proto->free(i);
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4,
-                           test5, test6, 0};
+                           test5, test6, test7, 0};
 //{void (*tests[])(void) = {test0, 0};
   run_tests("Xml", 1, tests);
   return 0;
