@@ -962,14 +962,14 @@ void test7()
     H ◁ fontExtents.height; double x = H, y = 0.0;
     cairo_move_to(cr, x, y);
 
-    void drawChar(char c)
+    void drawChar(char c)                                                       // Draw a character
      {char s[2] = {c, 0};
       cairo_show_text   (cr, s);
       cairo_text_extents(cr, s, &textExtents);
       cairo_move_to     (cr, x += textExtents.x_advance, y += 0);
      }
 
-    void drawString(char *s, size_t l)
+    void drawString(char *s, size_t l)                                          // Draw a string
      {for(size_t i = 0; i < l; ++i) drawChar(s[i]);
      }
 
