@@ -946,11 +946,11 @@ void test6()                                                                    
  }
 
 void test7()
- {char * xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
+ {char * xml = "<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
      X ◁ parse$FromString(xml);
   ✓ !X ▷ errors;
 
-  fontSize ◀ 40;                                                                // Font size
+  fontSize ◀ 100;                                                               // Font size
 
   void draw(CairoTextImage i)                                                   // Draw the xml into an image
    {cr ◀ i.cr;
@@ -964,8 +964,8 @@ void test7()
 
     void drawChar(char c)                                                       // Draw a character
      {char s[2] = {c, 0};
-      cairo_show_text   (cr, s);
       cairo_text_extents(cr, s, &textExtents);
+      cairo_show_text   (cr, s);
       cairo_move_to     (cr, x += textExtents.x_advance, y += 0);
      }
 
