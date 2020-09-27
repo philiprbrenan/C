@@ -955,7 +955,6 @@ void test7()
   void draw(CairoTextImage i)                                                   // Draw the xml into an image
    {cr ◀ i.cr;
     cairo_set_font_size (cr, fontSize);
-    cairo_set_source_rgb(cr, 0, 0, 0);
     cairo_font_extents_t fontExtents;
     cairo_font_extents  (cr, &fontExtents);
     cairo_text_extents_t textExtents;
@@ -977,17 +976,20 @@ void test7()
     void drawTag(const $Tag parent, const int depth)                            // Print the specified parent and its children
      {void open()                                                               // Add open tag
        {if (parent ▷  isText)
-         {drawString(parent ▷ tagString, parent ▷ tagStringLength);
+         {cairo_set_source_rgb(cr, 0, 0, 0);
+          drawString(parent ▷ tagString, parent ▷ tagStringLength);
          }
         else if (parent ▷ empty)                                                // Write tag with no children as a singleton
-         {makeLocalCopyOf$TagString(s, l, parent);
+         {cairo_set_source_rgb(cr, 1, 0, 0);
+          makeLocalCopyOf$TagString(s, l, parent);
           drawChar  ($Open);
           drawString(s+1, l-2);
           drawChar  ($Slash);
           drawChar  ($Close);
          }
         else                                                                    // Opener
-         {cairo_move_to(cr, x = H * depth, y += H);
+         {cairo_set_source_rgb(cr, 0, 1, 0);
+          cairo_move_to(cr, x = H * depth, y += H);
           drawString(parent ▷ tagString, parent ▷ tagStringLength);
          }
        }
@@ -995,6 +997,7 @@ void test7()
       void close()                                                              // Add close tag unless we are on text
        {if (parent ▷ isTag && !parent ▷ empty)
          {if (!parent ▷ stayInLine) cairo_move_to(cr, x = H * depth, y += H);
+          cairo_set_source_rgb(cr, 0, 0, 1);
           drawChar  ($Open);
           drawChar  ($Slash);
           drawString($tagName, strlen(parent ▷ tagName));
