@@ -985,11 +985,11 @@ void test6()                                                                    
  }
 
 void test7()
- {char * xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
+ {char * xml = "<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
      const typeof(parseXmlFromString(xml)) X = parseXmlFromString(xml);
   assert( !X.proto->errors(X));
 
-  typeof(40) fontSize = 40;                                                                // Font size
+  typeof(100) fontSize = 100;                                                                // Font size
 
   void draw(CairoTextImage i)                                                   // Draw the xml into an image
    {typeof(i.cr) cr = i.cr;
