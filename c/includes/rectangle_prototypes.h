@@ -46,6 +46,20 @@ static  Rectangle unionWith_Rectangle_Rectangle_Rectangle
 static Rectangle intersection_Rectangle_Rectangle_Rectangle
  (const  Rectangle r,
   const  Rectangle p);
+static  RectanglePair left_RectanglePair_Rectangle_double
+ (const Rectangle      r,
+  const double d);
+static  RectanglePair right_RectanglePair_Rectangle_double
+ (const Rectangle      r,
+  const double d);
+static  RectanglePair down_RectanglePair_Rectangle_double
+ (const Rectangle      r,
+  const double d);
+static  RectanglePair up_RectanglePair_Rectangle_double
+ (const Rectangle      r,
+  const double d);
+static int valid_int_RectanglePair
+ (const RectanglePair p);
 static char * validAsString_Rectangle
  (const Rectangle r);
 static void dump_Rectangle
@@ -63,6 +77,9 @@ struct ProtoTypes_Rectangle {
   int  (*contains)(                                                             // Check whether the specified Rectangle contains another Rectangle
     const  Rectangle r,                                                         // Containing Rectangle
     const  Rectangle p);                                                        // Other Rectangle
+  RectanglePair  (*down)(                                                       // Split the Rectangle horizontally the specified distance down from the low corner: remember that y increases down the page
+    const Rectangle r,                                                          // Rectangle
+    const double d);                                                            // Distance
   void  (*dump)(                                                                // Write a Rectangle to stderr.
     const Rectangle r);                                                         // Rectangle
   int  (*equals)(                                                               // Equality to one part in a million being sufficient for our purposes
@@ -73,8 +90,14 @@ struct ProtoTypes_Rectangle {
   Rectangle  (*intersection)(                                                   // Return a valid rectangle from the intersection of the specified rectangles else return an invalid rectangle
     const  Rectangle r,                                                         // Containing Rectangle
     const  Rectangle p);                                                        // Other Rectangle
+  RectanglePair  (*left)(                                                       // Split the Rectangle vertically the specified distance from the left hand side
+    const Rectangle r,                                                          // Rectangle
+    const double d);                                                            // Distance
   int  (*point)(                                                                // Check whether the specified Rectangle is a point.
     const  Rectangle r);                                                        // Rectangle
+  RectanglePair  (*right)(                                                      // Split the Rectangle vertically the specified distance from the right hand side
+    const Rectangle r,                                                          // Rectangle
+    const double d);                                                            // Distance
   Rectangle  (*scaleCenter)(                                                    // Scale from the center
     Rectangle r,                                                                // Rectangle
     double x,                                                                   // x translation
@@ -94,6 +117,9 @@ struct ProtoTypes_Rectangle {
   Rectangle  (*unionWith)(                                                      // Form union of two rectangles: the smallest rectangle that contains both of them
     const Rectangle r,                                                          // Containing Rectangle
     const Rectangle p);                                                         // Other Rectangle
+  RectanglePair  (*up)(                                                         // Split the Rectangle vertically the specified distance up from the high corner: remember that y increases down the page
+    const Rectangle r,                                                          // Rectangle
+    const double d);                                                            // Distance
   char *  (*validAsString)(                                                     // Validity of rectangle as a string
     const Rectangle r);                                                         // Rectangle
   int  (*valid)(                                                                // Check whether the specified Rectangle is valid.
@@ -101,6 +127,13 @@ struct ProtoTypes_Rectangle {
   double  (*width)(                                                             // Width
     const Rectangle rectangle);                                                 // Rectangle
  } const ProtoTypes_Rectangle =
-{center_Rectangle_Rectangle, close_int_Rectangle_Rectangle, containsPoint_int_Rectangle_double_double, contains_int_Rectangle_Rectangle, dump_Rectangle, equals_int_Rectangle_Rectangle, height_double_Rectangle, intersection_Rectangle_Rectangle_Rectangle, point_int_Rectangle, scaleCenter_Rectangle_Rectangle_double_double, scaleHigh_Rectangle_Rectangle_double_double, scaleLow_Rectangle_Rectangle_double_double, translate_Rectangle_Rectangle_double_double, unionWith_Rectangle_Rectangle_Rectangle, validAsString_Rectangle, valid_int_Rectangle, width_double_Rectangle};
+{center_Rectangle_Rectangle, close_int_Rectangle_Rectangle, containsPoint_int_Rectangle_double_double, contains_int_Rectangle_Rectangle, down_RectanglePair_Rectangle_double, dump_Rectangle, equals_int_Rectangle_Rectangle, height_double_Rectangle, intersection_Rectangle_Rectangle_Rectangle, left_RectanglePair_Rectangle_double, point_int_Rectangle, right_RectanglePair_Rectangle_double, scaleCenter_Rectangle_Rectangle_double_double, scaleHigh_Rectangle_Rectangle_double_double, scaleLow_Rectangle_Rectangle_double_double, translate_Rectangle_Rectangle_double_double, unionWith_Rectangle_Rectangle_Rectangle, up_RectanglePair_Rectangle_double, validAsString_Rectangle, valid_int_Rectangle, width_double_Rectangle};
 Rectangle newRectangle(Rectangle allocator) {return allocator;}
+
+struct ProtoTypes_RectanglePair {
+  int  (*valid)(                                                                // Confirm that a split was valid
+    const RectanglePair p);                                                     // RectanglePair
+ } const ProtoTypes_RectanglePair =
+{valid_int_RectanglePair};
+RectanglePair newRectanglePair(RectanglePair allocator) {return allocator;}
 
