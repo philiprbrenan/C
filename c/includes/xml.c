@@ -1043,7 +1043,7 @@ void test7()
           pointerPositionInTag = currentPositionInTag;
          }
 
-        cairo_move_to  (cr, x += textExtents.x_advance, y += 0);                // Position ready for the next character
+        cairo_move_to     (cr, x += textExtents.x_advance, y += 0);             // Position ready for the next character
        }
 
       void drawString(char *s, size_t l)                                        // Draw a string
@@ -1066,8 +1066,7 @@ void test7()
          }
         else                                                                    // Opener
          {cairo_set_source_rgb(cr, 0, 0, 1);
-          startNewLine();
-          cairo_move_to(cr, x += H * depth, y);
+          startNewLine();   cairo_move_to(cr, x += H * depth, y);
           drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
          }
        }
@@ -1076,8 +1075,7 @@ void test7()
        {currentPositionInTag = 0;                                               // Position in tag
         if (parent.proto->isTag(parent) && !parent.proto->empty(parent))
          {if (!parent.proto->stayInLine(parent))
-           {startNewLine();
-            cairo_move_to(cr, x += H * depth, y);
+           {startNewLine(); cairo_move_to(cr, x += H * depth, y);
            }
           cairo_set_source_rgb(cr, 0, 0, 1);
           drawChar  (XmlOpen);
