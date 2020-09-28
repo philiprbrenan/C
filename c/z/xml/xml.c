@@ -3,9 +3,8 @@
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
 #define _GNU_SOURCE
-#include <ctype.h>
 #include <arenaTree.c>
-#include <arenaList.c>
+#include <rectangle.c>
 #include <stringBuffer.c>
 #include <cairoText.c>
 #include <utilities.c>
@@ -950,32 +949,71 @@ void test7()
      X ◁ parse$FromString(xml);
   ✓ !X ▷ errors;
 
-  fontSize ◀ 100;                                                               // Font size
 
   void draw(CairoTextImage i)                                                   // Draw the xml into an image
    {cr ◀ i.cr;
-    cairo_set_font_size (cr, fontSize);
+
+    fontSize ◀ 100;                                                             // Font size
+    cx ◁ 886; cy ◁ 366; size_t pointerTag = 0, pointerPositionInTag = 0;        // Hypothetical cursor location
+
+    cairo_set_font_size (cr, fontSize);                                         // Cairo
     cairo_font_extents_t fontExtents;
     cairo_font_extents  (cr, &fontExtents);
     cairo_text_extents_t textExtents;
 
-    H ◁ fontExtents.height; double x = H, y = 0.0;
+    H ◁ fontExtents.height;                                                     // Font details
+
+    page ◁ makeRectangleWH(0, 0, i.width, i.height);
+    editZoneAndStatus ◁ page ▷ right(0);
+    editLineNumbersAndText   ◁ editZoneAndStatus.a ▷ left(H);
+    editLineNumbers          ◁ editLineNumbersAndText.a;
+    editText                 ◁ editLineNumbersAndText.b;
+
+    void drawRectangle(Rectangle r)
+     {cairo_rectangle(cr, r.x, r.y, r ▷ width, r ▷ height);
+     }
+
+    cairo_set_source_rgb(cr, 1, 0.9, 0.9);                                      // Shade line numbers
+    drawRectangle(editLineNumbers);
+    cairo_fill(cr);
+
+    size_t currentTag = 0, currentPositionInTag = 0;                            // Current tag and position within current tag
+    double x = editText.x, y = editText.y;                                      // Initial text position
     cairo_move_to(cr, x, y);
 
-    void drawChar(char c)                                                       // Draw a character
-     {char s[2] = {c, 0};
-      cairo_text_extents(cr, s, &textExtents);
-      cairo_show_text   (cr, s);
-      cairo_move_to     (cr, x += textExtents.x_advance, y += 0);
-     }
-
-    void drawString(char *s, size_t l)                                          // Draw a string
-     {for(size_t i = 0; i < l; ++i) drawChar(s[i]);
-     }
-
     void drawTag(const $Tag parent, const int depth)                            // Print the specified parent and its children
-     {void open()                                                               // Add open tag or text
-       {if (parent ▷ isText)                                                    // Text
+     {currentTag = parent.node.offset;                                          // In case the pointer is located in this tag
+
+      void startNewLine()                                                       // Move to next line
+       {cairo_move_to(cr, x = editText.x, y += H);
+       }
+
+      void drawChar(char c)                                                     // Draw a character
+       {char s[2] = {c, 0};
+        cairo_text_extents(cr, s, &textExtents);
+        if (!editText ▷ containsPoint(x + textExtents.x_advance, y))
+         {startNewLine();
+         }
+
+        cairo_show_text   (cr, s);                                              // Write char
+        cairo_text_extents(cr, s, &textExtents);
+
+        ++currentPositionInTag;                                                 // Cursor location
+        if (cx >= x && cx <= x + textExtents.x_advance && cy <= y && cy >= y-H)
+         {pointerTag           = currentTag;
+          pointerPositionInTag = currentPositionInTag;
+         }
+
+        cairo_move_to  (cr, x += textExtents.x_advance, y += 0);                // Position ready for the next character
+       }
+
+      void drawString(char *s, size_t l)                                        // Draw a string
+       {for(size_t i = 0; i < l; ++i) drawChar(s[i]);
+       }
+
+      void open()                                                               // Add open tag or text
+       {currentPositionInTag = 0;                                               // Position in tag
+        if (parent ▷ isText)                                                    // Text
          {cairo_set_source_rgb(cr, 0, 0, 0);
           drawString(parent ▷ tagString, parent ▷ tagStringLength);
          }
@@ -989,14 +1027,19 @@ void test7()
          }
         else                                                                    // Opener
          {cairo_set_source_rgb(cr, 0, 0, 1);
-          cairo_move_to(cr, x = H * depth, y += H);
+          startNewLine();
+          cairo_move_to(cr, x += H * depth, y);
           drawString(parent ▷ tagString, parent ▷ tagStringLength);
          }
        }
 
       void close()                                                              // Add close tag unless we are on text
-       {if (parent ▷ isTag && !parent ▷ empty)
-         {if (!parent ▷ stayInLine) cairo_move_to(cr, x = H * depth, y += H);
+       {currentPositionInTag = 0;                                               // Position in tag
+        if (parent ▷ isTag && !parent ▷ empty)
+         {if (!parent ▷ stayInLine)
+           {startNewLine();
+            cairo_move_to(cr, x += H * depth, y);
+           }
           cairo_set_source_rgb(cr, 0, 0, 1);
           drawChar  ($Open);
           drawChar  ($Slash);
@@ -1008,7 +1051,11 @@ void test7()
       open(); $fe(child, parent) drawTag(child, depth+1); close();              // Draw this level and its children
      }
 
-    drawTag(X ▷ root, 0);                                                       // Start at the root
+    drawTag(X ▷ root, -1);                                                      // Start at the root
+
+      n ◁ X.tree ▷ nodeFromOffset(pointerTag);                                  // Pointer location
+    ✓ n ▷ equalsString("ee");
+    ✓ pointerPositionInTag == 1;
    }
 
   i ◁ createCairoTextImage(draw, 2000, 2000, "xml2.png", "a");                  // Create image containing some text and check its digest
