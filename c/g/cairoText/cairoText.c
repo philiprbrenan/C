@@ -19,6 +19,8 @@
 typedef struct $Image                                                           // Create an image
  {const struct ProtoTypes_$Image *proto;                                        // Methods associated with an arena tree
   cairo_t           * cr;                                                       // Cairo
+  cairo_surface_t   * surface;                                                  // Surface on which we are drawing
+  int width, height;                                                            // Dimensions of the surface
   const StringBuffer  out;                                                      // The output image file
  } $Image;
 
@@ -58,7 +60,7 @@ $Image create$Image                                                             
   cairo_set_font_face (cr, cairoFontFace);
 
   iFile ◁ makeStringBufferFromString(imageFile);                                // Image file name
-  i ◁ new $Image(out: iFile, cr: cr);
+  i ◁ new $Image(out: iFile, cr: cr, surface: surface, width: x, height: y);
 
   draw(i);                                                                      // Draw
 
