@@ -20,6 +20,8 @@
 typedef struct CairoTextImage                                                           // Create an image
  {const struct ProtoTypes_CairoTextImage *proto;                                        // Methods associated with an arena tree
   cairo_t           * cr;                                                       // Cairo
+  cairo_surface_t   * surface;                                                  // Surface on which we are drawing
+  int width, height;                                                            // Dimensions of the surface
   const StringBuffer  out;                                                      // The output image file
  } CairoTextImage;
 
@@ -59,7 +61,7 @@ CairoTextImage createCairoTextImage                                             
   cairo_set_font_face (cr, cairoFontFace);
 
   const typeof(makeStringBufferFromString(imageFile)) iFile = makeStringBufferFromString(imageFile);                                // Image file name
-  const typeof(newCairoTextImage(({struct CairoTextImage t = {out: iFile, cr: cr, proto: &ProtoTypes_CairoTextImage}; t;}))) i = newCairoTextImage(({struct CairoTextImage t = {out: iFile, cr: cr, proto: &ProtoTypes_CairoTextImage}; t;}));
+  const typeof(newCairoTextImage(({struct CairoTextImage t = {out: iFile, cr: cr, surface: surface, width: x, height: y, proto: &ProtoTypes_CairoTextImage}; t;}))) i = newCairoTextImage(({struct CairoTextImage t = {out: iFile, cr: cr, surface: surface, width: x, height: y, proto: &ProtoTypes_CairoTextImage}; t;}));
 
   draw(i);                                                                      // Draw
 
