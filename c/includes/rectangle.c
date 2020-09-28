@@ -8,6 +8,7 @@
 */
 #define _GNU_SOURCE
 #include <math.h>
+#include <cairo.h>
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an Rectangle.
