@@ -954,7 +954,7 @@ void test7()
    {cr ◀ i.cr;
 
     fontSize ◀ 100;                                                             // Font size
-    cx ◁ 886; cy ◁ 366; size_t pointerTag = 0, pointerPositionInTag = 0;        // Hypothetical cursor location
+    cx ◁ 1066; cy ◁ 381; size_t pointerTag = 0, pointerPositionInTag = 0;       // Hypothetical cursor location
 
     cairo_set_font_size (cr, fontSize);                                         // Cairo
     cairo_font_extents_t fontExtents;
@@ -977,15 +977,19 @@ void test7()
     drawRectangle(editLineNumbers);
     cairo_fill(cr);
 
-    size_t currentTag = 0, currentPositionInTag = 0;                            // Current tag and position within current tag
+    size_t currentTagOffset = 0, currentTagNumber = -1, currentPositionInTag = 0;// Current tag and position within current tag
     double x = editText.x, y = editText.y;                                      // Initial text position
     cairo_move_to(cr, x, y);
 
     void drawTag(const $Tag parent, const int depth)                            // Print the specified parent and its children
-     {currentTag = parent.node.offset;                                          // In case the pointer is located in this tag
+     {currentTagOffset = parent.node.offset;                                    // In case the pointer is located in this tag
 
       void startNewLine()                                                       // Move to next line
-       {cairo_move_to(cr, x = editText.x, y += H);
+       {cairo_move_to       (cr, editLineNumbers.x, y + H);
+        cairo_set_source_rgb(cr, 0, 0, 0);                                      // Color for line number
+        lsprintf(n, 1024, "%lu", ++currentTagNumber);                           // Format line number
+        cairo_show_text     (cr, n);                                            // Write char
+        cairo_move_to       (cr, x = editText.x, y += H);
        }
 
       void drawChar(char c)                                                     // Draw a character
@@ -1000,7 +1004,7 @@ void test7()
 
         ++currentPositionInTag;                                                 // Cursor location
         if (cx >= x && cx <= x + textExtents.x_advance && cy <= y && cy >= y-H)
-         {pointerTag           = currentTag;
+         {pointerTag           = currentTagOffset;
           pointerPositionInTag = currentPositionInTag;
          }
 
@@ -1016,14 +1020,20 @@ void test7()
         if (parent ▷ isText)                                                    // Text
          {cairo_set_source_rgb(cr, 0, 0, 0);
           drawString(parent ▷ tagString, parent ▷ tagStringLength);
+          currentTagNumber++;                                                   // Count string as a tag
          }
-        else if (parent ▷ empty)                                                // Write tag with no children as a singleton
+        else if (parent ▷ empty)                                                // Write tag with no children on the same line
          {cairo_set_source_rgb(cr, 1, 0, 0);
           makeLocalCopyOf$TagString(s, l, parent);
           drawChar  ($Open);
           drawString(s+1, l-2);
-          drawChar  ($Slash);
           drawChar  ($Close);
+          drawChar  ($Open);
+          drawChar  ($Slash);
+          n ◁ parent ▷ tagName;
+          drawString(n, strlen(n));
+          drawChar  ($Close);
+          currentTagNumber += 2;                                                // Count open and close empty non text tag
          }
         else                                                                    // Opener
          {cairo_set_source_rgb(cr, 0, 0, 1);
@@ -1034,15 +1044,18 @@ void test7()
 
       void close()                                                              // Add close tag unless we are on text
        {currentPositionInTag = 0;                                               // Position in tag
-        if (parent ▷ isTag && !parent ▷ empty)
-         {if (!parent ▷ stayInLine)
-           {startNewLine(); cairo_move_to(cr, x += H * depth, y);
+        if (parent ▷ isTag)
+         {if (!parent ▷ empty)
+           {if (!parent ▷ stayInLine)
+             {startNewLine(); cairo_move_to(cr, x += H * depth, y);
+             }
+            else currentTagNumber++;                                            // Count inline closing tag
+            cairo_set_source_rgb(cr, 0, 0, 1);
+            drawChar  ($Open);
+            drawChar  ($Slash);
+            drawString($tagName, strlen(parent ▷ tagName));
+            drawChar  ($Close);
            }
-          cairo_set_source_rgb(cr, 0, 0, 1);
-          drawChar  ($Open);
-          drawChar  ($Slash);
-          drawString($tagName, strlen(parent ▷ tagName));
-          drawChar  ($Close);
          }
        }
 
