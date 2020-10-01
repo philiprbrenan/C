@@ -1,14 +1,6 @@
-static XmlTag makeXmlTag_XmlParse_ArenaListNode
- (const XmlParse        xml,
-  const ArenaListNode node);
-static XmlParse makeXmlParseFromFile
- (const char * const sourceFileName);
-static XmlParse makeXmlParseFromString
- (const char * const sourceFileName,
-  char       * const source,
-  const size_t       length);
-static XmlParse parseXmlFromString
- (char * string);
+static XmlParse  parseXmlFromString
+ (const char * const string,
+  const size_t       width);
 static void free_XmlParse
  (const XmlParse x);
 static void free_XmlValidate
@@ -154,9 +146,6 @@ struct ProtoTypes_XmlParse {
     const XmlParse x);                                                          // Xml descriptor
   XmlTag  (*last)(                                                              // Return the first child tag in the specified Xml parse tree.
     const XmlParse xml);                                                        // Parent tag
-  XmlTag  (*makeXmlTag)(                                                        // Make a tag descriptor from a parse tree node holding the tag
-    const XmlParse xml,                                                         // Xml parse tree
-    const ArenaListNode node);                                                  // Node holding tag
   StringBuffer  (*prettyPrint)(                                                 // Pretty print the Xml parse tree with additional spacing between tags to make the tree easier to read.
     const XmlParse xml);                                                        // Xml parse tree
   void  (*printAssert)(                                                         // Pretty print the Xml parse tree as an assert statement
@@ -173,8 +162,13 @@ struct ProtoTypes_XmlParse {
     const XmlParse xml,                                                         // Xml parse tree
     void (* const function) (XmlTag tag, int start, int depth));                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
  } const ProtoTypes_XmlParse =
-{by_XmlParse_sub, countChildren_size_Xml, count_size_Xml, errors_size_XmlParse, findFirstChild_XmlTag_XmlParse_string, findFirstTag_XmlTag_XmlParse_string, first_XmlParse, free_XmlParse, last_XmlParse, makeXmlTag_XmlParse_ArenaListNode, prettyPrint_stringBuffer_Xml, printAssert_Xml_string, print_stringBuffer_Xml, printsAs_int_Xml_string, root_XmlParse, scan_XmlParse_sub};
+{by_XmlParse_sub, countChildren_size_Xml, count_size_Xml, errors_size_XmlParse, findFirstChild_XmlTag_XmlParse_string, findFirstTag_XmlTag_XmlParse_string, first_XmlParse, free_XmlParse, last_XmlParse, prettyPrint_stringBuffer_Xml, printAssert_Xml_string, print_stringBuffer_Xml, printsAs_int_Xml_string, root_XmlParse, scan_XmlParse_sub};
 XmlParse newXmlParse(XmlParse allocator) {return allocator;}
+
+struct ProtoTypes_XmlParseOptions {
+ } const ProtoTypes_XmlParseOptions =
+{};
+XmlParseOptions newXmlParseOptions(XmlParseOptions allocator) {return allocator;}
 
 struct ProtoTypes_XmlTag {
   void  (*by)(                                                                  // Traverse the Xml parse tree rooted at the specified tag in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
