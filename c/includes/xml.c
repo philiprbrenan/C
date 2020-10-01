@@ -37,6 +37,14 @@ typedef struct XmlTag                                                           
   ArenaListNode           node;                                                 // Arena tree node in the xml parse tree that contains this tag
  } XmlTag;
 
+typedef struct XmlParseOptions                                                    // Options for an Xml parse
+ {const struct ProtoTypes_XmlParseOptions *proto;                                 // Prototypes for methods
+  const char  *           location;                                             // Location of string in memory to be parsed
+  const size_t            length;                                               // Length of string ot be parsed
+  const size_t            width;                                                // Size of the extra data attached to each parse tree node
+  StringBuffer            fileName;                                             // File name optionally associated with parse
+ } XmlParseOptions;
+
 #include <xml_prototypes.h>
 #define makeLocalCopyOfXmlTagString(string,stringLength,tag) const size_t stringLength = content_ArenaListNode(tag.node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer_ArenaListNode(tag.node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
@@ -46,45 +54,22 @@ typedef struct XmlTag                                                           
 #define XmlQuestion '?'
 #define XmlExclaim  '!'
 
-static XmlTag makeXmlTag_XmlParse_ArenaListNode                                       //P Make a tag descriptor from a parse tree node holding the tag
+XmlTag makeXmlTag_XmlParse_ArenaListNode                                              //P Make a tag descriptor from a parse tree node holding the tag
  (const XmlParse        xml,                                                      // Xml parse tree
   const ArenaListNode node)                                                     // Node holding tag
  {return newXmlTag(({struct XmlTag t = {xml: xml, node: node, proto: &ProtoTypes_XmlTag}; t;}));
  }
 
-static XmlParse makeXmlParseFromFile                                                // Make a parse Xml from the contents of a file
- (const char * const sourceFileName)                                            // Name of file holding Xml to be parsed
- {XmlParse p;                                                                     // The resulting parse
-
-  ssize_t reader(char * location, size_t length)                                // Function to process the mapped file. Return non negative on success, negative on failure: this value will be returned to the caller.
-   {XmlParse q = makeXmlParseFromString(sourceFileName, location, length);          // Parse file contents
-    memcpy((void *)&p, (void *)&q, sizeof(XmlParse));                             // Temporarily subvert the const settings
-    return 1;
-   }
-
-  readFile(sourceFileName, reader);                                             // Read the source and parse it
-
-  return p;
- }
-
-static XmlValidate makeXmlValidate()                                                // Make an Xml single step validator
- {const typeof(makeArenaTree()) possibilities = makeArenaTree();                                              // Single Step Validation
-  const typeof(makeArenaTreeWithWidth(sizeof(size_t))) first = makeArenaTreeWithWidth(sizeof(size_t));                       // First set of possibilities for each tag
-  const typeof(makeArenaTreeWithWidth(sizeof(size_t))) next = makeArenaTreeWithWidth(sizeof(size_t));                       // Next set of possibilities for each Dita child tag under a given parent tag
-  XmlValidate valid = {possibilities: possibilities,
-    first: first, next: next, proto: &ProtoTypes_XmlValidate};
-  return valid;
- }
-
-static XmlParse makeXmlParseFromString                                              // Make a parse Xml from the contents of a file presented as a string
- (const char * const sourceFileName,                                            // Name of file holding Xml or zero if no file is associated with this source
-  char       * const source,                                                    // Source text to be parsed
-  const size_t       length)                                                    // Length of source text to be parsed
- {const typeof(makeStringBufferFromString(sourceFileName ? : "")) sourceFN = makeStringBufferFromString(sourceFileName ? : "");            // File to parse
+XmlParse makeXmlParse                                                               // Perform requested parse
+ (XmlParseOptions options)                                                        // Name of file holding Xml or zero if no file is associated with this source
+ {const typeof(options.fileName) sourceFN = options.fileName;                                             // File to parse if any
   const typeof(makeArenaList()) parseTree = makeArenaList();                                              // Parse tree,
   const typeof(makeArenaListWithWidth(sizeof(size_t))) errors = makeArenaListWithWidth(sizeof(size_t));                       // Errors list with location of error
   XmlParse xml    = {fileName: sourceFN, tree: parseTree,                         // Create Xml descriptor
                    errors: errors, proto: &ProtoTypes_XmlParse};
+
+  const typeof(options.location) source = options.location; const typeof(options.length) length = options.length;                           // Zero terminated string to parse
+  assert(!source[length]);                                                      // Check we have a trailing zero so that the following loop terminates
 
   typeof(parseTree.proto->root(parseTree)) currentParent = parseTree.proto->root(parseTree);                                             // Current parent node
 
@@ -97,8 +82,10 @@ static XmlParse makeXmlParseFromString                                          
     const typeof(p - source) o = p - source;                                                             // Offset of the error
 
     va_start(va, format); m.proto->addVaFormat(m, format, va); va_end(va);              // Format error message in a buffer of adequate size
-
-    m.proto->add(m, "\n  File     : "); m.proto->addStringBuffer(m, sourceFN);            // Add file name
+    if (sourceFN.proto)                                                         // Add file name
+     {m.proto->add(m, "\n  File     : ");
+      m.proto->addStringBuffer(m, sourceFN);
+     }
     m.proto->addFormat(m, "\n  At offset: %lu\n", o);                                   // Add offset in file
     makeLocalCopyOfStringBuffer(M, L, m);                                       // The error message
 
@@ -118,8 +105,7 @@ static XmlParse makeXmlParseFromString                                          
     return 1;                                                                   // Its all white sace
    } // remainderIsWhiteSpace
 
-  assert(!source[length]);                                                      // Check we have a trailing zero so that the following loop terminates
-  for(char * p = source; *p;)                                                   // Break out tags and text
+  for(const char * p = source; *p;)                                             // Break out tags and text
    {const typeof(strchr(p, XmlOpen)) o = strchr(p, XmlOpen);                                                       // Find next open
 
     if (o)                                                                      // Found next open
@@ -195,16 +181,52 @@ static XmlParse makeXmlParseFromString                                          
    }
 
   return xml;
- } // makeXmlParseFromFile
+ } // makeXmlParse
 
-static XmlParse parseXmlFromString                                                  // Make a parse Xml from a string.
- (char * string)                                                                // String of Xml
- {return makeXmlParseFromString(0, string, strlen(string));
+XmlParse makeXmlParseFromFile                                                       // Parse Xml held in a file
+ (const char * const sourceFileName,                                            // Name of file holding Xml to be parsed
+  const size_t width)                                                           // Size of extra data associated with each node in the parse tree
+ {XmlParse p;                                                                     // The resulting parse
+
+  ssize_t reader(char * location, size_t length)                                // Function to process the mapped file. Return non negative on success, negative on failure: this value will be returned to the caller.
+   {StringBuffer  f = makeStringBufferFromString(sourceFileName);
+    XmlParseOptions o = newXmlParseOptions(({struct XmlParseOptions t = {location: location, length: length, width: width, fileName: f, proto: &ProtoTypes_XmlParseOptions}; t;}));
+    XmlParse        q = makeXmlParse(o);                                            // Parse
+    memcpy((void *)&p, (void *)&q, sizeof(XmlParse));                             // Temporarily subvert the const settings to return the results
+    return 1;
+   }
+
+  readFile(sourceFileName, reader);                                             // Read the source and parse it
+
+  return p;
+ }
+
+XmlParse makeXmlParseFromString                                                     // Parse Xml  held in a string
+ (const char * const source,                                                    // Source text to be parsed
+  const size_t       length,                                                    // Length of source text to be parsed
+  const size_t       width)                                                     // Size of extra data associated with each node in the parse tree
+ {XmlParseOptions o = newXmlParseOptions(({struct XmlParseOptions t = {location: source, length: length, width: width, proto: &ProtoTypes_XmlParseOptions}; t;}));
+  return makeXmlParse(o);                                                         // Parse
+ }
+
+XmlValidate makeXmlValidate()                                                       // Make an Xml single step validator
+ {const typeof(makeArenaTree()) possibilities = makeArenaTree();                                              // Single Step Validation
+  const typeof(makeArenaTreeWithWidth(sizeof(size_t))) first = makeArenaTreeWithWidth(sizeof(size_t));                       // First set of possibilities for each tag
+  const typeof(makeArenaTreeWithWidth(sizeof(size_t))) next = makeArenaTreeWithWidth(sizeof(size_t));                       // Next set of possibilities for each Dita child tag under a given parent tag
+  XmlValidate valid = {possibilities: possibilities,
+    first: first, next: next, proto: &ProtoTypes_XmlValidate};
+  return valid;
+ }
+
+static XmlParse  parseXmlFromString                                                 // Make a parse Xml from a string.
+ (const char * const string,                                                    // String of Xml
+  const size_t       width)                                                     // Size of extra data associated with each node in the parse tree
+ {return makeXmlParseFromString(string, strlen(string), width);
  }
 
 static void free_XmlParse                                                         // Free an Xml parse
  (const XmlParse x)                                                               // Xml descriptor
- {x.tree.proto->free(x.tree); x.errors.proto->free(x.errors); x.fileName.proto->free(x.fileName);
+ {x.tree.proto->free(x.tree); x.errors.proto->free(x.errors); if (x.fileName.proto) x.fileName.proto->free(x.fileName);
  }
 
 static void free_XmlValidate                                                      // Free an Xml validator
@@ -275,22 +297,22 @@ static XmlTag last_XmlTag                                                       
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->last(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 273 "/home/phil/c/z/xml/xml.c"
+#line 295 "/home/phil/c/z/xml/xml.c"
 static XmlTag next_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->next(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 273 "/home/phil/c/z/xml/xml.c"
+#line 295 "/home/phil/c/z/xml/xml.c"
 static XmlTag prev_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->prev(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 273 "/home/phil/c/z/xml/xml.c"
+#line 295 "/home/phil/c/z/xml/xml.c"
 static XmlTag parent_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->parent(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 273 "/home/phil/c/z/xml/xml.c"
+#line 295 "/home/phil/c/z/xml/xml.c"
 
 static XmlTag first_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
  (const XmlParse xml)                                                             // Parent tag
@@ -300,7 +322,7 @@ static XmlTag last_XmlParse                                                     
  (const XmlParse xml)                                                             // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: xml, node: xml.tree.proto->last(xml.tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 279 "/home/phil/c/z/xml/xml.c"
+#line 301 "/home/phil/c/z/xml/xml.c"
 
 //D1 Location                                                                   // Check the current location in the Xml parse tre
 
@@ -331,7 +353,7 @@ static int isLast_int_XmlTag                                                    
   const typeof(parent.proto->last(parent)) f = parent.proto->last(parent);
   return f.proto->equals(f, tag);
  }
-#line 303 "/home/phil/c/z/xml/xml.c"
+#line 325 "/home/phil/c/z/xml/xml.c"
 
 //D1 Text methods                                                               // Methods that operate on text tags
 
@@ -654,7 +676,7 @@ static int printsAs_int_XmlTag_string                                           
   s.proto->free(s);
   return r;
  }
-#line 618 "/home/phil/c/z/xml/xml.c"
+#line 640 "/home/phil/c/z/xml/xml.c"
 
 static void printAssert_XmlTag                                                    //P Print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
@@ -689,7 +711,7 @@ static void printAssert_Xml_string                                              
 #if __INCLUDE_LEVEL__ == 0
 
 void test0()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //TmakeXmlParseFromFile //Tempty //TisTag //tText
- {const typeof(parseXmlFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h")) x = parseXmlFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h");
+ {const typeof(parseXmlFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h", 0)) x = parseXmlFromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h", 0);
   assert( x.proto->printsAs(x, "<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></a>"));
 
   if (1)
@@ -724,7 +746,7 @@ void test0()                                                                    
 
 void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TparseXmlFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot //TstayInLine
  {char * xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
-  const typeof(parseXmlFromString(xml)) x = parseXmlFromString(xml);
+  const typeof(parseXmlFromString(xml, 0)) x = parseXmlFromString(xml, 0);
 
   assert( !x.proto->errors(x));
 //        x.proto->printAssert(x, "x");
@@ -793,7 +815,7 @@ void test2()                                                                    
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
   if (!developmentMode()) strcpy(file, "/home/runner/work/C/C/c/z/xml/samples/foreword.dita");
 
-  const typeof(makeXmlParseFromFile(file)) x = makeXmlParseFromFile(file);
+  const typeof(makeXmlParseFromFile(file, 0)) x = makeXmlParseFromFile(file, 0);
 
   const typeof(x.proto->findFirstTag(x, "p")) p = x.proto->findFirstTag(x, "p"); const typeof(x.proto->findFirstTag(x, "conbody")) c = x.proto->findFirstTag(x, "conbody");
 
@@ -808,7 +830,7 @@ void test2()                                                                    
 
 void test3()                                                                    //TmakeXmlParseFromString //TprintsAs //TonlyText //Tby //Tdepth
  {const typeof("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>") xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>";
-    const typeof(makeXmlParseFromString(0, (void *)xml, strlen(xml))) x = makeXmlParseFromString(0, (void *)xml, strlen(xml));
+    const typeof(makeXmlParseFromString(xml, strlen(xml), 0)) x = makeXmlParseFromString(xml, strlen(xml), 0);
 
   assert( x.proto->printsAs(x, "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>"));
 
@@ -834,7 +856,7 @@ void test4()                                                                    
  {const typeof("/home/phil/c/z/xml/validation/validation.xml") file = "/home/phil/c/z/xml/validation/validation.xml";
   if (!developmentMode()) return;                                               // Does not work on gitHub - possibly out of memory or Cpu?
 
-  const typeof(makeXmlParseFromFile((char *)file)) xml = makeXmlParseFromFile((char *)file);
+  const typeof(makeXmlParseFromFile(file, 0)) xml = makeXmlParseFromFile(file, 0);
   const typeof(makeXmlValidate()) validate = makeXmlValidate();
 
     const typeof(xml.proto->findFirstChild(xml, "possibilities")) possibilities = xml.proto->findFirstChild(xml, "possibilities");                      // The possibilities possibilitiesArray assigns a number to each set of possible tags
@@ -930,14 +952,14 @@ void test4()                                                                    
  } // test4
 
 void test5()                                                                    //ThasText //TstayInline //TprettyPrint
- {char * xml = "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>";  // Many text editorsd, Geany included, strip trailing blanks which can make here documents with trailing blanks difficult to deal with.
+ {const typeof("<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>") xml = "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>";         // Avoiding trailing blanks
 
-  const typeof(parseXmlFromString(xml)) x = parseXmlFromString(xml);  assert( ! x.proto->errors(x));
-  const typeof(x.proto->findFirstTag(x, "b")) b = x.proto->findFirstTag(x, "b");  assert(   b.proto->hasText(b));
-                              assert( ! b.proto->stayInLine(b));
-  const typeof(x.proto->findFirstTag(x, "c")) c = x.proto->findFirstTag(x, "c");  assert(   c.proto->stayInLine(c));
-  const typeof(c.proto->next(c)) C = c.proto->next(c);               assert(   C.proto->stayInLine(C));
-  const typeof(x.proto->findFirstTag(x, "d")) d = x.proto->findFirstTag(x, "d");  assert( ! d.proto->hasText(d));
+  const typeof(parseXmlFromString(xml, 0)) x = parseXmlFromString(xml, 0);  assert( ! x.proto->errors(x));
+  const typeof(x.proto->findFirstTag(x, "b")) b = x.proto->findFirstTag(x, "b");     assert(   b.proto->hasText(b));
+                                 assert( ! b.proto->stayInLine(b));
+  const typeof(x.proto->findFirstTag(x, "c")) c = x.proto->findFirstTag(x, "c");     assert(   c.proto->stayInLine(c));
+  const typeof(c.proto->next(c)) C = c.proto->next(c);                  assert(   C.proto->stayInLine(C));
+  const typeof(x.proto->findFirstTag(x, "d")) d = x.proto->findFirstTag(x, "d");     assert( ! d.proto->hasText(d));
 
     const typeof(x.proto->prettyPrint(x)) p = x.proto->prettyPrint(x);
   assert( p.proto->printsAs(p, 
@@ -955,8 +977,8 @@ void test5()                                                                    
  }
 
 void test6()                                                                    //Tscan
- {char * xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
-     const typeof(parseXmlFromString(xml)) x = parseXmlFromString(xml);
+ {const typeof("<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>") xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
+     const typeof(parseXmlFromString(xml, 0)) x = parseXmlFromString(xml, 0);
   assert( !x.proto->errors(x));
 
   void draw(CairoTextImage i)
@@ -984,8 +1006,9 @@ void test6()                                                                    
  }
 
 void test7()
- {char * xml = "<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
-     const typeof(parseXmlFromString(xml)) X = parseXmlFromString(xml);
+ {const typeof("<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>") xml = "<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
+
+     const typeof(parseXmlFromString(xml, 0)) X = parseXmlFromString(xml, 0);
   assert( !X.proto->errors(X));
 
 
