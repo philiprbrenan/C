@@ -58,6 +58,11 @@ static void free_StringBuffer                                                   
 
 //D1 Concatenate                                                                // Concatenate various items to a string buffer.
 
+static int valid                                                                // Check whether the StringBuffer has been initialized
+ (const StringBuffer buffer)                                                               // StringBuffer
+ {return !!buffer.string.proto;
+ }
+
 static void add_StringBuffer_string                                                        // Concatenate a string
  (const StringBuffer buffer,                                                               // StringBuffer
   const char * const string)                                                    // Zero terminated string
@@ -621,9 +626,18 @@ void test10()                                                                   
     a.proto->free(a);
  }
 
+void test11()                                                                   //Tvalid
+ {StringBuffer  a = newStringBuffer(({struct StringBuffer t = {proto: &ProtoTypes_StringBuffer};   t;}));
+  assert( !a.proto->valid(a));
+     const typeof(makeStringBuffer()) b = makeStringBuffer();
+  assert(  b.proto->valid(b));
+     b.proto->free(b);
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7, test8, test9, test10, 0};
+ {void (*tests[])(void) = {test0,  test1,  test2, test3, test4,
+                           test5,  test6,  test7, test8, test9,
+                           test10, test11, 0};
   run_tests("StringBuffer", 1, tests);
   return 0;
  }
