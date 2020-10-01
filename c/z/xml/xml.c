@@ -36,6 +36,14 @@ typedef struct $Tag                                                             
   ArenaListNode           node;                                                 // Arena tree node in the xml parse tree that contains this tag
  } $Tag;
 
+typedef struct $ParseOptions                                                    // Options for an $ parse
+ {const struct ProtoTypes_$ParseOptions *proto;                                 // Prototypes for methods
+  const char  *           location;                                             // Location of string in memory to be parsed
+  const size_t            length;                                               // Length of string ot be parsed
+  const size_t            width;                                                // Size of the extra data attached to each parse tree node
+  StringBuffer            fileName;                                             // File name optionally associated with parse
+ } $ParseOptions;
+
 #include <$$_prototypes.h>
 #define makeLocalCopyOf$TagString(string,stringLength,tag) const size_t stringLength = content_ArenaListNode(tag.node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer_ArenaListNode(tag.node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
@@ -45,45 +53,22 @@ typedef struct $Tag                                                             
 #define $Question '?'
 #define $Exclaim  '!'
 
-static $Tag make$Tag_$Parse_ArenaListNode                                       //P Make a tag descriptor from a parse tree node holding the tag
+$Tag make$Tag_$Parse_ArenaListNode                                              //P Make a tag descriptor from a parse tree node holding the tag
  (const $Parse        xml,                                                      // Xml parse tree
   const ArenaListNode node)                                                     // Node holding tag
  {return new $Tag(xml: xml, node: node);
  }
 
-static $Parse make$ParseFromFile                                                // Make a parse $ from the contents of a file
- (const char * const sourceFileName)                                            // Name of file holding $ to be parsed
- {$Parse p;                                                                     // The resulting parse
-
-  ssize_t reader(char * location, size_t length)                                // Function to process the mapped file. Return non negative on success, negative on failure: this value will be returned to the caller.
-   {$Parse q = make$ParseFromString(sourceFileName, location, length);          // Parse file contents
-    memcpy((void *)&p, (void *)&q, sizeof($Parse));                             // Temporarily subvert the const settings
-    return 1;
-   }
-
-  readFile(sourceFileName, reader);                                             // Read the source and parse it
-
-  return p;
- }
-
-static $Validate make$Validate()                                                // Make an $ single step validator
- {possibilities ◁ makeArenaTree();                                              // Single Step Validation
-  first         ◁ makeArenaTreeWithWidth(sizeof(size_t));                       // First set of possibilities for each tag
-  next          ◁ makeArenaTreeWithWidth(sizeof(size_t));                       // Next set of possibilities for each Dita child tag under a given parent tag
-  $Validate valid = {possibilities: possibilities,
-    first: first, next: next, proto: &ProtoTypes_$Validate};
-  return valid;
- }
-
-static $Parse make$ParseFromString                                              // Make a parse $ from the contents of a file presented as a string
- (const char * const sourceFileName,                                            // Name of file holding $ or zero if no file is associated with this source
-  char       * const source,                                                    // Source text to be parsed
-  const size_t       length)                                                    // Length of source text to be parsed
- {sourceFN      ◁ makeStringBufferFromString(sourceFileName ? : "");            // File to parse
+$Parse make$Parse                                                               // Perform requested parse
+ ($ParseOptions options)                                                        // Name of file holding $ or zero if no file is associated with this source
+ {sourceFN      ◁ options.fileName;                                             // File to parse if any
   parseTree     ◁ makeArenaList();                                              // Parse tree,
   errors        ◁ makeArenaListWithWidth(sizeof(size_t));                       // Errors list with location of error
   $Parse xml    = {fileName: sourceFN, tree: parseTree,                         // Create $ descriptor
                    errors: errors, proto: &ProtoTypes_$Parse};
+
+  source ◁ options.location; length ◁ options.length;                           // Zero terminated string to parse
+  assert(!source[length]);                                                      // Check we have a trailing zero so that the following loop terminates
 
   currentParent ◀ parseTree ▷ root;                                             // Current parent node
 
@@ -96,8 +81,10 @@ static $Parse make$ParseFromString                                              
     o ◁ p - source;                                                             // Offset of the error
 
     va_start(va, format); m ▷ addVaFormat(format, va); va_end(va);              // Format error message in a buffer of adequate size
-
-    m ▷ add      ("\n  File     : "); m ▷ addStringBuffer(sourceFN);            // Add file name
+    if (sourceFN.proto)                                                         // Add file name
+     {m ▷ add    ("\n  File     : ");
+      m ▷ addStringBuffer(sourceFN);
+     }
     m ▷ addFormat("\n  At offset: %lu\n", o);                                   // Add offset in file
     makeLocalCopyOfStringBuffer(M, L, m);                                       // The error message
 
@@ -117,8 +104,7 @@ static $Parse make$ParseFromString                                              
     return 1;                                                                   // Its all white sace
    } // remainderIsWhiteSpace
 
-  assert(!source[length]);                                                      // Check we have a trailing zero so that the following loop terminates
-  for(char * p = source; *p;)                                                   // Break out tags and text
+  for(const char * p = source; *p;)                                             // Break out tags and text
    {o ◁ strchr(p, $Open);                                                       // Find next open
 
     if (o)                                                                      // Found next open
@@ -194,16 +180,52 @@ static $Parse make$ParseFromString                                              
    }
 
   return xml;
- } // make$ParseFromFile
+ } // make$Parse
 
-static $Parse parse$FromString                                                  // Make a parse $ from a string.
- (char * string)                                                                // String of $
- {return make$ParseFromString(0, string, strlen(string));
+$Parse make$ParseFromFile                                                       // Parse $ held in a file
+ (const char * const sourceFileName,                                            // Name of file holding $ to be parsed
+  const size_t width)                                                           // Size of extra data associated with each node in the parse tree
+ {$Parse p;                                                                     // The resulting parse
+
+  ssize_t reader(char * location, size_t length)                                // Function to process the mapped file. Return non negative on success, negative on failure: this value will be returned to the caller.
+   {StringBuffer  f = makeStringBufferFromString(sourceFileName);
+    $ParseOptions o = new $ParseOptions(location: location, length: length, width: width, fileName: f);
+    $Parse        q = make$Parse(o);                                            // Parse
+    memcpy((void *)&p, (void *)&q, sizeof($Parse));                             // Temporarily subvert the const settings to return the results
+    return 1;
+   }
+
+  readFile(sourceFileName, reader);                                             // Read the source and parse it
+
+  return p;
+ }
+
+$Parse make$ParseFromString                                                     // Parse $  held in a string
+ (const char * const source,                                                    // Source text to be parsed
+  const size_t       length,                                                    // Length of source text to be parsed
+  const size_t       width)                                                     // Size of extra data associated with each node in the parse tree
+ {$ParseOptions o = new $ParseOptions(location: source, length: length, width: width);
+  return make$Parse(o);                                                         // Parse
+ }
+
+$Validate make$Validate()                                                       // Make an $ single step validator
+ {possibilities ◁ makeArenaTree();                                              // Single Step Validation
+  first         ◁ makeArenaTreeWithWidth(sizeof(size_t));                       // First set of possibilities for each tag
+  next          ◁ makeArenaTreeWithWidth(sizeof(size_t));                       // Next set of possibilities for each Dita child tag under a given parent tag
+  $Validate valid = {possibilities: possibilities,
+    first: first, next: next, proto: &ProtoTypes_$Validate};
+  return valid;
+ }
+
+static $Parse  parse$FromString                                                 // Make a parse $ from a string.
+ (const char * const string,                                                    // String of $
+  const size_t       width)                                                     // Size of extra data associated with each node in the parse tree
+ {return make$ParseFromString(string, strlen(string), width);
  }
 
 static void free_$Parse                                                         // Free an $ parse
  (const $Parse x)                                                               // $ descriptor
- {x.tree ▷ free; x.errors ▷ free; x.fileName ▷ free;
+ {x.tree ▷ free; x.errors ▷ free; if (x.fileName.proto) x.fileName ▷ free;
  }
 
 static void free_$Validate                                                      // Free an $ validator
@@ -650,7 +672,7 @@ static void printAssert_$_string                                                
 #if __INCLUDE_LEVEL__ == 0
 
 void test0()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer //Terrors //Tmake$ParseFromFile //Tempty //TisTag //tText
- {x ◁ parse$FromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h");
+ {x ◁ parse$FromString("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></A>h", 0);
   ✓ x ▷ printsAs("<a>aa<b>bb<c/>cc</b>dd<d><e/><f>F</f><g/></d><h/><i/></a>");
 
   if (1)
@@ -685,7 +707,7 @@ void test0()                                                                    
 
 void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tparse$FromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot //TstayInLine
  {char * xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
-  x ◁ parse$FromString(xml);
+  x ◁ parse$FromString(xml, 0);
 
   ✓ !x ▷ errors;
 //        x ▷ printAssert("x");
@@ -754,7 +776,7 @@ void test2()                                                                    
  {char file[128] =  "/home/phil/c/z/xml/samples/foreword.dita";
   if (!developmentMode()) strcpy(file, "/home/runner/work/C/C/c/z/xml/samples/foreword.dita");
 
-  x ◁ make$ParseFromFile(file);
+  x ◁ make$ParseFromFile(file, 0);
 
   p ◁ x ▷ findFirstTag("p"); c ◁ x ▷ findFirstTag("conbody");
 
@@ -769,7 +791,7 @@ void test2()                                                                    
 
 void test3()                                                                    //Tmake$ParseFromString //TprintsAs //TonlyText //Tby //Tdepth
  {xml ◁ "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>";
-    x ◁ make$ParseFromString(0, (void *)xml, strlen(xml));
+    x ◁ make$ParseFromString(xml, strlen(xml), 0);
 
   ✓ x ▷ printsAs("<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>");
 
@@ -792,10 +814,10 @@ void test3()                                                                    
  } // test3
 
 void test4()                                                                    //TnewArenaList //Tnew //Tfree //TputFirst //TputLast //Tfe //Tfer
- {file ◁       "/home/phil/c/z/xml/validation/validation.xml";
+ {file ◁  "/home/phil/c/z/xml/validation/validation.xml";
   if (!developmentMode()) return;                                               // Does not work on gitHub - possibly out of memory or Cpu?
 
-  xml ◁ make$ParseFromFile((char *)file);
+  xml ◁ make$ParseFromFile(file, 0);
   validate ◁ make$Validate();
 
     possibilities ◁ xml ▷ findFirstChild("possibilities");                      // The possibilities possibilitiesArray assigns a number to each set of possible tags
@@ -891,14 +913,14 @@ void test4()                                                                    
  } // test4
 
 void test5()                                                                    //ThasText //TstayInline //TprettyPrint
- {char * xml = "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>";  // Many text editorsd, Geany included, strip trailing blanks which can make here documents with trailing blanks difficult to deal with.
+ {xml ◁ "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>";         // Avoiding trailing blanks
 
-  x ◁ parse$FromString(xml);  ✓ ! x ▷ errors;
-  b ◁ x ▷ findFirstTag("b");  ✓   b ▷ hasText;
-                              ✓ ! b ▷ stayInLine;
-  c ◁ x ▷ findFirstTag("c");  ✓   c ▷ stayInLine;
-  C ◁ c ▷ next;               ✓   C ▷ stayInLine;
-  d ◁ x ▷ findFirstTag("d");  ✓ ! d ▷ hasText;
+  x ◁ parse$FromString(xml, 0);  ✓ ! x ▷ errors;
+  b ◁ x ▷ findFirstTag("b");     ✓   b ▷ hasText;
+                                 ✓ ! b ▷ stayInLine;
+  c ◁ x ▷ findFirstTag("c");     ✓   c ▷ stayInLine;
+  C ◁ c ▷ next;                  ✓   C ▷ stayInLine;
+  d ◁ x ▷ findFirstTag("d");     ✓ ! d ▷ hasText;
 
     p ◁ x ▷ prettyPrint;
   ✓ p ▷ printsAs(◉);
@@ -916,8 +938,8 @@ void test5()                                                                    
  }
 
 void test6()                                                                    //Tscan
- {char * xml = "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
-     x ◁ parse$FromString(xml);
+ {xml  ◁ "<a><b><c/><d><e/>ee<f/>ff<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
+     x ◁ parse$FromString(xml, 0);
   ✓ !x ▷ errors;
 
   void draw(CairoTextImage i)
@@ -945,8 +967,9 @@ void test6()                                                                    
  }
 
 void test7()
- {char * xml = "<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
-     X ◁ parse$FromString(xml);
+ {xml  ◁ "<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
+
+     X ◁ parse$FromString(xml, 0);
   ✓ !X ▷ errors;
 
 
