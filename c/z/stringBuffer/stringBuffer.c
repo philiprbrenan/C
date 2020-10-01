@@ -57,6 +57,11 @@ static void free_$                                                              
 
 //D1 Concatenate                                                                // Concatenate various items to a string buffer.
 
+static int valid                                                                // Check whether the $ has been initialized
+ (const $ buffer)                                                               // $
+ {return !!buffer.string.proto;
+ }
+
 static void add_$_string                                                        // Concatenate a string
  (const $ buffer,                                                               // $
   const char * const string)                                                    // Zero terminated string
@@ -620,9 +625,18 @@ Linux
     a ▷ free;
  }
 
+void test11()                                                                   //Tvalid
+ {$  a = new $;
+  ✓ !a ▷ valid;
+     b ◁ make$();
+  ✓  b ▷ valid;
+     b ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
-                           test6, test7, test8, test9, test10, 0};
+ {void (*tests[])(void) = {test0,  test1,  test2, test3, test4,
+                           test5,  test6,  test7, test8, test9,
+                           test10, test11, 0};
   run_tests("$", 1, tests);
   return 0;
  }
