@@ -231,7 +231,7 @@ static  RectanglePair right_RectanglePair_Rectangle_double                      
   return   newRectanglePair(({struct RectanglePair t = {source: r,             d: d, valid: 0, proto: &ProtoTypes_RectanglePair}; t;}));                    // Invalid split
  }
 
-static  RectanglePair down_RectanglePair_Rectangle_double                                                // Split the Rectangle horizontally the specified distance down from the low corner: remember that y increases down the page
+static  RectanglePair down_RectanglePair_Rectangle_double                                               // Split the Rectangle horizontally the specified distance down from the low corner: remember that y increases down the page
  (const Rectangle      r,                                                               // Rectangle
   const double d)                                                               // Distance
  {const typeof(r.proto->width(r)) w = r.proto->width(r); const typeof(r.proto->height(r)) h = r.proto->height(r);
