@@ -230,7 +230,7 @@ static  $Pair right_$Pair_$_double                                              
   return   new $Pair(source: r,             d: d, valid: 0);                    // Invalid split
  }
 
-static  $Pair down_$Pair_$_double                                                // Split the $ horizontally the specified distance down from the low corner: remember that y increases down the page
+static  $Pair down_$Pair_$_double                                               // Split the $ horizontally the specified distance down from the low corner: remember that y increases down the page
  (const $      r,                                                               // $
   const double d)                                                               // Distance
  {w ◁ r ▷ width; h ◁ r ▷ height;
