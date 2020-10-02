@@ -181,6 +181,21 @@ struct ProtoTypes_ArenaTree {
 {add_ArenaTreeNode_ArenaTree_string, allocate_offset_ArenaTree_size, check_ArenaTree, count_size_ArenaTree, dump_ArenaTree, find_ArenaTreeFound_ArenaTree_string, free_ArenaTree, ll_ArenaTreeNode_ArenaTree_strings, locate_ArenaTree_string, makeArenaTreeFound, nodeFromOffset_ArenaTree_size, node_ArenaTreeNode_ArenaTree_string, pointer_ArenaTree_size, print_ArenaTree, root_ArenaTree, used_ArenaTree, width_size_ArenaTree};
 ArenaTree newArenaTree(ArenaTree allocator) {return allocator;}
 
+struct ProtoTypes_ArenaTreeArena {
+ } const ProtoTypes_ArenaTreeArena =
+{};
+ArenaTreeArena newArenaTreeArena(ArenaTreeArena allocator) {return allocator;}
+
+struct ProtoTypes_ArenaTreeContent {
+ } const ProtoTypes_ArenaTreeContent =
+{};
+ArenaTreeContent newArenaTreeContent(ArenaTreeContent allocator) {return allocator;}
+
+struct ProtoTypes_ArenaTreeDescription {
+ } const ProtoTypes_ArenaTreeDescription =
+{};
+ArenaTreeDescription newArenaTreeDescription(ArenaTreeDescription allocator) {return allocator;}
+
 struct ProtoTypes_ArenaTreeFound {
   ArenaTreeNode  (*add)(                                                        // Add a new key if not already present in the ArenaTree root at the specified node.
     ArenaTreeFound f,                                                           // Found status for the key being added.
