@@ -272,6 +272,21 @@ struct ProtoTypes_ArenaList {
 {allocate_offset_ArenaList_size, by_ArenaList_sub, check_ArenaList, countChildren_size_ArenaList, count_size_ArenaList, dump_ArenaList, findFirstChild_ArenaList_string, findFirst_ArenaList_string, first_ArenaListNode_ArenaList, free_ArenaList, fromLetters_ArenaList_string, last_ArenaListNode_ArenaList, next_ArenaListNode_ArenaList, nodeFromOffset_ArenaList_size, node_ArenaListNode_ArenaList_string, pointer_ArenaList_size, prev_ArenaListNode_ArenaList, printContains_ArenaList, printWithBrackets_string_ArenaList, printsAs_int_ArenaList_string, printsWithBracketsAs_int_ArenaList_string, root_ArenaListNode_ArenaList, scan_ArenaList_sub, swap_ArenaList_ArenaList, used_ArenaList, width_size_ArenaList, write_void_ArenaList_string};
 ArenaList newArenaList(ArenaList allocator) {return allocator;}
 
+struct ProtoTypes_ArenaListArena {
+ } const ProtoTypes_ArenaListArena =
+{};
+ArenaListArena newArenaListArena(ArenaListArena allocator) {return allocator;}
+
+struct ProtoTypes_ArenaListContent {
+ } const ProtoTypes_ArenaListContent =
+{};
+ArenaListContent newArenaListContent(ArenaListContent allocator) {return allocator;}
+
+struct ProtoTypes_ArenaListDescription {
+ } const ProtoTypes_ArenaListDescription =
+{};
+ArenaListDescription newArenaListDescription(ArenaListDescription allocator) {return allocator;}
+
 struct ProtoTypes_ArenaListNode {
   void  (*by)(                                                                  // Traverse the ArenaList rooted at the specified node in post-order calling the specified function to process each child node.  The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
     ArenaListNode node,                                                         // Node
