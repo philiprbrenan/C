@@ -302,11 +302,11 @@ static int cmpArenaTree                                                         
    {const int i = strncmp(K, k, l);
     return i ? i : +1;
    }
-  else if (L < l)                                                               // Current key longer than sought key
+  if (L < l)                                                                    // Current key longer than sought key
    {const int i = strncmp(K, k, L);
     return i ? i : -1;
    }
-  else return strncmp(K, k, L);                                                 // Equal length keys
+  return strncmp(K, k, L);                                                      // Equal length keys
  }
 
 static ArenaTreeFound find_ArenaTreeFound_ArenaTreeFound_ArenaTreeNode_string                                   //P Find a key if it exists within the ArenaTree starting at this node.
