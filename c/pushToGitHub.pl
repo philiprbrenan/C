@@ -31,6 +31,7 @@ my @cz      =  grep {!/\A#/} split /\s+/, <<END;                                
 arenaList
 arenaTree
 cairoText
+mimagem
 rectangle
 stringBuffer
 xml
