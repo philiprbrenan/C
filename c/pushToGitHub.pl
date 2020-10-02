@@ -30,6 +30,7 @@ my $dir     = fpd($home, q(c/));                                                
 my @cz      =  grep {!/\A#/} split /\s+/, <<END;                                # z files to run
 arenaList
 arenaTree
+cairoText
 rectangle
 stringBuffer
 xml
@@ -37,7 +38,6 @@ utilities
 END
 
 my @cg      =  grep {!/\A#/} split /\s+/, <<END;                                # g files to run
-cairoText
 END
 
 if (1)                                                                          # Upload files
