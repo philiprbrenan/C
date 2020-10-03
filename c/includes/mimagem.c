@@ -60,7 +60,7 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
 
   size_t currentTagOffset = 0, currentTagNumber = -1, currentPositionInTag = 0; // Current tag and position within current tag
   double x = editText.x, y = editText.y - scrollPixels;                         // Initial text position
-  cairo_move_to(cr, x, y - scrollPixels);                                       // Adjust for scrolling
+  cairo_move_to(cr, x, y);
 
   void drawTag(const XmlTag parent, const int depth)                            // Print the specified parent and its children
    {currentTagOffset = parent.node.offset;                                      // In case the pointer is located in this tag
@@ -190,7 +190,7 @@ void test1()                                                                    
 
 
   void draw(CairoTextImage i)                                                   // Draw the xml into an image
-   {const typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: 100, px: 1066, py: 381, scroll: 800, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) e = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: 100, px: 1066, py: 381, scroll: 800, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
+   {const typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: 100, px: 1040, py: 110, scroll: 10, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) e = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: 100, px: 1040, py: 110, scroll: 10, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
 
     const typeof(e.proto->drawEditBuffer(e)) r = e.proto->drawEditBuffer(e);
 
