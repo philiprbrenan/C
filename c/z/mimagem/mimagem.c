@@ -17,23 +17,31 @@
 
 typedef struct $EditBuffer                                                      // $ edit buffer
  {const struct ProtoTypes_$EditBuffer *proto;                                   // Prototypes for methods
-  const XmlParse       xml;                                                     // Xml parse tree being editted
-  const CairoTextImage cti;                                                     // Cairo text image that we are drawing into
-  const size_t         scroll;                                                  // The number of edit lines we have scrolled down
-  const size_t         fontSize;                                                // Font size to use in creating text
-  const size_t         px;                                                      // Pointer pixel position in x
-  const size_t         py;                                                      // Pointer pixel position in y
-        size_t         pointerTag;                                              // The tag containing the pointer
-        size_t         pointerPositionInTag;                                    // The character offset of the pointer in the tag containing the pointer
-        size_t         pointerEditLine;                                         // The edit line containing the pointer
+  XmlParse       xml;                                                           // Xml parse tree being editted
+  CairoTextImage cti;                                                           // Cairo text image that we are drawing into
+  Rectangle      zone;                                                          // The rectangle in which the edit buffer will be drawn
+  int            measureOnly;                                                   // Suppresses drawing if true.  All other operations are performed so that returned measurements of the pointer and cursor position are accurate.
+  size_t         scroll;                                                        // The number of edit lines we have scrolled down
+  size_t         fontSize;                                                      // Font size to use in creating text
+  size_t         px;                                                            // Pointer pixel position in x
+  size_t         py;                                                            // Pointer pixel position in y
+  size_t         pointerChar;                                                   // The number of the character containing the pointer
+  size_t         pointerTag;                                                    // The tag containing the pointer
+  size_t         pointerPositionInTag;                                          // The character offset of the pointer in the tag containing the pointer
+  size_t         pointerEditLine;                                               // The edit line containing the pointer
+  size_t         cursorChar;                                                    // The number of the character containing the cursor
+  size_t         cursorTag;                                                     // The tag containing the cursor
+  size_t         cursorPositionInTag;                                           // The character offset of the cursor in the tag containing the cursor
+  size_t         cursorEditLine;                                                // The edit line containing the cursor
  } $EditBuffer;
 
 #include <$$_prototypes.h>
 
-static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       // Draw the edit buffer and return th location of the pointer
+static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       // Draw the edit buffer and return the location of the pointer and cursor
  ($EditBuffer editBuffer)                                                       // $ edit buffer
- { i ◁ editBuffer.cti;                                                          // Cairo contest to draw in
-  cr ◁ i.cr;                                                                    // Cairo contest to draw in
+ {i    ◁ editBuffer.cti;                                                        // Image description
+  cr   ◁ i.cr;                                                                  // Cairo context to draw in
+  draw ◁ !editBuffer.measureOnly;                                               // Draw unless we only want to measure
 
   cairo_set_font_size (cr, editBuffer.fontSize);                                // Cairo
   cairo_font_extents_t fontExtents;
@@ -43,53 +51,61 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
   H ◁ fontExtents.height;                                                       // Font details
   scrollPixels ◁ H * editBuffer.scroll;                                         // Number of pixels scrolled down
 
-  page ◁ makeRectangleWH(0, 0, i.width, i.height);
-  editZoneAndStatus ◁ page ▷ right(0);
-  editLineNumbersAndText   ◁ editZoneAndStatus.a ▷ left(H);
-  editLineNumbers          ◁ editLineNumbersAndText.a;
-  editText                 ◁ editLineNumbersAndText.b;
+  editLineNumbersAndText   ◁ editBuffer.zone ▷ left(H);                         // Split the drawing area into line numbers and text
+  editLineNumbers          ◁ editLineNumbersAndText.a;                          // Line numbers
+  editText                 ◁ editLineNumbersAndText.b;                          // Text
 
   void drawRectangle(Rectangle r)
-   {cairo_rectangle(cr, r.x, r.y, r ▷ width, r ▷ height);
+   {if (draw) cairo_rectangle(cr, r.x, r.y, r ▷ width, r ▷ height);
    }
 
   cairo_set_source_rgb(cr, 1, 0.9, 0.9);                                        // Shade line numbers
   drawRectangle(editLineNumbers);
   cairo_fill(cr);
 
-  size_t currentTagOffset = 0, currentTagNumber = -1, currentPositionInTag = 0; // Current tag and position within current tag
+  size_t currentTagOffset = 0, currentTagNumber = -1, currentPositionInTag = 0, // Current tag and position within current tag
+         currentChar      = 0, currentEditLine  =  1;                           // Current character number counted over all tags drawn, current edit line
   double x = editText.x, y = editText.y - scrollPixels;                         // Initial text position
-  cairo_move_to(cr, x, y);
+  cairo_move_to(cr,   x, y);
 
   void drawTag(const XmlTag parent, const int depth)                            // Print the specified parent and its children
    {currentTagOffset = parent.node.offset;                                      // In case the pointer is located in this tag
 
     void startNewLine()                                                         // Move to next line
-     {cairo_move_to       (cr, editLineNumbers.x, y + H);
+     {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
+      cairo_move_to       (cr, editLineNumbers.x, y + H);
       cairo_set_source_rgb(cr, 0, 0, 0);                                        // Color for line number
-      lsprintf(n, 1024, "%lu", ++currentTagNumber);                             // Format line number
-      cairo_show_text     (cr, n);                                              // Write char
+      if (draw)
+       {lsprintf(n, 1024, "%lu", currentTagNumber);                             // Format line number
+        cairo_show_text   (cr, n);                                              // Write char
+       }
       cairo_move_to       (cr, x = editText.x, y += H);
      }
 
     void drawChar(char c)                                                       // Draw a character
      {char s[2] = {c, 0};
-      cairo_text_extents(cr, s, &textExtents);
-      if (!editText ▷ containsPoint(x + textExtents.x_advance, y))
-       {startNewLine();
-       }
 
-      cairo_show_text   (cr, s);                                                // Write char
       cairo_text_extents(cr, s, &textExtents);
+      if (x >= editText.X) startNewLine();                                      // The draw would be off the end of the line
+      if (draw) cairo_show_text(cr, s);                                         // Write char
+      cairo_text_extents       (cr, s, &textExtents);
 
-      ++currentPositionInTag;                                                   // Cursor location
-      if (editBuffer.px >= x && editBuffer.px <= x + textExtents.x_advance &&
-          editBuffer.py <= y && editBuffer.py >= y-H)
+      ++currentPositionInTag; ++currentChar;                                    // Pointer and cursor location
+      if (editBuffer.px >= x && editBuffer.px <= x + textExtents.x_advance &&   // Pointer location
+          editBuffer.py <= y && editBuffer.py >= y - H)
        {editBuffer.pointerTag           = currentTagOffset;
         editBuffer.pointerPositionInTag = currentPositionInTag;
+        editBuffer.pointerEditLine      = currentEditLine;
+        editBuffer.pointerChar          = currentChar;
        }
 
-      cairo_move_to     (cr, x += textExtents.x_advance, y += 0);               // Position ready for the next character
+      if (editBuffer.cursorChar == currentChar)                                 // Cursor location
+       {editBuffer.cursorTag            = currentTagOffset;
+        editBuffer.cursorPositionInTag  = currentPositionInTag;
+        editBuffer.cursorEditLine       = currentEditLine;
+       }
+
+      cairo_move_to(cr, x += textExtents.x_advance, y += 0);                    // Position ready for the next character
      }
 
     void drawString(char *s, size_t l)                                          // Draw a string
@@ -99,25 +115,27 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
     void open()                                                                 // Add open tag or text
      {currentPositionInTag = 0;                                                 // Position in tag
       if (parent ▷ isText)                                                      // Text
-       {cairo_set_source_rgb(cr, 0, 0, 0);
+       {currentTagNumber++;                                                     // Count string as a tag
+        cairo_set_source_rgb(cr, 0, 0, 0);
         drawString(parent ▷ tagString, parent ▷ tagStringLength);
-        currentTagNumber++;                                                     // Count string as a tag
        }
       else if (parent ▷ empty)                                                  // Write tag with no children on the same line
-       {cairo_set_source_rgb(cr, 1, 0, 0);
+       {currentTagNumber++;                                                     // Open tag
+        cairo_set_source_rgb(cr, 1, 0, 0);
         makeLocalCopyOfXmlTagString(s, l, parent);
         drawChar  (XmlOpen);
         drawString(s+1, l-2);
         drawChar  (XmlClose);
+        currentTagNumber++;                                                     // Close tag
         drawChar  (XmlOpen);
         drawChar  (XmlSlash);
         n ◁ parent ▷ tagName;
         drawString(n, strlen(n));
         drawChar  (XmlClose);
-        currentTagNumber += 2;                                                  // Count open and close empty non text tag
        }
       else                                                                      // Opener
-       {cairo_set_source_rgb(cr, 0, 0, 1);
+       {currentTagNumber++;                                                     // Open tag
+        cairo_set_source_rgb(cr, 0, 0, 1);
         startNewLine();   cairo_move_to(cr, x += H * depth, y);
         drawString(parent ▷ tagString, parent ▷ tagStringLength);
        }
@@ -127,10 +145,10 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
      {currentPositionInTag = 0;                                                 // Position in tag
       if (parent ▷ isTag)
        {if (!parent ▷ empty)
-         {if (!parent ▷ stayInLine)
+         {currentTagNumber++;                                                   // Close tag
+          if (!parent ▷ stayInLine)
            {startNewLine(); cairo_move_to(cr, x += H * depth, y);
            }
-          else currentTagNumber++;                                              // Count inline closing tag
           cairo_set_source_rgb(cr, 0, 0, 1);
           drawChar  (XmlOpen);
           drawChar  (XmlSlash);
@@ -177,7 +195,7 @@ void test0()
     x ▷ scan(drawXml);
    }
 
-  i ◁ createCairoTextImage(draw, 2000, 2000, "$1.png", "a");                    // Create image containing some text and check its digest
+  i ◁ makeCairoTextImage(draw, 2000, 2000, "$1.png", "49ad");                   // Create image containing some text and check its digest
   i ▷ free;
  }
 
@@ -187,18 +205,45 @@ void test1()                                                                    
      X ◁ parseXmlFromString(xml, 0);
   ✓ !X ▷ errors;
 
-
   void draw(CairoTextImage i)                                                   // Draw the xml into an image
-   {e ◁ new $EditBuffer(cti: i, xml: X, fontSize: 100, px: 1040, py: 110, scroll: 10);
+   {page ◁ makeRectangleWH(0, 0, i.width, i.height);
+    wScroll ◁ 4; fontSize ◁ 100;                                                // Scroll amount in wide mode, font size of text in image
 
-    r ◁ e ▷ drawEditBuffer;
+    ww ◁ page ▷ right(0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
+    we ◁ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 810, py: 1185, scroll: wScroll, zone: ww.a);
+    wr ◁ we ▷ drawEditBuffer;
+         i  ▷ save("$1_wide.png", "bfbf3e"); i ▷ clearWhite;
 
-    n ◁ X.tree ▷ nodeFromOffset(r.pointerTag);                                  // Pointer location
-    ✓ n ▷ equalsString("ee");
-    ✓ r.pointerPositionInTag == 1;
+    wn ◁ X.tree ▷ nodeFromOffset(wr.pointerTag);                                // Pointer location in wide version
+    ✓ wn ▷ equalsString("GGG");
+    ✓ wr.pointerPositionInTag ==  2;
+    ✓ wr.pointerChar          == 149;
+    ✓ wr.pointerEditLine      == 14;
+
+    nw ◁ page ▷ left(i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
+    ne ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, cursorChar: wr.pointerChar, zone: nw.a);
+    nr ◁ ne ▷ drawEditBuffer;
+         i  ▷ save("$1_narrow.png", "aeb32e"); i ▷ clearWhite;
+
+    nn ◁ X.tree ▷ nodeFromOffset(nr.cursorTag);                                 // Cursor location in narrow mode
+    ✓ nn ▷ equalsString("GGG");
+    ✓ nr.cursorPositionInTag ==  wr.pointerPositionInTag;
+    ✓ nr.cursorChar          ==  wr.pointerChar;
+    ✓ nr.cursorEditLine      == 18;
+
+    ne.scroll = nr.cursorEditLine - wr.pointerEditLine + wScroll;               // Adjust scroll so that the cursor is on the same line of the display after the narrow mode draw
+    ne.measureOnly = 0;                                                         // Request draw of the edit buffer
+    nR ◁ ne ▷ drawEditBuffer;                                                   // Draw edit buffer
+         i  ▷ save("$1_narrowScrolled.png", "3aeb8e"); i ▷ clearWhite;
+
+    nN ◁ X.tree ▷ nodeFromOffset(nR.cursorTag);                                 // Cursor location in narrow mode
+    ✓ nN ▷ equalsString("GGG");
+    ✓ nR.cursorPositionInTag        ==  wr.pointerPositionInTag;
+    ✓ nR.cursorChar                 ==  wr.pointerChar;
+    ✓ nR.cursorEditLine - ne.scroll == wr.pointerEditLine - we.scroll;          // Narrowing the display area did not change the vertical position of the line containing the cursor
    }
 
-  i ◁ createCairoTextImage(draw, 2000, 2000, "$2.png", "a");                    // Create image containing some text and check its digest
+  i ◁ makeCairoTextImage(draw, 2000, 2000, "$2.png", "636ea7");                 // Create image containing some text and check its digest
   i ▷ free;
  }
 
