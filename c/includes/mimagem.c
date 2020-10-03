@@ -18,23 +18,31 @@
 
 typedef struct MimagemEditBuffer                                                      // Mimagem edit buffer
  {const struct ProtoTypes_MimagemEditBuffer *proto;                                   // Prototypes for methods
-  const XmlParse       xml;                                                     // Xml parse tree being editted
-  const CairoTextImage cti;                                                     // Cairo text image that we are drawing into
-  const size_t         scroll;                                                  // The number of edit lines we have scrolled down
-  const size_t         fontSize;                                                // Font size to use in creating text
-  const size_t         px;                                                      // Pointer pixel position in x
-  const size_t         py;                                                      // Pointer pixel position in y
-        size_t         pointerTag;                                              // The tag containing the pointer
-        size_t         pointerPositionInTag;                                    // The character offset of the pointer in the tag containing the pointer
-        size_t         pointerEditLine;                                         // The edit line containing the pointer
+  XmlParse       xml;                                                           // Xml parse tree being editted
+  CairoTextImage cti;                                                           // Cairo text image that we are drawing into
+  Rectangle      zone;                                                          // The rectangle in which the edit buffer will be drawn
+  int            measureOnly;                                                   // Suppresses drawing if true.  All other operations are performed so that returned measurements of the pointer and cursor position are accurate.
+  size_t         scroll;                                                        // The number of edit lines we have scrolled down
+  size_t         fontSize;                                                      // Font size to use in creating text
+  size_t         px;                                                            // Pointer pixel position in x
+  size_t         py;                                                            // Pointer pixel position in y
+  size_t         pointerChar;                                                   // The number of the character containing the pointer
+  size_t         pointerTag;                                                    // The tag containing the pointer
+  size_t         pointerPositionInTag;                                          // The character offset of the pointer in the tag containing the pointer
+  size_t         pointerEditLine;                                               // The edit line containing the pointer
+  size_t         cursorChar;                                                    // The number of the character containing the cursor
+  size_t         cursorTag;                                                     // The tag containing the cursor
+  size_t         cursorPositionInTag;                                           // The character offset of the cursor in the tag containing the cursor
+  size_t         cursorEditLine;                                                // The edit line containing the cursor
  } MimagemEditBuffer;
 
 #include <mimagem_prototypes.h>
 
-static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                       // Draw the edit buffer and return th location of the pointer
+static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                       // Draw the edit buffer and return the location of the pointer and cursor
  (MimagemEditBuffer editBuffer)                                                       // Mimagem edit buffer
- { const typeof(editBuffer.cti) i = editBuffer.cti;                                                          // Cairo contest to draw in
-  const typeof(i.cr) cr = i.cr;                                                                    // Cairo contest to draw in
+ {const typeof(editBuffer.cti) i = editBuffer.cti;                                                        // Image description
+  const typeof(i.cr) cr = i.cr;                                                                  // Cairo context to draw in
+  const typeof(!editBuffer.measureOnly) draw = !editBuffer.measureOnly;                                               // Draw unless we only want to measure
 
   cairo_set_font_size (cr, editBuffer.fontSize);                                // Cairo
   cairo_font_extents_t fontExtents;
@@ -44,53 +52,61 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
   const typeof(fontExtents.height) H = fontExtents.height;                                                       // Font details
   const typeof(H * editBuffer.scroll) scrollPixels = H * editBuffer.scroll;                                         // Number of pixels scrolled down
 
-  const typeof(makeRectangleWH(0, 0, i.width, i.height)) page = makeRectangleWH(0, 0, i.width, i.height);
-  const typeof(page.proto->right(page, 0)) editZoneAndStatus = page.proto->right(page, 0);
-  const typeof(editZoneAndStatus.a.proto->left(editZoneAndStatus.a, H)) editLineNumbersAndText = editZoneAndStatus.a.proto->left(editZoneAndStatus.a, H);
-  const typeof(editLineNumbersAndText.a) editLineNumbers = editLineNumbersAndText.a;
-  const typeof(editLineNumbersAndText.b) editText = editLineNumbersAndText.b;
+  const typeof(editBuffer.zone.proto->left(editBuffer.zone, H)) editLineNumbersAndText = editBuffer.zone.proto->left(editBuffer.zone, H);                         // Split the drawing area into line numbers and text
+  const typeof(editLineNumbersAndText.a) editLineNumbers = editLineNumbersAndText.a;                          // Line numbers
+  const typeof(editLineNumbersAndText.b) editText = editLineNumbersAndText.b;                          // Text
 
   void drawRectangle(Rectangle r)
-   {cairo_rectangle(cr, r.x, r.y, r.proto->width(r), r.proto->height(r));
+   {if (draw) cairo_rectangle(cr, r.x, r.y, r.proto->width(r), r.proto->height(r));
    }
 
   cairo_set_source_rgb(cr, 1, 0.9, 0.9);                                        // Shade line numbers
   drawRectangle(editLineNumbers);
   cairo_fill(cr);
 
-  size_t currentTagOffset = 0, currentTagNumber = -1, currentPositionInTag = 0; // Current tag and position within current tag
+  size_t currentTagOffset = 0, currentTagNumber = -1, currentPositionInTag = 0, // Current tag and position within current tag
+         currentChar      = 0, currentEditLine  =  1;                           // Current character number counted over all tags drawn, current edit line
   double x = editText.x, y = editText.y - scrollPixels;                         // Initial text position
-  cairo_move_to(cr, x, y);
+  cairo_move_to(cr,   x, y);
 
   void drawTag(const XmlTag parent, const int depth)                            // Print the specified parent and its children
    {currentTagOffset = parent.node.offset;                                      // In case the pointer is located in this tag
 
     void startNewLine()                                                         // Move to next line
-     {cairo_move_to       (cr, editLineNumbers.x, y + H);
+     {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
+      cairo_move_to       (cr, editLineNumbers.x, y + H);
       cairo_set_source_rgb(cr, 0, 0, 0);                                        // Color for line number
-      lsprintf(n, 1024, "%lu", ++currentTagNumber);                             // Format line number
-      cairo_show_text     (cr, n);                                              // Write char
+      if (draw)
+       {lsprintf(n, 1024, "%lu", currentTagNumber);                             // Format line number
+        cairo_show_text   (cr, n);                                              // Write char
+       }
       cairo_move_to       (cr, x = editText.x, y += H);
      }
 
     void drawChar(char c)                                                       // Draw a character
      {char s[2] = {c, 0};
-      cairo_text_extents(cr, s, &textExtents);
-      if (!editText.proto->containsPoint(editText, x + textExtents.x_advance, y))
-       {startNewLine();
-       }
 
-      cairo_show_text   (cr, s);                                                // Write char
       cairo_text_extents(cr, s, &textExtents);
+      if (x >= editText.X) startNewLine();                                      // The draw would be off the end of the line
+      if (draw) cairo_show_text(cr, s);                                         // Write char
+      cairo_text_extents       (cr, s, &textExtents);
 
-      ++currentPositionInTag;                                                   // Cursor location
-      if (editBuffer.px >= x && editBuffer.px <= x + textExtents.x_advance &&
-          editBuffer.py <= y && editBuffer.py >= y-H)
+      ++currentPositionInTag; ++currentChar;                                    // Pointer and cursor location
+      if (editBuffer.px >= x && editBuffer.px <= x + textExtents.x_advance &&   // Pointer location
+          editBuffer.py <= y && editBuffer.py >= y - H)
        {editBuffer.pointerTag           = currentTagOffset;
         editBuffer.pointerPositionInTag = currentPositionInTag;
+        editBuffer.pointerEditLine      = currentEditLine;
+        editBuffer.pointerChar          = currentChar;
        }
 
-      cairo_move_to     (cr, x += textExtents.x_advance, y += 0);               // Position ready for the next character
+      if (editBuffer.cursorChar == currentChar)                                 // Cursor location
+       {editBuffer.cursorTag            = currentTagOffset;
+        editBuffer.cursorPositionInTag  = currentPositionInTag;
+        editBuffer.cursorEditLine       = currentEditLine;
+       }
+
+      cairo_move_to(cr, x += textExtents.x_advance, y += 0);                    // Position ready for the next character
      }
 
     void drawString(char *s, size_t l)                                          // Draw a string
@@ -100,25 +116,27 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
     void open()                                                                 // Add open tag or text
      {currentPositionInTag = 0;                                                 // Position in tag
       if (parent.proto->isText(parent))                                                      // Text
-       {cairo_set_source_rgb(cr, 0, 0, 0);
+       {currentTagNumber++;                                                     // Count string as a tag
+        cairo_set_source_rgb(cr, 0, 0, 0);
         drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
-        currentTagNumber++;                                                     // Count string as a tag
        }
       else if (parent.proto->empty(parent))                                                  // Write tag with no children on the same line
-       {cairo_set_source_rgb(cr, 1, 0, 0);
+       {currentTagNumber++;                                                     // Open tag
+        cairo_set_source_rgb(cr, 1, 0, 0);
         makeLocalCopyOfXmlTagString(s, l, parent);
         drawChar  (XmlOpen);
         drawString(s+1, l-2);
         drawChar  (XmlClose);
+        currentTagNumber++;                                                     // Close tag
         drawChar  (XmlOpen);
         drawChar  (XmlSlash);
         const typeof(parent.proto->tagName(parent)) n = parent.proto->tagName(parent);
         drawString(n, strlen(n));
         drawChar  (XmlClose);
-        currentTagNumber += 2;                                                  // Count open and close empty non text tag
        }
       else                                                                      // Opener
-       {cairo_set_source_rgb(cr, 0, 0, 1);
+       {currentTagNumber++;                                                     // Open tag
+        cairo_set_source_rgb(cr, 0, 0, 1);
         startNewLine();   cairo_move_to(cr, x += H * depth, y);
         drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
        }
@@ -128,10 +146,10 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
      {currentPositionInTag = 0;                                                 // Position in tag
       if (parent.proto->isTag(parent))
        {if (!parent.proto->empty(parent))
-         {if (!parent.proto->stayInLine(parent))
+         {currentTagNumber++;                                                   // Close tag
+          if (!parent.proto->stayInLine(parent))
            {startNewLine(); cairo_move_to(cr, x += H * depth, y);
            }
-          else currentTagNumber++;                                              // Count inline closing tag
           cairo_set_source_rgb(cr, 0, 0, 1);
           drawChar  (XmlOpen);
           drawChar  (XmlSlash);
@@ -178,7 +196,7 @@ void test0()
     x.proto->scan(x, drawXml);
    }
 
-  const typeof(createCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "a")) i = createCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "a");                    // Create image containing some text and check its digest
+  const typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "49ad")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "49ad");                   // Create image containing some text and check its digest
   i.proto->free(i);
  }
 
@@ -188,18 +206,45 @@ void test1()                                                                    
      const typeof(parseXmlFromString(xml, 0)) X = parseXmlFromString(xml, 0);
   assert( !X.proto->errors(X));
 
-
   void draw(CairoTextImage i)                                                   // Draw the xml into an image
-   {const typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: 100, px: 1040, py: 110, scroll: 10, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) e = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: 100, px: 1040, py: 110, scroll: 10, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
+   {const typeof(makeRectangleWH(0, 0, i.width, i.height)) page = makeRectangleWH(0, 0, i.width, i.height);
+    const typeof(4) wScroll = 4; const typeof(100) fontSize = 100;                                                // Scroll amount in wide mode, font size of text in image
 
-    const typeof(e.proto->drawEditBuffer(e)) r = e.proto->drawEditBuffer(e);
+    const typeof(page.proto->right(page, 0)) ww = page.proto->right(page, 0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
+    const typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 810, py: 1185, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 810, py: 1185, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
+    const typeof(we.proto->drawEditBuffer(we)) wr = we.proto->drawEditBuffer(we);
+         i.proto->save(i, "Mimagem1_wide.png", "bfbf3e"); i.proto->clearWhite(i);
 
-    const typeof(X.tree.proto->nodeFromOffset(X.tree, r.pointerTag)) n = X.tree.proto->nodeFromOffset(X.tree, r.pointerTag);                                  // Pointer location
-    assert( n.proto->equalsString(n, "ee"));
-    assert( r.pointerPositionInTag == 1);
+    const typeof(X.tree.proto->nodeFromOffset(X.tree, wr.pointerTag)) wn = X.tree.proto->nodeFromOffset(X.tree, wr.pointerTag);                                // Pointer location in wide version
+    assert( wn.proto->equalsString(wn, "GGG"));
+    assert( wr.pointerPositionInTag ==  2);
+    assert( wr.pointerChar          == 149);
+    assert( wr.pointerEditLine      == 14);
+
+    const typeof(page.proto->left(page, i.width * 4 / 8)) nw = page.proto->left(page, i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
+    typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, cursorChar: wr.pointerChar, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) ne = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, cursorChar: wr.pointerChar, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
+    const typeof(ne.proto->drawEditBuffer(ne)) nr = ne.proto->drawEditBuffer(ne);
+         i.proto->save(i, "Mimagem1_narrow.png", "aeb32e"); i.proto->clearWhite(i);
+
+    const typeof(X.tree.proto->nodeFromOffset(X.tree, nr.cursorTag)) nn = X.tree.proto->nodeFromOffset(X.tree, nr.cursorTag);                                 // Cursor location in narrow mode
+    assert( nn.proto->equalsString(nn, "GGG"));
+    assert( nr.cursorPositionInTag ==  wr.pointerPositionInTag);
+    assert( nr.cursorChar          ==  wr.pointerChar);
+    assert( nr.cursorEditLine      == 18);
+
+    ne.scroll = nr.cursorEditLine - wr.pointerEditLine + wScroll;               // Adjust scroll so that the cursor is on the same line of the display after the narrow mode draw
+    ne.measureOnly = 0;                                                         // Request draw of the edit buffer
+    const typeof(ne.proto->drawEditBuffer(ne)) nR = ne.proto->drawEditBuffer(ne);                                                   // Draw edit buffer
+         i.proto->save(i, "Mimagem1_narrowScrolled.png", "3aeb8e"); i.proto->clearWhite(i);
+
+    const typeof(X.tree.proto->nodeFromOffset(X.tree, nR.cursorTag)) nN = X.tree.proto->nodeFromOffset(X.tree, nR.cursorTag);                                 // Cursor location in narrow mode
+    assert( nN.proto->equalsString(nN, "GGG"));
+    assert( nR.cursorPositionInTag        ==  wr.pointerPositionInTag);
+    assert( nR.cursorChar                 ==  wr.pointerChar);
+    assert( nR.cursorEditLine - ne.scroll == wr.pointerEditLine - we.scroll);          // Narrowing the display area did not change the vertical position of the line containing the cursor
    }
 
-  const typeof(createCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "a")) i = createCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "a");                    // Create image containing some text and check its digest
+  const typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "636ea7")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "636ea7");                 // Create image containing some text and check its digest
   i.proto->free(i);
  }
 
