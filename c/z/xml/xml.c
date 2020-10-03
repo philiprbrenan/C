@@ -933,7 +933,7 @@ void test5()                                                                    
 </a>
 ◉
 
-  x ▷ free;
+  x ▷ free; p ▷ free;
  }
 
 void test6()                                                                    //Tscan
