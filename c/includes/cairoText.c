@@ -29,7 +29,7 @@ typedef struct CairoTextImage                                                   
 
 //D1 Constructors                                                               // Construct text in an image
 
-CairoTextImage createCairoTextImage                                                             // Create an image by drawing on a surface
+CairoTextImage makeCairoTextImage                                                               // Create an image by drawing on a surface
  (void (*draw)(CairoTextImage i),                                                       // Draw routine
   int x,                                                                        // Dimension of image in x
   int y,                                                                        // Dimension of image in y
@@ -43,8 +43,6 @@ CairoTextImage createCairoTextImage                                             
    (CAIRO_FORMAT_ARGB32, x, y);
   cairo_t         *    cr   = cairo_create (surface);
   cairo_set_antialias (cr, CAIRO_ANTIALIAS_BEST);
-  cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-  cairo_paint         (cr);
 
   FT_Library freeTypeLibrary;                                                   // Free type
   const typeof(FT_Init_FreeType(&freeTypeLibrary)) e1 = FT_Init_FreeType(&freeTypeLibrary);
@@ -61,7 +59,9 @@ CairoTextImage createCairoTextImage                                             
   cairo_set_font_face (cr, cairoFontFace);
 
   const typeof(makeStringBufferFromString(imageFile)) iFile = makeStringBufferFromString(imageFile);                                // Image file name
-  const typeof(newCairoTextImage(({struct CairoTextImage t = {out: iFile, cr: cr, surface: surface, width: x, height: y, proto: &ProtoTypes_CairoTextImage}; t;}))) i = newCairoTextImage(({struct CairoTextImage t = {out: iFile, cr: cr, surface: surface, width: x, height: y, proto: &ProtoTypes_CairoTextImage}; t;}));
+
+  const typeof(newCairoTextImage(({struct CairoTextImage t = {out: iFile, cr: cr, surface: surface, width: x, height: y, proto: &ProtoTypes_CairoTextImage}; t;}))) i = newCairoTextImage(({struct CairoTextImage t = {out: iFile, cr: cr, surface: surface, width: x, height: y, proto: &ProtoTypes_CairoTextImage}; t;}));    // Create image
+  i.proto->clearWhite(i);
 
   draw(i);                                                                      // Draw
 
@@ -73,9 +73,9 @@ CairoTextImage createCairoTextImage                                             
   FT_Done_Face    (freeTypeFontFace);                                           // Free free type
   FT_Done_FreeType(freeTypeLibrary);
 
-  i.proto->assertResult(i, expected);                                                   // Check results
+  i.proto->assertCairoTextResult(i, expected);                                                  // Check results
   return i;
- }
+ } // makeCairoTextImage
 
 //D1 Methods                                                                    // Methods that operate on an CairoText
 
@@ -84,18 +84,41 @@ static void free_CairoText                                                      
  {i.out.proto->free(i.out);
  }
 
-static void assertResult                                                        // Check the image via a digest
- (CairoTextImage i,                                                                     // CairoTextImage
+static void assertCairoTextImageFile                                                    //P Check that the digest of an image file contains the specified string
+ (char *             imageFile,                                                 // Image file name
   const char * const digest)                                                    // Expected digest
  {      const typeof(makeStringBufferFromString("b2sum ")) c = makeStringBufferFromString("b2sum ");
-        c.proto->addStringBuffer(c, i.out);
+        c.proto->add(c, imageFile);
         c.proto->system(c);
   if (! c.proto->containsString(c, digest))
    {makeLocalCopyOfStringBuffer(d, l, c);
-    say("\nHave: %s\nWant: %s\n", d, digest);
+    say("\nImage file: %s\n",   imageFile);
+    say("Have: %s\nWant: %s\n", d, digest);
     assert(0);
    }
   c.proto->free(c);
+ }
+
+static void assertCairoTextResult                                                       // Check the image via a digest
+ (CairoTextImage i,                                                                     // CairoTextImage
+  const char * const digest)                                                    // Expected digest
+ {makeLocalCopyOfStringBuffer(s, l, i.out);
+  assertCairoTextImageFile(s, digest);
+ }
+
+static void save_CairoText_string                                                       // Save a copy of the drawing surface to the specified file
+ (CairoTextImage             i,                                                         // CairoTextImage
+  char *             imageFile,                                                 // Image file name
+  const char * const digest)                                                    // Expected digest
+ {cairo_surface_write_to_png(i.surface, imageFile);
+  assertCairoTextImageFile(imageFile, digest);
+ }
+
+static void clearWhite_CairoText                                                        // Clear the drawing surface to white
+ (CairoTextImage             i)                                                         // CairoTextImage
+ {const typeof(i.cr) cr = i.cr;
+  cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+  cairo_paint         (cr);
  }
 #endif
 
@@ -120,7 +143,7 @@ void test0()                                                                    
      }
    }
 
-  const typeof(createCairoTextImage(draw, 2000, 2000, "cairo.png", "ab32")) i = createCairoTextImage(draw, 2000, 2000, "cairo.png", "ab32");                      // Create image containing some text and check its digest
+  const typeof(makeCairoTextImage(draw, 2000, 2000, "cairo.png", "ab32")) i = makeCairoTextImage(draw, 2000, 2000, "cairo.png", "ab32");                        // Create image containing some text and check its digest
   i.proto->free(i);
  }
 
