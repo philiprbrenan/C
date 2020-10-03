@@ -972,7 +972,7 @@ void test5()                                                                    
 "</a>\n"
 ));
 
-  x.proto->free(x);
+  x.proto->free(x); p.proto->free(p);
  }
 
 void test6()                                                                    //Tscan
