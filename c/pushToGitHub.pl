@@ -63,15 +63,15 @@ sub test($$)                                                                    
  {my ($d, $c) = @_;                                                             # Folder, Program to be tested
   my $file = fpe($dir, $d, $c, $c, q(c));
   -e $file or confess "No such file: $file";
+
   my $path = fpd($git, q(c), $d, $c);
+  my $valg = $c =~ m(cairoText|mimagem)i ? '' : q(--valgrind);                  # Nop valgrind on GTK+ as it leaks
+
   my @r = <<END;
     - name: Run $c
       if: always()
       run: |
-        (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes)
-END
-  push @r, <<END  unless $c =~ m(cairoText|mimagem)i;                            # GTK has too may leaks
-        (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes --valgrind)
+        (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes $valg)
 END
     join '', @r;
    }
