@@ -28,7 +28,7 @@ typedef struct $Image                                                           
 
 //D1 Constructors                                                               // Construct text in an image
 
-$Image create$Image                                                             // Create an image by drawing on a surface
+$Image make$Image                                                               // Create an image by drawing on a surface
  (void (*draw)($Image i),                                                       // Draw routine
   int x,                                                                        // Dimension of image in x
   int y,                                                                        // Dimension of image in y
@@ -42,8 +42,6 @@ $Image create$Image                                                             
    (CAIRO_FORMAT_ARGB32, x, y);
   cairo_t         *    cr   = cairo_create (surface);
   cairo_set_antialias (cr, CAIRO_ANTIALIAS_BEST);
-  cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-  cairo_paint         (cr);
 
   FT_Library freeTypeLibrary;                                                   // Free type
   e1 ◁ FT_Init_FreeType(&freeTypeLibrary);
@@ -60,7 +58,9 @@ $Image create$Image                                                             
   cairo_set_font_face (cr, cairoFontFace);
 
   iFile ◁ makeStringBufferFromString(imageFile);                                // Image file name
-  i ◁ new $Image(out: iFile, cr: cr, surface: surface, width: x, height: y);
+
+  i ◁ new $Image(out: iFile, cr: cr, surface: surface, width: x, height: y);    // Create image
+  i ▷ clearWhite;
 
   draw(i);                                                                      // Draw
 
@@ -72,9 +72,9 @@ $Image create$Image                                                             
   FT_Done_Face    (freeTypeFontFace);                                           // Free free type
   FT_Done_FreeType(freeTypeLibrary);
 
-  i ▷ assertResult(expected);                                                   // Check results
+  i ▷ assert$Result(expected);                                                  // Check results
   return i;
- }
+ } // make$Image
 
 //D1 Methods                                                                    // Methods that operate on an $
 
@@ -83,18 +83,41 @@ static void free_$                                                              
  {i.out ▷ free;
  }
 
-static void assertResult                                                        // Check the image via a digest
- ($Image i,                                                                     // $Image
+static void assert$ImageFile                                                    //P Check that the digest of an image file contains the specified string
+ (char *             imageFile,                                                 // Image file name
   const char * const digest)                                                    // Expected digest
  {      c ◁ makeStringBufferFromString("b2sum ");
-        c ▷ addStringBuffer(i.out);
+        c ▷ add(imageFile);
         c ▷ system;
   if (! c ▷ containsString(digest))
    {makeLocalCopyOfStringBuffer(d, l, c);
-    say("\nHave: %s\nWant: %s\n", d, digest);
+    say("\nImage file: %s\n",   imageFile);
+    say("Have: %s\nWant: %s\n", d, digest);
     assert(0);
    }
   c ▷ free;
+ }
+
+static void assert$Result                                                       // Check the image via a digest
+ ($Image i,                                                                     // $Image
+  const char * const digest)                                                    // Expected digest
+ {makeLocalCopyOfStringBuffer(s, l, i.out);
+  assert$ImageFile(s, digest);
+ }
+
+static void save_$_string                                                       // Save a copy of the drawing surface to the specified file
+ ($Image             i,                                                         // $Image
+  char *             imageFile,                                                 // Image file name
+  const char * const digest)                                                    // Expected digest
+ {cairo_surface_write_to_png(i.surface, imageFile);
+  assert$ImageFile(imageFile, digest);
+ }
+
+static void clearWhite_$                                                        // Clear the drawing surface to white
+ ($Image             i)                                                         // $Image
+ {cr ◁ i.cr;
+  cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+  cairo_paint         (cr);
  }
 #endif
 
@@ -119,7 +142,7 @@ void test0()                                                                    
      }
    }
 
-  i ◁ create$Image(draw, 2000, 2000, "cairo.png", "ab32");                      // Create image containing some text and check its digest
+  i ◁ make$Image(draw, 2000, 2000, "cairo.png", "ab32");                        // Create image containing some text and check its digest
   i ▷ free;
  }
 
