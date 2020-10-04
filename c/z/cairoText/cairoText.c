@@ -32,17 +32,17 @@ typedef struct $Image                                                           
   const StringBuffer  out;                                                      // The output image file
 
   $Font sansMonoBold;                                                           // Mono fonts
-  $Font sansMonoRegular;
+  $Font sansMono;
 
   $Font sansBold;                                                               // Sans fonts
   $Font sansBoldItalic;
   $Font sansItalic;
-  $Font sansRegular;
+  $Font sans;
 
   $Font serifBold;                                                              // Serif fonts
   $Font serifBoldItalic;
   $Font serifItalic;
-  $Font serifRegular;
+  $Font serif;
  } $Image;
 
 #include <$$_prototypes.h>
@@ -71,20 +71,20 @@ $Image make$Image                                                               
   i.sansBoldItalic  = make$Font("NotoSans-BoldItalic.ttf" );
   i.sansBold        = make$Font("NotoSans-Bold.ttf"       );
   i.sansItalic      = make$Font("NotoSans-Italic.ttf"     );
-  i.sansRegular     = make$Font("NotoSans-Regular.ttf"    );
+  i.sans            = make$Font("NotoSans-Regular.ttf"    );
 
   i.sansMonoBold    = make$Font("NotoSansMono-Bold.ttf"   );
-  i.sansMonoRegular = make$Font("NotoSansMono-Regular.ttf");
+  i.sansMono        = make$Font("NotoSansMono-Regular.ttf");
 
   i.serifBoldItalic = make$Font("NotoSerif-BoldItalic.ttf");
   i.serifBold       = make$Font("NotoSerif-Bold.ttf"      );
   i.serifItalic     = make$Font("NotoSerif-Italic.ttf"    );
-  i.serifRegular    = make$Font("NotoSerif-Regular.ttf"   );
+  i.serif           = make$Font("NotoSerif-Regular.ttf"   );
 
   e1 ◁ FT_Init_FreeType(&i.freeTypeLibrary);                                    // Initialize FreeType library
   if (e1) printStackBackTraceAndExit(1, "Error %d in free type\n", e1);
 
-  i ▷ setFont(i.sansMonoRegular);                                               // Default font
+  i ▷ setFont(i.sansMono);                                                      // Default font
   i ▷ clearWhite;                                                               // Clear display
 
   draw(i);                                                                      // Draw
@@ -114,9 +114,9 @@ static void free_$Image                                                         
  {i.out ▷ free;
 
   $Font *fonts[] =
-   {&i.sansBoldItalic, &i.sansBold,        &i.sansItalic,      &i.sansRegular,
-    &i.sansMonoBold,   &i.sansMonoRegular, &i.serifBoldItalic, &i.serifBold,
-    &i.serifItalic,    &i.serifRegular};
+   {&i.sansBoldItalic, &i.sansBold, &i.sansItalic,      &i.sans,
+    &i.sansMonoBold,   &i.sansMono, &i.serifBoldItalic, &i.serifBold,
+    &i.serifItalic,    &i.serif};
 
   for($Font **f = fonts; *f; ++f)                                               // Free any fonts that were loaded
    {$Font F = **f;
