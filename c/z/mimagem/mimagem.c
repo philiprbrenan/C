@@ -15,6 +15,14 @@
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
+typedef struct $EditPosition                                                    // A position in a $ edit buffer
+ {const struct ProtoTypes_$EditPosition *proto;                                 // Prototypes for methods
+  size_t         character;                                                     // The number of the character at the position
+  size_t         tag;                                                           // The tag containing at the position
+  size_t         positionInTag;                                                 // The character offset of the pointer in the tag at the position
+  size_t         editLine;                                                      // The edit line containing the position
+ } $EditPosition;
+
 typedef struct $EditBuffer                                                      // $ edit buffer
  {const struct ProtoTypes_$EditBuffer *proto;                                   // Prototypes for methods
   XmlParse       xml;                                                           // Xml parse tree being editted
@@ -26,14 +34,8 @@ typedef struct $EditBuffer                                                      
   size_t         fontSize;                                                      // Font size to use in creating text
   size_t         px;                                                            // Pointer pixel position in x
   size_t         py;                                                            // Pointer pixel position in y
-  size_t         pointerChar;                                                   // The number of the character containing the pointer
-  size_t         pointerTag;                                                    // The tag containing the pointer
-  size_t         pointerPositionInTag;                                          // The character offset of the pointer in the tag containing the pointer
-  size_t         pointerEditLine;                                               // The edit line containing the pointer
-  size_t         cursorChar;                                                    // The number of the character containing the cursor
-  size_t         cursorTag;                                                     // The tag containing the cursor
-  size_t         cursorPositionInTag;                                           // The character offset of the cursor in the tag containing the cursor
-  size_t         cursorEditLine;                                                // The edit line containing the cursor
+  $EditPosition  pointer;                                                       // Position of the pointer in $ edit buffer
+  $EditPosition  cursor;                                                        // Position of the cursor in $ edit buffer
  } $EditBuffer;
 
 #include <$$_prototypes.h>
@@ -95,16 +97,16 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
       ++currentPositionInTag; ++currentChar;                                    // Pointer and cursor location
       if (editBuffer.px >= x && editBuffer.px <= x + textExtents.x_advance &&   // Pointer location
           editBuffer.py <= y && editBuffer.py >= y - H)
-       {editBuffer.pointerTag           = currentTagOffset;
-        editBuffer.pointerPositionInTag = currentPositionInTag;
-        editBuffer.pointerEditLine      = currentEditLine;
-        editBuffer.pointerChar          = currentChar;
+       {editBuffer.pointer.tag           = currentTagOffset;
+        editBuffer.pointer.positionInTag = currentPositionInTag;
+        editBuffer.pointer.editLine      = currentEditLine;
+        editBuffer.pointer.character     = currentChar;
        }
 
-      if (editBuffer.cursorChar == currentChar)                                 // Cursor location
-       {editBuffer.cursorTag            = currentTagOffset;
-        editBuffer.cursorPositionInTag  = currentPositionInTag;
-        editBuffer.cursorEditLine       = currentEditLine;
+      if (editBuffer.cursor.character   == currentChar)                         // Cursor location
+       {editBuffer.cursor.tag            = currentTagOffset;
+        editBuffer.cursor.positionInTag  = currentPositionInTag;
+        editBuffer.cursor.editLine       = currentEditLine;
        }
 
       cairo_move_to(cr, x += textExtents.x_advance, y += 0);                    // Position ready for the next character
@@ -165,8 +167,17 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
 
   drawTag(editBuffer.xml ▷ root, -1);                                           // Start at the root
 
-  return editBuffer;                                                            // Return the updted edit buffer
+  return editBuffer;                                                            // Return the updated edit buffer
  } // drawEditBuffer
+
+static void maintainCursorPosition_$EditBuffer_$EditBuffer                      // Set the scroll amount of the altered edit buffer so that the position on the screen of the line containing the cursor is as close as possible to the position in the base edit buffer when the altered buffer is drawn in the place of the base buffer despite the altered buffer having been zoomed or having its width changed relative to the base buffer.  Both buffers should have been drawn before this operations (with measureOnly=1 if no drawing is required) so that the current position of the line containing the cursor is known in both buffers at the start of this operation. After this operation the altered buffer can be drawn in the area originally occupied by the base buffer while minimizing the amount the user must move their line of sight to track the cursor position.
+ ($EditBuffer   base,                                                           // Base    $ edit buffer
+  $EditBuffer * altered)                                                        // Altered $ edit buffer
+ {b ◁ (base   . cursor.editLine - base   . scroll) * base   . lineHeight;       // Location of cursor line of base $ edit buffer on display in pixels
+  a ◁ (altered->cursor.editLine - altered->scroll) * altered->lineHeight;       // Location of cursor lkne in altered $ edit buffer on display in pixels
+  s ◁ (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
+  altered->scroll = nearbyint(s);
+ }
 #endif
 
 //D1 Tests                                                                      // Tests
@@ -197,11 +208,11 @@ void test0()
     x ▷ scan(drawXml);
    }
 
-  i ◁ makeCairoTextImage(draw, 2000, 2000, "$1.png", "49ad");                   // Create image containing some text and check its digest
+  i ◁ makeCairoTextImage(draw, 2000, 2000, "$1.png", "49ad");
   i ▷ free;
  }
 
-void test1()                                                                    //TdrawEditBuffer
+void test1()                                                                    //TdrawEditBuffer //TmaintainCursorPosition
  {xml  ◁ "<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j><B><C/><D><E/>EE<F/>1 2 3 4 5 6 7 8 9 0<G>GGG</G></D><H>HH HH</H></B><i/>i<j></j><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
 
      X ◁ parseXmlFromString(xml, 0);
@@ -213,44 +224,42 @@ void test1()                                                                    
 
     ww ◁ page ▷ right(0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
     we ◁ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 810, py: 1185, scroll: wScroll, zone: ww.a);
-    wr ◁ we ▷ drawEditBuffer;
-         i  ▷ save("$1_wide.png", "bfbf3e"); i ▷ clearWhite;
+    wr ◀ we ▷ drawEditBuffer;
+         i  ▷ save("$1_wide.png", "e2bfbf"); i ▷ clearWhite;
 
-    wn ◁ X.tree ▷ nodeFromOffset(wr.pointerTag);                                // Pointer location in wide version
+    wn ◁ X.tree ▷ nodeFromOffset(wr.pointer.tag);                                // Pointer location in wide version
     ✓ wn ▷ equalsString("GGG");
-    ✓ wr.pointerPositionInTag ==  2;
-    ✓ wr.pointerChar          == 149;
-    ✓ wr.pointerEditLine      == 14;
+    ✓ wr.pointer.positionInTag ==  2;
+    ✓ wr.pointer.character     == 149;
+    ✓ wr.pointer.editLine      == 14;
 
     nw ◁ page ▷ left(i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
-    ne ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize * 12 / 8, cursorChar: wr.pointerChar, zone: nw.a);
-    nr ◁ ne ▷ drawEditBuffer;
-         i  ▷ save("$1_narrow.png", "a"); i ▷ clearWhite;
+    ne ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize * 12 / 8, cursor: wr.pointer, zone: nw.a);
+    nr ◀ ne ▷ drawEditBuffer;
+         i  ▷ save("$1_narrow.png", "b5be"); i ▷ clearWhite;
 
-    nn ◁ X.tree ▷ nodeFromOffset(nr.cursorTag);                                 // Cursor location in narrow mode
+    nn ◁ X.tree ▷ nodeFromOffset(nr.cursor.tag);                                // Cursor location in narrow mode
     ✓ nn ▷ equalsString("GGG");
-    ✓ nr.cursorPositionInTag ==  wr.pointerPositionInTag;
-    ✓ nr.cursorChar          ==  wr.pointerChar;
-//  ✓ nr.cursorEditLine      == 18;                                             // Font size unchanged
-    ✓ nr.cursorEditLine      == 27;                                             // New font size
+    ✓ nr.cursor.positionInTag ==  wr.pointer.positionInTag;
+    ✓ nr.cursor.character     ==  wr.pointer.character;
+//  ✓ nr.cursor.editLine      == 18;                                            // Font size unchanged
+    ✓ nr.cursor.editLine      == 27;                                            // New font size
 
-    wcp ◁ (wr.pointerEditLine - wr.scroll) * wr.lineHeight;                     // Pixels down to cursor in wide display
-    ncp ◁ (nr.cursorEditLine  - nr.scroll) * nr.lineHeight;                     // Pixels down to cursor in narrow, font expanded display
-    nsr ◁ (ncp - wcp) / nr.lineHeight;                                          // Amount we should scroll so that the cursor is on the same line of the display after the narrow mode, font expanded draw as a double
-    ne.scroll = nearbyint(nsr);                                                 // Adjust scroll so that the line containing the cursor remains close to its original position
+    wr.cursor = wr.pointer;                                                     // Simulate a click - the cursor position is set to match the pointer position
+    wr ▷ maintainCursorPosition(&nr);                                           // Position the narrow display so that GGG is in much the same screen position as the wide display
 
-    ne.measureOnly = 0;                                                         // Request draw of the edit buffer
-    nR ◁ ne ▷ drawEditBuffer;                                                   // Draw edit buffer
-         i  ▷ save("$1_narrowScrolled.png", "a"); i ▷ clearWhite;
+    nr.measureOnly = 0;                                                         // Request draw of the edit buffer
+    nR ◁ nr ▷ drawEditBuffer;                                                   // Draw scrolled edit buffer
+         i  ▷ save("$1_narrowScrolled.png", "6de8");
 
-    nN ◁ X.tree ▷ nodeFromOffset(nR.cursorTag);                                 // Cursor location in narrow mode
+    nN ◁ X.tree ▷ nodeFromOffset(nR.cursor.tag);                                // Cursor location in narrow mode
     ✓ nN ▷ equalsString("GGG");
-    ✓ nR.cursorPositionInTag ==  wr.pointerPositionInTag;
-    ✓ nR.cursorChar          ==  wr.pointerChar;
-    ✓ nR.cursorEditLine      == 27;                                             // In this particular case changing the font size did not change the edit line number of the tag containing the cursor.
+    ✓ nR.cursor.positionInTag ==  wr.pointer.positionInTag;
+    ✓ nR.cursor.character     ==  wr.pointer.character;
+    ✓ nR.cursor.editLine      == 27;                                            // In this particular case changing the font size did not change the edit line number of the tag containing the cursor.
    }
 
-  i ◁ makeCairoTextImage(draw, 2000, 2000, "$2.png", "a");                      // Create image containing some text and check its digest
+  i ◁ makeCairoTextImage(draw, 2000, 2000, "$2.png", "6de8");                   // Create image containing some text and check its digest
   i ▷ free;
  }
 
