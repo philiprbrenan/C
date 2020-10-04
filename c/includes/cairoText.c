@@ -33,17 +33,17 @@ typedef struct CairoTextImage                                                   
   const StringBuffer  out;                                                      // The output image file
 
   CairoTextFont sansMonoBold;                                                           // Mono fonts
-  CairoTextFont sansMonoRegular;
+  CairoTextFont sansMono;
 
   CairoTextFont sansBold;                                                               // Sans fonts
   CairoTextFont sansBoldItalic;
   CairoTextFont sansItalic;
-  CairoTextFont sansRegular;
+  CairoTextFont sans;
 
   CairoTextFont serifBold;                                                              // Serif fonts
   CairoTextFont serifBoldItalic;
   CairoTextFont serifItalic;
-  CairoTextFont serifRegular;
+  CairoTextFont serif;
  } CairoTextImage;
 
 #include <cairoText_prototypes.h>
@@ -72,20 +72,20 @@ CairoTextImage makeCairoTextImage                                               
   i.sansBoldItalic  = makeCairoTextFont("NotoSans-BoldItalic.ttf" );
   i.sansBold        = makeCairoTextFont("NotoSans-Bold.ttf"       );
   i.sansItalic      = makeCairoTextFont("NotoSans-Italic.ttf"     );
-  i.sansRegular     = makeCairoTextFont("NotoSans-Regular.ttf"    );
+  i.sans            = makeCairoTextFont("NotoSans-Regular.ttf"    );
 
   i.sansMonoBold    = makeCairoTextFont("NotoSansMono-Bold.ttf"   );
-  i.sansMonoRegular = makeCairoTextFont("NotoSansMono-Regular.ttf");
+  i.sansMono        = makeCairoTextFont("NotoSansMono-Regular.ttf");
 
   i.serifBoldItalic = makeCairoTextFont("NotoSerif-BoldItalic.ttf");
   i.serifBold       = makeCairoTextFont("NotoSerif-Bold.ttf"      );
   i.serifItalic     = makeCairoTextFont("NotoSerif-Italic.ttf"    );
-  i.serifRegular    = makeCairoTextFont("NotoSerif-Regular.ttf"   );
+  i.serif           = makeCairoTextFont("NotoSerif-Regular.ttf"   );
 
   const typeof(FT_Init_FreeType(&i.freeTypeLibrary)) e1 = FT_Init_FreeType(&i.freeTypeLibrary);                                    // Initialize FreeType library
   if (e1) printStackBackTraceAndExit(1, "Error %d in free type\n", e1);
 
-  i.proto->setFont(i, i.sansMonoRegular);                                               // Default font
+  i.proto->setFont(i, i.sansMono);                                                      // Default font
   i.proto->clearWhite(i);                                                               // Clear display
 
   draw(i);                                                                      // Draw
@@ -115,9 +115,9 @@ static void free_CairoTextImage                                                 
  {i.out.proto->free(i.out);
 
   CairoTextFont *fonts[] =
-   {&i.sansBoldItalic, &i.sansBold,        &i.sansItalic,      &i.sansRegular,
-    &i.sansMonoBold,   &i.sansMonoRegular, &i.serifBoldItalic, &i.serifBold,
-    &i.serifItalic,    &i.serifRegular};
+   {&i.sansBoldItalic, &i.sansBold, &i.sansItalic,      &i.sans,
+    &i.sansMonoBold,   &i.sansMono, &i.serifBoldItalic, &i.serifBold,
+    &i.serifItalic,    &i.serif};
 
   for(CairoTextFont **f = fonts; *f; ++f)                                               // Free any fonts that were loaded
    {CairoTextFont F = **f;
