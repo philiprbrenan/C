@@ -75,13 +75,25 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
   void drawTag(const XmlTag parent, const int depth)                            // Print the specified parent and its children
    {currentTagOffset = parent.node.offset;                                      // In case the pointer is located in this tag
 
+    void        openColor() {cairo_set_source_rgb(i.cr, 0,   0,   0.4);}        // Color for opening tag
+    void       closeColor() {cairo_set_source_rgb(i.cr, 0,   0,   0.4);}        // Color for closing tag
+    void        textColor() {cairo_set_source_rgb(i.cr, 0,   0,   0  );}        // Color for text
+    void  lineNumberColor() {cairo_set_source_rgb(i.cr, 0.3, 0.3, 0.3);}        // Color for line numbers
+
+    void         openFont() {i ▷ setFont(i.sansBold);        openColor();}      // Font  for opening tag
+    void        closeFont() {i ▷ setFont(i.sansBoldItalic); closeColor();}      // Font  for closing tag
+    void         textFont() {i ▷ setFont(i.serif);           textColor();}      // Font  for text
+    void   lineNumberFont() {i ▷ setFont(i.sansMono);  lineNumberColor();}      // Font  for line numbers
+
     void startNewLine()                                                         // Move to next line
      {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
       cairo_move_to       (cr, editLineNumbers.x, y + H);
-      cairo_set_source_rgb(cr, 0, 0, 0);                                        // Color for line number
       if (draw)
        {lsprintf(n, 1024, "%lu", currentTagNumber);                             // Format line number
-        cairo_show_text   (cr, n);                                              // Write char
+        cairo_save        (cr);
+        lineNumberFont    ();
+        cairo_show_text   (cr, n);
+        cairo_restore     (cr);
        }
       cairo_move_to       (cr, x = editText.x, y += H);
      }
@@ -90,7 +102,7 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
      {char s[2] = {c, 0};
 
       cairo_text_extents(cr, s, &textExtents);
-      if (x >= editText.X) startNewLine();                                      // The draw would be off the end of the line
+      if (x + textExtents.x_advance >= editText.X) startNewLine();              // The draw would be off the end of the line
       if (draw) cairo_show_text(cr, s);                                         // Write char
       cairo_text_extents       (cr, s, &textExtents);
 
@@ -120,17 +132,18 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
      {currentPositionInTag = 0;                                                 // Position in tag
       if (parent ▷ isText)                                                      // Text
        {currentTagNumber++;                                                     // Count string as a tag
-        cairo_set_source_rgb(cr, 0, 0, 0);
+        textFont();
         drawString(parent ▷ tagString, parent ▷ tagStringLength);
        }
       else if (parent ▷ empty)                                                  // Write tag with no children on the same line
        {currentTagNumber++;                                                     // Open tag
-        cairo_set_source_rgb(cr, 1, 0, 0);
         makeLocalCopyOfXmlTagString(s, l, parent);
+        openFont();
         drawChar  (XmlOpen);
         drawString(s+1, l-2);
         drawChar  (XmlClose);
         currentTagNumber++;                                                     // Close tag
+        closeFont();
         drawChar  (XmlOpen);
         drawChar  (XmlSlash);
         n ◁ parent ▷ tagName;
@@ -139,7 +152,7 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
        }
       else                                                                      // Opener
        {currentTagNumber++;                                                     // Open tag
-        cairo_set_source_rgb(cr, 0, 0, 1);
+        openFont();
         startNewLine();   cairo_move_to(cr, x += H * depth, y);
         drawString(parent ▷ tagString, parent ▷ tagStringLength);
        }
@@ -153,7 +166,7 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
           if (!parent ▷ stayInLine)
            {startNewLine(); cairo_move_to(cr, x += H * depth, y);
            }
-          cairo_set_source_rgb(cr, 0, 0, 1);
+          closeFont();
           drawChar  (XmlOpen);
           drawChar  (XmlSlash);
           drawString(XmltagName, strlen(parent ▷ tagName));
@@ -225,7 +238,7 @@ void test1()                                                                    
     ww ◁ page ▷ right(0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
     we ◁ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 810, py: 1185, scroll: wScroll, zone: ww.a);
     wr ◀ we ▷ drawEditBuffer;
-         i  ▷ save("$1_wide.png", "e2bfbf"); i ▷ clearWhite;
+         i  ▷ save("$1_wide.png", "b534"); i ▷ clearWhite;
 
     wn ◁ X.tree ▷ nodeFromOffset(wr.pointer.tag);                                // Pointer location in wide version
     ✓ wn ▷ equalsString("GGG");
@@ -236,7 +249,7 @@ void test1()                                                                    
     nw ◁ page ▷ left(i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
     ne ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize * 12 / 8, cursor: wr.pointer, zone: nw.a);
     nr ◀ ne ▷ drawEditBuffer;
-         i  ▷ save("$1_narrow.png", "b5be"); i ▷ clearWhite;
+         i  ▷ save("$1_narrow.png", "6c05"); i ▷ clearWhite;
 
     nn ◁ X.tree ▷ nodeFromOffset(nr.cursor.tag);                                // Cursor location in narrow mode
     ✓ nn ▷ equalsString("GGG");
@@ -250,7 +263,7 @@ void test1()                                                                    
 
     nr.measureOnly = 0;                                                         // Request draw of the edit buffer
     nR ◁ nr ▷ drawEditBuffer;                                                   // Draw scrolled edit buffer
-         i  ▷ save("$1_narrowScrolled.png", "6de8");
+         i  ▷ save("$1_narrowScrolled.png", "f3d1");
 
     nN ◁ X.tree ▷ nodeFromOffset(nR.cursor.tag);                                // Cursor location in narrow mode
     ✓ nN ▷ equalsString("GGG");
@@ -259,7 +272,7 @@ void test1()                                                                    
     ✓ nR.cursor.editLine      == 27;                                            // In this particular case changing the font size did not change the edit line number of the tag containing the cursor.
    }
 
-  i ◁ makeCairoTextImage(draw, 2000, 2000, "$2.png", "6de8");                   // Create image containing some text and check its digest
+  i ◁ makeCairoTextImage(draw, 2000, 2000, "$2.png", "f3d1");                   // Create image containing some text and check its digest
   i ▷ free;
  }
 
