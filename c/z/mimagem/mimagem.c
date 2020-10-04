@@ -21,6 +21,7 @@ typedef struct $EditBuffer                                                      
   CairoTextImage cti;                                                           // Cairo text image that we are drawing into
   Rectangle      zone;                                                          // The rectangle in which the edit buffer will be drawn
   int            measureOnly;                                                   // Suppresses drawing if true.  All other operations are performed so that returned measurements of the pointer and cursor position are accurate.
+  double         lineHeight;                                                    // The distance between lines for the specified font size.
   size_t         scroll;                                                        // The number of edit lines we have scrolled down
   size_t         fontSize;                                                      // Font size to use in creating text
   size_t         px;                                                            // Pointer pixel position in x
@@ -49,6 +50,7 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
   cairo_text_extents_t textExtents;
 
   H ◁ fontExtents.height;                                                       // Font details
+  editBuffer.lineHeight = H;                                                    // Record line height
   scrollPixels ◁ H * editBuffer.scroll;                                         // Number of pixels scrolled down
 
   editLineNumbersAndText   ◁ editBuffer.zone ▷ left(H);                         // Split the drawing area into line numbers and text
@@ -221,29 +223,34 @@ void test1()                                                                    
     ✓ wr.pointerEditLine      == 14;
 
     nw ◁ page ▷ left(i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
-    ne ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, cursorChar: wr.pointerChar, zone: nw.a);
+    ne ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize * 12 / 8, cursorChar: wr.pointerChar, zone: nw.a);
     nr ◁ ne ▷ drawEditBuffer;
-         i  ▷ save("$1_narrow.png", "aeb32e"); i ▷ clearWhite;
+         i  ▷ save("$1_narrow.png", "a"); i ▷ clearWhite;
 
     nn ◁ X.tree ▷ nodeFromOffset(nr.cursorTag);                                 // Cursor location in narrow mode
     ✓ nn ▷ equalsString("GGG");
     ✓ nr.cursorPositionInTag ==  wr.pointerPositionInTag;
     ✓ nr.cursorChar          ==  wr.pointerChar;
-    ✓ nr.cursorEditLine      == 18;
+//  ✓ nr.cursorEditLine      == 18;                                             // Font size unchanged
+    ✓ nr.cursorEditLine      == 27;                                             // New font size
 
-    ne.scroll = nr.cursorEditLine - wr.pointerEditLine + wScroll;               // Adjust scroll so that the cursor is on the same line of the display after the narrow mode draw
+    wcp ◁ (wr.pointerEditLine - wr.scroll) * wr.lineHeight;                     // Pixels down to cursor in wide display
+    ncp ◁ (nr.cursorEditLine  - nr.scroll) * nr.lineHeight;                     // Pixels down to cursor in narrow, font expanded display
+    nsr ◁ (ncp - wcp) / nr.lineHeight;                                          // Amount we should scroll so that the cursor is on the same line of the display after the narrow mode, font expanded draw as a double
+    ne.scroll = nearbyint(nsr);                                                 // Adjust scroll so that the line containing the cursor remains close to its original position
+
     ne.measureOnly = 0;                                                         // Request draw of the edit buffer
     nR ◁ ne ▷ drawEditBuffer;                                                   // Draw edit buffer
-         i  ▷ save("$1_narrowScrolled.png", "3aeb8e"); i ▷ clearWhite;
+         i  ▷ save("$1_narrowScrolled.png", "a"); i ▷ clearWhite;
 
     nN ◁ X.tree ▷ nodeFromOffset(nR.cursorTag);                                 // Cursor location in narrow mode
     ✓ nN ▷ equalsString("GGG");
-    ✓ nR.cursorPositionInTag        ==  wr.pointerPositionInTag;
-    ✓ nR.cursorChar                 ==  wr.pointerChar;
-    ✓ nR.cursorEditLine - ne.scroll == wr.pointerEditLine - we.scroll;          // Narrowing the display area did not change the vertical position of the line containing the cursor
+    ✓ nR.cursorPositionInTag ==  wr.pointerPositionInTag;
+    ✓ nR.cursorChar          ==  wr.pointerChar;
+    ✓ nR.cursorEditLine      == 27;                                             // In this particular case changing the font size did not change the edit line number of the tag containing the cursor.
    }
 
-  i ◁ makeCairoTextImage(draw, 2000, 2000, "$2.png", "636ea7");                 // Create image containing some text and check its digest
+  i ◁ makeCairoTextImage(draw, 2000, 2000, "$2.png", "a");                      // Create image containing some text and check its digest
   i ▷ free;
  }
 
