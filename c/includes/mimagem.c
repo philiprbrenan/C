@@ -22,6 +22,7 @@ typedef struct MimagemEditBuffer                                                
   CairoTextImage cti;                                                           // Cairo text image that we are drawing into
   Rectangle      zone;                                                          // The rectangle in which the edit buffer will be drawn
   int            measureOnly;                                                   // Suppresses drawing if true.  All other operations are performed so that returned measurements of the pointer and cursor position are accurate.
+  double         lineHeight;                                                    // The distance between lines for the specified font size.
   size_t         scroll;                                                        // The number of edit lines we have scrolled down
   size_t         fontSize;                                                      // Font size to use in creating text
   size_t         px;                                                            // Pointer pixel position in x
@@ -50,6 +51,7 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
   cairo_text_extents_t textExtents;
 
   const typeof(fontExtents.height) H = fontExtents.height;                                                       // Font details
+  editBuffer.lineHeight = H;                                                    // Record line height
   const typeof(H * editBuffer.scroll) scrollPixels = H * editBuffer.scroll;                                         // Number of pixels scrolled down
 
   const typeof(editBuffer.zone.proto->left(editBuffer.zone, H)) editLineNumbersAndText = editBuffer.zone.proto->left(editBuffer.zone, H);                         // Split the drawing area into line numbers and text
@@ -222,29 +224,34 @@ void test1()                                                                    
     assert( wr.pointerEditLine      == 14);
 
     const typeof(page.proto->left(page, i.width * 4 / 8)) nw = page.proto->left(page, i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
-    typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, cursorChar: wr.pointerChar, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) ne = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, cursorChar: wr.pointerChar, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
+    typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 12 / 8, cursorChar: wr.pointerChar, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) ne = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 12 / 8, cursorChar: wr.pointerChar, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     const typeof(ne.proto->drawEditBuffer(ne)) nr = ne.proto->drawEditBuffer(ne);
-         i.proto->save(i, "Mimagem1_narrow.png", "aeb32e"); i.proto->clearWhite(i);
+         i.proto->save(i, "Mimagem1_narrow.png", "a"); i.proto->clearWhite(i);
 
     const typeof(X.tree.proto->nodeFromOffset(X.tree, nr.cursorTag)) nn = X.tree.proto->nodeFromOffset(X.tree, nr.cursorTag);                                 // Cursor location in narrow mode
     assert( nn.proto->equalsString(nn, "GGG"));
     assert( nr.cursorPositionInTag ==  wr.pointerPositionInTag);
     assert( nr.cursorChar          ==  wr.pointerChar);
-    assert( nr.cursorEditLine      == 18);
+//  assert( nr.cursorEditLine      == 18);                                             // Font size unchanged
+    assert( nr.cursorEditLine      == 27);                                             // New font size
 
-    ne.scroll = nr.cursorEditLine - wr.pointerEditLine + wScroll;               // Adjust scroll so that the cursor is on the same line of the display after the narrow mode draw
+    const typeof((wr.pointerEditLine - wr.scroll) * wr.lineHeight) wcp = (wr.pointerEditLine - wr.scroll) * wr.lineHeight;                     // Pixels down to cursor in wide display
+    const typeof((nr.cursorEditLine  - nr.scroll) * nr.lineHeight) ncp = (nr.cursorEditLine  - nr.scroll) * nr.lineHeight;                     // Pixels down to cursor in narrow, font expanded display
+    const typeof((ncp - wcp) / nr.lineHeight) nsr = (ncp - wcp) / nr.lineHeight;                                          // Amount we should scroll so that the cursor is on the same line of the display after the narrow mode, font expanded draw as a double
+    ne.scroll = nearbyint(nsr);                                                 // Adjust scroll so that the line containing the cursor remains close to its original position
+
     ne.measureOnly = 0;                                                         // Request draw of the edit buffer
     const typeof(ne.proto->drawEditBuffer(ne)) nR = ne.proto->drawEditBuffer(ne);                                                   // Draw edit buffer
-         i.proto->save(i, "Mimagem1_narrowScrolled.png", "3aeb8e"); i.proto->clearWhite(i);
+         i.proto->save(i, "Mimagem1_narrowScrolled.png", "a"); i.proto->clearWhite(i);
 
     const typeof(X.tree.proto->nodeFromOffset(X.tree, nR.cursorTag)) nN = X.tree.proto->nodeFromOffset(X.tree, nR.cursorTag);                                 // Cursor location in narrow mode
     assert( nN.proto->equalsString(nN, "GGG"));
-    assert( nR.cursorPositionInTag        ==  wr.pointerPositionInTag);
-    assert( nR.cursorChar                 ==  wr.pointerChar);
-    assert( nR.cursorEditLine - ne.scroll == wr.pointerEditLine - we.scroll);          // Narrowing the display area did not change the vertical position of the line containing the cursor
+    assert( nR.cursorPositionInTag ==  wr.pointerPositionInTag);
+    assert( nR.cursorChar          ==  wr.pointerChar);
+    assert( nR.cursorEditLine      == 27);                                             // In this particular case changing the font size did not change the edit line number of the tag containing the cursor.
    }
 
-  const typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "636ea7")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "636ea7");                 // Create image containing some text and check its digest
+  const typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "a");                      // Create image containing some text and check its digest
   i.proto->free(i);
  }
 
