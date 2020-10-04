@@ -1,5 +1,12 @@
-static void free_CairoText
+static CairoTextFont makeCairoTextFont
+ (char * fontFile);
+static void free_CairoTextImage
  (CairoTextImage i);
+static void free_CairoTextFont
+ (CairoTextFont font);
+static void setFont
+ (CairoTextImage i,
+  CairoTextFont font);
 static void assertCairoTextImageFile
  (char *             imageFile,
   const char * const digest);
@@ -12,6 +19,13 @@ static void save_CairoText_string
   const char * const digest);
 static void clearWhite_CairoText
  (CairoTextImage             i);
+struct ProtoTypes_CairoTextFont {
+  void  (*free)(                                                                // Free a font if it has been loaded
+    CairoTextFont font);                                                        // CairoTextFont
+ } const ProtoTypes_CairoTextFont =
+{free_CairoTextFont};
+CairoTextFont newCairoTextFont(CairoTextFont allocator) {return allocator;}
+
 struct ProtoTypes_CairoTextImage {
   void  (*assertCairoTextResult)(                                               // Check the image via a digest
     CairoTextImage i,                                                           // CairoTextImage
@@ -24,7 +38,10 @@ struct ProtoTypes_CairoTextImage {
     CairoTextImage i,                                                           // CairoTextImage
     char * imageFile,                                                           // Image file name
     const char * const digest);                                                 // Expected digest
+  void  (*setFont)(                                                             // Start using a font
+    CairoTextImage i,                                                           // CairoTextImage
+    CairoTextFont font);                                                        // Font to use
  } const ProtoTypes_CairoTextImage =
-{assertCairoTextResult, clearWhite_CairoText, free_CairoText, save_CairoText_string};
+{assertCairoTextResult, clearWhite_CairoText, free_CairoTextImage, save_CairoText_string, setFont};
 CairoTextImage newCairoTextImage(CairoTextImage allocator) {return allocator;}
 
