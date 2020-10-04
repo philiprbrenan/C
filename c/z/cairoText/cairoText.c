@@ -16,12 +16,33 @@
 #ifndef $_included
 #define $_included
 
+typedef struct $Font                                                            // Details of a font
+ {const struct ProtoTypes_$Font *proto;                                         // Methods associated with an arena tree
+  StringBuffer        file;                                                     // Name of the file containing the font
+  FT_Face             freeTypeFontFace;                                         // Free type description of font
+  cairo_font_face_t * cairoFontFace;                                            // Cairo dscription of font
+ } $Font;
+
 typedef struct $Image                                                           // Create an image
  {const struct ProtoTypes_$Image *proto;                                        // Methods associated with an arena tree
   cairo_t           * cr;                                                       // Cairo
   cairo_surface_t   * surface;                                                  // Surface on which we are drawing
+  FT_Library          freeTypeLibrary;                                          // Free Type library
   int width, height;                                                            // Dimensions of the surface
   const StringBuffer  out;                                                      // The output image file
+
+  $Font sansMonoBold;                                                           // Mono fonts
+  $Font sansMonoRegular;
+
+  $Font sansBold;                                                               // Sans fonts
+  $Font sansBoldItalic;
+  $Font sansItalic;
+  $Font sansRegular;
+
+  $Font serifBold;                                                              // Serif fonts
+  $Font serifBoldItalic;
+  $Font serifItalic;
+  $Font serifRegular;
  } $Image;
 
 #include <$$_prototypes.h>
@@ -43,44 +64,93 @@ $Image make$Image                                                               
   cairo_t         *    cr   = cairo_create (surface);
   cairo_set_antialias (cr, CAIRO_ANTIALIAS_BEST);
 
-  FT_Library freeTypeLibrary;                                                   // Free type
-  e1 ◁ FT_Init_FreeType(&freeTypeLibrary);
-  if (e1) printStackBackTraceAndExit(1, "Error %d in free type\n", e1);
-
-  FT_Face freeTypeFontFace;
-  e2 ◁ FT_New_Face(freeTypeLibrary, fontFile, 0, &freeTypeFontFace);
-  if (e2 == FT_Err_Unknown_File_Format) printStackBackTraceAndExit
-   (1, "FontFace not supported: %s\n", fontFile);
-  else if (e2) printStackBackTraceAndExit
-   (1, "FontFace failed: %d %s\n", e2, fontFile);
-
-  cairoFontFace ◁ cairo_ft_font_face_create_for_ft_face(freeTypeFontFace, 0);   // Load free type into cairo
-  cairo_set_font_face (cr, cairoFontFace);
-
   iFile ◁ makeStringBufferFromString(imageFile);                                // Image file name
 
-  i ◁ new $Image(out: iFile, cr: cr, surface: surface, width: x, height: y);    // Create image
-  i ▷ clearWhite;
+  i ◀ new $Image(out: iFile, cr: cr, surface: surface, width: x, height: y);    // Create image
+
+  i.sansBoldItalic  = make$Font("NotoSans-BoldItalic.ttf" );
+  i.sansBold        = make$Font("NotoSans-Bold.ttf"       );
+  i.sansItalic      = make$Font("NotoSans-Italic.ttf"     );
+  i.sansRegular     = make$Font("NotoSans-Regular.ttf"    );
+
+  i.sansMonoBold    = make$Font("NotoSansMono-Bold.ttf"   );
+  i.sansMonoRegular = make$Font("NotoSansMono-Regular.ttf");
+
+  i.serifBoldItalic = make$Font("NotoSerif-BoldItalic.ttf");
+  i.serifBold       = make$Font("NotoSerif-Bold.ttf"      );
+  i.serifItalic     = make$Font("NotoSerif-Italic.ttf"    );
+  i.serifRegular    = make$Font("NotoSerif-Regular.ttf"   );
+
+  e1 ◁ FT_Init_FreeType(&i.freeTypeLibrary);                                    // Initialize FreeType library
+  if (e1) printStackBackTraceAndExit(1, "Error %d in free type\n", e1);
+
+  i ▷ setFont(i.sansMonoRegular);                                               // Default font
+  i ▷ clearWhite;                                                               // Clear display
 
   draw(i);                                                                      // Draw
 
   cairo_destroy(cr);                                                            // Save results
-  cairo_font_face_destroy(cairoFontFace);
   cairo_surface_write_to_png(surface, imageFile);
   cairo_surface_destroy (surface);
-
-  FT_Done_Face    (freeTypeFontFace);                                           // Free free type
-  FT_Done_FreeType(freeTypeLibrary);
 
   i ▷ assert$Result(expected);                                                  // Check results
   return i;
  } // make$Image
 
-//D1 Methods                                                                    // Methods that operate on an $
+static $Font make$Font                                                          // Record a font file description
+ (char * fontFile)                                                              // Font file base name
+ {StringBuffer f = makeStringBuffer();
+  f ▷ add(developmentMode() ? "/usr/share/fonts/truetype/noto/" :               // Location of font
+                              "/home/runner/work/C/C/fonts/");
+  f ▷ add(fontFile);
+  f ▷ join;
+  return new $Font(file: f);
+ }
 
-static void free_$                                                              // Free an image
+//D1 Free                                                                       // Free cairo and free type resources associated with the image
+
+static void free_$Image                                                         // Free an image
  ($Image i)                                                                     // $Image
  {i.out ▷ free;
+
+  $Font *fonts[] =
+   {&i.sansBoldItalic, &i.sansBold,        &i.sansItalic,      &i.sansRegular,
+    &i.sansMonoBold,   &i.sansMonoRegular, &i.serifBoldItalic, &i.serifBold,
+    &i.serifItalic,    &i.serifRegular};
+
+  for($Font **f = fonts; *f; ++f)                                               // Free any fonts that were loaded
+   {$Font F = **f;
+    F ▷ free;
+   }
+
+  FT_Done_FreeType(i.freeTypeLibrary);                                          // Finished with FreeType library
+ }
+
+static void free_$Font                                                          // Free a font if it has been loaded
+ ($Font font)                                                                   // $Font
+ {if (font.cairoFontFace)
+   {cairo_font_face_destroy(font.cairoFontFace);
+    FT_Done_Face           (font.freeTypeFontFace);
+    font.file ▷ free;
+   }
+ }
+
+//D1 Methods                                                                    // Methods that operate on an $
+
+static void setFont                                                             // Start using a font
+ ($Image i,                                                                     // $Image
+  $Font font)                                                                   // Font to use
+ {if (!font.cairoFontFace)                                                      // Load all the available fonts into cairo
+   {makeLocalCopyOfStringBuffer(ff, l, font.file);
+    e2 ◁ FT_New_Face(i.freeTypeLibrary, ff, 0, &font.freeTypeFontFace);
+    if (e2 == FT_Err_Unknown_File_Format) printStackBackTraceAndExit
+     (1, "FontFace not supported: %s\n", ff);
+    else if (e2) printStackBackTraceAndExit
+     (1, "FontFace failed: %d %s\n", e2, ff);
+
+    font.cairoFontFace = cairo_ft_font_face_create_for_ft_face(font.freeTypeFontFace, 0);
+   }
+  cairo_set_font_face (i.cr, font.cairoFontFace);
  }
 
 static void assert$ImageFile                                                    //P Check that the digest of an image file contains the specified string
@@ -142,7 +212,7 @@ void test0()                                                                    
      }
    }
 
-  i ◁ make$Image(draw, 2000, 2000, "cairo.png", "ab32");                        // Create image containing some text and check its digest
+  i ◁ make$Image(draw, 2000, 2000, "$.png", "ab32");                        // Create image containing some text and check its digest
   i ▷ free;
  }
 
