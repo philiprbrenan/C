@@ -16,6 +16,14 @@
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
+typedef struct MimagemEditPosition                                                    // A position in a Mimagem edit buffer
+ {const struct ProtoTypes_MimagemEditPosition *proto;                                 // Prototypes for methods
+  size_t         character;                                                     // The number of the character at the position
+  size_t         tag;                                                           // The tag containing at the position
+  size_t         positionInTag;                                                 // The character offset of the pointer in the tag at the position
+  size_t         editLine;                                                      // The edit line containing the position
+ } MimagemEditPosition;
+
 typedef struct MimagemEditBuffer                                                      // Mimagem edit buffer
  {const struct ProtoTypes_MimagemEditBuffer *proto;                                   // Prototypes for methods
   XmlParse       xml;                                                           // Xml parse tree being editted
@@ -27,14 +35,8 @@ typedef struct MimagemEditBuffer                                                
   size_t         fontSize;                                                      // Font size to use in creating text
   size_t         px;                                                            // Pointer pixel position in x
   size_t         py;                                                            // Pointer pixel position in y
-  size_t         pointerChar;                                                   // The number of the character containing the pointer
-  size_t         pointerTag;                                                    // The tag containing the pointer
-  size_t         pointerPositionInTag;                                          // The character offset of the pointer in the tag containing the pointer
-  size_t         pointerEditLine;                                               // The edit line containing the pointer
-  size_t         cursorChar;                                                    // The number of the character containing the cursor
-  size_t         cursorTag;                                                     // The tag containing the cursor
-  size_t         cursorPositionInTag;                                           // The character offset of the cursor in the tag containing the cursor
-  size_t         cursorEditLine;                                                // The edit line containing the cursor
+  MimagemEditPosition  pointer;                                                       // Position of the pointer in Mimagem edit buffer
+  MimagemEditPosition  cursor;                                                        // Position of the cursor in Mimagem edit buffer
  } MimagemEditBuffer;
 
 #include <mimagem_prototypes.h>
@@ -96,16 +98,16 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
       ++currentPositionInTag; ++currentChar;                                    // Pointer and cursor location
       if (editBuffer.px >= x && editBuffer.px <= x + textExtents.x_advance &&   // Pointer location
           editBuffer.py <= y && editBuffer.py >= y - H)
-       {editBuffer.pointerTag           = currentTagOffset;
-        editBuffer.pointerPositionInTag = currentPositionInTag;
-        editBuffer.pointerEditLine      = currentEditLine;
-        editBuffer.pointerChar          = currentChar;
+       {editBuffer.pointer.tag           = currentTagOffset;
+        editBuffer.pointer.positionInTag = currentPositionInTag;
+        editBuffer.pointer.editLine      = currentEditLine;
+        editBuffer.pointer.character     = currentChar;
        }
 
-      if (editBuffer.cursorChar == currentChar)                                 // Cursor location
-       {editBuffer.cursorTag            = currentTagOffset;
-        editBuffer.cursorPositionInTag  = currentPositionInTag;
-        editBuffer.cursorEditLine       = currentEditLine;
+      if (editBuffer.cursor.character   == currentChar)                         // Cursor location
+       {editBuffer.cursor.tag            = currentTagOffset;
+        editBuffer.cursor.positionInTag  = currentPositionInTag;
+        editBuffer.cursor.editLine       = currentEditLine;
        }
 
       cairo_move_to(cr, x += textExtents.x_advance, y += 0);                    // Position ready for the next character
@@ -166,8 +168,17 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
 
   drawTag(editBuffer.xml.proto->root(editBuffer.xml), -1);                                           // Start at the root
 
-  return editBuffer;                                                            // Return the updted edit buffer
+  return editBuffer;                                                            // Return the updated edit buffer
  } // drawEditBuffer
+
+static void maintainCursorPosition_MimagemEditBuffer_MimagemEditBuffer                      // Set the scroll amount of the altered edit buffer so that the position on the screen of the line containing the cursor is as close as possible to the position in the base edit buffer when the altered buffer is drawn in the place of the base buffer despite the altered buffer having been zoomed or having its width changed relative to the base buffer.  Both buffers should have been drawn before this operations (with measureOnly=1 if no drawing is required) so that the current position of the line containing the cursor is known in both buffers at the start of this operation. After this operation the altered buffer can be drawn in the area originally occupied by the base buffer while minimizing the amount the user must move their line of sight to track the cursor position.
+ (MimagemEditBuffer   base,                                                           // Base    Mimagem edit buffer
+  MimagemEditBuffer * altered)                                                        // Altered Mimagem edit buffer
+ {const typeof((base   . cursor.editLine - base   . scroll) * base   . lineHeight) b = (base   . cursor.editLine - base   . scroll) * base   . lineHeight;       // Location of cursor line of base Mimagem edit buffer on display in pixels
+  const typeof((altered->cursor.editLine - altered->scroll) * altered->lineHeight) a = (altered->cursor.editLine - altered->scroll) * altered->lineHeight;       // Location of cursor lkne in altered Mimagem edit buffer on display in pixels
+  const typeof((a - b) / altered->lineHeight + altered->scroll) s = (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
+  altered->scroll = nearbyint(s);
+ }
 #endif
 
 //D1 Tests                                                                      // Tests
@@ -198,11 +209,11 @@ void test0()
     x.proto->scan(x, drawXml);
    }
 
-  const typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "49ad")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "49ad");                   // Create image containing some text and check its digest
+  const typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "49ad")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "49ad");
   i.proto->free(i);
  }
 
-void test1()                                                                    //TdrawEditBuffer
+void test1()                                                                    //TdrawEditBuffer //TmaintainCursorPosition
  {const typeof("<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j><B><C/><D><E/>EE<F/>1 2 3 4 5 6 7 8 9 0<G>GGG</G></D><H>HH HH</H></B><i/>i<j></j><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>") xml = "<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j><B><C/><D><E/>EE<F/>1 2 3 4 5 6 7 8 9 0<G>GGG</G></D><H>HH HH</H></B><i/>i<j></j><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
 
      const typeof(parseXmlFromString(xml, 0)) X = parseXmlFromString(xml, 0);
@@ -214,44 +225,42 @@ void test1()                                                                    
 
     const typeof(page.proto->right(page, 0)) ww = page.proto->right(page, 0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
     const typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 810, py: 1185, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 810, py: 1185, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
-    const typeof(we.proto->drawEditBuffer(we)) wr = we.proto->drawEditBuffer(we);
-         i.proto->save(i, "Mimagem1_wide.png", "bfbf3e"); i.proto->clearWhite(i);
+    typeof(we.proto->drawEditBuffer(we)) wr = we.proto->drawEditBuffer(we);
+         i.proto->save(i, "Mimagem1_wide.png", "e2bfbf"); i.proto->clearWhite(i);
 
-    const typeof(X.tree.proto->nodeFromOffset(X.tree, wr.pointerTag)) wn = X.tree.proto->nodeFromOffset(X.tree, wr.pointerTag);                                // Pointer location in wide version
+    const typeof(X.tree.proto->nodeFromOffset(X.tree, wr.pointer.tag)) wn = X.tree.proto->nodeFromOffset(X.tree, wr.pointer.tag);                                // Pointer location in wide version
     assert( wn.proto->equalsString(wn, "GGG"));
-    assert( wr.pointerPositionInTag ==  2);
-    assert( wr.pointerChar          == 149);
-    assert( wr.pointerEditLine      == 14);
+    assert( wr.pointer.positionInTag ==  2);
+    assert( wr.pointer.character     == 149);
+    assert( wr.pointer.editLine      == 14);
 
     const typeof(page.proto->left(page, i.width * 4 / 8)) nw = page.proto->left(page, i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
-    typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 12 / 8, cursorChar: wr.pointerChar, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) ne = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 12 / 8, cursorChar: wr.pointerChar, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
-    const typeof(ne.proto->drawEditBuffer(ne)) nr = ne.proto->drawEditBuffer(ne);
-         i.proto->save(i, "Mimagem1_narrow.png", "a"); i.proto->clearWhite(i);
+    typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 12 / 8, cursor: wr.pointer, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) ne = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 12 / 8, cursor: wr.pointer, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
+    typeof(ne.proto->drawEditBuffer(ne)) nr = ne.proto->drawEditBuffer(ne);
+         i.proto->save(i, "Mimagem1_narrow.png", "b5be"); i.proto->clearWhite(i);
 
-    const typeof(X.tree.proto->nodeFromOffset(X.tree, nr.cursorTag)) nn = X.tree.proto->nodeFromOffset(X.tree, nr.cursorTag);                                 // Cursor location in narrow mode
+    const typeof(X.tree.proto->nodeFromOffset(X.tree, nr.cursor.tag)) nn = X.tree.proto->nodeFromOffset(X.tree, nr.cursor.tag);                                // Cursor location in narrow mode
     assert( nn.proto->equalsString(nn, "GGG"));
-    assert( nr.cursorPositionInTag ==  wr.pointerPositionInTag);
-    assert( nr.cursorChar          ==  wr.pointerChar);
-//  assert( nr.cursorEditLine      == 18);                                             // Font size unchanged
-    assert( nr.cursorEditLine      == 27);                                             // New font size
+    assert( nr.cursor.positionInTag ==  wr.pointer.positionInTag);
+    assert( nr.cursor.character     ==  wr.pointer.character);
+//  assert( nr.cursor.editLine      == 18);                                            // Font size unchanged
+    assert( nr.cursor.editLine      == 27);                                            // New font size
 
-    const typeof((wr.pointerEditLine - wr.scroll) * wr.lineHeight) wcp = (wr.pointerEditLine - wr.scroll) * wr.lineHeight;                     // Pixels down to cursor in wide display
-    const typeof((nr.cursorEditLine  - nr.scroll) * nr.lineHeight) ncp = (nr.cursorEditLine  - nr.scroll) * nr.lineHeight;                     // Pixels down to cursor in narrow, font expanded display
-    const typeof((ncp - wcp) / nr.lineHeight) nsr = (ncp - wcp) / nr.lineHeight;                                          // Amount we should scroll so that the cursor is on the same line of the display after the narrow mode, font expanded draw as a double
-    ne.scroll = nearbyint(nsr);                                                 // Adjust scroll so that the line containing the cursor remains close to its original position
+    wr.cursor = wr.pointer;                                                     // Simulate a click - the cursor position is set to match the pointer position
+    wr.proto->maintainCursorPosition(wr, &nr);                                           // Position the narrow display so that GGG is in much the same screen position as the wide display
 
-    ne.measureOnly = 0;                                                         // Request draw of the edit buffer
-    const typeof(ne.proto->drawEditBuffer(ne)) nR = ne.proto->drawEditBuffer(ne);                                                   // Draw edit buffer
-         i.proto->save(i, "Mimagem1_narrowScrolled.png", "a"); i.proto->clearWhite(i);
+    nr.measureOnly = 0;                                                         // Request draw of the edit buffer
+    const typeof(nr.proto->drawEditBuffer(nr)) nR = nr.proto->drawEditBuffer(nr);                                                   // Draw scrolled edit buffer
+         i.proto->save(i, "Mimagem1_narrowScrolled.png", "6de8");
 
-    const typeof(X.tree.proto->nodeFromOffset(X.tree, nR.cursorTag)) nN = X.tree.proto->nodeFromOffset(X.tree, nR.cursorTag);                                 // Cursor location in narrow mode
+    const typeof(X.tree.proto->nodeFromOffset(X.tree, nR.cursor.tag)) nN = X.tree.proto->nodeFromOffset(X.tree, nR.cursor.tag);                                // Cursor location in narrow mode
     assert( nN.proto->equalsString(nN, "GGG"));
-    assert( nR.cursorPositionInTag ==  wr.pointerPositionInTag);
-    assert( nR.cursorChar          ==  wr.pointerChar);
-    assert( nR.cursorEditLine      == 27);                                             // In this particular case changing the font size did not change the edit line number of the tag containing the cursor.
+    assert( nR.cursor.positionInTag ==  wr.pointer.positionInTag);
+    assert( nR.cursor.character     ==  wr.pointer.character);
+    assert( nR.cursor.editLine      == 27);                                            // In this particular case changing the font size did not change the edit line number of the tag containing the cursor.
    }
 
-  const typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "a");                      // Create image containing some text and check its digest
+  const typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "6de8")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem2.png", "6de8");                   // Create image containing some text and check its digest
   i.proto->free(i);
  }
 
