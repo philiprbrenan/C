@@ -232,9 +232,9 @@ static void leftArrowWithCircle                                                 
   cairo_line_to        (cr, r.X, r.Y);
   cairo_close_path     (cr);
 
-  const typeof(r.proto->width(r) / 2) w = r.proto->width(r) / 2; const typeof(r.proto->height(r) / 2) h = r.proto->height(r) / 2;
+  const typeof(r.proto->width(r)) w = r.proto->width(r); const typeof(r.proto->height(r)) h = r.proto->height(r);
   cairo_new_sub_path   (cr);
-  cairo_arc            (cr, r.x + w, r.y + h, w/3, 0,  2 * M_PI);
+  cairo_arc            (cr, r.x + w * 2 / 3, r.y + h / 2, w / 4, 0,  2 * M_PI);
   cairo_close_path     (cr);
 
   cairo_set_source     (cr, lg);
@@ -301,11 +301,11 @@ void test1()                                                                    
     const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
     const typeof(makeRectangleWH(0, 0, w/2, h/2)) r = makeRectangleWH(0, 0, w/2, h/2);
     const typeof(r.proto->translate(r, w/2, 0)) s = r.proto->translate(r, w/2, 0);
-    i.proto->leftArrow(i, r, red, blue);
+    i.proto->leftArrowWithCircle(i, r, red, blue);
     i.proto->rightArrow(i, s, red, blue);
    }
 
-  const typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText1.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText1.png", "a");
+  const typeof(makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "a")) i = makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "a");
   i.proto->free(i);
  }
 
