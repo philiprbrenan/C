@@ -203,7 +203,7 @@ static $  swap_$_$                                                              
 #if __INCLUDE_LEVEL__ == 0
 
 void test0()                                                                    //Tmake$ //Teq //T$near //T$zero //T$one //Tswap //Tclone //Tplus //Tmultiply //Td //Td2 //Tl //Tl2 //Tdot //Tr90 //Tr180 //Tr270 //Tsine //Tcosine //Tarea //Tangle //TsmallestAngleToNormalPlane //Tn //Tzero //Tdivide //Tminus
- {z ◁ $Z(); x ◁ $X(); y ◁ $Y(); 𝘅 ◁ x ▷ r180; 𝘆 ◁ y ▷ r180;
+ {z ◁ $Z(); x ◁ $X(); y ◁ $Y(); X ◁ x ▷ r180; Y ◁ y ▷ r180;
 
   ✓ z ▷ zero;  ✓ x ▷ eq(make$(1, 0)); ✓ y ▷ eq(make$(0, 1)); ✓ z ▷ eq(x ▷ minus(x));
 
@@ -218,8 +218,8 @@ void test0()                                                                    
   ✓ $near(z  ▷ d (h5) ,  5);
   ✓ $near(z  ▷ d2(h5) , 25);
 
-    𝗵5 ◁ h5 ▷ divide(5);
-  ✓ 𝗵5 ▷ eq(h5 ▷ n);
+    H5 ◁ h5 ▷ divide(5);
+  ✓ H5 ▷ eq(h5 ▷ n);
 
   ✓ $zero(x ▷ dot(y));
   ✓ $zero(y ▷ dot(x));
@@ -229,9 +229,9 @@ void test0()                                                                    
   ✓ $near(x3 ▷ dot(h5), x3 ▷ l2);
   ✓ $near(y4 ▷ dot(h5), y4 ▷ l2);
 
-  ✓ x ▷ eq(𝘆 ▷ r90);  ✓ y ▷ eq(x ▷ r90);  ✓ 𝘅 ▷ eq(y ▷ r90);  ✓ 𝘆 ▷ eq(𝘅 ▷ r90);
-  ✓ x ▷ eq(𝘅 ▷ r180); ✓ y ▷ eq(𝘆 ▷ r180); ✓ 𝘅 ▷ eq(x ▷ r180); ✓ 𝘆 ▷ eq(y ▷ r180);
-  ✓ x ▷ eq(y ▷ r270); ✓ y ▷ eq(𝘅 ▷ r270); ✓ 𝘅 ▷ eq(𝘆 ▷ r270); ✓ 𝘆 ▷ eq(x ▷ r270);
+  ✓ x ▷ eq(Y ▷ r90);  ✓ y ▷ eq(x ▷ r90);  ✓ X ▷ eq(y ▷ r90);  ✓ Y ▷ eq(X ▷ r90);
+  ✓ x ▷ eq(X ▷ r180); ✓ y ▷ eq(Y ▷ r180); ✓ X ▷ eq(x ▷ r180); ✓ Y ▷ eq(y ▷ r180);
+  ✓ x ▷ eq(y ▷ r270); ✓ y ▷ eq(X ▷ r270); ✓ X ▷ eq(Y ▷ r270); ✓ Y ▷ eq(x ▷ r270);
 
   ✓ $one (x ▷ cosine(x));
   ✓ $one (y ▷ cosine(y));
