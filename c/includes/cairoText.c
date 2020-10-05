@@ -206,13 +206,19 @@ static void leftArrow                                                           
   cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
   cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
 
-  cairo_move_to    (cr, r.x, r.y + r.proto->height(r) / 2);
-  cairo_line_to    (cr, r.X, r.y);
-  cairo_line_to    (cr, r.X, r.Y);
-  cairo_close_path (cr);
+  cairo_move_to     (cr, r.x, r.y + r.proto->height(r) / 2);
+  cairo_line_to     (cr, r.X, r.y);
+  cairo_line_to     (cr, r.X, r.Y);
+  cairo_close_path  (cr);
 
-  cairo_set_source (cr, lg);
-  cairo_fill       (cr);
+  const typeof(r.proto->width(r) / 2) w = r.proto->width(r) / 2; const typeof(r.proto->height(r) / 2) h = r.proto->height(r) / 2;
+  cairo_new_sub_path(cr);
+  cairo_arc         (cr, r.x + w, r.y + h, w/3, 0,  2 * M_PI);
+  cairo_close_path  (cr);
+
+  cairo_set_source  (cr, lg);
+cairo_set_fill_rule (cr, CAIRO_FILL_RULE_EVEN_ODD);
+  cairo_fill        (cr);
   cairo_pattern_destroy(lg);
  }
 
