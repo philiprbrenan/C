@@ -48,6 +48,11 @@ jobs:
       run: |
         (cd /home/runner/work/C/C/c/z/cairoText/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/cairoText//cairoText.c --cIncludes /home/runner/work/C/C/c/includes )
 
+    - name: Run colour
+      if: always()
+      run: |
+        (cd /home/runner/work/C/C/c/z/colour/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/colour//colour.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
+
     - name: Run mimagem
       if: always()
       run: |
@@ -72,4 +77,9 @@ jobs:
       if: always()
       run: |
         (cd /home/runner/work/C/C/c/z/utilities/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/utilities//utilities.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
+
+    - name: Run vector2d
+      if: always()
+      run: |
+        (cd /home/runner/work/C/C/c/z/vector2d/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/vector2d//vector2d.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
 
