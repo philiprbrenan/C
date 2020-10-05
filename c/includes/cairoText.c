@@ -9,6 +9,8 @@
 #include <cairo-ft.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include <colour.c>
+#include <rectangle.c>
 #include <stringBuffer.c>
 #include <utilities.c>
 #define SIZE 2000
@@ -190,6 +192,58 @@ static void clearWhite_CairoText                                                
   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
   cairo_paint         (cr);
  }
+
+//D1 Shapes                                                                     // Draw shapes
+
+static void leftArrow                                                           // Draw a left pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
+ (CairoTextImage    i,                                                                  // Image
+  Rectangle r,                                                                  // Rectangle to draw arrow in
+  Colour    s,                                                                  // Start colour
+  Colour    f)                                                                  // Finish colour
+ {typeof(i.cr) cr = i.cr;
+
+  cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
+  cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
+  cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
+
+  cairo_move_to    (cr, r.x, r.y + r.proto->height(r) / 2);
+  cairo_line_to    (cr, r.X, r.y);
+  cairo_line_to    (cr, r.X, r.Y);
+  cairo_close_path (cr);
+
+  cairo_set_source (cr, lg);
+  cairo_fill       (cr);
+  cairo_pattern_destroy(lg);
+ }
+
+static void leftArrowWithCircle                                                 // Draw a left pointing arrow with a central circle cut out
+ (CairoTextImage    i,                                                                  // Image
+  Rectangle r,                                                                  // Rectangle to draw arrow in
+  Colour    s,                                                                  // Start colour
+  Colour    f)                                                                  // Finish colour
+ {i.proto->leftArrow(i, r, s, f);
+ }
+
+static void rightArrow                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
+ (CairoTextImage    i,                                                                  // Image
+  Rectangle r,                                                                  // Rectangle to draw arrow in
+  Colour    s,                                                                  // Start colour
+  Colour    f)                                                                  // Finish colour
+ {typeof(i.cr) cr = i.cr;
+
+  cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
+  cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
+  cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
+
+  cairo_move_to    (cr, r.X, r.y + r.proto->height(r) / 2);
+  cairo_line_to    (cr, r.x, r.y);
+  cairo_line_to    (cr, r.x, r.Y);
+  cairo_close_path (cr);
+
+  cairo_set_source (cr, lg);
+  cairo_fill       (cr);
+  cairo_pattern_destroy(lg);
+ }
 #endif
 
 //D1 Tests                                                                      // Tests
@@ -213,12 +267,31 @@ void test0()                                                                    
      }
    }
 
-  const typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText.png", "ab32")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText.png", "ab32");                        // Create image containing some text and check its digest
+  const typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText0.png", "ab32")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText0.png", "ab32");                           // Create image containing some text and check its digest
+  i.proto->free(i);
+ }
+
+void test1()                                                                    // Linear gradient
+ {void draw(CairoTextImage i)
+   {Colour white = makeColour(1,1,1,1);
+    Colour black = makeColour(0,0,0,1);
+    Colour red   = makeColour(1,0,0,1);
+    Colour green = makeColour(0,1,0,1);
+    Colour blue  = makeColour(0,0,1,1);
+
+    const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
+    const typeof(makeRectangleWH(0, 0, w/2, h/2)) r = makeRectangleWH(0, 0, w/2, h/2);
+    const typeof(r.proto->translate(r, w/2, 0)) s = r.proto->translate(r, w/2, 0);
+    i.proto->leftArrow(i, r, red, blue);
+    i.proto->rightArrow(i, s, red, blue);
+   }
+
+  const typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText1.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText1.png", "a");
   i.proto->free(i);
  }
 
 int main (void)
- {void (*tests[])(void) = {test0, 0};
+ {void (*tests[])(void) = {test0, test1, 0};
   run_tests("CairoText", 1, tests);
   return 0;
 }
