@@ -220,11 +220,6 @@ static void leftArrowWithCircle                                                 
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
- {static void leftArrow                                                         // Draw a left pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
- ($Image    i,                                                                  // Image
-  Rectangle r,                                                                  // Rectangle to draw arrow in
-  Colour    s,                                                                  // Start colour
-  Colour    f)                                                                  // Finish colour
  {cr ◀ i.cr;
 
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
@@ -246,7 +241,6 @@ static void leftArrowWithCircle                                                 
   cairo_fill           (cr);
   cairo_pattern_destroy(lg);
  }
-}
 
 static void rightArrow                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
  ($Image    i,                                                                  // Image
@@ -297,10 +291,10 @@ void test0()                                                                    
 
 void test1()                                                                    // Linear gradient
  {void draw($Image i)
-   {Colour white = makeColour(1,1,1,1);
-    Colour black = makeColour(0,0,0,1);
+   {//Colour white = makeColour(1,1,1,1);
+    //Colour black = makeColour(0,0,0,1);
     Colour red   = makeColour(1,0,0,1);
-    Colour green = makeColour(0,1,0,1);
+    //Colour green = makeColour(0,1,0,1);
     Colour blue  = makeColour(0,0,1,1);
 
     w ◁ i.width; h ◁ i.height;
