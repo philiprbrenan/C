@@ -202,6 +202,7 @@ static void leftArrow                                                           
   Colour    f)                                                                  // Finish colour
  {typeof(i.cr) cr = i.cr;
 
+  cairo_save(cr);
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
   cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
   cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
@@ -214,6 +215,7 @@ static void leftArrow                                                           
   cairo_set_source (cr, lg);
   cairo_fill       (cr);
   cairo_pattern_destroy(lg);
+  cairo_restore(cr);
  }
 
 static void leftArrowWithCircle                                                 // Draw a left pointing arrow with a central circle cut out
@@ -223,6 +225,7 @@ static void leftArrowWithCircle                                                 
   Colour    f)                                                                  // Finish colour
  {typeof(i.cr) cr = i.cr;
 
+  cairo_save(cr);
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
   cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
   cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
@@ -234,13 +237,14 @@ static void leftArrowWithCircle                                                 
 
   const typeof(r.proto->width(r)) w = r.proto->width(r); const typeof(r.proto->height(r)) h = r.proto->height(r);
   cairo_new_sub_path   (cr);
-  cairo_arc            (cr, r.x + w * 2 / 3, r.y + h / 2, w / 4, 0,  2 * M_PI);
+  cairo_arc            (cr, r.x + w * 7 / 12, r.y + h / 2, w / 3, 0,  2 * M_PI);
   cairo_close_path     (cr);
 
   cairo_set_source     (cr, lg);
   cairo_set_fill_rule  (cr, CAIRO_FILL_RULE_EVEN_ODD);
   cairo_fill           (cr);
   cairo_pattern_destroy(lg);
+  cairo_restore(cr);
  }
 
 static void rightArrow                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
@@ -250,6 +254,7 @@ static void rightArrow                                                          
   Colour    f)                                                                  // Finish colour
  {typeof(i.cr) cr = i.cr;
 
+  cairo_save(cr);
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
   cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
   cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
@@ -262,6 +267,7 @@ static void rightArrow                                                          
   cairo_set_source (cr, lg);
   cairo_fill       (cr);
   cairo_pattern_destroy(lg);
+  cairo_restore(cr);
  }
 #endif
 
@@ -299,7 +305,7 @@ void test1()                                                                    
     Colour blue  = makeColour(0,0,1,1);
 
     const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
-    const typeof(makeRectangleWH(0, 0, w/2, h/2)) r = makeRectangleWH(0, 0, w/2, h/2);
+    const typeof(makeRectangleWH(w/4, 0, w/4, h/2)) r = makeRectangleWH(w/4, 0, w/4, h/2);
     const typeof(r.proto->translate(r, w/2, 0)) s = r.proto->translate(r, w/2, 0);
     i.proto->leftArrowWithCircle(i, r, red, blue);
     i.proto->rightArrow(i, s, red, blue);
