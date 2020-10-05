@@ -21,6 +21,13 @@ typedef struct $                                                                
   const double a;                                                               // Alpha
  } $;
 
+typedef struct $Pale                                                            // $ Pale colours
+ {const struct ProtoTypes_$Pale *proto;                                         // Prototypes for methods
+  const size_t N;
+  const $ p[0];
+  const $ p1, p2, p3, p4, p5, p6;
+ } $Pale;
+
 #include <$$_prototypes.h>
 
 //D1 Colours                                                                    // Make a colour
@@ -31,6 +38,17 @@ static $ make$                                                                  
    const double b,                                                              // Blue
    const double a)                                                              // Alpha
  {return new $(r: r, g: g, b: b, a: a);
+ }
+
+static $Pale make$Pale()                                                        // An array of pale colours
+ {o ◁ 1.00; 𝗽 ◁ 0.90; 𝗾 ◁ (o + 𝗽) / 2;
+  p1 ◁ make$(𝗽, o, o, o);
+  p2 ◁ make$(o, 𝗽, o, o);
+  p3 ◁ make$(o, o, 𝗽, o);
+  p4 ◁ make$(𝗾, 𝗾, o, o);
+  p5 ◁ make$(o, 𝗾, 𝗾, o);
+  p6 ◁ make$(𝗾, o, 𝗾, o);
+  return new $Pale(N: 6, p1: p1, p2: p2, p3: p3, p4: p4, p5: p5, p6: p6);
  }
 
 #endif
