@@ -19,6 +19,21 @@ static void save_CairoText_string
   const char * const digest);
 static void clearWhite_CairoText
  (CairoTextImage             i);
+static void leftArrow
+ (CairoTextImage    i,
+  Rectangle r,
+  Colour    s,
+  Colour    f);
+static void leftArrowWithCircle
+ (CairoTextImage    i,
+  Rectangle r,
+  Colour    s,
+  Colour    f);
+static void rightArrow
+ (CairoTextImage    i,
+  Rectangle r,
+  Colour    s,
+  Colour    f);
 struct ProtoTypes_CairoTextFont {
   void  (*free)(                                                                // Free a font if it has been loaded
     CairoTextFont font);                                                        // CairoTextFont
@@ -34,6 +49,21 @@ struct ProtoTypes_CairoTextImage {
     CairoTextImage i);                                                          // CairoTextImage
   void  (*free)(                                                                // Free an image
     CairoTextImage i);                                                          // CairoTextImage
+  void  (*leftArrow)(                                                           // Draw a left pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
+    CairoTextImage i,                                                           // Image
+    Rectangle r,                                                                // Rectangle to draw arrow in
+    Colour s,                                                                   // Start colour
+    Colour f);                                                                  // Finish colour
+  void  (*leftArrowWithCircle)(                                                 // Draw a left pointing arrow with a central circle cut out
+    CairoTextImage i,                                                           // Image
+    Rectangle r,                                                                // Rectangle to draw arrow in
+    Colour s,                                                                   // Start colour
+    Colour f);                                                                  // Finish colour
+  void  (*rightArrow)(                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
+    CairoTextImage i,                                                           // Image
+    Rectangle r,                                                                // Rectangle to draw arrow in
+    Colour s,                                                                   // Start colour
+    Colour f);                                                                  // Finish colour
   void  (*save)(                                                                // Save a copy of the drawing surface to the specified file
     CairoTextImage i,                                                           // CairoTextImage
     char * imageFile,                                                           // Image file name
@@ -42,6 +72,6 @@ struct ProtoTypes_CairoTextImage {
     CairoTextImage i,                                                           // CairoTextImage
     CairoTextFont font);                                                        // Font to use
  } const ProtoTypes_CairoTextImage =
-{assertCairoTextResult, clearWhite_CairoText, free_CairoTextImage, save_CairoText_string, setFont};
+{assertCairoTextResult, clearWhite_CairoText, free_CairoTextImage, leftArrow, leftArrowWithCircle, rightArrow, save_CairoText_string, setFont};
 CairoTextImage newCairoTextImage(CairoTextImage allocator) {return allocator;}
 
