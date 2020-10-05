@@ -204,7 +204,7 @@ static Vector2d  swap_Vector2d_Vector2d                                         
 #if __INCLUDE_LEVEL__ == 0
 
 void test0()                                                                    //TmakeVector2d //Teq //TVector2dnear //TVector2dzero //TVector2done //Tswap //Tclone //Tplus //Tmultiply //Td //Td2 //Tl //Tl2 //Tdot //Tr90 //Tr180 //Tr270 //Tsine //Tcosine //Tarea //Tangle //TsmallestAngleToNormalPlane //Tn //Tzero //Tdivide //Tminus
- {const typeof(Vector2dZ()) z = Vector2dZ(); const typeof(Vector2dX()) x = Vector2dX(); const typeof(Vector2dY()) y = Vector2dY(); const typeof(x.proto->r180(x)) 𝘅 = x.proto->r180(x); const typeof(y.proto->r180(y)) 𝘆 = y.proto->r180(y);
+ {const typeof(Vector2dZ()) z = Vector2dZ(); const typeof(Vector2dX()) x = Vector2dX(); const typeof(Vector2dY()) y = Vector2dY(); const typeof(x.proto->r180(x)) X = x.proto->r180(x); const typeof(y.proto->r180(y)) Y = y.proto->r180(y);
 
   assert( z.proto->zero(z));  assert( x.proto->eq(x, makeVector2d(1, 0))); assert( y.proto->eq(y, makeVector2d(0, 1))); assert( z.proto->eq(z, x.proto->minus(x, x)));
 
@@ -219,8 +219,8 @@ void test0()                                                                    
   assert( Vector2dnear(z.proto->d(z, h5) ,  5));
   assert( Vector2dnear(z.proto->d2(z, h5) , 25));
 
-    const typeof(h5.proto->divide(h5, 5)) 𝗵5 = h5.proto->divide(h5, 5);
-  assert( 𝗵5.proto->eq(𝗵5, h5.proto->n(h5)));
+    const typeof(h5.proto->divide(h5, 5)) H5 = h5.proto->divide(h5, 5);
+  assert( H5.proto->eq(H5, h5.proto->n(h5)));
 
   assert( Vector2dzero(x.proto->dot(x, y)));
   assert( Vector2dzero(y.proto->dot(y, x)));
@@ -230,9 +230,9 @@ void test0()                                                                    
   assert( Vector2dnear(x3.proto->dot(x3, h5), x3.proto->l2(x3)));
   assert( Vector2dnear(y4.proto->dot(y4, h5), y4.proto->l2(y4)));
 
-  assert( x.proto->eq(x, 𝘆.proto->r90(𝘆)));  assert( y.proto->eq(y, x.proto->r90(x)));  assert( 𝘅.proto->eq(𝘅, y.proto->r90(y)));  assert( 𝘆.proto->eq(𝘆, 𝘅.proto->r90(𝘅)));
-  assert( x.proto->eq(x, 𝘅.proto->r180(𝘅))); assert( y.proto->eq(y, 𝘆.proto->r180(𝘆))); assert( 𝘅.proto->eq(𝘅, x.proto->r180(x))); assert( 𝘆.proto->eq(𝘆, y.proto->r180(y)));
-  assert( x.proto->eq(x, y.proto->r270(y))); assert( y.proto->eq(y, 𝘅.proto->r270(𝘅))); assert( 𝘅.proto->eq(𝘅, 𝘆.proto->r270(𝘆))); assert( 𝘆.proto->eq(𝘆, x.proto->r270(x)));
+  assert( x.proto->eq(x, Y.proto->r90(Y)));  assert( y.proto->eq(y, x.proto->r90(x)));  assert( X.proto->eq(X, y.proto->r90(y)));  assert( Y.proto->eq(Y, X.proto->r90(X)));
+  assert( x.proto->eq(x, X.proto->r180(X))); assert( y.proto->eq(y, Y.proto->r180(Y))); assert( X.proto->eq(X, x.proto->r180(x))); assert( Y.proto->eq(Y, y.proto->r180(y)));
+  assert( x.proto->eq(x, y.proto->r270(y))); assert( y.proto->eq(y, X.proto->r270(X))); assert( X.proto->eq(X, Y.proto->r270(Y))); assert( Y.proto->eq(Y, x.proto->r270(x)));
 
   assert( Vector2done (x.proto->cosine(x, x)));
   assert( Vector2done (y.proto->cosine(y, y)));
