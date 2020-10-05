@@ -8,3 +8,8 @@ struct ProtoTypes_Colour {
 {};
 Colour newColour(Colour allocator) {return allocator;}
 
+struct ProtoTypes_ColourPale {
+ } const ProtoTypes_ColourPale =
+{};
+ColourPale newColourPale(ColourPale allocator) {return allocator;}
+
