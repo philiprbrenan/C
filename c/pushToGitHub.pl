@@ -31,11 +31,13 @@ my @cz      =  grep {!/\A#/} split /\s+/, <<END;                                
 arenaList
 arenaTree
 cairoText
+colour
 mimagem
 rectangle
 stringBuffer
 xml
 utilities
+vector2d
 END
 
 my @cg      =  grep {!/\A#/} split /\s+/, <<END;                                # g files to run
