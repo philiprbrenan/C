@@ -22,6 +22,13 @@ typedef struct Colour                                                           
   const double a;                                                               // Alpha
  } Colour;
 
+typedef struct ColourPale                                                            // Colour Pale colours
+ {const struct ProtoTypes_ColourPale *proto;                                         // Prototypes for methods
+  const size_t N;
+  const Colour p[0];
+  const Colour p1, p2, p3, p4, p5, p6;
+ } ColourPale;
+
 #include <colour_prototypes.h>
 
 //D1 Colours                                                                    // Make a colour
@@ -32,6 +39,17 @@ static Colour makeColour                                                        
    const double b,                                                              // Blue
    const double a)                                                              // Alpha
  {return newColour(({struct Colour t = {r: r, g: g, b: b, a: a, proto: &ProtoTypes_Colour}; t;}));
+ }
+
+static ColourPale makeColourPale()                                                        // An array of pale colours
+ {const typeof(1.00) o = 1.00; const typeof(0.90) 𝗽 = 0.90; const typeof((o + 𝗽) / 2) 𝗾 = (o + 𝗽) / 2;
+  const typeof(makeColour(𝗽, o, o, o)) p1 = makeColour(𝗽, o, o, o);
+  const typeof(makeColour(o, 𝗽, o, o)) p2 = makeColour(o, 𝗽, o, o);
+  const typeof(makeColour(o, o, 𝗽, o)) p3 = makeColour(o, o, 𝗽, o);
+  const typeof(makeColour(𝗾, 𝗾, o, o)) p4 = makeColour(𝗾, 𝗾, o, o);
+  const typeof(makeColour(o, 𝗾, 𝗾, o)) p5 = makeColour(o, 𝗾, 𝗾, o);
+  const typeof(makeColour(𝗾, o, 𝗾, o)) p6 = makeColour(𝗾, o, 𝗾, o);
+  return newColourPale(({struct ColourPale t = {N: 6, p1: p1, p2: p2, p3: p3, p4: p4, p5: p5, p6: p6, proto: &ProtoTypes_ColourPale}; t;}));
  }
 
 #endif
