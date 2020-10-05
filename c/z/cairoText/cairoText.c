@@ -231,9 +231,9 @@ static void leftArrowWithCircle                                                 
   cairo_line_to        (cr, r.X, r.Y);
   cairo_close_path     (cr);
 
-  w ◁ r ▷ width / 2; h ◁ r ▷ height / 2;
+  w ◁ r ▷ width; h ◁ r ▷ height;
   cairo_new_sub_path   (cr);
-  cairo_arc            (cr, r.x + w, r.y + h, w/3, 0,  2 * M_PI);
+  cairo_arc            (cr, r.x + w * 2 / 3, r.y + h / 2, w / 4, 0,  2 * M_PI);
   cairo_close_path     (cr);
 
   cairo_set_source     (cr, lg);
@@ -300,11 +300,11 @@ void test1()                                                                    
     w ◁ i.width; h ◁ i.height;
     r ◁ makeRectangleWH(0, 0, w/2, h/2);
     s ◁ r ▷ translate(w/2, 0);
-    i ▷  leftArrow(r, red, blue);
+    i ▷ leftArrowWithCircle(r, red, blue);
     i ▷ rightArrow(s, red, blue);
    }
 
-  i ◁ make$Image(draw, 2000, 2000, "$1.png", "a");
+  i ◁ make$Image(draw, 1000, 2000, "$1.png", "a");
   i ▷ free;
  }
 
