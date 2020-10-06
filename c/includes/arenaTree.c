@@ -101,33 +101,33 @@ static void * pointer_ArenaTree_size                                            
  }
 #line 111 "/home/phil/c/z/arenaList/arenaList.c"
 static ArenaTreeContent * content_ArenaTreeNode                                                 //IPV Convert a node offset to an address so that the content of a node can be updated in situ as long as the ArenaTree is not reallocated to a different position.
- (const ArenaTreeNode node)                                                             // Node
+ (const ArenaTreeNode node)                                                             // ArenaTreeNode
  {return (ArenaTreeContent *)pointer_ArenaTree_size(node.list, node.offset);
  }
 #line 116 "/home/phil/c/z/arenaList/arenaList.c"
 static size_t width_size_ArenaTree                                                      //I Get the width of the data area for a ArenaTree
- (const ArenaTree list)                                                                 // Node
+ (const ArenaTree list)                                                                 // ArenaTreeNode
  {return list.arena->width;
  }
 #line 121 "/home/phil/c/z/arenaList/arenaList.c"
 static size_t width_size_ArenaTreeNode                                                  //I Get the width of the data area for a node
- (const ArenaTreeNode node)                                                             // Node
+ (const ArenaTreeNode node)                                                             // ArenaTreeNode
  {return node.list.arena->width;
  }
 #line 126 "/home/phil/c/z/arenaList/arenaList.c"
 static void * key_pointer_ArenaTreeNode                                                 //IV Get a temporary pointer to the key of a node.
- (const ArenaTreeNode node)                                                             // Node
+ (const ArenaTreeNode node)                                                             // ArenaTreeNode
  {const typeof(node.proto->width(node)) width = node.proto->width(node);                                                         // Width of node
   return pointer_ArenaTree_size(node.list, node.offset + sizeof(ArenaTreeContent) + width);     // The key is stored after the node and optional user data in the arena.
  }
 #line 132 "/home/phil/c/z/arenaList/arenaList.c"
 static void * data_pointer_ArenaTreeNode                                                //IV Get a temporary pointer to the user data of a node.
- (const ArenaTreeNode node)                                                             // Node
+ (const ArenaTreeNode node)                                                             // ArenaTreeNode
  {return pointer_ArenaTree_size(node.list, node.offset + sizeof(ArenaTreeContent));             // The optional user data is stored immediately after the node in the arena.
  }
 #line 137 "/home/phil/c/z/arenaList/arenaList.c"
 static size_t length_size_ArenaTreeNode                                                 //I Get the length of the key associated with a node
- (const ArenaTreeNode node)                                                             // Node
+ (const ArenaTreeNode node)                                                             // ArenaTreeNode
  {return node.proto->content(node)->length;
  }
 #line 142 "/home/phil/c/z/arenaList/arenaList.c"
@@ -172,7 +172,7 @@ static size_t used_ArenaTree                                                    
  {return list.arena->used;
  }
 #line 208 "/home/phil/c/z/arenaList/arenaList.c"
-static ArenaTreeNode node_ArenaTreeNode_ArenaTree_string                                                //I Create a new ArenaTree node with the specified key.
+static ArenaTreeNode node_ArenaTreeNode_ArenaTree_string_size                                           //I Create a new ArenaTree node with the specified key.
  (const ArenaTree            list,                                                      // ArenaTree in which to create the node
   const void * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the ArenaTree is determined solely by the user.
   const size_t       length)                                                    // Length of the key, or if zero, I will use strlen
@@ -182,13 +182,13 @@ static ArenaTreeNode node_ArenaTreeNode_ArenaTree_string                        
   memcpy(n.proto->key(n), key, length);                                                 // Copy in key
   return n;                                                                     // Return node
  }
-#line 307 "/home/phil/c/z/arenaList/arenaList.c"
+#line 322 "/home/phil/c/z/arenaList/arenaList.c"
 static int equalsString_ArenaTreeNode_string                                            //I Check that the key of a node equals a string
- (const ArenaTreeNode        node,                                                      // Node
+ (const ArenaTreeNode        node,                                                      // ArenaTreeNode
   const char * const key)                                                       // Key
  {return node.proto->keyEquals(node, key, strlen(key));
  }
-#line 666 "/home/phil/c/z/arenaList/arenaList.c"
+#line 704 "/home/phil/c/z/arenaList/arenaList.c"
 static void dump_ArenaTreeNode                                                          //IP Dump a ArenaTreeNode on stderr
  (const ArenaTreeNode node)                                                             // ArenaTreeNode
  {makeLocalCopyOfArenaTreeKey(k, l, node);                                              // Local copy of key
