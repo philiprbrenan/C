@@ -19,7 +19,7 @@
 #define $_included
 
 exports structs $ $Node $Arena $Description
-exports arena    pointer_$_size content_$Node key_pointer_$Node length_size_$Node allocate_offset_$_size used_$ make$ make$WithWidth node_$Node_$_string nodeFromOffset_$_size equals_int_$Node_$Node equalsString_$Node_string width_size_$ width_size_$Node
+exports arena    pointer_$_size content_$Node key_pointer_$Node length_size_$Node allocate_offset_$_size used_$ make$ make$WithWidth node_$Node_$_string_size nodeFromOffset_$_size equals_int_$Node_$Node equalsString_$Node_string width_size_$ width_size_$Node
 exports nodeData key_pointer_$Node data_pointer_$Node length_size_$Node dump_$Node
 
 typedef struct $                                                                // $
