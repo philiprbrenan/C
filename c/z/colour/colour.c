@@ -41,13 +41,13 @@ static $ make$                                                                  
  }
 
 static $Pale make$Pale()                                                        // An array of pale colours
- {o ◁ 1.00; 𝗽 ◁ 0.90; 𝗾 ◁ (o + 𝗽) / 2;
-  p1 ◁ make$(𝗽, o, o, o);
-  p2 ◁ make$(o, 𝗽, o, o);
-  p3 ◁ make$(o, o, 𝗽, o);
-  p4 ◁ make$(𝗾, 𝗾, o, o);
-  p5 ◁ make$(o, 𝗾, 𝗾, o);
-  p6 ◁ make$(𝗾, o, 𝗾, o);
+ {o ◁ 1.00; p ◁ 0.90; q ◁ (o + p) / 2;
+  p1 ◁ make$(p, o, o, o);
+  p2 ◁ make$(o, p, o, o);
+  p3 ◁ make$(o, o, p, o);
+  p4 ◁ make$(q, q, o, o);
+  p5 ◁ make$(o, q, q, o);
+  p6 ◁ make$(q, o, q, o);
   return new $Pale(N: 6, p1: p1, p2: p2, p3: p3, p4: p4, p5: p5, p6: p6);
  }
 
