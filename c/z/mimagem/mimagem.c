@@ -58,7 +58,20 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
   editBuffer.lineHeight = H;                                                    // Record line height
   scrollPixels ◁ H * editBuffer.scroll;                                         // Number of pixels scrolled down
 
-  editLineNumbersAndText   ◁ editBuffer.zone ▷ left(H * 3 / 2);                 // Split the drawing area into line numbers and text
+  size_t getLineNumberWidth()                                                   // Width of line numbers
+   {N ◁ 8ul; n ◁ editBuffer.xml ▷ count;
+    char z[2] = {'0', 0};
+    cairo_text_extents(cr, z, &textExtents);                                    // Measure text containing one zero
+    t ◀ 1ul;
+    for(size_t i = 1; i <= N; ++i)
+     {t *= 10ul;
+      if (t > n) return i * textExtents.x_advance;
+     }
+    return textExtents.x_advance * N;
+   }
+
+  lineNumberWidth ◁ getLineNumberWidth();                                       // Width of line numbers
+  editLineNumbersAndText   ◁ editBuffer.zone ▷ left(lineNumberWidth);           // Split the drawing area into line numbers and text
   editLineNumbers          ◁ editLineNumbersAndText.a;                          // Line numbers
   editText                 ◁ editLineNumbersAndText.b;                          // Text
 
@@ -96,14 +109,17 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
       if (draw)
        {lsprintf(n, 1024, "%lu", currentTagNumber);                             // Format line number
         cairo_save          (cr);
-        cairo_translate     (cr, editLineNumbers.x, y + H);
 
         b ◁ backgroundColour;                                                   // Background colour of line number
         cairo_set_source_rgb(cr, b.r, b.g, b.b);
-        cairo_rectangle     (cr, 0, -H, editLineNumbers ▷ width, 0);
+        cairo_rectangle     (cr, 0, -H, lineNumberWidth, 0);
         cairo_fill          (cr);
 
         lineNumberFont      ();                                                 // Text of line number
+        cairo_text_extents  (cr, n, &textExtents);                              // Width of this line number
+        tx ◁ editLineNumbers.x + lineNumberWidth - textExtents.x_advance;
+        ty ◁ y + H;
+        cairo_move_to       (cr, tx, ty);
         cairo_show_text     (cr, n);
         cairo_restore       (cr);
        }
@@ -238,7 +254,9 @@ static void maintainCursorPosition_$EditBuffer_$EditBuffer                      
  {b ◁ (base   . cursor.editLine - base   . scroll) * base   . lineHeight;       // Location of cursor line of base $ edit buffer on display in pixels
   a ◁ (altered->cursor.editLine - altered->scroll) * altered->lineHeight;       // Location of cursor lkne in altered $ edit buffer on display in pixels
   s ◁ (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
-  altered->scroll = nearbyint(s);                                               // Works well with no change in font size
+//altered->scroll = nearbyint(s);
+//altered->scroll = floor(s);
+  altered->scroll = ceil(s);
  }
 #endif
 
@@ -285,7 +303,7 @@ void test1()                                                                    
     wScroll ◁ 4; fontSize ◁ 100;                                                // Scroll amount in wide mode, font size of text in image
 
     ww ◁ page ▷ right(0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
-    we ◁ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 660, py: 660, scroll: wScroll, zone: ww.a);
+    we ◁ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 620, py: 660, scroll: wScroll, zone: ww.a);
     wr ◀ we ▷ drawEditBuffer;
          i  ▷ save("$1_wide.png", "a"); i ▷ clearWhite;
 
@@ -304,7 +322,7 @@ void test1()                                                                    
     ✓ nn ▷ equalsString("GGG");
     ✓ nr.cursor.positionInTag == wr.pointer.positionInTag;
     ✓ nr.cursor.character     == wr.pointer.character;
-//    ✓ nr.cursor.editLine      == 20;                                            // New font size
+    ✓ nr.cursor.editLine      == 15;
 
     wr.cursor = wr.pointer;                                                     // Simulate a click - the cursor position is set to match the pointer position
     wr ▷ maintainCursorPosition(&nr);                                           // Position the narrow display so that GGG is in much the same screen position as the wide display
