@@ -42,13 +42,13 @@ static Colour makeColour                                                        
  }
 
 static ColourPale makeColourPale()                                                        // An array of pale colours
- {const typeof(1.00) o = 1.00; const typeof(0.90) 𝗽 = 0.90; const typeof((o + 𝗽) / 2) 𝗾 = (o + 𝗽) / 2;
-  const typeof(makeColour(𝗽, o, o, o)) p1 = makeColour(𝗽, o, o, o);
-  const typeof(makeColour(o, 𝗽, o, o)) p2 = makeColour(o, 𝗽, o, o);
-  const typeof(makeColour(o, o, 𝗽, o)) p3 = makeColour(o, o, 𝗽, o);
-  const typeof(makeColour(𝗾, 𝗾, o, o)) p4 = makeColour(𝗾, 𝗾, o, o);
-  const typeof(makeColour(o, 𝗾, 𝗾, o)) p5 = makeColour(o, 𝗾, 𝗾, o);
-  const typeof(makeColour(𝗾, o, 𝗾, o)) p6 = makeColour(𝗾, o, 𝗾, o);
+ {const typeof(1.00) o = 1.00; const typeof(0.90) p = 0.90; const typeof((o + p) / 2) q = (o + p) / 2;
+  const typeof(makeColour(p, o, o, o)) p1 = makeColour(p, o, o, o);
+  const typeof(makeColour(o, p, o, o)) p2 = makeColour(o, p, o, o);
+  const typeof(makeColour(o, o, p, o)) p3 = makeColour(o, o, p, o);
+  const typeof(makeColour(q, q, o, o)) p4 = makeColour(q, q, o, o);
+  const typeof(makeColour(o, q, q, o)) p5 = makeColour(o, q, q, o);
+  const typeof(makeColour(q, o, q, o)) p6 = makeColour(q, o, q, o);
   return newColourPale(({struct ColourPale t = {N: 6, p1: p1, p2: p2, p3: p3, p4: p4, p5: p5, p6: p6, proto: &ProtoTypes_ColourPale}; t;}));
  }
 
