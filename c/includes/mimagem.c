@@ -59,7 +59,20 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
   editBuffer.lineHeight = H;                                                    // Record line height
   const typeof(H * editBuffer.scroll) scrollPixels = H * editBuffer.scroll;                                         // Number of pixels scrolled down
 
-  const typeof(editBuffer.zone.proto->left(editBuffer.zone, H * 3 / 2)) editLineNumbersAndText = editBuffer.zone.proto->left(editBuffer.zone, H * 3 / 2);                 // Split the drawing area into line numbers and text
+  size_t getLineNumberWidth()                                                   // Width of line numbers
+   {const typeof(8ul) N = 8ul; const typeof(editBuffer.xml.proto->count(editBuffer.xml)) n = editBuffer.xml.proto->count(editBuffer.xml);
+    char z[2] = {'0', 0};
+    cairo_text_extents(cr, z, &textExtents);                                    // Measure text containing one zero
+    typeof(1ul) t = 1ul;
+    for(size_t i = 1; i <= N; ++i)
+     {t *= 10ul;
+      if (t > n) return i * textExtents.x_advance;
+     }
+    return textExtents.x_advance * N;
+   }
+
+  const typeof(getLineNumberWidth()) lineNumberWidth = getLineNumberWidth();                                       // Width of line numbers
+  const typeof(editBuffer.zone.proto->left(editBuffer.zone, lineNumberWidth)) editLineNumbersAndText = editBuffer.zone.proto->left(editBuffer.zone, lineNumberWidth);           // Split the drawing area into line numbers and text
   const typeof(editLineNumbersAndText.a) editLineNumbers = editLineNumbersAndText.a;                          // Line numbers
   const typeof(editLineNumbersAndText.b) editText = editLineNumbersAndText.b;                          // Text
 
@@ -97,14 +110,17 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
       if (draw)
        {lsprintf(n, 1024, "%lu", currentTagNumber);                             // Format line number
         cairo_save          (cr);
-        cairo_translate     (cr, editLineNumbers.x, y + H);
 
         const typeof(backgroundColour) b = backgroundColour;                                                   // Background colour of line number
         cairo_set_source_rgb(cr, b.r, b.g, b.b);
-        cairo_rectangle     (cr, 0, -H, editLineNumbers.proto->width(editLineNumbers), 0);
+        cairo_rectangle     (cr, 0, -H, lineNumberWidth, 0);
         cairo_fill          (cr);
 
         lineNumberFont      ();                                                 // Text of line number
+        cairo_text_extents  (cr, n, &textExtents);                              // Width of this line number
+        const typeof(editLineNumbers.x + lineNumberWidth - textExtents.x_advance) tx = editLineNumbers.x + lineNumberWidth - textExtents.x_advance;
+        const typeof(y + H) ty = y + H;
+        cairo_move_to       (cr, tx, ty);
         cairo_show_text     (cr, n);
         cairo_restore       (cr);
        }
@@ -239,7 +255,9 @@ static void maintainCursorPosition_MimagemEditBuffer_MimagemEditBuffer          
  {const typeof((base   . cursor.editLine - base   . scroll) * base   . lineHeight) b = (base   . cursor.editLine - base   . scroll) * base   . lineHeight;       // Location of cursor line of base Mimagem edit buffer on display in pixels
   const typeof((altered->cursor.editLine - altered->scroll) * altered->lineHeight) a = (altered->cursor.editLine - altered->scroll) * altered->lineHeight;       // Location of cursor lkne in altered Mimagem edit buffer on display in pixels
   const typeof((a - b) / altered->lineHeight + altered->scroll) s = (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
-  altered->scroll = nearbyint(s);                                               // Works well with no change in font size
+//altered->scroll = nearbyint(s);
+//altered->scroll = floor(s);
+  altered->scroll = ceil(s);
  }
 #endif
 
@@ -286,7 +304,7 @@ void test1()                                                                    
     const typeof(4) wScroll = 4; const typeof(100) fontSize = 100;                                                // Scroll amount in wide mode, font size of text in image
 
     const typeof(page.proto->right(page, 0)) ww = page.proto->right(page, 0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
-    const typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 660, py: 660, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 660, py: 660, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
+    const typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 620, py: 660, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 620, py: 660, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     typeof(we.proto->drawEditBuffer(we)) wr = we.proto->drawEditBuffer(we);
          i.proto->save(i, "Mimagem1_wide.png", "a"); i.proto->clearWhite(i);
 
@@ -305,7 +323,7 @@ void test1()                                                                    
     assert( nn.proto->equalsString(nn, "GGG"));
     assert( nr.cursor.positionInTag == wr.pointer.positionInTag);
     assert( nr.cursor.character     == wr.pointer.character);
-//    assert( nr.cursor.editLine      == 20);                                            // New font size
+    assert( nr.cursor.editLine      == 15);
 
     wr.cursor = wr.pointer;                                                     // Simulate a click - the cursor position is set to match the pointer position
     wr.proto->maintainCursorPosition(wr, &nr);                                           // Position the narrow display so that GGG is in much the same screen position as the wide display
