@@ -9,6 +9,7 @@
  the ordering of the nodes. The key can contain \0 and other binary data as the
  length of the key field is determined solely by the length field.
 
+ Put __ after the return type component in function names derived from signatures
 */
 #define _GNU_SOURCE
 #include <setjmp.h>
@@ -29,8 +30,11 @@ typedef struct $                                                                
 
 typedef struct $Content                                                         // The content of a node as stored in the $
  {unsigned int next, parent, first, last, prev, length;                         // Related nodes and the length of the key
-  char         data[0];                                                         // The fixed data content of the node - the actual width of this field is held in arena.width
-  char         key[0];                                                          // The content of the key
+#ifdef $Editable
+  unsigned char size;                                                           // The size of the node including the key as the exponent of a power of two
+#endif
+  char          data[0];                                                        // The fixed data content of the node - the actual width of this field is held in arena.width
+  char          key [0];                                                        // The content of the key
  } $Content;
 
 typedef struct $Node                                                            // Offset to the content of a node in the $.
@@ -45,6 +49,9 @@ typedef struct $Arena                                                           
   size_t root;                                                                  // Offset to the root node
   size_t width;                                                                 // Width of a fixed data area added to each node measured in bytes
   void * data;                                                                  // The arena containing the data associated with the $
+#ifdef $Editable
+  size_t freeSpace[8*sizeof(unsigned int)];                                     // Lists of freed nodes by exponent of power of two of node size.
+#endif
  } $Arena;
 
 typedef struct $Description                                                     // The description of an $ which is written as the header record for dump files.
@@ -91,7 +98,7 @@ static void swap_$_$                                                            
   $Arena u = *t; *t = *s; *s = u;
  }
 
-static char * check_$                                                           //P Return a string describing the structure
+static char * check_string_$                                                    //P Return a string describing the structure
  (const $ list)                                                                 // $
  {if (list.arena->data) {} return "$";
  }
@@ -155,7 +162,7 @@ static int keyEquals_int_$Node_pointer_size                                     
   return !memcmp(node ▷ key, key, l);                                           // Compare memory
  }
 
-static int equals_int_$Node_$Node                                               // Confirm two Nodes are equal
+static int equals_int_$Node_$Node                                               // Confirm two nodes are equal
  (const $Node a,                                                                // First offset
   const $Node b)                                                                // Second offset
  {return a.list.arena == b.list.arena && a.offset == b.offset;
@@ -175,12 +182,27 @@ static  $Node root_$NodeOffset_$NodeOffset                                      
 
 //D1 Allocation                                                                 // Allocating memory in the $
 
-static  $Node  allocate_offset_$_size                                           //P Allocate memory within the arena of a $ and clear the allocated memory
+static  $Node  allocate_offset_$_size                                           //P Allocate a node within the arena of a $
  (const $      list,                                                            // $ in which to allocate
   const size_t size)                                                            // Amount of memory required
- {if (list.arena->used + size < list.arena->size)                               // Allocate within existing arena
+ {
+#ifdef $Editable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
+  e ◁ exponentOfNextPowerOfTwo(size);                                           // Exponent of power of two of block size
+  f ◁ list.arena ->freeSpace[e];                                                // First element (if any) on the free space chain of this size
+  if (f)                                                                        // Free chain has an element
+   {$Content * c = list ▷ pointer(f);                                           // Content of first free node
+    list -> arena.freeSpace[e] = c->next;                                       // Remove node from free chain
+    return list ▷ nodeFromOffset(f);                                            // Return node - it was cleared when it was freed
+   }
+#endif
+
+ if (list.arena->used + size < list.arena->size)                                // Allocate within existing arena
    {n ◁ list ▷ nodeFromOffset(list.arena->used);                                // Current offset to open memory
     list.arena->used += size;                                                   // Allocate
+#ifdef $Editable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
+    $Content * c = n ▷ content;                                                 // Content of node
+    c->size = exponentOfNextPowerOfTwo(size);                                   // Node size
+#endif
     return n;                                                                   // Return allocation
    }
   else                                                                          // Reallocate arena
@@ -207,8 +229,15 @@ static size_t used_$                                                            
 static $Node node_$Node_$_string_size                                           // Create a new $ node with the specified key.
  (const $            list,                                                      // $ in which to create the node
   const void * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the $ is determined solely by the user.
-  const size_t       length)                                                    // Length of the key, or if zero, I will use strlen
- {n ◁ list ▷ allocate(sizeof($Content) + length + list ▷ width);                // Offset of space allocated for a node and key
+  const size_t       length)                                                    // Length of the key.
+ {
+#ifndef $Editable
+  n ◁ list ▷ allocate(sizeof($Content) + length + list ▷ width);                // Offset of space allocated for a node and key
+#else
+  s ◁ sizeof($Content) + length + list ▷ width;                                 // Minimum width of node
+  t ◁ nextPowerOfTwo(s);                                                        // Round size up to next power of two
+  n ◁ list ▷ allocate(1ul<<t);                                                  // Offset of space allocated for a node and key
+#endif
   c ◁ n ▷ content;                                                              // Address content
   c->length = length;                                                           // Save key length
   memcpy(n ▷ key, key, length);                                                 // Copy in key
@@ -225,7 +254,13 @@ static void setKey_$Node_string_size                                            
     node ▷ content -> length = length;                                          // Set key length
     return;
    }
-  printStackBackTraceAndExit(1, "Attempt to set longer key\n");                 // Error- no room for the key
+#ifndef $Editable
+  printStackBackTraceAndExit(1, "Attempt to set longer key\n");                 // Error: no room for the key and not editable
+#else
+  n ◁ node.list ▷ node(key, length);                                            // Create a node capable of storing the key
+  n ▷ replace(node);                                                            // Replace the existing node with the new node
+  node ▷ free;                                                                  // Place the original node on the appropriate free chain
+#endif
  }
 
 static void setData_$Node_pointer                                               // Set the optional user data associated with a node in an $
@@ -290,6 +325,21 @@ static void free_$                                                              
   if  (a->data) free(a->data);
   free(a);
  }
+
+static void free_$Node                                                          // Free a node. If the $ is editable the node is made available for reuse otherwise the node wastes space. A new copy of the $ without wasted space can be made with copyAndCompact_$ .
+ ($Node node)                                                                   // $Node to free
+#ifdef $Editable
+ {c ◁ node ▷ content;                                                           // Content of node
+  s ◁ c->size;                                                                  // Size of node as a power of two
+  memset(c, 0, 1ul<<s);                                                         // Clear node
+  f ◁ c->freeSpace[c->size  = s];                                               // First element  of free space chain
+  if (f)           c->next  = f;                                                // Place the incoming node at the front of the chain
+      c->freeSpace[c->size] = node.offset;                                      // New first node on the free space chain
+ }
+#else
+ {node=node;                                                                    // Free has no effect if we are not editable.
+ }
+#endif
 
 //D1 Navigation                                                                 // Navigate through a $.
 
@@ -495,6 +545,16 @@ static  $Node putNext_$Node_$Node_$Node                                         
  {return putNP_$Node_$Node_$Node(1, sibling, child);                            // Put child next
  }
 duplicate s/Next/Prev/g,s/next/previous/g,s/1/0/
+
+static  void replace__$Node_$Node                                               // Replace the specified node with this node
+ (const $Node with,                                                             // Replace with this node
+  const $Node over)                                                             // Node to be replaced
+ {over ▷ putPrev(with);                                                         // Place new node
+  $Content * w = with ▷ content;                                                // Transfer children
+  $Content * o = over ▷ content;
+  w->first = o->first; w->last = o->last;
+  over ▷ cut;                                                                   // Remove node being replaced
+ }
 
 //D1 Traverse                                                                   // Traverse a $.
 
@@ -1169,11 +1229,20 @@ void test11()                                                                   
     t ▷ free;
  }
 
+void test12()                                                                   //Treplace
+ {  s ◁ make$WithWidth(sizeof(size_t)); s ▷ fromLetters("b(c(d)e)f");
+    d ◁ s ▷ findFirst("d");
+    D ◁ s ▷ node("D", 1);
+    D ▷ replace(d);
+  ✓ s ▷ printsWithBracketsAs("(b(c(D)e)f)");
+    s ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
-                           test10, test11, 0};
+                           test10, test11, test12, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
