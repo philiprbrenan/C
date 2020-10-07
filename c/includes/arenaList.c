@@ -250,7 +250,8 @@ static void copyData_ArenaListNode_ArenaListNode                                
 static ArenaListNode  copy_ArenaList_ArenaListNode                                                      // Copy a node from one ArenaList to another ArenaList
  (const ArenaListNode source,                                                           // Source ArenaListNode
   const ArenaList     target)                                                           // Target ArenaList
- {const typeof(target.proto->node(target, source.proto->key(source), source.proto->length(source))) n = target.proto->node(target, source.proto->key(source), source.proto->length(source));                             // Copy node to target
+ {makeLocalCopyOfArenaListKey(s, l, source);
+  const typeof(target.proto->node(target, s, l)) n = target.proto->node(target, s, l);                                                      // Copy node to target
   if  (n.proto->width(n) != source.proto->width(source)) printStackBackTrace("Width of target different from width of source\n");
   else n.proto->copyData(n, source);                                                    // Copy data from source to target
   return n;                                                                     // Copy any data associated with the node
@@ -312,17 +313,17 @@ static  ArenaListNode last_ArenaListNode_ArenaListNode                          
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->last);
  }
-#line 310 "/home/phil/c/z/arenaList/arenaList.c"
+#line 311 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode_ArenaListNode                                                 // Get the next child under a parent.
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->next);
  }
-#line 310 "/home/phil/c/z/arenaList/arenaList.c"
+#line 311 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode_ArenaListNode                                                 // Get the prev child under a parent.
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->prev);
  }
-#line 310 "/home/phil/c/z/arenaList/arenaList.c"
+#line 311 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode first_ArenaListNode_ArenaList                                                     // Get the first child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
@@ -334,19 +335,19 @@ static  ArenaListNode last_ArenaListNode_ArenaList                              
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->last(root);
  }
-#line 317 "/home/phil/c/z/arenaList/arenaList.c"
+#line 318 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode_ArenaList                                                     // Get the next child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->next(root);
  }
-#line 317 "/home/phil/c/z/arenaList/arenaList.c"
+#line 318 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode_ArenaList                                                     // Get the prev child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->prev(root);
  }
-#line 317 "/home/phil/c/z/arenaList/arenaList.c"
+#line 318 "/home/phil/c/z/arenaList/arenaList.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -430,7 +431,7 @@ static int isLast_ArenaListNode                                                 
  {const ArenaListNode parent = child.proto->parent(child);
   return child.proto->equals(child, parent.proto->last(parent));
  }
-#line 396 "/home/phil/c/z/arenaList/arenaList.c"
+#line 397 "/home/phil/c/z/arenaList/arenaList.c"
 
 static int isEmpty_ArenaListNode                                                        // Confirm a node has no children.
  (const ArenaListNode node)                                                             // ArenaListNode
@@ -485,7 +486,7 @@ static  ArenaListNode putTreeLast_ArenaListNode_ArenaListNode                   
   const typeof(t.proto->root(t)) r = t.proto->root(t);
   return r.proto->putLast(r, child);                                                   // Put the child last
  }
-#line 445 "/home/phil/c/z/arenaList/arenaList.c"
+#line 446 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putFirst_ArenaListNode_ArenaListNode_ArenaListNode                                        // Put a child first under its parent
  (const ArenaListNode parent,                                                           // Parent
@@ -497,7 +498,7 @@ static  ArenaListNode putLast_ArenaListNode_ArenaListNode_ArenaListNode         
   const ArenaListNode child)                                                            // Child
  {return putFL_ArenaListNode_ArenaListNode_ArenaListNode(0, parent, child);                             // Put a child last under its parent
  }
-#line 452 "/home/phil/c/z/arenaList/arenaList.c"
+#line 453 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putNP_ArenaListNode_ArenaListNode_ArenaListNode                                           //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -546,7 +547,7 @@ static  ArenaListNode putPrev_ArenaListNode_ArenaListNode_ArenaListNode         
   const ArenaListNode child)                                                            // Child
  {return putNP_ArenaListNode_ArenaListNode_ArenaListNode(0, sibling, child);                            // Put child previous
  }
-#line 496 "/home/phil/c/z/arenaList/arenaList.c"
+#line 497 "/home/phil/c/z/arenaList/arenaList.c"
 
 //D1 Traverse                                                                   // Traverse a ArenaList.
 
@@ -1196,7 +1197,8 @@ void test10()                                                                   
 void test11()                                                                   //TcopyAndCompact //Tcopy //TcopyData
  {  const typeof(makeArenaListWithWidth(sizeof(size_t))) s = makeArenaListWithWidth(sizeof(size_t)); s.proto->fromLetters(s, "b(c(de)f)g");
     typeof(2ul) d = 2ul;
-    const typeof(s.proto->findFirst(s, "e")) e = s.proto->findFirst(s, "e"); e.proto->setData(e, &d);
+    const typeof(s.proto->findFirst(s, "e")) e = s.proto->findFirst(s, "e");
+    e.proto->setData(e, &d);
     const typeof(e.proto->copy(e, s)) E = e.proto->copy(e, s);
   assert( e.proto->keyEquals(e, E.proto->key(E),  E.proto->length(E)));
 
