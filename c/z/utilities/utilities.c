@@ -62,9 +62,16 @@ void __attribute__ ((noreturn,unused)) printStackBackTraceAndExit               
 
 //D1 Numbers                                                                    // Numerical methods
 
-size_t __attribute__ ((const,unused)) nextPowerOfTwo                            // Find the containing power of two and return its exponent base 2.
- (const size_t n)                                                               // Number for which next power of two is required
- {for(size_t i = 0; i <= 8*sizeof(n); ++i) if (1u << i >= n) return 1<<i;       // First containing power
+size_t __attribute__ ((const,unused)) nextPowerOfTwo                            // The next power of two greater than or equal to the specified number
+ (const size_t n)                                                               // Number
+ {for(size_t i = 0; i <= 8*sizeof(n); ++i) if (1u << i >= n) return 1<<i;       // First containing power of two
+  printStackBackTrace("%lu too big\n", n);                                      // Too big
+  return 0;
+ }
+
+size_t __attribute__ ((const,unused)) exponentOfNextPowerOfTwo                  // The exponent of next power of two greater than or equal to the specified number
+ (const size_t n)                                                               // Number
+ {for(size_t i = 0; i <= 8*sizeof(n); ++i) if (1u << i >= n) return i;          // Exponent
   printStackBackTrace("%lu too big\n", n);                                      // Too big
   return 0;
  }
@@ -201,13 +208,20 @@ int run_tests                                                                   
 #endif
 
 #if __INCLUDE_LEVEL__ == 0
-void test1()                                                                    //TnextPowerOfTwo //TnextMultipleOf4
+void test1()                                                                    //TnextPowerOfTwo //TnextMultipleOf4 //TexponentOfNextPowerOfTwo
  {✓ nextPowerOfTwo(0) == 1;
   ✓ nextPowerOfTwo(1) == 1;
   ✓ nextPowerOfTwo(2) == 2;
   ✓ nextPowerOfTwo(3) == 4;
   ✓ nextPowerOfTwo(4) == 4;
   ✓ nextPowerOfTwo(5) == 8;
+
+  ✓ exponentOfNextPowerOfTwo(0) == 0;
+  ✓ exponentOfNextPowerOfTwo(1) == 0;
+  ✓ exponentOfNextPowerOfTwo(2) == 1;
+  ✓ exponentOfNextPowerOfTwo(3) == 2;
+  ✓ exponentOfNextPowerOfTwo(4) == 2;
+  ✓ exponentOfNextPowerOfTwo(5) == 3;
 
   ✓ nextMultipleOf4(0) == 0;
   ✓ nextMultipleOf4(1) == 4;
