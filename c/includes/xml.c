@@ -988,7 +988,6 @@ void test6()                                                                    
    }
 
   x.proto->scan(x, action);
-  s.proto->join(s);
   s.proto->equalsString(s, "(1,0) <a>(1,1) <b>(1,2) <c>(0,3) <d>(1,3) <e>(0,4) ee(0,4) <f>(0,4) ff(0,4) <g>(1,4) ggg(0,5) <g>(-1,4) <d>(-1,3) <h>(1,3) hh hh(0,4) <h>(-1,3) <b>(-1,2) <i>(0,2) i(0,2) <j>(0,2) <a>(-1,1) (-1,0)");
   x.proto->free(x); s.proto->free(s);
  }
