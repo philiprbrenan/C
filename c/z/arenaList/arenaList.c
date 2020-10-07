@@ -249,7 +249,8 @@ static void copyData_$Node_$Node                                                
 static $Node  copy_$_$Node                                                      // Copy a node from one $ to another $
  (const $Node source,                                                           // Source $Node
   const $     target)                                                           // Target $
- {n ◁ target ▷ node(source ▷ key, source ▷ length);                             // Copy node to target
+ {makeLocalCopyOf$Key(s, l, source);
+  n ◁ target ▷ node  (s, l);                                                    // Copy node to target
   if  (n ▷ width != source ▷ width) printStackBackTrace("Width of target different from width of source\n");
   else n ▷ copyData(source);                                                    // Copy data from source to target
   return n;                                                                     // Copy any data associated with the node
@@ -1143,7 +1144,8 @@ void test10()                                                                   
 void test11()                                                                   //TcopyAndCompact //Tcopy //TcopyData
  {  s ◁ make$WithWidth(sizeof(size_t)); s ▷ fromLetters("b(c(de)f)g");
     d ◀ 2ul;
-    e ◁ s ▷ findFirst("e"); e ▷ setData(&d);
+    e ◁ s ▷ findFirst("e");
+    e ▷ setData(&d);
     E ◁ e ▷ copy(s);
   ✓ e ▷ keyEquals(E ▷ key,  E ▷ length);
 
