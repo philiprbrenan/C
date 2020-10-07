@@ -10,6 +10,7 @@
  the ordering of the nodes. The key can contain \0 and other binary data as the
  length of the key field is determined solely by the length field.
 
+ Put __ after the return type component in function names derived from signatures
 */
 #define _GNU_SOURCE
 #include <setjmp.h>
@@ -30,8 +31,11 @@ typedef struct ArenaList                                                        
 
 typedef struct ArenaListContent                                                         // The content of a node as stored in the ArenaList
  {unsigned int next, parent, first, last, prev, length;                         // Related nodes and the length of the key
-  char         data[0];                                                         // The fixed data content of the node - the actual width of this field is held in arena.width
-  char         key[0];                                                          // The content of the key
+#ifdef ArenaListEditable
+  unsigned char size;                                                           // The size of the node including the key as the exponent of a power of two
+#endif
+  char          data[0];                                                        // The fixed data content of the node - the actual width of this field is held in arena.width
+  char          key [0];                                                        // The content of the key
  } ArenaListContent;
 
 typedef struct ArenaListNode                                                            // Offset to the content of a node in the ArenaList.
@@ -46,6 +50,9 @@ typedef struct ArenaListArena                                                   
   size_t root;                                                                  // Offset to the root node
   size_t width;                                                                 // Width of a fixed data area added to each node measured in bytes
   void * data;                                                                  // The arena containing the data associated with the ArenaList
+#ifdef ArenaListEditable
+  size_t freeSpace[8*sizeof(unsigned int)];                                     // Lists of freed nodes by exponent of power of two of node size.
+#endif
  } ArenaListArena;
 
 typedef struct ArenaListDescription                                                     // The description of an ArenaList which is written as the header record for dump files.
@@ -92,7 +99,7 @@ static void swap_ArenaList_ArenaList                                            
   ArenaListArena u = *t; *t = *s; *s = u;
  }
 
-static char * check_ArenaList                                                           //P Return a string describing the structure
+static char * check_string_ArenaList                                                    //P Return a string describing the structure
  (const ArenaList list)                                                                 // ArenaList
  {if (list.arena->data) {} return "ArenaList";
  }
@@ -156,7 +163,7 @@ static int keyEquals_int_ArenaListNode_pointer_size                             
   return !memcmp(node.proto->key(node), key, l);                                           // Compare memory
  }
 
-static int equals_int_ArenaListNode_ArenaListNode                                               // Confirm two Nodes are equal
+static int equals_int_ArenaListNode_ArenaListNode                                               // Confirm two nodes are equal
  (const ArenaListNode a,                                                                // First offset
   const ArenaListNode b)                                                                // Second offset
  {return a.list.arena == b.list.arena && a.offset == b.offset;
@@ -176,12 +183,27 @@ static  ArenaListNode root_ArenaListNodeOffset_ArenaListNodeOffset              
 
 //D1 Allocation                                                                 // Allocating memory in the ArenaList
 
-static  ArenaListNode  allocate_offset_ArenaList_size                                           //P Allocate memory within the arena of a ArenaList and clear the allocated memory
+static  ArenaListNode  allocate_offset_ArenaList_size                                           //P Allocate a node within the arena of a ArenaList
  (const ArenaList      list,                                                            // ArenaList in which to allocate
   const size_t size)                                                            // Amount of memory required
- {if (list.arena->used + size < list.arena->size)                               // Allocate within existing arena
+ {
+#ifdef ArenaListEditable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
+  const typeof(exponentOfNextPowerOfTwo(size)) e = exponentOfNextPowerOfTwo(size);                                           // Exponent of power of two of block size
+  const typeof(list.arena ->freeSpace[e]) f = list.arena ->freeSpace[e];                                                // First element (if any) on the free space chain of this size
+  if (f)                                                                        // Free chain has an element
+   {ArenaListContent * c = list.proto->pointer(list, f);                                           // Content of first free node
+    list -> arena.freeSpace[e] = c->next;                                       // Remove node from free chain
+    return list.proto->nodeFromOffset(list, f);                                            // Return node - it was cleared when it was freed
+   }
+#endif
+
+ if (list.arena->used + size < list.arena->size)                                // Allocate within existing arena
    {const typeof(list.proto->nodeFromOffset(list, list.arena->used)) n = list.proto->nodeFromOffset(list, list.arena->used);                                // Current offset to open memory
     list.arena->used += size;                                                   // Allocate
+#ifdef ArenaListEditable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
+    ArenaListContent * c = n.proto->content(n);                                                 // Content of node
+    c->size = exponentOfNextPowerOfTwo(size);                                   // Node size
+#endif
     return n;                                                                   // Return allocation
    }
   else                                                                          // Reallocate arena
@@ -208,8 +230,15 @@ static size_t used_ArenaList                                                    
 static ArenaListNode node_ArenaListNode_ArenaList_string_size                                           // Create a new ArenaList node with the specified key.
  (const ArenaList            list,                                                      // ArenaList in which to create the node
   const void * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the ArenaList is determined solely by the user.
-  const size_t       length)                                                    // Length of the key, or if zero, I will use strlen
- {const typeof(list.proto->allocate(list, sizeof(ArenaListContent) + length + list.proto->width(list))) n = list.proto->allocate(list, sizeof(ArenaListContent) + length + list.proto->width(list));                // Offset of space allocated for a node and key
+  const size_t       length)                                                    // Length of the key.
+ {
+#ifndef ArenaListEditable
+  const typeof(list.proto->allocate(list, sizeof(ArenaListContent) + length + list.proto->width(list))) n = list.proto->allocate(list, sizeof(ArenaListContent) + length + list.proto->width(list));                // Offset of space allocated for a node and key
+#else
+  const typeof(sizeof(ArenaListContent) + length + list.proto->width(list)) s = sizeof(ArenaListContent) + length + list.proto->width(list);                                 // Minimum width of node
+  const typeof(nextPowerOfTwo(s)) t = nextPowerOfTwo(s);                                                        // Round size up to next power of two
+  const typeof(list.proto->allocate(list, 1ul<<t)) n = list.proto->allocate(list, 1ul<<t);                                                  // Offset of space allocated for a node and key
+#endif
   const typeof(n.proto->content(n)) c = n.proto->content(n);                                                              // Address content
   c->length = length;                                                           // Save key length
   memcpy(n.proto->key(n), key, length);                                                 // Copy in key
@@ -226,7 +255,13 @@ static void setKey_ArenaListNode_string_size                                    
     node.proto->content(node) -> length = length;                                          // Set key length
     return;
    }
-  printStackBackTraceAndExit(1, "Attempt to set longer key\n");                 // Error- no room for the key
+#ifndef ArenaListEditable
+  printStackBackTraceAndExit(1, "Attempt to set longer key\n");                 // Error: no room for the key and not editable
+#else
+  const typeof(node.list.proto->node(node.list, key, length)) n = node.list.proto->node(node.list, key, length);                                            // Create a node capable of storing the key
+  n.proto->replace(n, node);                                                            // Replace the existing node with the new node
+  node.proto->free(node);                                                                  // Place the original node on the appropriate free chain
+#endif
  }
 
 static void setData_ArenaListNode_pointer                                               // Set the optional user data associated with a node in an ArenaList
@@ -251,7 +286,7 @@ static ArenaListNode  copy_ArenaList_ArenaListNode                              
  (const ArenaListNode source,                                                           // Source ArenaListNode
   const ArenaList     target)                                                           // Target ArenaList
  {makeLocalCopyOfArenaListKey(s, l, source);
-  const typeof(target.proto->node(target, s, l)) n = target.proto->node(target, s, l);                                                      // Copy node to target
+  const typeof(target.proto->node(target, s, l)) n = target.proto->node(target, s, l);                                                    // Copy node to target
   if  (n.proto->width(n) != source.proto->width(source)) printStackBackTrace("Width of target different from width of source\n");
   else n.proto->copyData(n, source);                                                    // Copy data from source to target
   return n;                                                                     // Copy any data associated with the node
@@ -292,6 +327,21 @@ static void free_ArenaList                                                      
   free(a);
  }
 
+static void free_ArenaListNode                                                          // Free a node. If the ArenaList is editable the node is made available for reuse otherwise the node wastes space. A new copy of the ArenaList without wasted space can be made with copyAndCompact_ArenaList .
+ (ArenaListNode node)                                                                   // ArenaListNode to free
+#ifdef ArenaListEditable
+ {const typeof(node.proto->content(node)) c = node.proto->content(node);                                                           // Content of node
+  const typeof(c->size) s = c->size;                                                                  // Size of node as a power of two
+  memset(c, 0, 1ul<<s);                                                         // Clear node
+  const typeof(c->freeSpace[c->size  = s]) f = c->freeSpace[c->size  = s];                                               // First element  of free space chain
+  if (f)           c->next  = f;                                                // Place the incoming node at the front of the chain
+      c->freeSpace[c->size] = node.offset;                                      // New first node on the free space chain
+ }
+#else
+ {node=node;                                                                    // Free has no effect if we are not editable.
+ }
+#endif
+
 //D1 Navigation                                                                 // Navigate through a ArenaList.
 
 static int valid_ArenaListNode                                                          // Check that a node is valid.
@@ -313,17 +363,17 @@ static  ArenaListNode last_ArenaListNode_ArenaListNode                          
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->last);
  }
-#line 311 "/home/phil/c/z/arenaList/arenaList.c"
+#line 361 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode_ArenaListNode                                                 // Get the next child under a parent.
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->next);
  }
-#line 311 "/home/phil/c/z/arenaList/arenaList.c"
+#line 361 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode_ArenaListNode                                                 // Get the prev child under a parent.
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->prev);
  }
-#line 311 "/home/phil/c/z/arenaList/arenaList.c"
+#line 361 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode first_ArenaListNode_ArenaList                                                     // Get the first child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
@@ -335,19 +385,19 @@ static  ArenaListNode last_ArenaListNode_ArenaList                              
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->last(root);
  }
-#line 318 "/home/phil/c/z/arenaList/arenaList.c"
+#line 368 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode_ArenaList                                                     // Get the next child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->next(root);
  }
-#line 318 "/home/phil/c/z/arenaList/arenaList.c"
+#line 368 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode_ArenaList                                                     // Get the prev child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->prev(root);
  }
-#line 318 "/home/phil/c/z/arenaList/arenaList.c"
+#line 368 "/home/phil/c/z/arenaList/arenaList.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -431,7 +481,7 @@ static int isLast_ArenaListNode                                                 
  {const ArenaListNode parent = child.proto->parent(child);
   return child.proto->equals(child, parent.proto->last(parent));
  }
-#line 397 "/home/phil/c/z/arenaList/arenaList.c"
+#line 447 "/home/phil/c/z/arenaList/arenaList.c"
 
 static int isEmpty_ArenaListNode                                                        // Confirm a node has no children.
  (const ArenaListNode node)                                                             // ArenaListNode
@@ -486,7 +536,7 @@ static  ArenaListNode putTreeLast_ArenaListNode_ArenaListNode                   
   const typeof(t.proto->root(t)) r = t.proto->root(t);
   return r.proto->putLast(r, child);                                                   // Put the child last
  }
-#line 446 "/home/phil/c/z/arenaList/arenaList.c"
+#line 496 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putFirst_ArenaListNode_ArenaListNode_ArenaListNode                                        // Put a child first under its parent
  (const ArenaListNode parent,                                                           // Parent
@@ -498,7 +548,7 @@ static  ArenaListNode putLast_ArenaListNode_ArenaListNode_ArenaListNode         
   const ArenaListNode child)                                                            // Child
  {return putFL_ArenaListNode_ArenaListNode_ArenaListNode(0, parent, child);                             // Put a child last under its parent
  }
-#line 453 "/home/phil/c/z/arenaList/arenaList.c"
+#line 503 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putNP_ArenaListNode_ArenaListNode_ArenaListNode                                           //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -547,7 +597,17 @@ static  ArenaListNode putPrev_ArenaListNode_ArenaListNode_ArenaListNode         
   const ArenaListNode child)                                                            // Child
  {return putNP_ArenaListNode_ArenaListNode_ArenaListNode(0, sibling, child);                            // Put child previous
  }
-#line 497 "/home/phil/c/z/arenaList/arenaList.c"
+#line 547 "/home/phil/c/z/arenaList/arenaList.c"
+
+static  void replace__ArenaListNode_ArenaListNode                                               // Replace the specified node with this node
+ (const ArenaListNode with,                                                             // Replace with this node
+  const ArenaListNode over)                                                             // Node to be replaced
+ {over.proto->putPrev(over, with);                                                         // Place new node
+  ArenaListContent * w = with.proto->content(with);                                                // Transfer children
+  ArenaListContent * o = over.proto->content(over);
+  w->first = o->first; w->last = o->last;
+  over.proto->cut(over);                                                                   // Remove node being replaced
+ }
 
 //D1 Traverse                                                                   // Traverse a ArenaList.
 
@@ -1222,11 +1282,20 @@ void test11()                                                                   
     t.proto->free(t);
  }
 
+void test12()                                                                   //Treplace
+ {  const typeof(makeArenaListWithWidth(sizeof(size_t))) s = makeArenaListWithWidth(sizeof(size_t)); s.proto->fromLetters(s, "b(c(d)e)f");
+    const typeof(s.proto->findFirst(s, "d")) d = s.proto->findFirst(s, "d");
+    const typeof(s.proto->node(s, "D", 1)) D = s.proto->node(s, "D", 1);
+    D.proto->replace(D, d);
+  assert( s.proto->printsWithBracketsAs(s, "(b(c(D)e)f)"));
+    s.proto->free(s);
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
-                           test10, test11, 0};
+                           test10, test11, test12, 0};
   run_tests("ArenaList", repetitions, tests);
 
   return 0;
