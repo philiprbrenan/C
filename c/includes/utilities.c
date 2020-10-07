@@ -63,9 +63,16 @@ void __attribute__ ((noreturn,unused)) printStackBackTraceAndExit               
 
 //D1 Numbers                                                                    // Numerical methods
 
-size_t __attribute__ ((const,unused)) nextPowerOfTwo                            // Find the containing power of two and return its exponent base 2.
- (const size_t n)                                                               // Number for which next power of two is required
- {for(size_t i = 0; i <= 8*sizeof(n); ++i) if (1u << i >= n) return 1<<i;       // First containing power
+size_t __attribute__ ((const,unused)) nextPowerOfTwo                            // The next power of two greater than or equal to the specified number
+ (const size_t n)                                                               // Number
+ {for(size_t i = 0; i <= 8*sizeof(n); ++i) if (1u << i >= n) return 1<<i;       // First containing power of two
+  printStackBackTrace("%lu too big\n", n);                                      // Too big
+  return 0;
+ }
+
+size_t __attribute__ ((const,unused)) exponentOfNextPowerOfTwo                  // The exponent of next power of two greater than or equal to the specified number
+ (const size_t n)                                                               // Number
+ {for(size_t i = 0; i <= 8*sizeof(n); ++i) if (1u << i >= n) return i;          // Exponent
   printStackBackTrace("%lu too big\n", n);                                      // Too big
   return 0;
  }
@@ -202,13 +209,20 @@ int run_tests                                                                   
 #endif
 
 #if __INCLUDE_LEVEL__ == 0
-void test1()                                                                    //TnextPowerOfTwo //TnextMultipleOf4
+void test1()                                                                    //TnextPowerOfTwo //TnextMultipleOf4 //TexponentOfNextPowerOfTwo
  {assert( nextPowerOfTwo(0) == 1);
   assert( nextPowerOfTwo(1) == 1);
   assert( nextPowerOfTwo(2) == 2);
   assert( nextPowerOfTwo(3) == 4);
   assert( nextPowerOfTwo(4) == 4);
   assert( nextPowerOfTwo(5) == 8);
+
+  assert( exponentOfNextPowerOfTwo(0) == 0);
+  assert( exponentOfNextPowerOfTwo(1) == 0);
+  assert( exponentOfNextPowerOfTwo(2) == 1);
+  assert( exponentOfNextPowerOfTwo(3) == 2);
+  assert( exponentOfNextPowerOfTwo(4) == 2);
+  assert( exponentOfNextPowerOfTwo(5) == 3);
 
   assert( nextMultipleOf4(0) == 0);
   assert( nextMultipleOf4(1) == 4);
