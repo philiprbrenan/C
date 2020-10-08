@@ -11,7 +11,7 @@ static size_t width_size__ArenaTree
  (const ArenaTree list);
 static size_t width_size__ArenaTreeNode
  (const ArenaTreeNode node);
-static void * key_pointer__ArenaTreeNode
+static char * key_pointer__ArenaTreeNode
  (const ArenaTreeNode node);
 static void * data_pointer__ArenaTreeNode
  (const ArenaTreeNode node);
@@ -236,7 +236,7 @@ struct ProtoTypes_ArenaTreeNode {
     const ArenaTreeNode node,                                                   // Node
     const char * const key,                                                     // Expected key value
     const size_t length);                                                       // Length of expected key value
-  void *  (*key)(                                                               // Get a temporary pointer to the key of a node.
+  char *  (*key)(                                                               // Get a temporary pointer to the key of a node.
     const ArenaTreeNode node);                                                  // ArenaTreeNode
   ArenaTreeNode  (*left)(                                                       // Left child node below the specified parent node.
     const ArenaTreeNode parent);                                                // Parent
