@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Lists held in an arena.
+// List of lists held in an arena.
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
 /*
@@ -12,8 +12,6 @@
  Nodes can be freed and recycled - recycling will eventually fragment all of
  the memory in the arena, at which point the $ should be compacted. Compaction
  can be carried out in parallel in a separate process as a $ is relocatable.
-
- Put __ after the return type component in function names derived from signatures
 */
 #define _GNU_SOURCE
 #include <setjmp.h>
@@ -151,10 +149,16 @@ static size_t length_size__$Node                                                
  {return node ▷ content->length;
  }
 
-static size_t size_size__$Node                                                 // Get the length of the key associated with a node
+static size_t maxLength_size__$Node                                             // Get the maximum allowed length of the key associated with a node.
  (const $Node node)                                                             // $Node
- {return node ▷ content->length;
+#ifndef $Editable
+ {return node ▷ length;                                                         // Nodes in not editable $ are allocated just large enough to hold the key
  }
+#else
+ {$Content * c = node ▷ content;                                                // Nodes in editable $ over allocate to allow for key expansion.
+  return (1ul << c->size) - sizeof($Node) - node.list.arena->width;
+ }
+#endif
 
 static  $Node  nodeFromOffset__$_size                                           //P Create a node to locate an allocation within the arena of a $.
  (const $      list,                                                            // $
@@ -241,7 +245,7 @@ static $Node node_$Node__$_string_size                                          
  (const $            list,                                                      // $ in which to create the node
   const void * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the $ is determined solely by the user.
   const size_t       length)                                                    // Length of the key.
- {s ◁ sizeof($Content) + length + list ▷ width;                                 // Minimum width of node
+ {s ◁ sizeof($Node) + length + list ▷ width;                                    // Minimum width of node
 #ifndef $Editable
   n ◁ list ▷ allocate(s);                                                       // Offset of space allocated for a node and key
 #else
@@ -258,7 +262,7 @@ static void setKey_$Node_string_size                                            
  (const $Node        node,                                                      // $Node
   const void * const key,                                                       // Key
   const size_t       length)                                                    // Length of key
- {l ◁ node ▷ length;                                                            // Length of existing key
+ {l ◁ node ▷ maxLength;                                                         // Maximum length of key
   if (length <= l)                                                              // There is enough room in the existing key for the new key
    {memcpy(node ▷ key, key, length);                                            // Copy in the key
     node ▷ content -> length = length;                                          // Set key length
@@ -1167,9 +1171,9 @@ void test8()                                                                    
   ✓ b ▷ keyEquals("B", 1);
 
 #ifndef $Editable
-  ✓ t ▷ used == 99;
+  ✓ t ▷ used == 131;
 #else
-  ✓ t ▷ used == 128;
+  ✓ t ▷ used == 224;
 #endif
 
   ✓ t ▷ printsWithBracketsAs("(Bcd)");
@@ -1257,18 +1261,18 @@ void test13()
   a ◁ t ▷ node("a", 1);
   a ▷ putTreeLast;
 #ifndef $Editable
-  ✓ t ▷ used == 49;
+  ✓ t ▷ used == 65;
 #else
-  ✓ t ▷ used == 64;                                                             // More because the node gets rounded up
+  ✓ t ▷ used == 96;                                                             // More because the node gets over allocated
 #endif
   a ▷ cut; a ▷ free;
 
   b ◁ t ▷ node("b", 1);
   b ▷ putTreeLast;
 #ifndef $Editable
-  ✓ t ▷ used == 74;
+  ✓ t ▷ used == 98;
 #else
-  ✓ t ▷ used == 64;                                                             // Less due to reuse
+  ✓ t ▷ used == 96;                                                             // Less due to reuse
 #endif
 
   t ▷ free;
