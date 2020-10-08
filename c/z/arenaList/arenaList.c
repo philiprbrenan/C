@@ -277,6 +277,27 @@ static void setKey__$Node_string_size                                           
 #endif
  }
 
+static size_t freedSpace_size__$                                                //P Amount of space on the free chains
+ (const $     list)                                                             // $
+#ifndef $Editable
+ {return 0 * sizeof(list);
+ }
+#else
+ {N ◁ sizeof((($Arena *)0)->freeSpace) / sizeof((($Arena *)0)->freeSpace[0]);   // Number of free space chains
+  F ◀  0ul;                                                                     // Total free space
+  for(size_t i = 0; i < N; ++i)                                                 // Each chain
+   {f ◀ list.arena->freeSpace[i];                                               // First element of chain
+    while(f)                                                                    // Run along chain
+     {F += 1ul<<i;                                                              // Size of node
+      $Content * c = list ▷ pointer(f); f = c -> next;                          // Next element
+     }
+   }
+  return F;                                                                     // Freed space
+ }
+#endif
+
+//D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
+
 static void insertCharInKey__$Node_char_size                                    // Insert the specified character into the key string of a node at the specified position.
  (const $Node node,                                                             // $Node
   const char  ins,                                                              // Character to insert
@@ -299,6 +320,16 @@ static void insertCharInKey__$Node_char_size                                    
     n ▷ replace(node);                                                          // Replace the existing node with the new node
     node ▷ free;                                                                // Place the original node on the appropriate free chain
    }
+ }
+
+static void replaceCharInKey__$Node_size                                        // Replace the character at the specified position in the key string of a node with the specified character.
+ (const $Node node,                                                             // $Node
+  const char  repl,                                                             // Replacement character
+  size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
+ {l ◁ node ▷ length;                                                            // Current length of key
+  if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
+  char * k = node ▷ key;                                                        // Address key
+  k[pos] = repl;                                                                // Replace
  }
 
 static void deleteCharInKey__$Node_size                                         // Delete the character at the specified position in the key string of a node.
@@ -1292,14 +1323,23 @@ void test12()                                                                   
 
 void test13()
  {t ◁ make$();
+
   a ◁ t ▷ node("a", 1);
+
   a ▷ putTreeLast;
 #ifndef $Editable
   ✓ t ▷ used == 65;
 #else
   ✓ t ▷ used == 96;                                                             // More because the node gets over allocated
 #endif
+
+  ✓ t ▷ freedSpace == 0;
   a ▷ cut; a ▷ free;
+#ifndef $Editable
+  ✓ t ▷ freedSpace == 0;
+#else
+  ✓ t ▷ freedSpace == 64;
+#endif
 
   b ◁ t ▷ node("b", 1);
   b ▷ putTreeLast;
@@ -1308,32 +1348,40 @@ void test13()
 #else
   ✓ t ▷ used == 96;                                                             // Less due to reuse
 #endif
+  ✓ t ▷ freedSpace == 0;
 
   t ▷ free;
  }
 
-void test14()                                                                   //TdeleteCharInKey //TinsertCharInKey //TmaxLength
+void test14()                                                                   //TdeleteCharInKey //TinsertCharInKey //TmaxLength //TreplaceCharInKey
  {t ◁ make$();
 
-    a ◁ t ▷ node("abcd", 4);
+    a ◁ t ▷ node("abce", 4);
+#ifndef $Editable
+  ✓ a ▷ maxLength == 4;
+#else
   ✓ a ▷ maxLength == 32;
-    a ▷ insertCharInKey('E', 5);
-    a ▷ insertCharInKey('D', 3);
-    a ▷ insertCharInKey('C', 2);
-    a ▷ insertCharInKey('B', 1);
-    a ▷ insertCharInKey('A', 0);
+
+    a ▷ replaceCharInKey('d',3); ✓ a ▷ keyEquals("abcd", 4);
+
+    a ▷ insertCharInKey('E', 5); ✓ a ▷ keyEquals("abcdE", 5);
+    a ▷ insertCharInKey('D', 3); ✓ a ▷ keyEquals("abcDdE", 6);
+    a ▷ insertCharInKey('C', 2); ✓ a ▷ keyEquals("abCcDdE", 7);
+    a ▷ insertCharInKey('B', 1); ✓ a ▷ keyEquals("aBbCcDdE", 8);
+    a ▷ insertCharInKey('A', 0); ✓ a ▷ keyEquals("AaBbCcDdE", 9);
   ✓ a ▷ keyEquals("AaBbCcDdE", 9);
-//                 012345678
-    a ▷ deleteCharInKey(9); ✓ a ▷ keyEquals("AaBbCcDdE", 9);
-    a ▷ deleteCharInKey(4); ✓ a ▷ keyEquals("AaBbcDdE", 8);
-    a ▷ deleteCharInKey(4); ✓ a ▷ keyEquals("AaBbDdE", 7);
-    a ▷ deleteCharInKey(2); ✓ a ▷ keyEquals("AabDdE", 6);
-    a ▷ deleteCharInKey(2); ✓ a ▷ keyEquals("AaDdE", 5);
-    a ▷ deleteCharInKey(0); ✓ a ▷ keyEquals("aDdE", 4);
-    a ▷ deleteCharInKey(0); ✓ a ▷ keyEquals("DdE", 3);
-    a ▷ deleteCharInKey(0); ✓ a ▷ keyEquals("dE", 2);
-    a ▷ deleteCharInKey(0); ✓ a ▷ keyEquals("E", 1);
-    a ▷ deleteCharInKey(0); ✓ a ▷ keyEquals("", 0);
+               //  012345678
+    a ▷ deleteCharInKey(9);      ✓ a ▷ keyEquals("AaBbCcDdE", 9);
+    a ▷ deleteCharInKey(4);      ✓ a ▷ keyEquals("AaBbcDdE", 8);
+    a ▷ deleteCharInKey(4);      ✓ a ▷ keyEquals("AaBbDdE", 7);
+    a ▷ deleteCharInKey(2);      ✓ a ▷ keyEquals("AabDdE", 6);
+    a ▷ deleteCharInKey(2);      ✓ a ▷ keyEquals("AaDdE", 5);
+    a ▷ deleteCharInKey(0);      ✓ a ▷ keyEquals("aDdE", 4);
+    a ▷ deleteCharInKey(0);      ✓ a ▷ keyEquals("DdE", 3);
+    a ▷ deleteCharInKey(0);      ✓ a ▷ keyEquals("dE", 2);
+    a ▷ deleteCharInKey(0);      ✓ a ▷ keyEquals("E", 1);
+    a ▷ deleteCharInKey(0);      ✓ a ▷ keyEquals("", 0);
+#endif
 
   t ▷ free;
  }
