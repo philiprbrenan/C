@@ -14,6 +14,7 @@
 #define _GNU_SOURCE
 #include <setjmp.h>
 #include <utilities.c>
+//#define $Editable
 
 //D1 Structures                                                                 // Structures describing an $.
 #ifndef $_included
@@ -73,7 +74,8 @@ typedef struct $Description                                                     
 
 static $ make$WithWidth                                                         // Create a new $ with the specified width for the optional user data associated with each node.
  (const size_t width)                                                           // Width
- {$Arena * const a = alloc(sizeof($Arena));                                     // Allocate arena description
+ {$Arena * a = alloc(sizeof($Arena));                                           // Allocate arena description
+  memset(a, 0, sizeof($Arena));                                                 // Clear arena description
   t ◁ new $(arena: a);                                                          // $ we are creating
 
   a->size   = 256;                                                              // This could be any reasonable value - it will be doubled everytime the arena overflows.
@@ -109,7 +111,7 @@ static void * pointer_$_size                                                    
  (const $      list,                                                            // $
   const size_t offset)                                                          // Offset
  {if (offset > list.arena->used)                                                // Check that the offset is valid
-   {printStackBackTrace("Accessing area outside arena");
+   {printStackBackTraceAndExit(1, "Accessing area outside arena");
    }
   return (void *)(list.arena->data + offset);                                   // Convert a non zero delta that is within the arena to a valid pointer
  }
@@ -191,7 +193,7 @@ static  $Node  allocate_offset_$_size                                           
   f ◁ list.arena ->freeSpace[e];                                                // First element (if any) on the free space chain of this size
   if (f)                                                                        // Free chain has an element
    {$Content * c = list ▷ pointer(f);                                           // Content of first free node
-    list -> arena.freeSpace[e] = c->next;                                       // Remove node from free chain
+    list.arena->freeSpace[e] = c->next;                                         // Remove node from free chain
     return list ▷ nodeFromOffset(f);                                            // Return node - it was cleared when it was freed
    }
 #endif
@@ -230,12 +232,11 @@ static $Node node_$Node_$_string_size                                           
  (const $            list,                                                      // $ in which to create the node
   const void * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the $ is determined solely by the user.
   const size_t       length)                                                    // Length of the key.
- {
+ {s ◁ sizeof($Content) + length + list ▷ width;                                 // Minimum width of node
 #ifndef $Editable
-  n ◁ list ▷ allocate(sizeof($Content) + length + list ▷ width);                // Offset of space allocated for a node and key
+  n ◁ list ▷ allocate(s);                                                       // Offset of space allocated for a node and key
 #else
-  s ◁ sizeof($Content) + length + list ▷ width;                                 // Minimum width of node
-  t ◁ nextPowerOfTwo(s);                                                        // Round size up to next power of two
+  t ◁ exponentOfNextPowerOfTwo(s);                                              // Round size up to next power of two
   n ◁ list ▷ allocate(1ul<<t);                                                  // Offset of space allocated for a node and key
 #endif
   c ◁ n ▷ content;                                                              // Address content
@@ -332,9 +333,9 @@ static void free_$Node                                                          
  {c ◁ node ▷ content;                                                           // Content of node
   s ◁ c->size;                                                                  // Size of node as a power of two
   memset(c, 0, 1ul<<s);                                                         // Clear node
-  f ◁ c->freeSpace[c->size  = s];                                               // First element  of free space chain
-  if (f)           c->next  = f;                                                // Place the incoming node at the front of the chain
-      c->freeSpace[c->size] = node.offset;                                      // New first node on the free space chain
+  f ◁ node.list.arena->freeSpace[c->size  = s];                                 // First element  of free space chain
+  if (f) c->next  = f;                                                          // Place the incoming node at the front of the chain
+      node.list.arena->freeSpace[s] = node.offset;                              // New first node on the free space chain
  }
 #else
  {node=node;                                                                    // Free has no effect if we are not editable.
@@ -1156,7 +1157,11 @@ void test8()                                                                    
   ✓ *(char *)(b ▷ key) == 'B';
   ✓ b ▷ keyEquals("B", 1);
 
+#ifndef $Editable
   ✓ t ▷ used == 99;
+#else
+  ✓ t ▷ used == 128;
+#endif
 
   ✓ t ▷ printsWithBracketsAs("(Bcd)");
 
@@ -1238,11 +1243,33 @@ void test12()                                                                   
     s ▷ free;
  }
 
+void test13()
+ {t ◁ make$();
+  a ◁ t ▷ node("a", 1);
+  a ▷ putTreeLast;
+#ifndef $Editable
+  ✓ t ▷ used == 49;
+#else
+  ✓ t ▷ used == 64;                                                             // More because the node gets rounded up
+#endif
+  a ▷ cut; a ▷ free;
+
+  b ◁ t ▷ node("b", 1);
+  b ▷ putTreeLast;
+#ifndef $Editable
+  ✓ t ▷ used == 74;
+#else
+  ✓ t ▷ used == 64;                                                             // Less due to reuse
+#endif
+
+  t ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
-                           test10, test11, test12, 0};
+                           test10, test11, test12, test13, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
