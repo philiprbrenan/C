@@ -44,7 +44,7 @@ typedef struct $ParseOptions                                                    
  } $ParseOptions;
 
 #include <$$_prototypes.h>
-#define makeLocalCopyOf$TagString(string,stringLength,tag) const size_t stringLength = content_ArenaListNode(tag.node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer_ArenaListNode(tag.node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
+#define makeLocalCopyOf$TagString(string,stringLength,tag) const size_t stringLength = content__ArenaListNode(tag.node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(tag.node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 #define $Open     '<'                                                           // Important $ characters
 #define $Close    '>'
