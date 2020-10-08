@@ -133,7 +133,7 @@ static size_t width_size__$Node                                                 
  {return node.list.arena->width;
  }
 
-static void * key_pointer__$Node                                                //V Get a temporary pointer to the key of a node.
+static char * key_pointer__$Node                                                //V Get a temporary pointer to the key of a node.
  (const $Node node)                                                             // $Node
  {width ◁ node ▷ width;                                                         // Width of node
   return pointer__$_size(node.list, node.offset + sizeof($Content) + width);    // The key is stored after the node and optional user data in the arena.
@@ -258,12 +258,12 @@ static $Node node_$Node__$_string_size                                          
   return n;                                                                     // Return node
  }
 
-static void setKey_$Node_string_size                                            // Set the key of a node to a different value as long as there is enough room from the last setting.
+static void setKey__$Node_string_size                                           // Set the key of a node to a different value as long as there is enough room from the last setting.
  (const $Node        node,                                                      // $Node
   const void * const key,                                                       // Key
   const size_t       length)                                                    // Length of key
- {l ◁ node ▷ maxLength;                                                         // Maximum length of key
-  if (length <= l)                                                              // There is enough room in the existing key for the new key
+ {m ◁ node ▷ maxLength;                                                         // Maximum length of key
+  if (length <= m)                                                              // There is enough room in the existing key for the new key
    {memcpy(node ▷ key, key, length);                                            // Copy in the key
     node ▷ content -> length = length;                                          // Set key length
     return;
@@ -275,6 +275,41 @@ static void setKey_$Node_string_size                                            
   n ▷ replace(node);                                                            // Replace the existing node with the new node
   node ▷ free;                                                                  // Place the original node on the appropriate free chain
 #endif
+ }
+
+static void insertCharInKey__$Node_char_size                                    // Insert the specified character into the key string of a node at the specified position.
+ (const $Node node,                                                             // $Node
+  const char  ins,                                                              // Character to insert
+  size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
+ {m ◁ node ▷ maxLength;                                                         // Maximum length of key
+  l ◁ node ▷ length;                                                            // Current length of key
+  if (pos > l) pos = l;                                                         // Append to end of string if requested position is beyond the end of the string
+  if (l + 1 <= m)                                                               // There is enough room in the existing key for the new key
+   {char * k = node ▷ key;                                                      // Address key
+    memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
+    $Content * c = node ▷ content;                                              // Address node
+    c->length++;                                                                // Update key length
+    k[pos] = ins;                                                               // Insert
+   }
+  else                                                                          // Create a new node to hold a key that is too large for the current node
+   {makeLocalCopyOf$Key(k, l, node);                                            // Local copy with trailing zero
+    memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
+    k[pos] = ins;                                                               // Insert
+    n ◁ node.list ▷ node(k, l+1);                                               // Create a node capable of storing the key
+    n ▷ replace(node);                                                          // Replace the existing node with the new node
+    node ▷ free;                                                                // Place the original node on the appropriate free chain
+   }
+ }
+
+static void deleteCharInKey__$Node_size                                         // Delete the character at the specified position in the key string of a node.
+ (const $Node node,                                                             // $Node
+  size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
+ {l ◁ node ▷ length;                                                            // Current length of key
+  if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
+  char * k = node ▷ key;                                                        // Address key
+  memmove(k + pos, k + pos + 1, l - pos + 1);                                   // Overlapping move
+  $Content * c = node ▷ content;                                                // Address node
+  c->length--;                                                                  // Update key length
  }
 
 static void setData_$Node_pointer                                               // Set the optional user data associated with a node in an $
@@ -963,13 +998,12 @@ void test0()                                                                    
     c2 ◁ t ▷ node(&c, 1); root ▷ putFirst(c2);
     c = 'A'+i; c2 ▷ setKey(&c, 1);
     makeLocalCopyOf$Key(k2, l2, c2);
-    ✓k2[0] == c;
+    ✓ k2[0] == c;
    }
 
   if (1)                                                                        // For each
    {char l[t ▷ count + 1]; *l = 0;
     $fe (child, root) strncat(l, child ▷ key, child ▷ length);
-
     ✓ !strcmp(l, "JIHGFEDCBAabcdefghij");
    }
 
@@ -1278,11 +1312,37 @@ void test13()
   t ▷ free;
  }
 
+void test14()                                                                   //TdeleteCharInKey //TinsertCharInKey //TmaxLength
+ {t ◁ make$();
+
+    a ◁ t ▷ node("abcd", 4);
+  ✓ a ▷ maxLength == 32;
+    a ▷ insertCharInKey('E', 5);
+    a ▷ insertCharInKey('D', 3);
+    a ▷ insertCharInKey('C', 2);
+    a ▷ insertCharInKey('B', 1);
+    a ▷ insertCharInKey('A', 0);
+  ✓ a ▷ keyEquals("AaBbCcDdE", 9);
+//                 012345678
+    a ▷ deleteCharInKey(9); ✓ a ▷ keyEquals("AaBbCcDdE", 9);
+    a ▷ deleteCharInKey(4); ✓ a ▷ keyEquals("AaBbcDdE", 8);
+    a ▷ deleteCharInKey(4); ✓ a ▷ keyEquals("AaBbDdE", 7);
+    a ▷ deleteCharInKey(2); ✓ a ▷ keyEquals("AabDdE", 6);
+    a ▷ deleteCharInKey(2); ✓ a ▷ keyEquals("AaDdE", 5);
+    a ▷ deleteCharInKey(0); ✓ a ▷ keyEquals("aDdE", 4);
+    a ▷ deleteCharInKey(0); ✓ a ▷ keyEquals("DdE", 3);
+    a ▷ deleteCharInKey(0); ✓ a ▷ keyEquals("dE", 2);
+    a ▷ deleteCharInKey(0); ✓ a ▷ keyEquals("E", 1);
+    a ▷ deleteCharInKey(0); ✓ a ▷ keyEquals("", 0);
+
+  t ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
-                           test10, test11, test12, test13, 0};
+                           test10, test11, test12, test13, test14, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
