@@ -66,14 +66,14 @@ void __attribute__ ((noreturn,unused)) printStackBackTraceAndExit               
 size_t __attribute__ ((const,unused)) nextPowerOfTwo                            // The next power of two greater than or equal to the specified number
  (const size_t n)                                                               // Number
  {for(size_t i = 0; i <= 8*sizeof(n); ++i) if (1u << i >= n) return 1<<i;       // First containing power of two
-  printStackBackTrace("%lu too big\n", n);                                      // Too big
+  printStackBackTraceAndExit(1, "%lu too big\n", n);                            // Too big
   return 0;
  }
 
 size_t __attribute__ ((const,unused)) exponentOfNextPowerOfTwo                  // The exponent of next power of two greater than or equal to the specified number
  (const size_t n)                                                               // Number
  {for(size_t i = 0; i <= 8*sizeof(n); ++i) if (1u << i >= n) return i;          // Exponent
-  printStackBackTrace("%lu too big\n", n);                                      // Too big
+  printStackBackTraceAndExit(1, "%lu too big\n", n);                            // Too big
   return 0;
  }
 
