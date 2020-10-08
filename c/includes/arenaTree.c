@@ -119,7 +119,7 @@ static size_t width_size__ArenaTreeNode                                         
  {return node.list.arena->width;
  }
 #line 137 "/home/phil/c/z/arenaList/arenaList.c"
-static void * key_pointer__ArenaTreeNode                                                //IV Get a temporary pointer to the key of a node.
+static char * key_pointer__ArenaTreeNode                                                //IV Get a temporary pointer to the key of a node.
  (const ArenaTreeNode node)                                                             // ArenaTreeNode
  {const typeof(node.proto->width(node)) width = node.proto->width(node);                                                         // Width of node
   return pointer__ArenaTree_size(node.list, node.offset + sizeof(ArenaTreeContent) + width);    // The key is stored after the node and optional user data in the arena.
@@ -207,13 +207,13 @@ static ArenaTreeNode node_ArenaTreeNode__ArenaTree_string_size                  
   memcpy(n.proto->key(n), key, length);                                                 // Copy in key
   return n;                                                                     // Return node
  }
-#line 387 "/home/phil/c/z/arenaList/arenaList.c"
+#line 422 "/home/phil/c/z/arenaList/arenaList.c"
 static int equalsString_int__ArenaTreeNode_string                                       //I Check that the key of a node equals a string
  (const ArenaTreeNode        node,                                                      // ArenaTreeNode
   const char * const key)                                                       // Key
  {return node.proto->keyEquals(node, key, strlen(key));
  }
-#line 779 "/home/phil/c/z/arenaList/arenaList.c"
+#line 814 "/home/phil/c/z/arenaList/arenaList.c"
 static void dump__ArenaTreeNode                                                         //IP Dump a ArenaTreeNode on stderr
  (const ArenaTreeNode node)                                                             // ArenaTreeNode
  {makeLocalCopyOfArenaTreeKey(k, l, node);                                              // Local copy of key
