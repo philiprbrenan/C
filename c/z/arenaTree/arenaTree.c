@@ -41,7 +41,7 @@ typedef struct $Found                                                           
  } $Found;
 
 #include <$$_prototypes.h>                                                      // $ prototypes now that the relevant structures have been declared
-#define makeLocalCopyOfArenaTreeKey(string,stringLength,node) const size_t stringLength = content_ArenaTreeNode(node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer_ArenaTreeNode(node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
+#define makeLocalCopyOfArenaTreeKey(string,stringLength,node) const size_t stringLength = content__ArenaTreeNode(node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaTreeNode(node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 //D1 Pointers, offsets and allocations                                          // Locate items allocated in the arena
 
