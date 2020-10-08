@@ -29,6 +29,7 @@ my $dir     = fpd($home, q(c/));                                                
 
 my @cz      =  grep {!/\A#/} split /\s+/, <<END;                                # z files to run
 arenaList
+arenaListEditable
 arenaTree
 cairoText
 colour
