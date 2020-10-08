@@ -38,11 +38,6 @@ jobs:
       run: |
         (cd /home/runner/work/C/C/c/z/arenaList/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/arenaList//arenaList.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
 
-    - name: Run arenaListEditable
-      if: always()
-      run: |
-        (cd /home/runner/work/C/C/c/z/arenaListEditable/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/arenaListEditable//arenaListEditable.c --cIncludes /home/runner/work/C/C/c/includes --valgrind)
-
     - name: Run arenaTree
       if: always()
       run: |
