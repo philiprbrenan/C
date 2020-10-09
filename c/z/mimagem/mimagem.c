@@ -203,7 +203,7 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
         makeLocalCopyOfXmlTagString(s, l, parent);
         openFont();
         drawCharOrSymbol  (XmlOpen,  1);
-        drawString(s+1, l-2);
+        drawString(s, l);
         drawCharOrSymbol  (XmlClose, 1);
         currentTagNumber++;                                                     // Close tag
         closeFont();
@@ -218,7 +218,7 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
         openFont();
         startNewLine();   cairo_move_to(cr, x += H * depth, y);
         drawCharOrSymbol  (XmlOpen,  1);
-        drawString(parent ▷ tagString + 1, parent ▷ tagStringLength - 2);
+        drawString(parent ▷ tagString, parent ▷ tagStringLength);
         drawCharOrSymbol  (XmlClose, 1);
        }
      } // open
@@ -255,8 +255,8 @@ static void maintainCursorPosition_$EditBuffer_$EditBuffer                      
   a ◁ (altered->cursor.editLine - altered->scroll) * altered->lineHeight;       // Location of cursor lkne in altered $ edit buffer on display in pixels
   s ◁ (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
 //altered->scroll = nearbyint(s);
-//altered->scroll = floor(s);
-  altered->scroll = ceil(s);
+  altered->scroll = floor(s);
+//  altered->scroll = ceil(s);
  }
 #endif
 
@@ -288,7 +288,7 @@ void test0()
     x ▷ scan(drawXml);
    }
 
-  i ◁ makeCairoTextImage(draw, 2000, 2000, "$1.png", "49ad");
+  i ◁ makeCairoTextImage(draw, 2000, 2000, "$1.png", "11ff");
   i ▷ free;
  }
 
@@ -303,15 +303,15 @@ void test1()                                                                    
     wScroll ◁ 4; fontSize ◁ 100;                                                // Scroll amount in wide mode, font size of text in image
 
     ww ◁ page ▷ right(0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
-    we ◁ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 620, py: 660, scroll: wScroll, zone: ww.a);
+    we ◁ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 628, py: 867, scroll: wScroll, zone: ww.a);
     wr ◀ we ▷ drawEditBuffer;
          i  ▷ save("$1_wide.png", "a"); i ▷ clearWhite;
 
     wn ◁ X.tree ▷ nodeFromOffset(wr.pointer.tag);                               // Pointer location in wide version
     ✓ wn ▷ equalsString("GGG");
     ✓ wr.pointer.positionInTag ==  2;
-    ✓ wr.pointer.character     == 137;
-    ✓ wr.pointer.editLine      == 12;
+    ✓ wr.pointer.character     == 139;
+    ✓ wr.pointer.editLine      == 14;
 
     nw ◁ page ▷ left(i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
     ne ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: wr.pointer, zone: nw.a);
@@ -322,7 +322,7 @@ void test1()                                                                    
     ✓ nn ▷ equalsString("GGG");
     ✓ nr.cursor.positionInTag == wr.pointer.positionInTag;
     ✓ nr.cursor.character     == wr.pointer.character;
-    ✓ nr.cursor.editLine      == 15;
+    ✓ nr.cursor.editLine      == 17;
 
     wr.cursor = wr.pointer;                                                     // Simulate a click - the cursor position is set to match the pointer position
     wr ▷ maintainCursorPosition(&nr);                                           // Position the narrow display so that GGG is in much the same screen position as the wide display
