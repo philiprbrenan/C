@@ -156,8 +156,7 @@ static size_t maxLength_size__ArenaListNode                                     
  {return node.proto->length(node);                                                         // Nodes in not editable ArenaList are allocated just large enough to hold the key
  }
 #else
- {ArenaListContent * c = node.proto->content(node);                                                // Nodes in editable ArenaList over allocate to allow for key expansion.
-  return (1ul << c->size) - sizeof(ArenaListNode) - node.list.arena->width;
+ {return (1ul << node.proto->content(node)->size) - sizeof(ArenaListNode) - node.list.arena->width;
  }
 #endif
 
@@ -216,8 +215,7 @@ static  ArenaListNode  allocate_ArenaListNode__ArenaList_size                   
    {const typeof(list.proto->nodeFromOffset(list, list.arena->used)) n = list.proto->nodeFromOffset(list, list.arena->used);                                // Current offset to open memory
     list.arena->used += size;                                                   // Allocate
 #ifdef ArenaListEditable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
-    ArenaListContent * c = n.proto->content(n);                                                 // Content of node
-    c->size = exponentOfNextPowerOfTwo(size);                                   // Node size
+    n.proto->content(n)->size = exponentOfNextPowerOfTwo(size);                                   // Node size
 #endif
     return n;                                                                   // Return allocation
    }
@@ -297,53 +295,6 @@ static size_t freedSpace_size__ArenaList                                        
  }
 #endif
 
-//D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
-
-static void insertCharInKey__ArenaListNode_char_size                                    // Insert the specified character into the key string of a node at the specified position.
- (const ArenaListNode node,                                                             // ArenaListNode
-  const char  ins,                                                              // Character to insert
-  size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
- {const typeof(node.proto->maxLength(node)) m = node.proto->maxLength(node);                                                         // Maximum length of key
-  const typeof(node.proto->length(node)) l = node.proto->length(node);                                                            // Current length of key
-  if (pos > l) pos = l;                                                         // Append to end of string if requested position is beyond the end of the string
-  if (l + 1 <= m)                                                               // There is enough room in the existing key for the new key
-   {char * k = node.proto->key(node);                                                      // Address key
-    memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
-    ArenaListContent * c = node.proto->content(node);                                              // Address node
-    c->length++;                                                                // Update key length
-    k[pos] = ins;                                                               // Insert
-   }
-  else                                                                          // Create a new node to hold a key that is too large for the current node
-   {makeLocalCopyOfArenaListKey(k, l, node);                                            // Local copy with trailing zero
-    memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
-    k[pos] = ins;                                                               // Insert
-    const typeof(node.list.proto->node(node.list, k, l+1)) n = node.list.proto->node(node.list, k, l+1);                                               // Create a node capable of storing the key
-    n.proto->replace(n, node);                                                          // Replace the existing node with the new node
-    node.proto->free(node);                                                                // Place the original node on the appropriate free chain
-   }
- }
-
-static void replaceCharInKey__ArenaListNode_size                                        // Replace the character at the specified position in the key string of a node with the specified character.
- (const ArenaListNode node,                                                             // ArenaListNode
-  const char  repl,                                                             // Replacement character
-  size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
- {const typeof(node.proto->length(node)) l = node.proto->length(node);                                                            // Current length of key
-  if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
-  char * k = node.proto->key(node);                                                        // Address key
-  k[pos] = repl;                                                                // Replace
- }
-
-static void deleteCharInKey__ArenaListNode_size                                         // Delete the character at the specified position in the key string of a node.
- (const ArenaListNode node,                                                             // ArenaListNode
-  size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
- {const typeof(node.proto->length(node)) l = node.proto->length(node);                                                            // Current length of key
-  if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
-  char * k = node.proto->key(node);                                                        // Address key
-  memmove(k + pos, k + pos + 1, l - pos + 1);                                   // Overlapping move
-  ArenaListContent * c = node.proto->content(node);                                                // Address node
-  c->length--;                                                                  // Update key length
- }
-
 static void setData_ArenaListNode_pointer                                               // Set the optional user data associated with a node in an ArenaList
  (const ArenaListNode        node,                                                      // ArenaListNode
   const void * const data)                                                      // Data
@@ -422,6 +373,51 @@ static void free__ArenaListNode                                                 
  }
 #endif
 
+//D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
+
+static void insertCharInKey__ArenaListNode_char_size                                    // Insert the specified character into the key string of a node at the specified position.
+ (const ArenaListNode node,                                                             // ArenaListNode
+  const char  ins,                                                              // Character to insert
+  size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
+ {const typeof(node.proto->maxLength(node)) m = node.proto->maxLength(node);                                                         // Maximum length of key
+  const typeof(node.proto->length(node)) l = node.proto->length(node);                                                            // Current length of key
+  if (pos > l) pos = l;                                                         // Append to end of string if requested position is beyond the end of the string
+  if (l + 1 <= m)                                                               // There is enough room in the existing key for the new key
+   {char * k = node.proto->key(node);                                                      // Address key
+    memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
+    node.proto->content(node)->length++;                                                   // Update key length
+    k[pos] = ins;                                                               // Insert
+   }
+  else                                                                          // Create a new node to hold a key that is too large for the current node
+   {makeLocalCopyOfArenaListKey(k, l, node);                                            // Local copy with trailing zero
+    memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
+    k[pos] = ins;                                                               // Insert
+    const typeof(node.list.proto->node(node.list, k, l+1)) n = node.list.proto->node(node.list, k, l+1);                                               // Create a node capable of storing the key
+    n.proto->replace(n, node);                                                          // Replace the existing node with the new node
+    node.proto->free(node);                                                                // Place the original node on the appropriate free chain
+   }
+ }
+
+static void replaceCharInKey__ArenaListNode_size                                        // Replace the character at the specified position in the key string of a node with the specified character.
+ (const ArenaListNode node,                                                             // ArenaListNode
+  const char  repl,                                                             // Replacement character
+  size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
+ {const typeof(node.proto->length(node)) l = node.proto->length(node);                                                            // Current length of key
+  if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
+  char * k = node.proto->key(node);                                                        // Address key
+  k[pos] = repl;                                                                // Replace
+ }
+
+static void deleteCharInKey__ArenaListNode_size                                         // Delete the character at the specified position in the key string of a node.
+ (const ArenaListNode node,                                                             // ArenaListNode
+  size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
+ {const typeof(node.proto->length(node)) l = node.proto->length(node);                                                            // Current length of key
+  if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
+  char * k = node.proto->key(node);                                                        // Address key
+  memmove(k + pos, k + pos + 1, l - pos + 1);                                   // Overlapping move
+  node.proto->content(node)->length--;                                                     // Update key length
+ }
+
 //D1 Navigation                                                                 // Navigate through a ArenaList.
 
 static int valid_int__ArenaListNode                                                     // Check that a node is valid.
@@ -443,17 +439,17 @@ static  ArenaListNode last_ArenaListNode__ArenaListNode                         
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->last);
  }
-#line 441 "/home/phil/c/z/arenaList/arenaList.c"
+#line 437 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaListNode                                                // Get the next child under a parent.
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->next);
  }
-#line 441 "/home/phil/c/z/arenaList/arenaList.c"
+#line 437 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaListNode                                                // Get the prev child under a parent.
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->prev);
  }
-#line 441 "/home/phil/c/z/arenaList/arenaList.c"
+#line 437 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode first_ArenaListNode__ArenaList                                                    // Get the first child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
@@ -465,19 +461,19 @@ static  ArenaListNode last_ArenaListNode__ArenaList                             
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->last(root);
  }
-#line 448 "/home/phil/c/z/arenaList/arenaList.c"
+#line 444 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaList                                                    // Get the next child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->next(root);
  }
-#line 448 "/home/phil/c/z/arenaList/arenaList.c"
+#line 444 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaList                                                    // Get the prev child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->prev(root);
  }
-#line 448 "/home/phil/c/z/arenaList/arenaList.c"
+#line 444 "/home/phil/c/z/arenaList/arenaList.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -561,7 +557,7 @@ static int isLast_int__ArenaListNode                                            
  {const ArenaListNode parent = child.proto->parent(child);
   return child.proto->equals(child, parent.proto->last(parent));
  }
-#line 527 "/home/phil/c/z/arenaList/arenaList.c"
+#line 523 "/home/phil/c/z/arenaList/arenaList.c"
 
 static int isEmpty_int__ArenaListNode                                                   // Confirm a node has no children.
  (const ArenaListNode node)                                                             // ArenaListNode
@@ -616,7 +612,7 @@ static  ArenaListNode putTreeLast_ArenaListNode__ArenaListNode                  
   const typeof(t.proto->root(t)) r = t.proto->root(t);
   return r.proto->putLast(r, child);                                                   // Put the child last
  }
-#line 576 "/home/phil/c/z/arenaList/arenaList.c"
+#line 572 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putFirst_ArenaListNode__ArenaListNode_ArenaListNode                                       // Put a child first under its parent
  (const ArenaListNode parent,                                                           // Parent
@@ -628,7 +624,7 @@ static  ArenaListNode putLast_ArenaListNode__ArenaListNode_ArenaListNode        
   const ArenaListNode child)                                                            // Child
  {return putFL_ArenaListNode__int_ArenaListNode_ArenaListNode(0, parent, child);                        // Put a child last under its parent
  }
-#line 583 "/home/phil/c/z/arenaList/arenaList.c"
+#line 579 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putNP_ArenaListNode__int_ArenaListNode_ArenaListNode                                      //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -677,7 +673,7 @@ static  ArenaListNode putPrev_ArenaListNode__ArenaListNode_ArenaListNode        
   const ArenaListNode child)                                                            // Child
  {return putNP_ArenaListNode__int_ArenaListNode_ArenaListNode(0, sibling, child);                       // Put child previous
  }
-#line 627 "/home/phil/c/z/arenaList/arenaList.c"
+#line 623 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  void replace__ArenaListNode_ArenaListNode                                               // Replace the specified node with this node
  (const ArenaListNode with,                                                             // Replace with this node
