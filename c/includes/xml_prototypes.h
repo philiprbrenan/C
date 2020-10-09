@@ -108,9 +108,12 @@ static void insertChar__XmlTag_char_size
  (const XmlTag  tag,
   const char  ins,
   size_t      pos);
-static void replaceChar__XmlNode_size
+static void replaceChar__XmlTag_char_size
  (const XmlTag  tag,
   const char  repl,
+  size_t      pos);
+static void swapChars__XmlTag_size
+ (const XmlTag  tag,
   size_t      pos);
 static void deleteChar__XmlTag_size
  (const XmlTag  tag,
@@ -277,6 +280,9 @@ struct ProtoTypes_XmlTag {
     void (* const function) (XmlTag tag, int start, int depth));                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
   int  (*stayInLine)(                                                           // Check whether a tag is text or is preceded or followed by text
     const XmlTag tag);                                                          // Tag
+  void  (*swapChars)(                                                           // Delete the character at the specified position in the string of a tag.
+    const XmlTag tag,                                                           // XmlTag
+    size_t pos);                                                                // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
   int  (*tagNameEquals)(                                                        // Check the name of a tag.
     const XmlTag tag,                                                           // Tag
     const char * const expected);                                               // Expected name of tag
@@ -297,7 +303,7 @@ struct ProtoTypes_XmlTag {
     const XmlTag tag,                                                           // Tag
     const char * const string);                                                 // Wrapper without the leading < or trailing or >
  } const ProtoTypes_XmlTag =
-{by_XmlTag_sub, changeName_XmlTag, countChildren_size_XmlTag, count_size_XmlTag, deleteChar__XmlTag_size, depth_int_XmlTag, dump_XmlTag, empty_int_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, hasText_int_XmlTag, insertChar__XmlTag_char_size, isFirst_int_XmlTag, isLast_int_XmlTag, isRoot_int_XmlTag, isTag_int_tag, isText_int_XmlTag, last_XmlTag, length_size__XmlTag, next_XmlTag, onlyText_XmlTag, parent_XmlTag, prettyPrint_stringBuffer_XmlTag, prev_XmlTag, printAssert_XmlTag, print_stringBuffer_XmlTag, printsAs_int_XmlTag_string, replaceChar__XmlNode_size, root_XmlTag, scan_XmlTag_sub, stayInLine_int_XmlTag, tagNameEquals_int_XmlTag_string, tagName_string_XmlTag, tagStringEquals_int_XmlTag_string, tagStringLength_size_XmlTag, tagString_string_XmlTag, unwrap_XmlTag, valid_int_XmlTag, wrap_XmlTag_string};
+{by_XmlTag_sub, changeName_XmlTag, countChildren_size_XmlTag, count_size_XmlTag, deleteChar__XmlTag_size, depth_int_XmlTag, dump_XmlTag, empty_int_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, hasText_int_XmlTag, insertChar__XmlTag_char_size, isFirst_int_XmlTag, isLast_int_XmlTag, isRoot_int_XmlTag, isTag_int_tag, isText_int_XmlTag, last_XmlTag, length_size__XmlTag, next_XmlTag, onlyText_XmlTag, parent_XmlTag, prettyPrint_stringBuffer_XmlTag, prev_XmlTag, printAssert_XmlTag, print_stringBuffer_XmlTag, printsAs_int_XmlTag_string, replaceChar__XmlTag_char_size, root_XmlTag, scan_XmlTag_sub, stayInLine_int_XmlTag, swapChars__XmlTag_size, tagNameEquals_int_XmlTag_string, tagName_string_XmlTag, tagStringEquals_int_XmlTag_string, tagStringLength_size_XmlTag, tagString_string_XmlTag, unwrap_XmlTag, valid_int_XmlTag, wrap_XmlTag_string};
 XmlTag newXmlTag(XmlTag allocator) {return allocator;}
 
 struct ProtoTypes_XmlValidate {
