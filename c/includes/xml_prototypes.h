@@ -7,8 +7,11 @@ static void free_XmlValidate
  (const XmlValidate x);
 static size_t errors_size_XmlParse
  (const XmlParse x);
-static char  * parseXmlTagName
+static char  * parseXmlTagNameInAngleBrackets
  (const char * const tagString);
+static  char * parseXmlTagName
+ (const char * tag,
+  const size_t length);
 static char * tagName_string_XmlTag
  (const XmlTag tag);
 static int tagNameEquals_int_XmlTag_string
@@ -55,6 +58,8 @@ static int hasText_int_XmlTag
  (const XmlTag parent);
 static int stayInLine_int_XmlTag
  (const XmlTag tag);
+static size_t length_size__XmlTag
+ (const XmlTag tag);
 static int valid_int_XmlTag
  (const XmlTag tag);
 static XmlTag findFirstChild_XmlTag_XmlTag_string
@@ -99,6 +104,17 @@ static  size_t count_size_XmlTag
 static void changeName_XmlTag
  (const XmlTag         tag,
   const char * const newName);
+static void insertChar__XmlTag_char_size
+ (const XmlTag  tag,
+  const char  ins,
+  size_t      pos);
+static void replaceChar__XmlNode_size
+ (const XmlTag  tag,
+  const char  repl,
+  size_t      pos);
+static void deleteChar__XmlTag_size
+ (const XmlTag  tag,
+  size_t      pos);
 static XmlTag wrap_XmlTag_string
  (const XmlTag         tag,
   const char * const string);
@@ -124,6 +140,15 @@ static void printAssert_XmlTag
 static void printAssert_Xml_string
  (const XmlParse       xml,
   const char * const variable);
+static void dump_Xml
+ (const XmlParse x);
+static void dump_XmlTag
+ (const XmlTag tag);
+struct ProtoTypes_XmlNodeExt {
+ } const ProtoTypes_XmlNodeExt =
+{};
+XmlNodeExt newXmlNodeExt(XmlNodeExt allocator) {return allocator;}
+
 struct ProtoTypes_XmlParse {
   void  (*by)(                                                                  // Traverse the Xml parse tree in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
     const XmlParse xml,                                                         // Xml parse tree
@@ -132,6 +157,8 @@ struct ProtoTypes_XmlParse {
     const XmlParse xml);                                                        // Xml parse
   size_t  (*count)(                                                             // Count the number of tags in an Xml parse tree
     const XmlParse x);                                                          // Xml parse tree
+  void  (*dump)(                                                                // Print the Xml parse tree starting to stderr
+    const XmlParse x);                                                          // Xml
   size_t  (*errors)(                                                            // Number of errors encountered while creating an Xml parse tree.
     const XmlParse x);                                                          // Xml descriptor
   XmlTag  (*findFirstChild)(                                                    // Find the first child tag with the specified name under the root tag of the specified parse tree.
@@ -162,7 +189,7 @@ struct ProtoTypes_XmlParse {
     const XmlParse xml,                                                         // Xml parse tree
     void (* const function) (XmlTag tag, int start, int depth));                // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
  } const ProtoTypes_XmlParse =
-{by_XmlParse_sub, countChildren_size_Xml, count_size_Xml, errors_size_XmlParse, findFirstChild_XmlTag_XmlParse_string, findFirstTag_XmlTag_XmlParse_string, first_XmlParse, free_XmlParse, last_XmlParse, prettyPrint_stringBuffer_Xml, printAssert_Xml_string, print_stringBuffer_Xml, printsAs_int_Xml_string, root_XmlParse, scan_XmlParse_sub};
+{by_XmlParse_sub, countChildren_size_Xml, count_size_Xml, dump_Xml, errors_size_XmlParse, findFirstChild_XmlTag_XmlParse_string, findFirstTag_XmlTag_XmlParse_string, first_XmlParse, free_XmlParse, last_XmlParse, prettyPrint_stringBuffer_Xml, printAssert_Xml_string, print_stringBuffer_Xml, printsAs_int_Xml_string, root_XmlParse, scan_XmlParse_sub};
 XmlParse newXmlParse(XmlParse allocator) {return allocator;}
 
 struct ProtoTypes_XmlParseOptions {
@@ -181,8 +208,13 @@ struct ProtoTypes_XmlTag {
     const XmlTag parent);                                                       // Parent tag
   size_t  (*count)(                                                             // Count the number of tags under the specified tag in an Xml parse tree
     const XmlTag t);                                                            // Parent tag
+  void  (*deleteChar)(                                                          // Delete the character at the specified position in the string of a tag.
+    const XmlTag tag,                                                           // XmlTag
+    size_t pos);                                                                // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
   int  (*depth)(                                                                // The depth of a tag
     const XmlTag tag);                                                          // Tag
+  void  (*dump)(                                                                // Dump the specified tag
+    const XmlTag tag);                                                          // Xml
   int  (*empty)(                                                                // Check whether the specified parent tag is empty
     const XmlTag parent);                                                       // Parent tag
   int  (*equals)(                                                               // Confirm that two tags refer to the same text location in the source document.
@@ -198,6 +230,10 @@ struct ProtoTypes_XmlTag {
     const XmlTag parent);                                                       // Parent tag
   int  (*hasText)(                                                              // Check whether the tag contains a text element
     const XmlTag parent);                                                       // Parent tag
+  void  (*insertChar)(                                                          // Insert the specified character into the string of a tag at the specified position.
+    const XmlTag tag,                                                           // XmlTag
+    const char ins,                                                             // Character to insert
+    size_t pos);                                                                // Position in key. 0 prepends the char, while >= length appends the char.
   int  (*isFirst)(                                                              // Check that the specified tag is first under its parent
     const XmlTag tag);                                                          // Tag
   int  (*isLast)(                                                               // Check that the specified tag is last under its parent
@@ -210,6 +246,8 @@ struct ProtoTypes_XmlTag {
     const XmlTag tag);                                                          // Tag
   XmlTag  (*last)(                                                              // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
+  size_t  (*length)(                                                            // Length of a tag string
+    const XmlTag tag);                                                          // XmlTag
   XmlTag  (*next)(                                                              // Return the first child tag under the specified parent tag.
     const XmlTag parent);                                                       // Parent tag
   int  (*onlyText)(                                                             // Return true if a tag contains just one text element and nothing else
@@ -228,6 +266,10 @@ struct ProtoTypes_XmlTag {
   int  (*printsAs)(                                                             // Check that the Xml parse tree prints as expected
     const XmlTag tag,                                                           // Xml parse tree
     const char * const expected);                                               // Expected print
+  void  (*replaceChar)(                                                         // Replace the character at the specified position in the key string of a tag with the specified character.
+    const XmlTag tag,                                                           // XmlTag
+    const char repl,                                                            // Replacement character
+    size_t pos);                                                                // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
   XmlTag  (*root)(                                                              // Return the root tsg of the Xml parse tree containing the specified tag.
     const XmlTag tag);                                                          // Tag
   void  (*scan)(                                                                // Traverse the Xml parse tree rooted at the specified tag calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The Xml is buffered allowing changes to be made to the structure of the Xml without disruption as long as each child checks its context.
@@ -255,7 +297,7 @@ struct ProtoTypes_XmlTag {
     const XmlTag tag,                                                           // Tag
     const char * const string);                                                 // Wrapper without the leading < or trailing or >
  } const ProtoTypes_XmlTag =
-{by_XmlTag_sub, changeName_XmlTag, countChildren_size_XmlTag, count_size_XmlTag, depth_int_XmlTag, empty_int_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, hasText_int_XmlTag, isFirst_int_XmlTag, isLast_int_XmlTag, isRoot_int_XmlTag, isTag_int_tag, isText_int_XmlTag, last_XmlTag, next_XmlTag, onlyText_XmlTag, parent_XmlTag, prettyPrint_stringBuffer_XmlTag, prev_XmlTag, printAssert_XmlTag, print_stringBuffer_XmlTag, printsAs_int_XmlTag_string, root_XmlTag, scan_XmlTag_sub, stayInLine_int_XmlTag, tagNameEquals_int_XmlTag_string, tagName_string_XmlTag, tagStringEquals_int_XmlTag_string, tagStringLength_size_XmlTag, tagString_string_XmlTag, unwrap_XmlTag, valid_int_XmlTag, wrap_XmlTag_string};
+{by_XmlTag_sub, changeName_XmlTag, countChildren_size_XmlTag, count_size_XmlTag, deleteChar__XmlTag_size, depth_int_XmlTag, dump_XmlTag, empty_int_XmlTag, equals_XmlTag_XmlTag, findFirstChild_XmlTag_XmlTag_string, findFirstTag_XmlTag_XmlTag_string, first_XmlTag, hasText_int_XmlTag, insertChar__XmlTag_char_size, isFirst_int_XmlTag, isLast_int_XmlTag, isRoot_int_XmlTag, isTag_int_tag, isText_int_XmlTag, last_XmlTag, length_size__XmlTag, next_XmlTag, onlyText_XmlTag, parent_XmlTag, prettyPrint_stringBuffer_XmlTag, prev_XmlTag, printAssert_XmlTag, print_stringBuffer_XmlTag, printsAs_int_XmlTag_string, replaceChar__XmlNode_size, root_XmlTag, scan_XmlTag_sub, stayInLine_int_XmlTag, tagNameEquals_int_XmlTag_string, tagName_string_XmlTag, tagStringEquals_int_XmlTag_string, tagStringLength_size_XmlTag, tagString_string_XmlTag, unwrap_XmlTag, valid_int_XmlTag, wrap_XmlTag_string};
 XmlTag newXmlTag(XmlTag allocator) {return allocator;}
 
 struct ProtoTypes_XmlValidate {
