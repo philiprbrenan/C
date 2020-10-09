@@ -13,7 +13,8 @@
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
-char $tagName[256];                                                             // Tag name return area as xml tags are short
+#define $tagNameLength 1024                                                     // Tag name return area as xml tags are of limited size
+char $tagName[$tagNameLength+1];                                                // Tag name return area as xml tags are short
 
 typedef struct $Parse                                                           // $ parse tree
  {const struct ProtoTypes_$Parse *proto;                                        // Prototypes for methods
@@ -35,6 +36,10 @@ typedef struct $Tag                                                             
   ArenaListNode           node;                                                 // Arena tree node in the xml parse tree that contains this tag
  } $Tag;
 
+typedef struct $NodeExt                                                         // Extra data held in each node of the parse tree
+ {unsigned char           text;                                                 // True if this is a text node
+ } $NodeExt;
+
 typedef struct $ParseOptions                                                    // Options for an $ parse
  {const struct ProtoTypes_$ParseOptions *proto;                                 // Prototypes for methods
   const char  *           location;                                             // Location of string in memory to be parsed
@@ -52,16 +57,10 @@ typedef struct $ParseOptions                                                    
 #define $Question '?'
 #define $Exclaim  '!'
 
-$Tag make$Tag_$Parse_ArenaListNode                                              //P Make a tag descriptor from a parse tree node holding the tag
- (const $Parse        xml,                                                      // Xml parse tree
-  const ArenaListNode node)                                                     // Node holding tag
- {return new $Tag(xml: xml, node: node);
- }
-
 $Parse make$Parse                                                               // Perform requested parse
  ($ParseOptions options)                                                        // Name of file holding $ or zero if no file is associated with this source
  {sourceFN      ◁ options.fileName;                                             // File to parse if any
-  parseTree     ◁ makeArenaList();                                              // Parse tree,
+  parseTree     ◁ makeArenaListWithWidth(sizeof($NodeExt));                     // Parse tree which has nodes with extension data
   errors        ◁ makeArenaListWithWidth(sizeof(size_t));                       // Errors list with location of error
   $Parse xml    = {fileName: sourceFN, tree: parseTree,                         // Create $ descriptor
                    errors: errors, proto: &ProtoTypes_$Parse};
@@ -113,29 +112,31 @@ $Parse make$Parse                                                               
           return 1;
           }
 
-        if (!allBlank())                                                        // Save the  text as the key of the node
+        if (!allBlank())                                                        // Save the text as the key of the node
          {n ◁ parseTree ▷ node(p, o - p);                                       // Create node
+          $NodeExt e = {text: 1};                                               // Text marker
+          n ▷ setData(&e);                                                      // Save  text marker
           currentParent ▷ putLast(n);                                           // Save node in parse tree
          }
        }
           c ◁ strchr(o, $Close);                                                // Save tag: find corresponding close
       if (c)                                                                    // Found closing >
        {void save(void)                                                         // Save tag as a new node
-         {n ◁ parseTree ▷ node(o, c - o + 1);                                   // Create node
+         {n ◁ parseTree ▷ node(o + 1, c - o - 1);                               // Create node
           currentParent ▷ putLast(n);                                           // Save node in parse tree
           currentParent = n;
          }
         void saveSingleton(void)                                                // Save singleton
-         {const size_t l = c - o + 1;                                           // Length of current tag string
-          char b[l+1]; memcpy(b, o, l);                                         // Copy tag string
-          b[l-1] = 0; b[l-2] = $Close;                                          // Convert from singleton to opener
-          n ◁ parseTree ▷ node(b, l-1);                                         // Create node
+         {const size_t l = c - o - 2;                                           // Length of current tag string
+          char b[l+1]; memcpy(b, o+1, l); b[l] = 0;                             // Copy tag string
+          n ◁ parseTree ▷ node(b, l);                                           // Create node
           currentParent ▷ putLast(n);                                           // Save node in parse tree
          }
 
         void end(void)                                                          // End tag
-         {lsprintf(a, 256, "%s", parse$TagName(currentParent ▷ key));           // Start tag name
-          lsprintf(b, 256, "%s", parse$TagName(o));                             // End tag name
+         {makeLocalCopyOfArenaListKey(k, l, currentParent);
+          char a[$tagNameLength+1]; strcpy(a, parse$TagName(k, l));             // Start tag name - we have to make copies because there is only one tag name buffer
+          char *b = parse$TagNameInAngleBrackets(o);                            // End tag name
 
           if (strcmp(a, b))                                                     // Tag name mismatch
            {error(o, "End tag: %s does not match start tag: %s", b, a);
@@ -237,7 +238,7 @@ static size_t errors_size_$Parse                                                
  {return x.errors ▷ count;
  }
 
-static char  * parse$TagName                                                    // Get the tag name from an $ tag
+static char  * parse$TagNameInAngleBrackets                                     //P Get the tag name from an $ tag string. The tag name will be truncated if it is longer than $tagNameLength. The returned  name is held in the fixed buffer $tagName.
  (const char * const tagString)                                                 // String representation of a tag
  {const char * const p = tagString;
   if (*p == $Open)                                                              // Tag
@@ -255,9 +256,23 @@ static char  * parse$TagName                                                    
   return strcpy($tagName, "text");                                              // In a text tag
  }
 
+static  char * parse$TagName                                                    //P Get the tag name from a string assuming the tag name starts at the start of the string and is either terminated by a space or the end of the string.  The tag name will be truncated if it is longer than $tagNameLength. The returned  name is held in the fixed buffer $tagName.
+ (const char * tag,                                                             // Tag
+  const size_t length)                                                          // Length
+ {size_t N = length < $tagNameLength ? length : $tagNameLength;
+  for(size_t i = 0; i < N; ++i)                                                 // Copy tag string up to first space
+   {$tagName[i] = tag[i];
+    if (tag[i] == ' ') {$tagName[i] = 0; return $tagName;}
+   }
+  $tagName[N] = 0;
+  return $tagName;
+ }
+
 static char * tagName_string_$Tag                                               // Get the tag name from a node in the $ parse tree. The tag name is returned in a reused static buffer that the caller should not free.
  (const $Tag tag)                                                               // Tag
- {return parse$TagName(tag.node ▷ key);
+ {if (tag ▷ isText) return "text";                                              // Text node
+  makeLocalCopyOf$TagString(t, l, tag);
+  return parse$TagName(t, l);
  }
 
 static int tagNameEquals_int_$Tag_string                                        // Check the name of a tag.
@@ -327,8 +342,9 @@ duplicate s/first/last/g,s/First/Last/g
 
 static int isText_int_$Tag                                                      // Check whether we are on a text element
  (const $Tag tag)                                                               // Tag
- {const char * const c = tag ▷ tagString;
-  return c[0] != $Open;
+ {$NodeExt e;                                                                   // Extension data for node
+  tag.node ▷ getData(&e);                                                       // Get extension data from node
+  return e.text;                                                                // Text or not
  }
 
 static int onlyText_$Tag                                                        // Return true if a tag contains just one text element and nothing else
@@ -363,6 +379,11 @@ static int stayInLine_int_$Tag                                                  
   if (!tag ▷ isFirst) {p ◁ tag ▷ prev; return p ▷ isText;}
   if (!tag ▷ isLast)  {n ◁ tag ▷ next; return n ▷ isText;}
   return 0;
+ }
+
+static size_t length_size__$Tag                                                 // Length of a tag string
+ (const $Tag tag)                                                               // $Tag
+ {return tag.node ▷ content->length;
  }
 
 //D1 Search                                                                     // Search the $ parse tree
@@ -456,7 +477,8 @@ static void by_$Parse_sub                                                       
  {void f(const ArenaListNode node)
    {function(new $Tag(xml: xml, node: node));
    }
-  xml.tree ▷ by(f);
+  F ◁ xml.tree ▷ first;
+  F ▷ by(f);
  }
 
 static void scan_$Tag_sub                                                       // Traverse the $ parse tree rooted at the specified tag calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
@@ -515,18 +537,33 @@ static void changeName_$Tag                                                     
   tag.node ▷ setKey(key, strlen(key));
  }
 
+static void insertChar__$Tag_char_size                                          // Insert the specified character into the string of a tag at the specified position.
+ (const $Tag  tag,                                                              // $Tag
+  const char  ins,                                                              // Character to insert
+  size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
+ {tag.node ▷ insertCharInKey(ins, pos);
+ }
+
+static void replaceChar__$Node_size                                             // Replace the character at the specified position in the key string of a tag with the specified character.
+ (const $Tag  tag,                                                              // $Tag
+  const char  repl,                                                             // Replacement character
+  size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
+ {tag.node ▷ replaceCharInKey(repl, pos);
+ }
+
+static void deleteChar__$Tag_size                                               // Delete the character at the specified position in the string of a tag.
+ (const $Tag  tag,                                                              // $Tag
+  size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
+ {tag.node ▷ deleteCharInKey(pos);
+ }
+
 //D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
 
 static $Tag wrap_$Tag_string                                                    // Wrap a specified tag with a new tag and return the newly createdf wraping tag.
  (const $Tag         tag,                                                       // Tag
   const char * const string)                                                    // Wrapper without the leading < or trailing or >
  {if (tag ▷ isRoot) return tag;
-  char s[strlen(string)+4], *p = s;
-  *p++ = $Open;
-   p   = stpcpy(p, string);
-  *p++ = $Close;
-  *p   = 0;
-
+  char s[strlen(string)+4], *p = stpcpy(s, string); *p = 0;
   const ArenaListNode n =  tag.node ▷ wrap(s);
   return new $Tag(xml: tag.xml, node: n);
  }
@@ -545,21 +582,25 @@ static StringBuffer prettyPrint_stringBuffer_$Tag                               
 
   void print(const $Tag parent, const int depth)                                // Print the specified parent and its children
    {void open()                                                                 // Add open tag
-     {if (parent ▷  isText)
+     {if (parent ▷ isText)
        {p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
        }
       else if (parent ▷ empty)                                                  // Write tag with no children as a singleton
        {makeLocalCopyOf$TagString(s, l, parent);
         p ▷ addChar($Open);
-        p ▷ addn(s+1, l-2);
+        p ▷ addn(s, l);
         p ▷ addFormat("%c%c", $Slash, $Close);
        }
       else if (parent ▷ stayInLine || parent ▷ isRoot)                          // Opener preceded or followed by text
-       {p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
+       {p ▷ addChar($Open);
+        p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
+        p ▷ addChar($Close);
        }
       else                                                                      // Opener
        {p ▷ addNewLine; p ▷ addSpaces(depth*2);
+        p ▷ addChar($Open);
         p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
+        p ▷ addChar($Close);
        }
      }
     void close()                                                                // Add close tag unless we are on text
@@ -593,17 +634,19 @@ static StringBuffer print_stringBuffer_$Tag                                     
 
   void print(const $Tag parent, const int depth)                                // Print the specified parent and its children
    {void open()                                                                 // Add open tag
-     {if (parent ▷  isText)
+     {if (parent ▷ isText)
        {p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
        }
       else if (parent ▷ empty)                                                  // Write tag with no children as a singleton
        {makeLocalCopyOf$TagString(s, l, parent);
         p ▷ addChar($Open);
-        p ▷ addn(s+1, l-2);
+        p ▷ addn(s, l);
         p ▷ addFormat("%c%c", $Slash, $Close);
        }
       else                                                                      // Opener
-       {p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
+       {p ▷ addChar($Open);
+        p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
+        p ▷ addChar($Close);
        }
      }
     void close()                                                                // Add close tag unless we are on text
@@ -664,6 +707,20 @@ static void printAssert_$_string                                                
   const char * const variable)                                                  // The name of the variable preceding this call
  {const $Tag t = xml ▷ root;
   t ▷ printAssert(variable);
+ }
+
+static void dump_$                                                              //P Print the $ parse tree starting to stderr
+ (const $Parse x)                                                               // $
+ {t ◁ x ▷ prettyPrint;
+  t ▷ join;
+  t ▷ dump;
+  t ▷ free;
+ }
+
+static void dump_$Tag                                                           //P Dump the specified tag
+ (const $Tag tag)                                                               // $
+ {makeLocalCopyOf$TagString(t, l, tag);
+  say("%s\n", t);
  }
 #endif
 
@@ -738,13 +795,13 @@ void test1()                                                                    
   ✓ b ▷ count         == 10;
   ✓ b ▷ countChildren ==  3;
 
-  ✓ !strcmp(parse$TagName(b.node ▷ key), "b");
-  ✓ !strcmp(b ▷ tagName,                 "b");
+  ✓ !strcmp(parse$TagName(b.node ▷ key, b.node ▷ length), "b");
+  ✓ !strcmp(b ▷ tagName,                                  "b");
 
-  ✓ !strncmp(b ▷ tagString, "<b>", b ▷ tagStringLength);
-  ✓ !strncmp(c ▷ tagString, "<c>", c ▷ tagStringLength);                  // Singletons are converted to empty openers
-  ✓ b ▷ tagStringEquals(    "<b>");
-  ✓ c ▷ tagStringEquals(    "<c>");
+  ✓ !strncmp(b ▷ tagString, "b", b ▷ tagStringLength);
+  ✓ !strncmp(c ▷ tagString, "c", c ▷ tagStringLength);
+  ✓ b ▷ tagStringEquals(    "b");
+  ✓ c ▷ tagStringEquals(    "c");
 
   H ◁ h ▷ first;
   ✓          H ▷ isText;
@@ -953,9 +1010,32 @@ void test6()                                                                    
   x ▷ free; s ▷ free;
  }
 
+void test7()                                                                    //Tlength //TinsertChar //TdeleteChar //TreplaceChar
+ {xml  ◁ "<a><abcd>1234</abcd></a>";
+     x ◁ parse$FromString(xml, 0);
+  ✓ !x ▷ errors;
+
+  a ◁ x ▷ findFirstChild("abcd");
+  t ◁ a ▷ first;
+
+  a ▷ insertChar('D', 3);  ✓ x ▷ printsAs("<a><abcDd>1234</abcDd></a>");
+  t ▷ insertChar('T', 3);  ✓ x ▷ printsAs("<a><abcDd>123T4</abcDd></a>");
+  ✓ a ▷ length == 5;       ✓ t ▷ length == 5;
+
+  a ▷ replaceChar('e', 3); ✓ x ▷ printsAs("<a><abced>123T4</abced></a>");
+  t ▷ replaceChar('t', 3); ✓ x ▷ printsAs("<a><abced>123t4</abced></a>");
+  ✓ a ▷ length == 5;       ✓ t ▷ length == 5;
+
+  a ▷ deleteChar(3);       ✓ x ▷ printsAs("<a><abcd>123t4</abcd></a>");
+  t ▷ deleteChar(3);       ✓ x ▷ printsAs("<a><abcd>1234</abcd></a>");
+  ✓ a ▷ length == 4;       ✓ t ▷ length == 4;
+
+  x ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4,
-                           test5, test6, 0};
+                           test5, test6, test7, 0};
   run_tests("$", 1, tests);
   return 0;
  }
