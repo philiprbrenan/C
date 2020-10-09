@@ -14,7 +14,8 @@
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
-char XmltagName[256];                                                             // Tag name return area as xml tags are short
+#define XmltagNameLength 1024                                                     // Tag name return area as xml tags are of limited size
+char XmltagName[XmltagNameLength+1];                                                // Tag name return area as xml tags are short
 
 typedef struct XmlParse                                                           // Xml parse tree
  {const struct ProtoTypes_XmlParse *proto;                                        // Prototypes for methods
@@ -36,6 +37,10 @@ typedef struct XmlTag                                                           
   ArenaListNode           node;                                                 // Arena tree node in the xml parse tree that contains this tag
  } XmlTag;
 
+typedef struct XmlNodeExt                                                         // Extra data held in each node of the parse tree
+ {unsigned char           text;                                                 // True if this is a text node
+ } XmlNodeExt;
+
 typedef struct XmlParseOptions                                                    // Options for an Xml parse
  {const struct ProtoTypes_XmlParseOptions *proto;                                 // Prototypes for methods
   const char  *           location;                                             // Location of string in memory to be parsed
@@ -53,16 +58,10 @@ typedef struct XmlParseOptions                                                  
 #define XmlQuestion '?'
 #define XmlExclaim  '!'
 
-XmlTag makeXmlTag_XmlParse_ArenaListNode                                              //P Make a tag descriptor from a parse tree node holding the tag
- (const XmlParse        xml,                                                      // Xml parse tree
-  const ArenaListNode node)                                                     // Node holding tag
- {return newXmlTag(({struct XmlTag t = {xml: xml, node: node, proto: &ProtoTypes_XmlTag}; t;}));
- }
-
 XmlParse makeXmlParse                                                               // Perform requested parse
  (XmlParseOptions options)                                                        // Name of file holding Xml or zero if no file is associated with this source
  {const typeof(options.fileName) sourceFN = options.fileName;                                             // File to parse if any
-  const typeof(makeArenaList()) parseTree = makeArenaList();                                              // Parse tree,
+  const typeof(makeArenaListWithWidth(sizeof(XmlNodeExt))) parseTree = makeArenaListWithWidth(sizeof(XmlNodeExt));                     // Parse tree which has nodes with extension data
   const typeof(makeArenaListWithWidth(sizeof(size_t))) errors = makeArenaListWithWidth(sizeof(size_t));                       // Errors list with location of error
   XmlParse xml    = {fileName: sourceFN, tree: parseTree,                         // Create Xml descriptor
                    errors: errors, proto: &ProtoTypes_XmlParse};
@@ -114,29 +113,31 @@ XmlParse makeXmlParse                                                           
           return 1;
           }
 
-        if (!allBlank())                                                        // Save the  text as the key of the node
+        if (!allBlank())                                                        // Save the text as the key of the node
          {const typeof(parseTree.proto->node(parseTree, p, o - p)) n = parseTree.proto->node(parseTree, p, o - p);                                       // Create node
+          XmlNodeExt e = {text: 1};                                               // Text marker
+          n.proto->setData(n, &e);                                                      // Save  text marker
           currentParent.proto->putLast(currentParent, n);                                           // Save node in parse tree
          }
        }
           const typeof(strchr(o, XmlClose)) c = strchr(o, XmlClose);                                                // Save tag: find corresponding close
       if (c)                                                                    // Found closing >
        {void save(void)                                                         // Save tag as a new node
-         {const typeof(parseTree.proto->node(parseTree, o, c - o + 1)) n = parseTree.proto->node(parseTree, o, c - o + 1);                                   // Create node
+         {const typeof(parseTree.proto->node(parseTree, o + 1, c - o - 1)) n = parseTree.proto->node(parseTree, o + 1, c - o - 1);                               // Create node
           currentParent.proto->putLast(currentParent, n);                                           // Save node in parse tree
           currentParent = n;
          }
         void saveSingleton(void)                                                // Save singleton
-         {const size_t l = c - o + 1;                                           // Length of current tag string
-          char b[l+1]; memcpy(b, o, l);                                         // Copy tag string
-          b[l-1] = 0; b[l-2] = XmlClose;                                          // Convert from singleton to opener
-          const typeof(parseTree.proto->node(parseTree, b, l-1)) n = parseTree.proto->node(parseTree, b, l-1);                                         // Create node
+         {const size_t l = c - o - 2;                                           // Length of current tag string
+          char b[l+1]; memcpy(b, o+1, l); b[l] = 0;                             // Copy tag string
+          const typeof(parseTree.proto->node(parseTree, b, l)) n = parseTree.proto->node(parseTree, b, l);                                           // Create node
           currentParent.proto->putLast(currentParent, n);                                           // Save node in parse tree
          }
 
         void end(void)                                                          // End tag
-         {lsprintf(a, 256, "%s", parseXmlTagName(currentParent.proto->key(currentParent)));           // Start tag name
-          lsprintf(b, 256, "%s", parseXmlTagName(o));                             // End tag name
+         {makeLocalCopyOfArenaListKey(k, l, currentParent);
+          char a[XmltagNameLength+1]; strcpy(a, parseXmlTagName(k, l));             // Start tag name - we have to make copies because there is only one tag name buffer
+          char *b = parseXmlTagNameInAngleBrackets(o);                            // End tag name
 
           if (strcmp(a, b))                                                     // Tag name mismatch
            {error(o, "End tag: %s does not match start tag: %s", b, a);
@@ -238,7 +239,7 @@ static size_t errors_size_XmlParse                                              
  {return x.errors.proto->count(x.errors);
  }
 
-static char  * parseXmlTagName                                                    // Get the tag name from an Xml tag
+static char  * parseXmlTagNameInAngleBrackets                                     //P Get the tag name from an Xml tag string. The tag name will be truncated if it is longer than XmltagNameLength. The returned  name is held in the fixed buffer XmltagName.
  (const char * const tagString)                                                 // String representation of a tag
  {const char * const p = tagString;
   if (*p == XmlOpen)                                                              // Tag
@@ -256,9 +257,23 @@ static char  * parseXmlTagName                                                  
   return strcpy(XmltagName, "text");                                              // In a text tag
  }
 
+static  char * parseXmlTagName                                                    //P Get the tag name from a string assuming the tag name starts at the start of the string and is either terminated by a space or the end of the string.  The tag name will be truncated if it is longer than XmltagNameLength. The returned  name is held in the fixed buffer XmltagName.
+ (const char * tag,                                                             // Tag
+  const size_t length)                                                          // Length
+ {size_t N = length < XmltagNameLength ? length : XmltagNameLength;
+  for(size_t i = 0; i < N; ++i)                                                 // Copy tag string up to first space
+   {XmltagName[i] = tag[i];
+    if (tag[i] == ' ') {XmltagName[i] = 0; return XmltagName;}
+   }
+  XmltagName[N] = 0;
+  return XmltagName;
+ }
+
 static char * tagName_string_XmlTag                                               // Get the tag name from a node in the Xml parse tree. The tag name is returned in a reused static buffer that the caller should not free.
  (const XmlTag tag)                                                               // Tag
- {return parseXmlTagName(tag.node.proto->key(tag.node));
+ {if (tag.proto->isText(tag)) return "text";                                              // Text node
+  makeLocalCopyOfXmlTagString(t, l, tag);
+  return parseXmlTagName(t, l);
  }
 
 static int tagNameEquals_int_XmlTag_string                                        // Check the name of a tag.
@@ -296,22 +311,22 @@ static XmlTag last_XmlTag                                                       
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->last(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 294 "/home/phil/c/z/xml/xml.c"
+#line 309 "/home/phil/c/z/xml/xml.c"
 static XmlTag next_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->next(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 294 "/home/phil/c/z/xml/xml.c"
+#line 309 "/home/phil/c/z/xml/xml.c"
 static XmlTag prev_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->prev(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 294 "/home/phil/c/z/xml/xml.c"
+#line 309 "/home/phil/c/z/xml/xml.c"
 static XmlTag parent_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag parent)                                                            // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.node.proto->parent(parent.node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 294 "/home/phil/c/z/xml/xml.c"
+#line 309 "/home/phil/c/z/xml/xml.c"
 
 static XmlTag first_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
  (const XmlParse xml)                                                             // Parent tag
@@ -321,7 +336,7 @@ static XmlTag last_XmlParse                                                     
  (const XmlParse xml)                                                             // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: xml, node: xml.tree.proto->last(xml.tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 300 "/home/phil/c/z/xml/xml.c"
+#line 315 "/home/phil/c/z/xml/xml.c"
 
 //D1 Location                                                                   // Check the current location in the Xml parse tre
 
@@ -352,14 +367,15 @@ static int isLast_int_XmlTag                                                    
   const typeof(parent.proto->last(parent)) f = parent.proto->last(parent);
   return f.proto->equals(f, tag);
  }
-#line 324 "/home/phil/c/z/xml/xml.c"
+#line 339 "/home/phil/c/z/xml/xml.c"
 
 //D1 Text methods                                                               // Methods that operate on text tags
 
 static int isText_int_XmlTag                                                      // Check whether we are on a text element
  (const XmlTag tag)                                                               // Tag
- {const char * const c = tag.proto->tagString(tag);
-  return c[0] != XmlOpen;
+ {XmlNodeExt e;                                                                   // Extension data for node
+  tag.node.proto->getData(tag.node, &e);                                                       // Get extension data from node
+  return e.text;                                                                // Text or not
  }
 
 static int onlyText_XmlTag                                                        // Return true if a tag contains just one text element and nothing else
@@ -394,6 +410,11 @@ static int stayInLine_int_XmlTag                                                
   if (!tag.proto->isFirst(tag)) {const typeof(tag.proto->prev(tag)) p = tag.proto->prev(tag); return p.proto->isText(p);}
   if (!tag.proto->isLast(tag))  {const typeof(tag.proto->next(tag)) n = tag.proto->next(tag); return n.proto->isText(n);}
   return 0;
+ }
+
+static size_t length_size__XmlTag                                                 // Length of a tag string
+ (const XmlTag tag)                                                               // XmlTag
+ {return tag.node.proto->content(tag.node)->length;
  }
 
 //D1 Search                                                                     // Search the Xml parse tree
@@ -487,7 +508,8 @@ static void by_XmlParse_sub                                                     
  {void f(const ArenaListNode node)
    {function(newXmlTag(({struct XmlTag t = {xml: xml, node: node, proto: &ProtoTypes_XmlTag}; t;})));
    }
-  xml.tree.proto->by(xml.tree, f);
+  const typeof(xml.tree.proto->first(xml.tree)) F = xml.tree.proto->first(xml.tree);
+  F.proto->by(F, f);
  }
 
 static void scan_XmlTag_sub                                                       // Traverse the Xml parse tree rooted at the specified tag calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The Xml is buffered allowing changes to be made to the structure of the Xml without disruption as long as each child checks its context.
@@ -546,18 +568,33 @@ static void changeName_XmlTag                                                   
   tag.node.proto->setKey(tag.node, key, strlen(key));
  }
 
+static void insertChar__XmlTag_char_size                                          // Insert the specified character into the string of a tag at the specified position.
+ (const XmlTag  tag,                                                              // XmlTag
+  const char  ins,                                                              // Character to insert
+  size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
+ {tag.node.proto->insertCharInKey(tag.node, ins, pos);
+ }
+
+static void replaceChar__XmlNode_size                                             // Replace the character at the specified position in the key string of a tag with the specified character.
+ (const XmlTag  tag,                                                              // XmlTag
+  const char  repl,                                                             // Replacement character
+  size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
+ {tag.node.proto->replaceCharInKey(tag.node, repl, pos);
+ }
+
+static void deleteChar__XmlTag_size                                               // Delete the character at the specified position in the string of a tag.
+ (const XmlTag  tag,                                                              // XmlTag
+  size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
+ {tag.node.proto->deleteCharInKey(tag.node, pos);
+ }
+
 //D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
 
 static XmlTag wrap_XmlTag_string                                                    // Wrap a specified tag with a new tag and return the newly createdf wraping tag.
  (const XmlTag         tag,                                                       // Tag
   const char * const string)                                                    // Wrapper without the leading < or trailing or >
  {if (tag.proto->isRoot(tag)) return tag;
-  char s[strlen(string)+4], *p = s;
-  *p++ = XmlOpen;
-   p   = stpcpy(p, string);
-  *p++ = XmlClose;
-  *p   = 0;
-
+  char s[strlen(string)+4], *p = stpcpy(s, string); *p = 0;
   const ArenaListNode n =  tag.node.proto->wrap(tag.node, s);
   return newXmlTag(({struct XmlTag t = {xml: tag.xml, node: n, proto: &ProtoTypes_XmlTag}; t;}));
  }
@@ -582,15 +619,19 @@ static StringBuffer prettyPrint_stringBuffer_XmlTag                             
       else if (parent.proto->empty(parent))                                                  // Write tag with no children as a singleton
        {makeLocalCopyOfXmlTagString(s, l, parent);
         p.proto->addChar(p, XmlOpen);
-        p.proto->addn(p, s+1, l-2);
+        p.proto->addn(p, s, l);
         p.proto->addFormat(p, "%c%c", XmlSlash, XmlClose);
        }
       else if (parent.proto->stayInLine(parent) || parent.proto->isRoot(parent))                          // Opener preceded or followed by text
-       {p.proto->addn(p, parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+       {p.proto->addChar(p, XmlOpen);
+        p.proto->addn(p, parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+        p.proto->addChar(p, XmlClose);
        }
       else                                                                      // Opener
        {p.proto->addNewLine(p); p.proto->addSpaces(p, depth*2);
+        p.proto->addChar(p, XmlOpen);
         p.proto->addn(p, parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+        p.proto->addChar(p, XmlClose);
        }
      }
     void close()                                                                // Add close tag unless we are on text
@@ -630,11 +671,13 @@ static StringBuffer print_stringBuffer_XmlTag                                   
       else if (parent.proto->empty(parent))                                                  // Write tag with no children as a singleton
        {makeLocalCopyOfXmlTagString(s, l, parent);
         p.proto->addChar(p, XmlOpen);
-        p.proto->addn(p, s+1, l-2);
+        p.proto->addn(p, s, l);
         p.proto->addFormat(p, "%c%c", XmlSlash, XmlClose);
        }
       else                                                                      // Opener
-       {p.proto->addn(p, parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+       {p.proto->addChar(p, XmlOpen);
+        p.proto->addn(p, parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
+        p.proto->addChar(p, XmlClose);
        }
      }
     void close()                                                                // Add close tag unless we are on text
@@ -675,7 +718,7 @@ static int printsAs_int_XmlTag_string                                           
   s.proto->free(s);
   return r;
  }
-#line 639 "/home/phil/c/z/xml/xml.c"
+#line 682 "/home/phil/c/z/xml/xml.c"
 
 static void printAssert_XmlTag                                                    //P Print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
@@ -703,6 +746,20 @@ static void printAssert_Xml_string                                              
   const char * const variable)                                                  // The name of the variable preceding this call
  {const XmlTag t = xml.proto->root(xml);
   t.proto->printAssert(t, variable);
+ }
+
+static void dump_Xml                                                              //P Print the Xml parse tree starting to stderr
+ (const XmlParse x)                                                               // Xml
+ {const typeof(x.proto->prettyPrint(x)) t = x.proto->prettyPrint(x);
+  t.proto->join(t);
+  t.proto->dump(t);
+  t.proto->free(t);
+ }
+
+static void dump_XmlTag                                                           //P Dump the specified tag
+ (const XmlTag tag)                                                               // Xml
+ {makeLocalCopyOfXmlTagString(t, l, tag);
+  say("%s\n", t);
  }
 #endif
 
@@ -777,13 +834,13 @@ void test1()                                                                    
   assert( b.proto->count(b)         == 10);
   assert( b.proto->countChildren(b) ==  3);
 
-  assert( !strcmp(parseXmlTagName(b.node.proto->key(b.node)), "b"));
-  assert( !strcmp(b.proto->tagName(b),                 "b"));
+  assert( !strcmp(parseXmlTagName(b.node.proto->key(b.node), b.node.proto->length(b.node)), "b"));
+  assert( !strcmp(b.proto->tagName(b),                                  "b"));
 
-  assert( !strncmp(b.proto->tagString(b), "<b>", b.proto->tagStringLength(b)));
-  assert( !strncmp(c.proto->tagString(c), "<c>", c.proto->tagStringLength(c)));                  // Singletons are converted to empty openers
-  assert( b.proto->tagStringEquals(b,     "<b>"));
-  assert( c.proto->tagStringEquals(c,     "<c>"));
+  assert( !strncmp(b.proto->tagString(b), "b", b.proto->tagStringLength(b)));
+  assert( !strncmp(c.proto->tagString(c), "c", c.proto->tagStringLength(c)));
+  assert( b.proto->tagStringEquals(b,     "b"));
+  assert( c.proto->tagStringEquals(c,     "c"));
 
   const typeof(h.proto->first(h)) H = h.proto->first(h);
   assert(          H.proto->isText(H));
@@ -992,9 +1049,32 @@ void test6()                                                                    
   x.proto->free(x); s.proto->free(s);
  }
 
+void test7()                                                                    //Tlength //TinsertChar //TdeleteChar //TreplaceChar
+ {const typeof("<a><abcd>1234</abcd></a>") xml = "<a><abcd>1234</abcd></a>";
+     const typeof(parseXmlFromString(xml, 0)) x = parseXmlFromString(xml, 0);
+  assert( !x.proto->errors(x));
+
+  const typeof(x.proto->findFirstChild(x, "abcd")) a = x.proto->findFirstChild(x, "abcd");
+  const typeof(a.proto->first(a)) t = a.proto->first(a);
+
+  a.proto->insertChar(a, 'D', 3);  assert( x.proto->printsAs(x, "<a><abcDd>1234</abcDd></a>"));
+  t.proto->insertChar(t, 'T', 3);  assert( x.proto->printsAs(x, "<a><abcDd>123T4</abcDd></a>"));
+  assert( a.proto->length(a) == 5);       assert( t.proto->length(t) == 5);
+
+  a.proto->replaceChar(a, 'e', 3); assert( x.proto->printsAs(x, "<a><abced>123T4</abced></a>"));
+  t.proto->replaceChar(t, 't', 3); assert( x.proto->printsAs(x, "<a><abced>123t4</abced></a>"));
+  assert( a.proto->length(a) == 5);       assert( t.proto->length(t) == 5);
+
+  a.proto->deleteChar(a, 3);       assert( x.proto->printsAs(x, "<a><abcd>123t4</abcd></a>"));
+  t.proto->deleteChar(t, 3);       assert( x.proto->printsAs(x, "<a><abcd>1234</abcd></a>"));
+  assert( a.proto->length(a) == 4);       assert( t.proto->length(t) == 4);
+
+  x.proto->free(x);
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4,
-                           test5, test6, 0};
+                           test5, test6, test7, 0};
   run_tests("Xml", 1, tests);
   return 0;
  }
