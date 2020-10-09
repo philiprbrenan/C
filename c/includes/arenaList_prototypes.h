@@ -53,17 +53,6 @@ static void setKey__ArenaListNode_string_size
   const size_t       length);
 static size_t freedSpace_size__ArenaList
  (const ArenaList     list);
-static void insertCharInKey__ArenaListNode_char_size
- (const ArenaListNode node,
-  const char  ins,
-  size_t      pos);
-static void replaceCharInKey__ArenaListNode_size
- (const ArenaListNode node,
-  const char  repl,
-  size_t      pos);
-static void deleteCharInKey__ArenaListNode_size
- (const ArenaListNode node,
-  size_t      pos);
 static void setData_ArenaListNode_pointer
  (const ArenaListNode        node,
   const void * const data);
@@ -83,6 +72,17 @@ static void free__ArenaList
  (const ArenaList list);
 static void free__ArenaListNode
  (ArenaListNode node);
+static void insertCharInKey__ArenaListNode_char_size
+ (const ArenaListNode node,
+  const char  ins,
+  size_t      pos);
+static void replaceCharInKey__ArenaListNode_size
+ (const ArenaListNode node,
+  const char  repl,
+  size_t      pos);
+static void deleteCharInKey__ArenaListNode_size
+ (const ArenaListNode node,
+  size_t      pos);
 static int valid_int__ArenaListNode
  (const ArenaListNode child);
 static  ArenaListNode parent_ArenaListNode__ArenaListNode
