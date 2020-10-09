@@ -155,8 +155,7 @@ static size_t maxLength_size__$Node                                             
  {return node ▷ length;                                                         // Nodes in not editable $ are allocated just large enough to hold the key
  }
 #else
- {$Content * c = node ▷ content;                                                // Nodes in editable $ over allocate to allow for key expansion.
-  return (1ul << c->size) - sizeof($Node) - node.list.arena->width;
+ {return (1ul << node ▷ content->size) - sizeof($Node) - node.list.arena->width;
  }
 #endif
 
@@ -215,8 +214,7 @@ static  $Node  allocate_$Node__$_size                                           
    {n ◁ list ▷ nodeFromOffset(list.arena->used);                                // Current offset to open memory
     list.arena->used += size;                                                   // Allocate
 #ifdef $Editable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
-    $Content * c = n ▷ content;                                                 // Content of node
-    c->size = exponentOfNextPowerOfTwo(size);                                   // Node size
+    n ▷ content->size = exponentOfNextPowerOfTwo(size);                                   // Node size
 #endif
     return n;                                                                   // Return allocation
    }
@@ -296,53 +294,6 @@ static size_t freedSpace_size__$                                                
  }
 #endif
 
-//D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
-
-static void insertCharInKey__$Node_char_size                                    // Insert the specified character into the key string of a node at the specified position.
- (const $Node node,                                                             // $Node
-  const char  ins,                                                              // Character to insert
-  size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
- {m ◁ node ▷ maxLength;                                                         // Maximum length of key
-  l ◁ node ▷ length;                                                            // Current length of key
-  if (pos > l) pos = l;                                                         // Append to end of string if requested position is beyond the end of the string
-  if (l + 1 <= m)                                                               // There is enough room in the existing key for the new key
-   {char * k = node ▷ key;                                                      // Address key
-    memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
-    $Content * c = node ▷ content;                                              // Address node
-    c->length++;                                                                // Update key length
-    k[pos] = ins;                                                               // Insert
-   }
-  else                                                                          // Create a new node to hold a key that is too large for the current node
-   {makeLocalCopyOf$Key(k, l, node);                                            // Local copy with trailing zero
-    memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
-    k[pos] = ins;                                                               // Insert
-    n ◁ node.list ▷ node(k, l+1);                                               // Create a node capable of storing the key
-    n ▷ replace(node);                                                          // Replace the existing node with the new node
-    node ▷ free;                                                                // Place the original node on the appropriate free chain
-   }
- }
-
-static void replaceCharInKey__$Node_size                                        // Replace the character at the specified position in the key string of a node with the specified character.
- (const $Node node,                                                             // $Node
-  const char  repl,                                                             // Replacement character
-  size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
- {l ◁ node ▷ length;                                                            // Current length of key
-  if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
-  char * k = node ▷ key;                                                        // Address key
-  k[pos] = repl;                                                                // Replace
- }
-
-static void deleteCharInKey__$Node_size                                         // Delete the character at the specified position in the key string of a node.
- (const $Node node,                                                             // $Node
-  size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
- {l ◁ node ▷ length;                                                            // Current length of key
-  if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
-  char * k = node ▷ key;                                                        // Address key
-  memmove(k + pos, k + pos + 1, l - pos + 1);                                   // Overlapping move
-  $Content * c = node ▷ content;                                                // Address node
-  c->length--;                                                                  // Update key length
- }
-
 static void setData_$Node_pointer                                               // Set the optional user data associated with a node in an $
  (const $Node        node,                                                      // $Node
   const void * const data)                                                      // Data
@@ -420,6 +371,51 @@ static void free__$Node                                                         
  {node=node;                                                                    // Free has no effect if we are not editable.
  }
 #endif
+
+//D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
+
+static void insertCharInKey__$Node_char_size                                    // Insert the specified character into the key string of a node at the specified position.
+ (const $Node node,                                                             // $Node
+  const char  ins,                                                              // Character to insert
+  size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
+ {m ◁ node ▷ maxLength;                                                         // Maximum length of key
+  l ◁ node ▷ length;                                                            // Current length of key
+  if (pos > l) pos = l;                                                         // Append to end of string if requested position is beyond the end of the string
+  if (l + 1 <= m)                                                               // There is enough room in the existing key for the new key
+   {char * k = node ▷ key;                                                      // Address key
+    memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
+    node ▷ content->length++;                                                   // Update key length
+    k[pos] = ins;                                                               // Insert
+   }
+  else                                                                          // Create a new node to hold a key that is too large for the current node
+   {makeLocalCopyOf$Key(k, l, node);                                            // Local copy with trailing zero
+    memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
+    k[pos] = ins;                                                               // Insert
+    n ◁ node.list ▷ node(k, l+1);                                               // Create a node capable of storing the key
+    n ▷ replace(node);                                                          // Replace the existing node with the new node
+    node ▷ free;                                                                // Place the original node on the appropriate free chain
+   }
+ }
+
+static void replaceCharInKey__$Node_size                                        // Replace the character at the specified position in the key string of a node with the specified character.
+ (const $Node node,                                                             // $Node
+  const char  repl,                                                             // Replacement character
+  size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
+ {l ◁ node ▷ length;                                                            // Current length of key
+  if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
+  char * k = node ▷ key;                                                        // Address key
+  k[pos] = repl;                                                                // Replace
+ }
+
+static void deleteCharInKey__$Node_size                                         // Delete the character at the specified position in the key string of a node.
+ (const $Node node,                                                             // $Node
+  size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
+ {l ◁ node ▷ length;                                                            // Current length of key
+  if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
+  char * k = node ▷ key;                                                        // Address key
+  memmove(k + pos, k + pos + 1, l - pos + 1);                                   // Overlapping move
+  node ▷ content->length--;                                                     // Update key length
+ }
 
 //D1 Navigation                                                                 // Navigate through a $.
 
