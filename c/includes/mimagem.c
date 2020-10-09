@@ -204,7 +204,7 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
         makeLocalCopyOfXmlTagString(s, l, parent);
         openFont();
         drawCharOrSymbol  (XmlOpen,  1);
-        drawString(s+1, l-2);
+        drawString(s, l);
         drawCharOrSymbol  (XmlClose, 1);
         currentTagNumber++;                                                     // Close tag
         closeFont();
@@ -219,7 +219,7 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
         openFont();
         startNewLine();   cairo_move_to(cr, x += H * depth, y);
         drawCharOrSymbol  (XmlOpen,  1);
-        drawString(parent.proto->tagString(parent) + 1, parent.proto->tagStringLength(parent) - 2);
+        drawString(parent.proto->tagString(parent), parent.proto->tagStringLength(parent));
         drawCharOrSymbol  (XmlClose, 1);
        }
      } // open
@@ -256,8 +256,8 @@ static void maintainCursorPosition_MimagemEditBuffer_MimagemEditBuffer          
   const typeof((altered->cursor.editLine - altered->scroll) * altered->lineHeight) a = (altered->cursor.editLine - altered->scroll) * altered->lineHeight;       // Location of cursor lkne in altered Mimagem edit buffer on display in pixels
   const typeof((a - b) / altered->lineHeight + altered->scroll) s = (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
 //altered->scroll = nearbyint(s);
-//altered->scroll = floor(s);
-  altered->scroll = ceil(s);
+  altered->scroll = floor(s);
+//  altered->scroll = ceil(s);
  }
 #endif
 
@@ -289,7 +289,7 @@ void test0()
     x.proto->scan(x, drawXml);
    }
 
-  const typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "49ad")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "49ad");
+  const typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "11ff")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "11ff");
   i.proto->free(i);
  }
 
@@ -304,15 +304,15 @@ void test1()                                                                    
     const typeof(4) wScroll = 4; const typeof(100) fontSize = 100;                                                // Scroll amount in wide mode, font size of text in image
 
     const typeof(page.proto->right(page, 0)) ww = page.proto->right(page, 0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
-    const typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 620, py: 660, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 620, py: 660, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
+    const typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 628, py: 867, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 628, py: 867, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     typeof(we.proto->drawEditBuffer(we)) wr = we.proto->drawEditBuffer(we);
          i.proto->save(i, "Mimagem1_wide.png", "a"); i.proto->clearWhite(i);
 
     const typeof(X.tree.proto->nodeFromOffset(X.tree, wr.pointer.tag)) wn = X.tree.proto->nodeFromOffset(X.tree, wr.pointer.tag);                               // Pointer location in wide version
     assert( wn.proto->equalsString(wn, "GGG"));
     assert( wr.pointer.positionInTag ==  2);
-    assert( wr.pointer.character     == 137);
-    assert( wr.pointer.editLine      == 12);
+    assert( wr.pointer.character     == 139);
+    assert( wr.pointer.editLine      == 14);
 
     const typeof(page.proto->left(page, i.width * 4 / 8)) nw = page.proto->left(page, i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
     typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: wr.pointer, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) ne = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: wr.pointer, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
@@ -323,7 +323,7 @@ void test1()                                                                    
     assert( nn.proto->equalsString(nn, "GGG"));
     assert( nr.cursor.positionInTag == wr.pointer.positionInTag);
     assert( nr.cursor.character     == wr.pointer.character);
-    assert( nr.cursor.editLine      == 15);
+    assert( nr.cursor.editLine      == 17);
 
     wr.cursor = wr.pointer;                                                     // Simulate a click - the cursor position is set to match the pointer position
     wr.proto->maintainCursorPosition(wr, &nr);                                           // Position the narrow display so that GGG is in much the same screen position as the wide display
