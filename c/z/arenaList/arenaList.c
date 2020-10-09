@@ -374,7 +374,7 @@ static void free__$Node                                                         
 
 //D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
 
-static void insertCharInKey__$Node_char_size                                    // Insert the specified character into the key string of a node at the specified position.
+static void insertChar__$Node_char_size                                         // Insert the specified character into the key string of a node at the specified position.
  (const $Node node,                                                             // $Node
   const char  ins,                                                              // Character to insert
   size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
@@ -397,7 +397,7 @@ static void insertCharInKey__$Node_char_size                                    
    }
  }
 
-static void replaceCharInKey__$Node_size                                        // Replace the character at the specified position in the key string of a node with the specified character.
+static void replaceChar__$Node_size                                             // Replace the character at the specified position in the key string of a node with the specified character.
  (const $Node node,                                                             // $Node
   const char  repl,                                                             // Replacement character
   size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
@@ -407,7 +407,16 @@ static void replaceCharInKey__$Node_size                                        
   k[pos] = repl;                                                                // Replace
  }
 
-static void deleteCharInKey__$Node_size                                         // Delete the character at the specified position in the key string of a node.
+static void swapChars__$Node_size                                               // Swap the characters on either side of the specified position if it is between 1 and length - 1.
+ (const $Node node,                                                             // $Node
+  size_t      pos)                                                              // Position in key. 1 swaps the first two characters.  length - 1 swaps the last two characters.
+ {l ◁ node ▷ length;                                                            // Current length of key
+  if (pos == 0 || pos >= l) return;                                             // Not in a swappable range
+  char * k = node ▷ key;                                                        // Address key
+  const char c = k[pos]; k[pos] = k[pos - 1]; k[pos - 1] = c;                   // Swap
+ }
+
+static void deleteChar__$Node_size                                              // Delete the character at the specified position in the key string of a node.
  (const $Node node,                                                             // $Node
   size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
  {l ◁ node ▷ length;                                                            // Current length of key
@@ -1349,7 +1358,7 @@ void test13()
   t ▷ free;
  }
 
-void test14()                                                                   //TdeleteCharInKey //TinsertCharInKey //TmaxLength //TreplaceCharInKey
+void test14()                                                                   //TdeleteChar //TinsertChar //TmaxLength //TreplaceChar //TswapChar
  {t ◁ make$();
 
     a ◁ t ▷ node("abce", 4);
@@ -1358,25 +1367,30 @@ void test14()                                                                   
 #else
   ✓ a ▷ maxLength == 32;
 
-    a ▷ replaceCharInKey('d',3); ✓ a ▷ keyEquals("abcd", 4);
+    a ▷ replaceChar('d',3); ✓ a ▷ keyEquals("abcd", 4);
 
-    a ▷ insertCharInKey('E', 5); ✓ a ▷ keyEquals("abcdE", 5);
-    a ▷ insertCharInKey('D', 3); ✓ a ▷ keyEquals("abcDdE", 6);
-    a ▷ insertCharInKey('C', 2); ✓ a ▷ keyEquals("abCcDdE", 7);
-    a ▷ insertCharInKey('B', 1); ✓ a ▷ keyEquals("aBbCcDdE", 8);
-    a ▷ insertCharInKey('A', 0); ✓ a ▷ keyEquals("AaBbCcDdE", 9);
+    a ▷ swapChars(1);       ✓ a ▷ keyEquals("bacd", 4);
+    a ▷ swapChars(1);       ✓ a ▷ keyEquals("abcd", 4);
+
+    a ▷ replaceChar('d',3); ✓ a ▷ keyEquals("abcd", 4);
+
+    a ▷ insertChar('E', 5); ✓ a ▷ keyEquals("abcdE", 5);
+    a ▷ insertChar('D', 3); ✓ a ▷ keyEquals("abcDdE", 6);
+    a ▷ insertChar('C', 2); ✓ a ▷ keyEquals("abCcDdE", 7);
+    a ▷ insertChar('B', 1); ✓ a ▷ keyEquals("aBbCcDdE", 8);
+    a ▷ insertChar('A', 0); ✓ a ▷ keyEquals("AaBbCcDdE", 9);
   ✓ a ▷ keyEquals("AaBbCcDdE", 9);
                //  012345678
-    a ▷ deleteCharInKey(9);      ✓ a ▷ keyEquals("AaBbCcDdE", 9);
-    a ▷ deleteCharInKey(4);      ✓ a ▷ keyEquals("AaBbcDdE", 8);
-    a ▷ deleteCharInKey(4);      ✓ a ▷ keyEquals("AaBbDdE", 7);
-    a ▷ deleteCharInKey(2);      ✓ a ▷ keyEquals("AabDdE", 6);
-    a ▷ deleteCharInKey(2);      ✓ a ▷ keyEquals("AaDdE", 5);
-    a ▷ deleteCharInKey(0);      ✓ a ▷ keyEquals("aDdE", 4);
-    a ▷ deleteCharInKey(0);      ✓ a ▷ keyEquals("DdE", 3);
-    a ▷ deleteCharInKey(0);      ✓ a ▷ keyEquals("dE", 2);
-    a ▷ deleteCharInKey(0);      ✓ a ▷ keyEquals("E", 1);
-    a ▷ deleteCharInKey(0);      ✓ a ▷ keyEquals("", 0);
+    a ▷ deleteChar(9);      ✓ a ▷ keyEquals("AaBbCcDdE", 9);
+    a ▷ deleteChar(4);      ✓ a ▷ keyEquals("AaBbcDdE", 8);
+    a ▷ deleteChar(4);      ✓ a ▷ keyEquals("AaBbDdE", 7);
+    a ▷ deleteChar(2);      ✓ a ▷ keyEquals("AabDdE", 6);
+    a ▷ deleteChar(2);      ✓ a ▷ keyEquals("AaDdE", 5);
+    a ▷ deleteChar(0);      ✓ a ▷ keyEquals("aDdE", 4);
+    a ▷ deleteChar(0);      ✓ a ▷ keyEquals("DdE", 3);
+    a ▷ deleteChar(0);      ✓ a ▷ keyEquals("dE", 2);
+    a ▷ deleteChar(0);      ✓ a ▷ keyEquals("E", 1);
+    a ▷ deleteChar(0);      ✓ a ▷ keyEquals("", 0);
 #endif
 
   t ▷ free;
