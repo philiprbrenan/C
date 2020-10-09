@@ -572,20 +572,26 @@ static void insertChar__XmlTag_char_size                                        
  (const XmlTag  tag,                                                              // XmlTag
   const char  ins,                                                              // Character to insert
   size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
- {tag.node.proto->insertCharInKey(tag.node, ins, pos);
+ {tag.node.proto->insertChar(tag.node, ins, pos);
  }
 
-static void replaceChar__XmlNode_size                                             // Replace the character at the specified position in the key string of a tag with the specified character.
+static void replaceChar__XmlTag_char_size                                         // Replace the character at the specified position in the key string of a tag with the specified character.
  (const XmlTag  tag,                                                              // XmlTag
   const char  repl,                                                             // Replacement character
   size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
- {tag.node.proto->replaceCharInKey(tag.node, repl, pos);
+ {tag.node.proto->replaceChar(tag.node, repl, pos);
+ }
+
+static void swapChars__XmlTag_size                                                // Delete the character at the specified position in the string of a tag.
+ (const XmlTag  tag,                                                              // XmlTag
+  size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
+ {tag.node.proto->swapChars(tag.node, pos);
  }
 
 static void deleteChar__XmlTag_size                                               // Delete the character at the specified position in the string of a tag.
  (const XmlTag  tag,                                                              // XmlTag
   size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
- {tag.node.proto->deleteCharInKey(tag.node, pos);
+ {tag.node.proto->deleteChar(tag.node, pos);
  }
 
 //D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
@@ -718,7 +724,7 @@ static int printsAs_int_XmlTag_string                                           
   s.proto->free(s);
   return r;
  }
-#line 682 "/home/phil/c/z/xml/xml.c"
+#line 688 "/home/phil/c/z/xml/xml.c"
 
 static void printAssert_XmlTag                                                    //P Print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag         tag,                                                       // Starting tag
@@ -1067,6 +1073,10 @@ void test7()                                                                    
 
   a.proto->deleteChar(a, 3);       assert( x.proto->printsAs(x, "<a><abcd>123t4</abcd></a>"));
   t.proto->deleteChar(t, 3);       assert( x.proto->printsAs(x, "<a><abcd>1234</abcd></a>"));
+  assert( a.proto->length(a) == 4);       assert( t.proto->length(t) == 4);
+
+  a.proto->swapChars(a, 3);       assert( x.proto->printsAs(x, "<a><abdc>1234</abdc></a>"));
+  t.proto->swapChars(t, 1);       assert( x.proto->printsAs(x, "<a><abdc>2134</abdc></a>"));
   assert( a.proto->length(a) == 4);       assert( t.proto->length(t) == 4);
 
   x.proto->free(x);
