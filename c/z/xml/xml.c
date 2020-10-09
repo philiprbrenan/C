@@ -541,20 +541,26 @@ static void insertChar__$Tag_char_size                                          
  (const $Tag  tag,                                                              // $Tag
   const char  ins,                                                              // Character to insert
   size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
- {tag.node ▷ insertCharInKey(ins, pos);
+ {tag.node ▷ insertChar(ins, pos);
  }
 
-static void replaceChar__$Node_size                                             // Replace the character at the specified position in the key string of a tag with the specified character.
+static void replaceChar__$Tag_char_size                                         // Replace the character at the specified position in the key string of a tag with the specified character.
  (const $Tag  tag,                                                              // $Tag
   const char  repl,                                                             // Replacement character
   size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
- {tag.node ▷ replaceCharInKey(repl, pos);
+ {tag.node ▷ replaceChar(repl, pos);
+ }
+
+static void swapChars__$Tag_size                                                // Delete the character at the specified position in the string of a tag.
+ (const $Tag  tag,                                                              // $Tag
+  size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
+ {tag.node ▷ swapChars(pos);
  }
 
 static void deleteChar__$Tag_size                                               // Delete the character at the specified position in the string of a tag.
  (const $Tag  tag,                                                              // $Tag
   size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
- {tag.node ▷ deleteCharInKey(pos);
+ {tag.node ▷ deleteChar(pos);
  }
 
 //D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
@@ -1028,6 +1034,10 @@ void test7()                                                                    
 
   a ▷ deleteChar(3);       ✓ x ▷ printsAs("<a><abcd>123t4</abcd></a>");
   t ▷ deleteChar(3);       ✓ x ▷ printsAs("<a><abcd>1234</abcd></a>");
+  ✓ a ▷ length == 4;       ✓ t ▷ length == 4;
+
+  a ▷ swapChars (3);       ✓ x ▷ printsAs("<a><abdc>1234</abdc></a>");
+  t ▷ swapChars (1);       ✓ x ▷ printsAs("<a><abdc>2134</abdc></a>");
   ✓ a ▷ length == 4;       ✓ t ▷ length == 4;
 
   x ▷ free;
