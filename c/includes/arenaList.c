@@ -694,6 +694,16 @@ static  void replace__ArenaListNode_ArenaListNode                               
   over.proto->cut(over);                                                                   // Remove node being replaced
  }
 
+static void splitKey_ArenaListNode_ArenaListNode                                                // Split the specified node at the specified position.
+ (const ArenaListNode node,                                                             // ArenaListNode
+  size_t      pos)                                                              // Position in key at which to split.
+ {makeLocalCopyOfArenaListKey(k, l, node);                                              // Local copy
+  if (pos == 0 || pos >= l) return;                                             // Requested position would result in an empty key
+  node.proto->content(node) -> length = pos;                                               // New length of left node
+  const typeof(node.list.proto->node(node.list, k+pos, l - pos)) n = node.list.proto->node(node.list, k+pos, l - pos);                                      // Create right hand node
+  node.proto->putNext(node, n);                                                            // Insert right hand node
+ }
+
 //D1 Traverse                                                                   // Traverse a ArenaList.
 
 static void by__ArenaListNode_sub                                                       // Traverse the ArenaList rooted at the specified node in post-order calling the specified function to process each child node.  The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
@@ -1411,7 +1421,7 @@ void test13()
   t.proto->free(t);
  }
 
-void test14()                                                                   //TdeleteChar //TinsertChar //TmaxLength //TreplaceChar
+void test14()                                                                   //TdeleteChar //TinsertChar //TmaxLength //TreplaceChar //TswapChars
  {const typeof(makeArenaList()) t = makeArenaList();
 
     const typeof(t.proto->node(t, "abce", 4)) a = t.proto->node(t, "abce", 4);
@@ -1449,11 +1459,26 @@ void test14()                                                                   
   t.proto->free(t);
  }
 
+void test15()                                                                   //TsplitKey
+ {const typeof(makeArenaList()) t = makeArenaList();
+
+    const typeof(t.proto->node(t, "aabb", 4)) a = t.proto->node(t, "aabb", 4);
+    a.proto->putTreeLast(a);
+    a.proto->splitKey(a, 2);
+  assert( a.proto->printsAs(a, "aa"));
+    const typeof(a.proto->next(a)) b = a.proto->next(a);
+  assert( b.proto->printsAs(b, "bb"));
+  assert( t.proto->countChildren(t) == 2);
+
+  t.proto->free(t);
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
-                           test10, test11, test12, test13, test14, 0};
+                           test10, test11, test12, test13, test14,
+                           test15, 0};
   run_tests("ArenaList", repetitions, tests);
 
   return 0;
