@@ -641,6 +641,16 @@ static  void replace__$Node_$Node                                               
   over ▷ cut;                                                                   // Remove node being replaced
  }
 
+static void splitKey_$Node_$Node                                                // Split the specified node at the specified position.
+ (const $Node node,                                                             // $Node
+  size_t      pos)                                                              // Position in key at which to split.
+ {makeLocalCopyOf$Key(k, l, node);                                              // Local copy
+  if (pos == 0 || pos >= l) return;                                             // Requested position would result in an empty key
+  node ▷ content -> length = pos;                                               // New length of left node
+  n    ◁ node.list ▷ node(k+pos, l - pos);                                      // Create right hand node
+  node ▷ putNext(n);                                                            // Insert right hand node
+ }
+
 //D1 Traverse                                                                   // Traverse a $.
 
 static void by__$Node_sub                                                       // Traverse the $ rooted at the specified node in post-order calling the specified function to process each child node.  The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
@@ -1358,7 +1368,7 @@ void test13()
   t ▷ free;
  }
 
-void test14()                                                                   //TdeleteChar //TinsertChar //TmaxLength //TreplaceChar //TswapChar
+void test14()                                                                   //TdeleteChar //TinsertChar //TmaxLength //TreplaceChar //TswapChars
  {t ◁ make$();
 
     a ◁ t ▷ node("abce", 4);
@@ -1396,11 +1406,26 @@ void test14()                                                                   
   t ▷ free;
  }
 
+void test15()                                                                   //TsplitKey
+ {t ◁ make$();
+
+    a ◁ t ▷ node("aabb", 4);
+    a ▷ putTreeLast;
+    a ▷ splitKey(2);
+  ✓ a ▷ printsAs("aa");
+    b ◁ a ▷ next;
+  ✓ b ▷ printsAs("bb");
+  ✓ t ▷ countChildren == 2;
+
+  t ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
-                           test10, test11, test12, test13, test14, 0};
+                           test10, test11, test12, test13, test14,
+                           test15, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
