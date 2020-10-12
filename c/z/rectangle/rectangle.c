@@ -168,10 +168,17 @@ static int containsPoint_int_$_double_double                                    
          x <= rectangle.X && y <= rectangle.Y;
  }
 
-static int contains_int_$_$                                                     // Check whether the specified $ contains another $
+static int contains_int_$_$                                                     // Check whether the specified $ contains all the corners of another $
  (const  $ r,                                                                   // Containing $
   const  $ p)                                                                   // Other $
  {return r ▷ containsPoint(p.x, p.y) && r ▷ containsPoint(p.X, p.Y);
+ }
+
+static int containsACorner_int_$_$                                              // Check whether the specified $ contains any of the corners of another $
+ (const  $ r,                                                                   // Containing $
+  const  $ p)                                                                   // Other $
+ {return r ▷ containsPoint(p.x, p.y) || r ▷ containsPoint(p.x, p.Y) ||
+         r ▷ containsPoint(p.X, p.y) || r ▷ containsPoint(p.X, p.Y);
  }
 
 static int valid_int_$                                                          // Check whether the specified $ is valid.
@@ -363,8 +370,15 @@ void test4()                                                                    
   ✓ t.b ▷ equals(make$WH(0, 2, 10, 8));
  }
 
+void test5()                                                                    //TcontainsACorner
+ {   a ◁ make$WH (10, 10,  10, 10);
+     b ◁ make$WH (15, 15,  10, 10);
+  ✓ !a ▷ contains(b);
+  ✓  a ▷ containsACorner(b);
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5, 0};
   run_tests("$", 1, tests);
   return 0;
  }
