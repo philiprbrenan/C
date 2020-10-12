@@ -36,6 +36,9 @@ static int containsPoint_int_Rectangle_double_double
 static int contains_int_Rectangle_Rectangle
  (const  Rectangle r,
   const  Rectangle p);
+static int containsACorner_int_Rectangle_Rectangle
+ (const  Rectangle r,
+  const  Rectangle p);
 static int valid_int_Rectangle
  (const  Rectangle r);
 static int point_int_Rectangle
@@ -70,11 +73,14 @@ struct ProtoTypes_Rectangle {
   int  (*close)(                                                                // Confirm two rectangles are equal
     const Rectangle r,                                                          // Rectangle first
     const Rectangle R);                                                         // Rectangle second
+  int  (*containsACorner)(                                                      // Check whether the specified Rectangle contains any of the corners of another Rectangle
+    const  Rectangle r,                                                         // Containing Rectangle
+    const  Rectangle p);                                                        // Other Rectangle
   int  (*containsPoint)(                                                        // Check whether the specified Rectangle contains the specified coordinates
     const  Rectangle rectangle,                                                 // Rectangle
     double x,                                                                   // x coordinate of point
     double y);                                                                  // y coordinate of point
-  int  (*contains)(                                                             // Check whether the specified Rectangle contains another Rectangle
+  int  (*contains)(                                                             // Check whether the specified Rectangle contains all the corners of another Rectangle
     const  Rectangle r,                                                         // Containing Rectangle
     const  Rectangle p);                                                        // Other Rectangle
   RectanglePair  (*down)(                                                       // Split the Rectangle horizontally the specified distance down from the low corner: remember that y increases down the page
@@ -127,7 +133,7 @@ struct ProtoTypes_Rectangle {
   double  (*width)(                                                             // Width
     const Rectangle rectangle);                                                 // Rectangle
  } const ProtoTypes_Rectangle =
-{center_Rectangle_Rectangle, close_int_Rectangle_Rectangle, containsPoint_int_Rectangle_double_double, contains_int_Rectangle_Rectangle, down_RectanglePair_Rectangle_double, dump_Rectangle, equals_int_Rectangle_Rectangle, height_double_Rectangle, intersection_Rectangle_Rectangle_Rectangle, left_RectanglePair_Rectangle_double, point_int_Rectangle, right_RectanglePair_Rectangle_double, scaleCenter_Rectangle_Rectangle_double_double, scaleHigh_Rectangle_Rectangle_double_double, scaleLow_Rectangle_Rectangle_double_double, translate_Rectangle_Rectangle_double_double, unionWith_Rectangle_Rectangle_Rectangle, up_RectanglePair_Rectangle_double, validAsString_Rectangle, valid_int_Rectangle, width_double_Rectangle};
+{center_Rectangle_Rectangle, close_int_Rectangle_Rectangle, containsACorner_int_Rectangle_Rectangle, containsPoint_int_Rectangle_double_double, contains_int_Rectangle_Rectangle, down_RectanglePair_Rectangle_double, dump_Rectangle, equals_int_Rectangle_Rectangle, height_double_Rectangle, intersection_Rectangle_Rectangle_Rectangle, left_RectanglePair_Rectangle_double, point_int_Rectangle, right_RectanglePair_Rectangle_double, scaleCenter_Rectangle_Rectangle_double_double, scaleHigh_Rectangle_Rectangle_double_double, scaleLow_Rectangle_Rectangle_double_double, translate_Rectangle_Rectangle_double_double, unionWith_Rectangle_Rectangle_Rectangle, up_RectanglePair_Rectangle_double, validAsString_Rectangle, valid_int_Rectangle, width_double_Rectangle};
 Rectangle newRectangle(Rectangle allocator) {return allocator;}
 
 struct ProtoTypes_RectanglePair {
