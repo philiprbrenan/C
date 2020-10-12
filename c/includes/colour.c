@@ -41,8 +41,13 @@ static Colour makeColour                                                        
  {return newColour(({struct Colour t = {r: r, g: g, b: b, a: a, proto: &ProtoTypes_Colour}; t;}));
  }
 
+static void dump_Colour                                                              //P Dump a colour
+  (Colour colour)                                                                    // Colour
+ {say("colour(%d,%d,%d)", (int)(colour.r*10), (int)(colour.g*10), (int)(colour.b*10));
+ }
+
 static ColourPale makeColourPale()                                                        // An array of pale colours
- {const typeof(1.00) o = 1.00; const typeof(0.90) p = 0.90; const typeof((o + p) / 2) q = (o + p) / 2;
+ {const typeof(1.00) o = 1.00; const typeof(0.60) p = 0.60; const typeof((o + p) / 2) q = (o + p) / 2;
   const typeof(makeColour(p, o, o, o)) p1 = makeColour(p, o, o, o);
   const typeof(makeColour(o, p, o, o)) p2 = makeColour(o, p, o, o);
   const typeof(makeColour(o, o, p, o)) p3 = makeColour(o, o, p, o);
