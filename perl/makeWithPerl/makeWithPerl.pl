@@ -43,7 +43,7 @@ sub mwpl {qq(makeWithPerlLocally.pl)}                                           
 my $reversedDomain = qq(com.appaapps);                                          # Our domain name written in reverse order
 my $javaHome    = fpd(qw(/home phil java));                                     # Location of java files
 my $javaClasses = fpd($javaHome, qw(Classes));                                  # Folder containing java classes
-my $androidJar  = fpe(qw(/home phil Android sdk platforms android-25 android jar));
+my $androidJar  = ''; #fpe(qw(/home phil Android sdk platforms android-25 android jar));
 my $swtJar      = fpe(qw(/home phil java    swt jars swt jar));
 my $classPath   = join ':', $javaClasses, $androidJar, $swtJar;                 # Class path to classes created locally and well know jars
 my $androidLog;                                                                 # Android log
