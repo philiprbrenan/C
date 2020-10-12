@@ -40,8 +40,13 @@ static $ make$                                                                  
  {return new $(r: r, g: g, b: b, a: a);
  }
 
+static void dump_$                                                              //P Dump a colour
+  ($ colour)                                                                    // Colour
+ {say("colour(%d,%d,%d)", (int)(colour.r*10), (int)(colour.g*10), (int)(colour.b*10));
+ }
+
 static $Pale make$Pale()                                                        // An array of pale colours
- {o ◁ 1.00; p ◁ 0.90; q ◁ (o + p) / 2;
+ {o ◁ 1.00; p ◁ 0.60; q ◁ (o + p) / 2;
   p1 ◁ make$(p, o, o, o);
   p2 ◁ make$(o, p, o, o);
   p3 ◁ make$(o, o, p, o);
