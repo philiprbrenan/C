@@ -169,10 +169,17 @@ static int containsPoint_int_Rectangle_double_double                            
          x <= rectangle.X && y <= rectangle.Y;
  }
 
-static int contains_int_Rectangle_Rectangle                                                     // Check whether the specified Rectangle contains another Rectangle
+static int contains_int_Rectangle_Rectangle                                                     // Check whether the specified Rectangle contains all the corners of another Rectangle
  (const  Rectangle r,                                                                   // Containing Rectangle
   const  Rectangle p)                                                                   // Other Rectangle
  {return r.proto->containsPoint(r, p.x, p.y) && r.proto->containsPoint(r, p.X, p.Y);
+ }
+
+static int containsACorner_int_Rectangle_Rectangle                                              // Check whether the specified Rectangle contains any of the corners of another Rectangle
+ (const  Rectangle r,                                                                   // Containing Rectangle
+  const  Rectangle p)                                                                   // Other Rectangle
+ {return r.proto->containsPoint(r, p.x, p.y) || r.proto->containsPoint(r, p.x, p.Y) ||
+         r.proto->containsPoint(r, p.X, p.y) || r.proto->containsPoint(r, p.X, p.Y);
  }
 
 static int valid_int_Rectangle                                                          // Check whether the specified Rectangle is valid.
@@ -364,8 +371,15 @@ void test4()                                                                    
   assert( t.b.proto->equals(t.b, makeRectangleWH(0, 2, 10, 8)));
  }
 
+void test5()                                                                    //TcontainsACorner
+ {   const typeof(makeRectangleWH (10, 10,  10, 10)) a = makeRectangleWH (10, 10,  10, 10);
+     const typeof(makeRectangleWH (15, 15,  10, 10)) b = makeRectangleWH (15, 15,  10, 10);
+  assert( !a.proto->contains(a, b));
+  assert(  a.proto->containsACorner(a, b));
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5, 0};
   run_tests("Rectangle", 1, tests);
   return 0;
  }
