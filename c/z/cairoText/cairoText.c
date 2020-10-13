@@ -86,7 +86,7 @@ $Image make$Image                                                               
   e1 ◁ FT_Init_FreeType(&i.freeTypeLibrary);                                    // Initialize FreeType library
   if (e1) printStackBackTraceAndExit(1, "Error %d in free type\n", e1);
 
-  i ▷ setFont(i.sansMono);                                                      // Default font
+  i ▷ font(i.sansMono);                                                         // Default font
   i ▷ clearWhite;                                                               // Clear display
 
   draw(i);                                                                      // Draw
@@ -139,7 +139,7 @@ static void free_$Font                                                          
 
 //D1 Methods                                                                    // Methods that operate on an $
 
-static void setFont                                                             // Start using a font
+static void font_$                                                              // Start using a font
  ($Image i,                                                                     // $Image
   $Font font)                                                                   // Font to use
  {if (!font.cairoFontFace)                                                      // Load the font if this font has not yet been loaded.
@@ -156,18 +156,26 @@ static void setFont                                                             
   cairo_set_font_face (i.cr, font.cairoFontFace);                               // Set the font as the currently active one
  }
 
+static void fontSize_$                                                          // Set the size of a font
+ ($Image i,                                                                     // $Image
+  int    size)                                                                  // Size
+ {cairo_set_font_size (i.cr, size);                                             // Set font size
+ }
+
 static void assert$ImageFile                                                    //P Check that the digest of an image file contains the specified string
  (char *             imageFile,                                                 // Image file name
   const char * const digest)                                                    // Expected digest
  {      c ◁ makeStringBufferFromString("b2sum ");
         c ▷ add(imageFile);
         c ▷ system;
+
   if (! c ▷ containsString(digest))
    {makeLocalCopyOfStringBuffer(d, l, c);
     say("\nImage file: %s\n",   imageFile);
     say("Have: %s\nWant: %s\n", d, digest);
     assert(0);
    }
+
   c ▷ free;
  }
 
@@ -179,8 +187,8 @@ static void assert$Result                                                       
  }
 
 static void save_$_string                                                       // Save a copy of the drawing surface to the specified file
- ($Image             i,                                                         // $Image
-  char *             imageFile,                                                 // Image file name
+ ($Image    i,                                                                  // $Image
+  char *    imageFile,                                                          // Image file name
   const char * const digest)                                                    // Expected digest
  {cairo_surface_write_to_png(i.surface, imageFile);
   assert$ImageFile(imageFile, digest);
@@ -191,6 +199,30 @@ static void clearWhite_$                                                        
  {cr ◁ i.cr;
   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
   cairo_paint         (cr);
+ }
+
+static void colour_$                                                            // Set the current colour
+ ($Image i,                                                                     // $Image
+  Colour c)                                                                     // Colour
+ {cr ◁ i.cr;
+  cairo_set_source_rgba(cr, c.r, c.g, c.b, c.a);
+ }
+
+static void clip_$                                                              // Set the clip area
+ ($Image    i,                                                                  // $Image
+  Rectangle r)                                                                  // Rectangle
+ {cr ◁ i.cr;
+  cairo_rectangle(cr, r.x, r.y, r ▷ width, r ▷ height);
+  cairo_clip     (cr);
+ }
+
+static double textAdvance_$                                                     // Get the width of the specified text
+ ($Image i,                                                                     // $Image
+  char * s)                                                                     // String
+ {cr ◁ i.cr;
+  cairo_text_extents_t textExtents;
+  cairo_text_extents (cr, s, &textExtents);
+  return textExtents.x_advance;
  }
 
 //D1 Shapes                                                                     // Draw shapes
@@ -314,29 +346,47 @@ void test1()                                                                    
 
 void test2()                                                                    // Text table
  {void draw($Image i)
-   {//Colour white = makeColour(1,1,1,1);
-    //Colour black = makeColour(0,0,0,1);
-    Colour red   = makeColour(1,0,0,1);
-    //Colour green = makeColour(0,1,0,1);
-    Colour blue  = makeColour(0,0,1,1);
+   {Colour black = makeColour(0,0,0,1);
 
-    table ◁ makeArenaList();
+    table ◁ makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d");
 
-    r1 ◁ table ▷ node("aaaa", 4); r1 ▷ putTreeLast;
+    i ▷ font(i.serif);                                                          // Font
+    i ▷ fontSize(100);                                                          // Size of text
+    i ▷ colour  (black);                                                        // Colour of text
 
-    w ◁ i.width; h ◁ i.height;
-    r ◁ makeRectangleWH(w/4, 0, w/4, h/2);
-    s ◁ r ▷ translate(w/2, 0);
-    i ▷ leftArrowWithCircle(r, red, blue);
-    i ▷ rightArrow(s, red, blue);
+    cr ◁ i.cr;
+    cairo_font_extents_t fontExtents;
+    cairo_font_extents (cr, &fontExtents);
+
+    A ◁ fontExtents.ascent;                                                     // Descent from base line
+    D ◁ fontExtents.descent;                                                    // Descent from base line
+    H ◁ A + D;                                                                  // Interline height
+
+    drawTable ◁ makeRectangleWH(500, 500, 500, 800);
+    i ▷ clip(drawTable);
+
+    size_t x = drawTable.x, y = drawTable.y;
+    ArenaListFe(col, table)
+     {max ◀ 0ul;
+      cairo_move_to(cr, x, y = drawTable.y);
+      ArenaListfe(row, col)
+       {makeLocalCopyOfArenaListKey(k, l, row);
+        cairo_move_to  (cr, x, y + A);
+        cairo_show_text(cr, k);
+        y += H;
+        a ◁ i ▷ textAdvance(k);
+        if (max < a) max = a;
+       }
+      x += max + fontExtents.descent;
+     }
    }
 
-  i ◁ make$Image(draw, 1000, 2000, "$1.png", "a");
+  i ◁ make$Image(draw, 2000, 2000, "$2.png", "a");
   i ▷ free;
  }
 
 int main (void)
- {void (*tests[])(void) = {test0, test1, 0};
+ {void (*tests[])(void) = {test0, test1, test2, 0};
   run_tests("$", 1, tests);
   return 0;
 }
