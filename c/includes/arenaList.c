@@ -15,6 +15,7 @@
  can be carried out in parallel in a separate process as a ArenaList is relocatable.
 */
 #define _GNU_SOURCE
+#include <ctype.h>
 #include <setjmp.h>
 #include <utilities.c>
 #define ArenaListEditable
@@ -102,6 +103,60 @@ static void swap_ArenaList_ArenaList                                            
  {const typeof(source.arena) s = source.arena; const typeof(target.arena) t = target.arena;                                           // Arenas
   ArenaListArena u = *t; *t = *s; *s = u;
  }
+
+static ArenaList makeArenaListFromLines                                                         // Make a ArenaList from a string of lines.
+ (const char * str)                                                             // String of lines separated by new lines
+ {const typeof(makeArenaList()) l = makeArenaList();
+
+  const char * p = str, *q = p;                                                 // Parse the string into new lines
+  typeof(0ul) B = 0ul;
+  void save()                                                                   // Save a line
+   {if (B && p > q) {const typeof(l.proto->node(l, q, p - q)) n = l.proto->node(l, q, p - q); n.proto->putTreeLast(n); B = 0;}
+    q = p + 1;
+   }
+
+  for(; *p; ++p) if (*p == '\n') save(); else if (!isspace(*p)) ++B;
+  save();
+  return l;
+ };
+
+static ArenaList makeArenaListFromWords                                                         // Make a ArenaList from a string of words.
+ (const char * str)                                                             // String of words separated by spaces;
+ {const typeof(makeArenaList()) l = makeArenaList();
+
+  const char * p = str, *q = p;                                                 // Parse the string into new lines
+
+  void save()                                                                   // Save a line
+   {if (p > q) {const typeof(l.proto->node(l, q, p - q)) n = l.proto->node(l, q, p - q); n.proto->putTreeLast(n);}
+    q = p + 1;
+   }
+
+  for(; *p; ++p) if (isspace(*p)) save();
+  save();
+  return l;
+ };
+
+static ArenaList makeArenaListFromLinesOfWords                                                  // Make a ArenaList of lists each sub list representing a line as a list of words.
+ (const char * str)                                                             // String of lines of words separated by spaces;
+ {const typeof(makeArenaListFromLines(str)) list = makeArenaListFromLines(str);
+
+  const typeof(list.proto->root(list)) root = list.proto->root(list);
+  ArenaListfe(line, root)
+   {makeLocalCopyOfArenaListKey(s, l, line);
+
+    const char * p = s, *q = p;                                                 // Parse the string into new lines
+
+    void save()                                                                   // Save a line
+     {if (p > q) {const typeof(list.proto->node(list, q, p - q)) n = list.proto->node(list, q, p - q); line.proto->putLast(line, n);}
+      q = p + 1;
+     }
+
+    for(; *p; ++p) if (isspace(*p)) save();
+    save();
+   }
+
+  return list;
+ };
 
 static char * check_string_ArenaList                                                    //P Return a string describing the structure
  (const ArenaList list)                                                                 // ArenaList
@@ -448,17 +503,17 @@ static  ArenaListNode last_ArenaListNode__ArenaListNode                         
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->last);
  }
-#line 446 "/home/phil/c/z/arenaList/arenaList.c"
+#line 501 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaListNode                                                // Get the next child under a parent.
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->next);
  }
-#line 446 "/home/phil/c/z/arenaList/arenaList.c"
+#line 501 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaListNode                                                // Get the prev child under a parent.
  (const ArenaListNode parent)                                                           // Parent
  {return  parent.list.proto->nodeFromOffset(parent.list, parent.proto->content(parent)->prev);
  }
-#line 446 "/home/phil/c/z/arenaList/arenaList.c"
+#line 501 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode first_ArenaListNode__ArenaList                                                    // Get the first child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
@@ -470,19 +525,19 @@ static  ArenaListNode last_ArenaListNode__ArenaList                             
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->last(root);
  }
-#line 453 "/home/phil/c/z/arenaList/arenaList.c"
+#line 508 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaList                                                    // Get the next child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->next(root);
  }
-#line 453 "/home/phil/c/z/arenaList/arenaList.c"
+#line 508 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaList                                                    // Get the prev child in the specified ArenaList.
  (const ArenaList list)                                                                 // Parent
  {const ArenaListNode root = list.proto->root(list);
   return root.proto->prev(root);
  }
-#line 453 "/home/phil/c/z/arenaList/arenaList.c"
+#line 508 "/home/phil/c/z/arenaList/arenaList.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -566,7 +621,7 @@ static int isLast_int__ArenaListNode                                            
  {const ArenaListNode parent = child.proto->parent(child);
   return child.proto->equals(child, parent.proto->last(parent));
  }
-#line 532 "/home/phil/c/z/arenaList/arenaList.c"
+#line 587 "/home/phil/c/z/arenaList/arenaList.c"
 
 static int isEmpty_int__ArenaListNode                                                   // Confirm a node has no children.
  (const ArenaListNode node)                                                             // ArenaListNode
@@ -621,7 +676,7 @@ static  ArenaListNode putTreeLast_ArenaListNode__ArenaListNode                  
   const typeof(t.proto->root(t)) r = t.proto->root(t);
   return r.proto->putLast(r, child);                                                   // Put the child last
  }
-#line 581 "/home/phil/c/z/arenaList/arenaList.c"
+#line 636 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putFirst_ArenaListNode__ArenaListNode_ArenaListNode                                       // Put a child first under its parent
  (const ArenaListNode parent,                                                           // Parent
@@ -633,7 +688,7 @@ static  ArenaListNode putLast_ArenaListNode__ArenaListNode_ArenaListNode        
   const ArenaListNode child)                                                            // Child
  {return putFL_ArenaListNode__int_ArenaListNode_ArenaListNode(0, parent, child);                        // Put a child last under its parent
  }
-#line 588 "/home/phil/c/z/arenaList/arenaList.c"
+#line 643 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putNP_ArenaListNode__int_ArenaListNode_ArenaListNode                                      //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -682,7 +737,7 @@ static  ArenaListNode putPrev_ArenaListNode__ArenaListNode_ArenaListNode        
   const ArenaListNode child)                                                            // Child
  {return putNP_ArenaListNode__int_ArenaListNode_ArenaListNode(0, sibling, child);                       // Put child previous
  }
-#line 632 "/home/phil/c/z/arenaList/arenaList.c"
+#line 687 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  void replace__ArenaListNode_ArenaListNode                                               // Replace the specified node with this node
  (const ArenaListNode with,                                                             // Replace with this node
@@ -915,7 +970,7 @@ static void dump__ArenaListNode                                                 
   say("%lu %s\n", l, k);                                                        // Print key number
  }
 
-static void print__ArenaListNode_function                                               // Apply a function to the print of a ArenaList.
+static void print__ArenaListNode_function                                               // Apply a function to the print of a ArenaListNode and the tree below it.
  (const ArenaListNode   node,                                                           // ArenaListNode
   void (*printer)(char * string, size_t length))                                // Function to apply to printed ArenaList
  {size_t l = 0;                                                                 // Length of output string
@@ -1473,12 +1528,42 @@ void test15()                                                                   
   t.proto->free(t);
  }
 
+void test16()                                                                   //TmakeArenaListFromLines //TmakeArenaListFromWords //TmakeArenaListFromLinesOfWords
+ {const typeof(makeArenaListFromWords("a   bb\n \nccc\n\n   \n dddd \n  \n \n")) w = makeArenaListFromWords("a   bb\n \nccc\n\n   \n dddd \n  \n \n");
+
+  assert( w.proto->countChildren(w) == 4);
+  assert( w.proto->printsWithBracketsAs(w, "(abbcccdddd)"));
+
+  w.proto->free(w);
+
+  const typeof(makeArenaListFromLines("a\nbb\nccc\n    \n\ndddd\n\n\n")) l = makeArenaListFromLines("a\nbb\nccc\n    \n\ndddd\n\n\n");
+
+  assert( l.proto->countChildren(l) == 4);
+  assert( l.proto->printsWithBracketsAs(l, "(abbcccdddd)"));
+
+  l.proto->free(l);
+
+  const typeof(makeArenaListFromLinesOfWords("a b c d  \n  aa bb cc dd \n\n   \n\n aaa   bbb ccc ddd\n\n\n")) x = makeArenaListFromLinesOfWords("a b c d  \n  aa bb cc dd \n\n   \n\n aaa   bbb ccc ddd\n\n\n");
+
+  assert( x.proto->countChildren(x) == 3);
+  assert( x.proto->count(x)         == 15);
+
+    const typeof(x.proto->first(x)) n1 = x.proto->first(x); assert( n1.proto->count(n1) == 4);
+    const typeof(n1.proto->next(n1)) n2 = n1.proto->next(n1); assert( n2.proto->count(n2) == 4);
+    const typeof(n2.proto->next(n2)) n3 = n2.proto->next(n2); assert( n3.proto->count(n3) == 4);
+    const typeof(n3.proto->next(n3)) n4 = n3.proto->next(n3); assert(!n4.proto->valid(n4));
+
+  assert( x.proto->printsWithBracketsAs(x, "(a b c d  (abcd)  aa bb cc dd (aabbccdd) aaa   bbb ccc ddd(aaabbbcccddd))"));
+
+  x.proto->free(x);
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
-                           test15, 0};
+                           test15, test16, 0};
   run_tests("ArenaList", repetitions, tests);
 
   return 0;
