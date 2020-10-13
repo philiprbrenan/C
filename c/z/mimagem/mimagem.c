@@ -51,10 +51,18 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
   cr   ◁ i.cr;                                                                  // Cairo context to draw in
   draw ◁ !editBuffer.measureOnly;                                               // Draw unless we only want to measure
   closestSoFar ◀ ULONG_MAX;                                                     // Shortest distance so far to pointer
-  lineNumberGutterText ◁ 8;                                                     // Gutter between line numbers and text
+  lineNumberGutterText ◁ 8;                                                     //Pixels Gutter between line numbers and text
 
   paleColours ◁ makeColourPale();                                               // Background colours for each tag by depth with text getting the same colour as its parent.
   lastBackGroundColourDrawn ◁ paleColours.p2;                                   // Keep track of the last character background colour used so that we can match the line numbers
+
+  void             openTagFillColor() {cairo_set_source_rgb(cr, 0,   0,   0.4);}// Color for opening tag
+  void            closeTagFillColor() {cairo_set_source_rgb(cr, 0,   0,   0.4);}// Color for closing tag
+  void                textFillColor() {cairo_set_source_rgb(cr, 0,   0,   0  );}// Color for text
+  void          lineNumberFillColor() {cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);}// Color for line numbers
+  void  lineNumberGutterTextFillColor  () {cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);} // Fill   color for the gutter between the line numbers and the text being editted.
+  void  lineNumberGutterTextStrokeColor() {cairo_set_source_rgb(cr, 1, 1, 1);}  // Stroke color for the gutter between the line numbers and the text being editted.
+  void    blockedOutAreaBackgroundColor() {cairo_set_source_rgb(cr, 1, 1, 1);}  // Fill color for the background of the blocked out area
 
   cairo_set_font_size (cr, editBuffer.fontSize);                                // Cairo
   cairo_font_extents_t fontExtents;
@@ -99,15 +107,10 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
     backgroundColour  ◁ paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
     backgroundColour1 ◁ paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN];        // Background colour for previous layer
 
-    void        openColor() {cairo_set_source_rgb(cr, 0,   0,   0.4);}          // Color for opening tag
-    void       closeColor() {cairo_set_source_rgb(cr, 0,   0,   0.4);}          // Color for closing tag
-    void        textColor() {cairo_set_source_rgb(cr, 0,   0,   0  );}          // Color for text
-    void  lineNumberColor() {cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);}          // Color for line numbers
-
-    void         openFont() {i ▷ setFont(i.sansBold);       openColor();}       // Font  for opening tag
-    void        closeFont() {i ▷ setFont(i.sans);          closeColor();}       // Font  for closing tag
-    void         textFont() {i ▷ setFont(i.serif);          textColor();}       // Font  for text
-    void   lineNumberFont() {i ▷ setFont(i.sansMono); lineNumberColor();}       // Font  for line numbers
+    void         openFont() {i ▷ setFont(i.sansBold);    openTagFillColor();}   // Font  for opening tag
+    void        closeFont() {i ▷ setFont(i.sans);       closeTagFillColor();}   // Font  for closing tag
+    void         textFont() {i ▷ setFont(i.serif);          textFillColor();}   // Font  for text
+    void   lineNumberFont() {i ▷ setFont(i.sansMono); lineNumberFillColor();}   // Font  for line numbers
 
     void startNewLine(int indent)                                               // Move to next line and indent if requested
      {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
@@ -292,17 +295,21 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
   drawTagOrText(rootTag, 0);                                                    // Start at the root tag
 
   if (1)                                                                        // Draw gutter between line numbers and text
-   {cairo_set_source_rgb(cr, 0, 0, 0);                                          //Colour=lineNumberGutterText
-    g ◁ editGutter;
-    cairo_rectangle     (cr, g.x, g.y, g ▷ width, g ▷ height);
+   {g ◁ editGutter;
+    lineNumberGutterTextFillColor();
+    cairo_rectangle     (cr, g.x, g.y, g ▷ width,   g ▷ height);
     cairo_fill          (cr);
+    lineNumberGutterTextStrokeColor();
+    cairo_rectangle     (cr, g.x, g.y, g ▷ width/2, g ▷ height);
+    cairo_fill          (cr);
+    cairo_stroke        (cr);
    }
 
   if (editBuffer.blockIn)                                                       // Clear the blocked out area
    {cr ◁ i.cr;
     b ◁ editBuffer.block;
     cairo_rectangle     (cr, b.x, b.y, b ▷ width, b ▷ height);
-    cairo_set_source_rgb(cr, 1, 1, 1);
+    blockedOutAreaBackgroundColor();
     cairo_fill          (cr);
    }
 
