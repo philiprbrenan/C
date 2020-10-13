@@ -68,7 +68,6 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
   cairo_set_font_size (cr, editBuffer.fontSize);                                // Cairo
   cairo_font_extents_t fontExtents;
   cairo_font_extents  (cr, &fontExtents);
-  cairo_text_extents_t textExtents;
 
   const typeof(fontExtents.ascent) A = fontExtents.ascent;                                                       // Descent from base line
   const typeof(fontExtents.descent) D = fontExtents.descent;                                                      // Descent from base line
@@ -77,15 +76,15 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
   const typeof(H * editBuffer.scroll) scrollPixels = H * editBuffer.scroll;                                         // Number of pixels scrolled down
 
   size_t getLineNumberWidth()                                                   // Width of line numbers
-   {const typeof(8ul) N = 8ul; const typeof(editBuffer.xml.proto->count(editBuffer.xml)) n = editBuffer.xml.proto->count(editBuffer.xml);
-    char z[2] = {'0', 0};
-    cairo_text_extents(cr, z, &textExtents);                                    // Measure text containing one zero
-    typeof(1ul) t = 1ul;
-    for(size_t i = 1; i <= N; ++i)
-     {t *= 10ul;
-      if (t > n) return i * textExtents.x_advance;
+   {const typeof(8ul) N = 8ul; const typeof(editBuffer.xml.proto->count(editBuffer.xml)) n = editBuffer.xml.proto->count(editBuffer.xml);                                        // Maximum width we will allow
+    char z[2] = {'0', 0};                                                       // A string of one zero
+    const typeof(i.proto->textAdvance(i, z)) a = i.proto->textAdvance(i, z);                                                     // Width of string of one zero
+    typeof(1ul) t = 1ul;                                                                    // Power of ten
+    for(size_t i = 1; i <= N; ++i)                                              // Find power of ten neede to allow all tag numbers
+     {t *= 10ul;                                                                // Next power
+      if (t > n) return i * a;                                                  // Big enough
      }
-    return textExtents.x_advance * N;
+    return a * N;                                                               // Use default in extremis
    }
 
   const typeof(getLineNumberWidth()) lineNumberWidth = getLineNumberWidth();                                   // Width of line numbers
@@ -108,10 +107,10 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
     const typeof(paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN]) backgroundColour = paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
     const typeof(paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN]) backgroundColour1 = paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN];        // Background colour for previous layer
 
-    void         openFont() {i.proto->setFont(i, i.sansBold);    openTagFillColor();}   // Font  for opening tag
-    void        closeFont() {i.proto->setFont(i, i.sans);       closeTagFillColor();}   // Font  for closing tag
-    void         textFont() {i.proto->setFont(i, i.serif);          textFillColor();}   // Font  for text
-    void   lineNumberFont() {i.proto->setFont(i, i.sansMono); lineNumberFillColor();}   // Font  for line numbers
+    void         openFont() {i.proto->font(i, i.sansBold);    openTagFillColor();}      // Font  for opening tag
+    void        closeFont() {i.proto->font(i, i.sans);       closeTagFillColor();}      // Font  for closing tag
+    void         textFont() {i.proto->font(i, i.serif);          textFillColor();}      // Font  for text
+    void   lineNumberFont() {i.proto->font(i, i.sansMono); lineNumberFillColor();}      // Font  for line numbers
 
     void startNewLine(int indent)                                               // Move to next line and indent if requested
      {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
@@ -140,8 +139,8 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
         cairo_fill          (cr);
 
         lineNumberFont      ();                                                 // Text of line number
-        cairo_text_extents  (cr, n, &textExtents);                              // Width of this line number
-        const typeof(editLineNumbers.x + lineNumberWidth - textExtents.x_advance) tx = editLineNumbers.x + lineNumberWidth - textExtents.x_advance;
+        const typeof(i.proto->textAdvance(i, n)) a = i.proto->textAdvance(i, n);                                                // Width of this line number
+        const typeof(editLineNumbers.x + lineNumberWidth - a) tx = editLineNumbers.x + lineNumberWidth - a;
         const typeof(y + A) ty = y + A;
         cairo_move_to       (cr, tx, ty);
         cairo_show_text     (cr, n);
@@ -153,12 +152,7 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
     void drawChar(char c, int openClose)                                        // Draw a character at the current (x,y) position and advance the currrent position to the end of the character drawn. A gradient background is drawn for the first/last letters of a tag (0: no gradient, 1: opening gradient, 2: closing gradient)
      {char s[2] = {c, 0};                                                       // Character to be drawn as a string
 
-      int measureChar()                                                         // Measure the width of a character
-       {cairo_text_extents(cr, s, &textExtents);                                // Measure text containing one char
-        return textExtents.x_advance;
-       }
-
-      const typeof(measureChar()) width = measureChar();                                                    // Measure character
+      const typeof(i.proto->textAdvance(i, s)) width = i.proto->textAdvance(i, s);                                               // Measure character
 
       void drawBackGroundForChar()                                              // Draw the background for the current character
        {const typeof(backgroundColour) b = backgroundColour;
