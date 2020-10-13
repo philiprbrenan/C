@@ -67,7 +67,6 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
   cairo_set_font_size (cr, editBuffer.fontSize);                                // Cairo
   cairo_font_extents_t fontExtents;
   cairo_font_extents  (cr, &fontExtents);
-  cairo_text_extents_t textExtents;
 
   A ◁ fontExtents.ascent;                                                       // Descent from base line
   D ◁ fontExtents.descent;                                                      // Descent from base line
@@ -76,15 +75,15 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
   scrollPixels ◁ H * editBuffer.scroll;                                         // Number of pixels scrolled down
 
   size_t getLineNumberWidth()                                                   // Width of line numbers
-   {N ◁ 8ul; n ◁ editBuffer.xml ▷ count;
-    char z[2] = {'0', 0};
-    cairo_text_extents(cr, z, &textExtents);                                    // Measure text containing one zero
-    t ◀ 1ul;
-    for(size_t i = 1; i <= N; ++i)
-     {t *= 10ul;
-      if (t > n) return i * textExtents.x_advance;
+   {N ◁ 8ul; n ◁ editBuffer.xml ▷ count;                                        // Maximum width we will allow
+    char z[2] = {'0', 0};                                                       // A string of one zero
+    a ◁ i ▷ textAdvance(z);                                                     // Width of string of one zero
+    t ◀ 1ul;                                                                    // Power of ten
+    for(size_t i = 1; i <= N; ++i)                                              // Find power of ten neede to allow all tag numbers
+     {t *= 10ul;                                                                // Next power
+      if (t > n) return i * a;                                                  // Big enough
      }
-    return textExtents.x_advance * N;
+    return a * N;                                                               // Use default in extremis
    }
 
   lineNumberWidth     ◁ getLineNumberWidth();                                   // Width of line numbers
@@ -107,10 +106,10 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
     backgroundColour  ◁ paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
     backgroundColour1 ◁ paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN];        // Background colour for previous layer
 
-    void         openFont() {i ▷ setFont(i.sansBold);    openTagFillColor();}   // Font  for opening tag
-    void        closeFont() {i ▷ setFont(i.sans);       closeTagFillColor();}   // Font  for closing tag
-    void         textFont() {i ▷ setFont(i.serif);          textFillColor();}   // Font  for text
-    void   lineNumberFont() {i ▷ setFont(i.sansMono); lineNumberFillColor();}   // Font  for line numbers
+    void         openFont() {i ▷ font(i.sansBold);    openTagFillColor();}      // Font  for opening tag
+    void        closeFont() {i ▷ font(i.sans);       closeTagFillColor();}      // Font  for closing tag
+    void         textFont() {i ▷ font(i.serif);          textFillColor();}      // Font  for text
+    void   lineNumberFont() {i ▷ font(i.sansMono); lineNumberFillColor();}      // Font  for line numbers
 
     void startNewLine(int indent)                                               // Move to next line and indent if requested
      {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
@@ -139,8 +138,8 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
         cairo_fill          (cr);
 
         lineNumberFont      ();                                                 // Text of line number
-        cairo_text_extents  (cr, n, &textExtents);                              // Width of this line number
-        tx ◁ editLineNumbers.x + lineNumberWidth - textExtents.x_advance;
+        a  ◁ i ▷ textAdvance(n);                                                // Width of this line number
+        tx ◁ editLineNumbers.x + lineNumberWidth - a;
         ty ◁ y + A;
         cairo_move_to       (cr, tx, ty);
         cairo_show_text     (cr, n);
@@ -152,12 +151,7 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
     void drawChar(char c, int openClose)                                        // Draw a character at the current (x,y) position and advance the currrent position to the end of the character drawn. A gradient background is drawn for the first/last letters of a tag (0: no gradient, 1: opening gradient, 2: closing gradient)
      {char s[2] = {c, 0};                                                       // Character to be drawn as a string
 
-      int measureChar()                                                         // Measure the width of a character
-       {cairo_text_extents(cr, s, &textExtents);                                // Measure text containing one char
-        return textExtents.x_advance;
-       }
-
-      width ◁ measureChar();                                                    // Measure character
+      width ◁ i ▷ textAdvance(s);                                               // Measure character
 
       void drawBackGroundForChar()                                              // Draw the background for the current character
        {b ◁ backgroundColour;
