@@ -143,7 +143,7 @@ static void free_CairoTextFont                                                  
 static void setFont                                                             // Start using a font
  (CairoTextImage i,                                                                     // CairoTextImage
   CairoTextFont font)                                                                   // Font to use
- {if (!font.cairoFontFace)                                                      // Load all the available fonts into cairo
+ {if (!font.cairoFontFace)                                                      // Load the font if this font has not yet been loaded.
    {makeLocalCopyOfStringBuffer(ff, l, font.file);
     const typeof(FT_New_Face(i.freeTypeLibrary, ff, 0, &font.freeTypeFontFace)) e2 = FT_New_Face(i.freeTypeLibrary, ff, 0, &font.freeTypeFontFace);
     if (e2 == FT_Err_Unknown_File_Format) printStackBackTraceAndExit
@@ -153,7 +153,8 @@ static void setFont                                                             
 
     font.cairoFontFace = cairo_ft_font_face_create_for_ft_face(font.freeTypeFontFace, 0);
    }
-  cairo_set_font_face (i.cr, font.cairoFontFace);
+
+  cairo_set_font_face (i.cr, font.cairoFontFace);                               // Set the font as the currently active one
  }
 
 static void assertCairoTextImageFile                                                    //P Check that the digest of an image file contains the specified string
@@ -298,11 +299,31 @@ void test0()                                                                    
 
 void test1()                                                                    // Linear gradient
  {void draw(CairoTextImage i)
+   {Colour red   = makeColour(1,0,0,1);
+    Colour blue  = makeColour(0,0,1,1);
+
+    const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
+    const typeof(makeRectangleWH(w/4, 0, w/4, h/2)) r = makeRectangleWH(w/4, 0, w/4, h/2);
+    const typeof(r.proto->translate(r, w/2, 0)) s = r.proto->translate(r, w/2, 0);
+    i.proto->leftArrowWithCircle(i, r, red, blue);
+    i.proto->rightArrow(i, s, red, blue);
+   }
+
+  const typeof(makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "a")) i = makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "a");
+  i.proto->free(i);
+ }
+
+void test2()                                                                    // Text table
+ {void draw(CairoTextImage i)
    {//Colour white = makeColour(1,1,1,1);
     //Colour black = makeColour(0,0,0,1);
     Colour red   = makeColour(1,0,0,1);
     //Colour green = makeColour(0,1,0,1);
     Colour blue  = makeColour(0,0,1,1);
+
+    const typeof(makeArenaList()) table = makeArenaList();
+
+    const typeof(table.proto->node(table, "aaaa", 4)) r1 = table.proto->node(table, "aaaa", 4); r1.proto->putTreeLast(r1);
 
     const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
     const typeof(makeRectangleWH(w/4, 0, w/4, h/2)) r = makeRectangleWH(w/4, 0, w/4, h/2);
