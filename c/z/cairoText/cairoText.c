@@ -142,7 +142,7 @@ static void free_$Font                                                          
 static void setFont                                                             // Start using a font
  ($Image i,                                                                     // $Image
   $Font font)                                                                   // Font to use
- {if (!font.cairoFontFace)                                                      // Load all the available fonts into cairo
+ {if (!font.cairoFontFace)                                                      // Load the font if this font has not yet been loaded.
    {makeLocalCopyOfStringBuffer(ff, l, font.file);
     e2 ◁ FT_New_Face(i.freeTypeLibrary, ff, 0, &font.freeTypeFontFace);
     if (e2 == FT_Err_Unknown_File_Format) printStackBackTraceAndExit
@@ -152,7 +152,8 @@ static void setFont                                                             
 
     font.cairoFontFace = cairo_ft_font_face_create_for_ft_face(font.freeTypeFontFace, 0);
    }
-  cairo_set_font_face (i.cr, font.cairoFontFace);
+
+  cairo_set_font_face (i.cr, font.cairoFontFace);                               // Set the font as the currently active one
  }
 
 static void assert$ImageFile                                                    //P Check that the digest of an image file contains the specified string
@@ -297,11 +298,31 @@ void test0()                                                                    
 
 void test1()                                                                    // Linear gradient
  {void draw($Image i)
+   {Colour red   = makeColour(1,0,0,1);
+    Colour blue  = makeColour(0,0,1,1);
+
+    w ◁ i.width; h ◁ i.height;
+    r ◁ makeRectangleWH(w/4, 0, w/4, h/2);
+    s ◁ r ▷ translate(w/2, 0);
+    i ▷ leftArrowWithCircle(r, red, blue);
+    i ▷ rightArrow(s, red, blue);
+   }
+
+  i ◁ make$Image(draw, 1000, 2000, "$1.png", "a");
+  i ▷ free;
+ }
+
+void test2()                                                                    // Text table
+ {void draw($Image i)
    {//Colour white = makeColour(1,1,1,1);
     //Colour black = makeColour(0,0,0,1);
     Colour red   = makeColour(1,0,0,1);
     //Colour green = makeColour(0,1,0,1);
     Colour blue  = makeColour(0,0,1,1);
+
+    table ◁ makeArenaList();
+
+    r1 ◁ table ▷ node("aaaa", 4); r1 ▷ putTreeLast;
 
     w ◁ i.width; h ◁ i.height;
     r ◁ makeRectangleWH(w/4, 0, w/4, h/2);
