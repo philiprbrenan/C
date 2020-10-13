@@ -14,6 +14,7 @@
  can be carried out in parallel in a separate process as a $ is relocatable.
 */
 #define _GNU_SOURCE
+#include <ctype.h>
 #include <setjmp.h>
 #include <utilities.c>
 #define $Editable
@@ -101,6 +102,60 @@ static void swap_$_$                                                            
  {s ◁ source.arena; t ◁ target.arena;                                           // Arenas
   $Arena u = *t; *t = *s; *s = u;
  }
+
+static $ make$FromLines                                                         // Make a $ from a string of lines.
+ (const char * str)                                                             // String of lines separated by new lines
+ {l ◁ make$();
+
+  const char * p = str, *q = p;                                                 // Parse the string into new lines
+  B ◀ 0ul;
+  void save()                                                                   // Save a line
+   {if (B && p > q) {n ◁ l ▷ node(q, p - q); n ▷ putTreeLast; B = 0;}
+    q = p + 1;
+   }
+
+  for(; *p; ++p) if (*p == '\n') save(); else if (!isspace(*p)) ++B;
+  save();
+  return l;
+ };
+
+static $ make$FromWords                                                         // Make a $ from a string of words.
+ (const char * str)                                                             // String of words separated by spaces;
+ {l ◁ make$();
+
+  const char * p = str, *q = p;                                                 // Parse the string into new lines
+
+  void save()                                                                   // Save a line
+   {if (p > q) {n ◁ l ▷ node(q, p - q); n ▷ putTreeLast;}
+    q = p + 1;
+   }
+
+  for(; *p; ++p) if (isspace(*p)) save();
+  save();
+  return l;
+ };
+
+static $ make$FromLinesOfWords                                                  // Make a $ of lists each sub list representing a line as a list of words.
+ (const char * str)                                                             // String of lines of words separated by spaces;
+ {list ◁ make$FromLines(str);
+
+  root ◁ list ▷ root;
+  $fe(line, root)
+   {makeLocalCopyOf$Key(s, l, line);
+
+    const char * p = s, *q = p;                                                 // Parse the string into new lines
+
+    void save()                                                                   // Save a line
+     {if (p > q) {n ◁ list ▷ node(q, p - q); line ▷ putLast(n);}
+      q = p + 1;
+     }
+
+    for(; *p; ++p) if (isspace(*p)) save();
+    save();
+   }
+
+  return list;
+ };
 
 static char * check_string_$                                                    //P Return a string describing the structure
  (const $ list)                                                                 // $
@@ -862,7 +917,7 @@ static void dump__$Node                                                         
   say("%lu %s\n", l, k);                                                        // Print key number
  }
 
-static void print__$Node_function                                               // Apply a function to the print of a $.
+static void print__$Node_function                                               // Apply a function to the print of a $Node and the tree below it.
  (const $Node   node,                                                           // $Node
   void (*printer)(char * string, size_t length))                                // Function to apply to printed $
  {size_t l = 0;                                                                 // Length of output string
@@ -1420,12 +1475,42 @@ void test15()                                                                   
   t ▷ free;
  }
 
+void test16()                                                                   //Tmake$FromLines //Tmake$FromWords //Tmake$FromLinesOfWords
+ {w ◁ make$FromWords("a   bb\n \nccc\n\n   \n dddd \n  \n \n");
+
+  ✓ w ▷ countChildren == 4;
+  ✓ w ▷ printsWithBracketsAs("(abbcccdddd)");
+
+  w ▷ free;
+
+  l ◁ make$FromLines("a\nbb\nccc\n    \n\ndddd\n\n\n");
+
+  ✓ l ▷ countChildren == 4;
+  ✓ l ▷ printsWithBracketsAs("(abbcccdddd)");
+
+  l ▷ free;
+
+  x ◁ make$FromLinesOfWords("a b c d  \n  aa bb cc dd \n\n   \n\n aaa   bbb ccc ddd\n\n\n");
+
+  ✓ x ▷ countChildren == 3;
+  ✓ x ▷ count         == 15;
+
+    n1 ◁ x  ▷ first; ✓ n1 ▷ count == 4;
+    n2 ◁ n1 ▷  next; ✓ n2 ▷ count == 4;
+    n3 ◁ n2 ▷  next; ✓ n3 ▷ count == 4;
+    n4 ◁ n3 ▷  next; ✓!n4 ▷ valid;
+
+  ✓ x ▷ printsWithBracketsAs("(a b c d  (abcd)  aa bb cc dd (aabbccdd) aaa   bbb ccc ddd(aaabbbcccddd))");
+
+  x ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
-                           test15, 0};
+                           test15, test16, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
