@@ -87,7 +87,7 @@ CairoTextImage makeCairoTextImage                                               
   const typeof(FT_Init_FreeType(&i.freeTypeLibrary)) e1 = FT_Init_FreeType(&i.freeTypeLibrary);                                    // Initialize FreeType library
   if (e1) printStackBackTraceAndExit(1, "Error %d in free type\n", e1);
 
-  i.proto->setFont(i, i.sansMono);                                                      // Default font
+  i.proto->font(i, i.sansMono);                                                         // Default font
   i.proto->clearWhite(i);                                                               // Clear display
 
   draw(i);                                                                      // Draw
@@ -140,7 +140,7 @@ static void free_CairoTextFont                                                  
 
 //D1 Methods                                                                    // Methods that operate on an CairoText
 
-static void setFont                                                             // Start using a font
+static void font_CairoText                                                              // Start using a font
  (CairoTextImage i,                                                                     // CairoTextImage
   CairoTextFont font)                                                                   // Font to use
  {if (!font.cairoFontFace)                                                      // Load the font if this font has not yet been loaded.
@@ -157,18 +157,26 @@ static void setFont                                                             
   cairo_set_font_face (i.cr, font.cairoFontFace);                               // Set the font as the currently active one
  }
 
+static void fontSize_CairoText                                                          // Set the size of a font
+ (CairoTextImage i,                                                                     // CairoTextImage
+  int    size)                                                                  // Size
+ {cairo_set_font_size (i.cr, size);                                             // Set font size
+ }
+
 static void assertCairoTextImageFile                                                    //P Check that the digest of an image file contains the specified string
  (char *             imageFile,                                                 // Image file name
   const char * const digest)                                                    // Expected digest
  {      const typeof(makeStringBufferFromString("b2sum ")) c = makeStringBufferFromString("b2sum ");
         c.proto->add(c, imageFile);
         c.proto->system(c);
+
   if (! c.proto->containsString(c, digest))
    {makeLocalCopyOfStringBuffer(d, l, c);
     say("\nImage file: %s\n",   imageFile);
     say("Have: %s\nWant: %s\n", d, digest);
     assert(0);
    }
+
   c.proto->free(c);
  }
 
@@ -180,8 +188,8 @@ static void assertCairoTextResult                                               
  }
 
 static void save_CairoText_string                                                       // Save a copy of the drawing surface to the specified file
- (CairoTextImage             i,                                                         // CairoTextImage
-  char *             imageFile,                                                 // Image file name
+ (CairoTextImage    i,                                                                  // CairoTextImage
+  char *    imageFile,                                                          // Image file name
   const char * const digest)                                                    // Expected digest
  {cairo_surface_write_to_png(i.surface, imageFile);
   assertCairoTextImageFile(imageFile, digest);
@@ -192,6 +200,30 @@ static void clearWhite_CairoText                                                
  {const typeof(i.cr) cr = i.cr;
   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
   cairo_paint         (cr);
+ }
+
+static void colour_CairoText                                                            // Set the current colour
+ (CairoTextImage i,                                                                     // CairoTextImage
+  Colour c)                                                                     // Colour
+ {const typeof(i.cr) cr = i.cr;
+  cairo_set_source_rgba(cr, c.r, c.g, c.b, c.a);
+ }
+
+static void clip_CairoText                                                              // Set the clip area
+ (CairoTextImage    i,                                                                  // CairoTextImage
+  Rectangle r)                                                                  // Rectangle
+ {const typeof(i.cr) cr = i.cr;
+  cairo_rectangle(cr, r.x, r.y, r.proto->width(r), r.proto->height(r));
+  cairo_clip     (cr);
+ }
+
+static double textAdvance_CairoText                                                     // Get the width of the specified text
+ (CairoTextImage i,                                                                     // CairoTextImage
+  char * s)                                                                     // String
+ {const typeof(i.cr) cr = i.cr;
+  cairo_text_extents_t textExtents;
+  cairo_text_extents (cr, s, &textExtents);
+  return textExtents.x_advance;
  }
 
 //D1 Shapes                                                                     // Draw shapes
@@ -315,29 +347,47 @@ void test1()                                                                    
 
 void test2()                                                                    // Text table
  {void draw(CairoTextImage i)
-   {//Colour white = makeColour(1,1,1,1);
-    //Colour black = makeColour(0,0,0,1);
-    Colour red   = makeColour(1,0,0,1);
-    //Colour green = makeColour(0,1,0,1);
-    Colour blue  = makeColour(0,0,1,1);
+   {Colour black = makeColour(0,0,0,1);
 
-    const typeof(makeArenaList()) table = makeArenaList();
+    const typeof(makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d")) table = makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d");
 
-    const typeof(table.proto->node(table, "aaaa", 4)) r1 = table.proto->node(table, "aaaa", 4); r1.proto->putTreeLast(r1);
+    i.proto->font(i, i.serif);                                                          // Font
+    i.proto->fontSize(i, 100);                                                          // Size of text
+    i.proto->colour(i, black);                                                        // Colour of text
 
-    const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
-    const typeof(makeRectangleWH(w/4, 0, w/4, h/2)) r = makeRectangleWH(w/4, 0, w/4, h/2);
-    const typeof(r.proto->translate(r, w/2, 0)) s = r.proto->translate(r, w/2, 0);
-    i.proto->leftArrowWithCircle(i, r, red, blue);
-    i.proto->rightArrow(i, s, red, blue);
+    const typeof(i.cr) cr = i.cr;
+    cairo_font_extents_t fontExtents;
+    cairo_font_extents (cr, &fontExtents);
+
+    const typeof(fontExtents.ascent) A = fontExtents.ascent;                                                     // Descent from base line
+    const typeof(fontExtents.descent) D = fontExtents.descent;                                                    // Descent from base line
+    const typeof(A + D) H = A + D;                                                                  // Interline height
+
+    const typeof(makeRectangleWH(500, 500, 500, 800)) drawTable = makeRectangleWH(500, 500, 500, 800);
+    i.proto->clip(i, drawTable);
+
+    size_t x = drawTable.x, y = drawTable.y;
+    ArenaListFe(col, table)
+     {typeof(0ul) max = 0ul;
+      cairo_move_to(cr, x, y = drawTable.y);
+      ArenaListfe(row, col)
+       {makeLocalCopyOfArenaListKey(k, l, row);
+        cairo_move_to  (cr, x, y + A);
+        cairo_show_text(cr, k);
+        y += H;
+        const typeof(i.proto->textAdvance(i, k)) a = i.proto->textAdvance(i, k);
+        if (max < a) max = a;
+       }
+      x += max + fontExtents.descent;
+     }
    }
 
-  const typeof(makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "a")) i = makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "a");
+  const typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "a");
   i.proto->free(i);
  }
 
 int main (void)
- {void (*tests[])(void) = {test0, test1, 0};
+ {void (*tests[])(void) = {test0, test1, test2, 0};
   run_tests("CairoText", 1, tests);
   return 0;
 }
