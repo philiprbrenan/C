@@ -5,6 +5,12 @@ static ArenaList makeArenaList
 static void swap_ArenaList_ArenaList
  (ArenaList source,
   ArenaList target);
+static ArenaList makeArenaListFromLines
+ (const char * str);
+static ArenaList makeArenaListFromWords
+ (const char * str);
+static ArenaList makeArenaListFromLinesOfWords
+ (const char * str);
 static char * check_string_ArenaList
  (const ArenaList list);
 static void * pointer__ArenaList_size
@@ -415,7 +421,7 @@ struct ProtoTypes_ArenaListNode {
   void  (*printWithBrackets)(                                                   // Apply a function to a string containing a print of the specified  node and the ArenaList below it in preorder as a string with each sub ArenaList enclosed in brackets.
     const ArenaListNode node,                                                   // ArenaListNode
     void (*printer) (char * string, size_t length));                            // Function to apply to printed ArenaList
-  void  (*print)(                                                               // Apply a function to the print of a ArenaList.
+  void  (*print)(                                                               // Apply a function to the print of a ArenaListNode and the tree below it.
     const ArenaListNode node,                                                   // ArenaListNode
     void (*printer) (char * string, size_t length));                            // Function to apply to printed ArenaList
   int  (*printsAs)(                                                             // Check that the specified node prints as expected.
