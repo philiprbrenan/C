@@ -69,8 +69,10 @@ typedef struct $Description                                                     
  } $Description;
 
 #include <$$_prototypes.h>                                                      // $ prototypes now that the relevant structures have been declared
-#define $fe( child, parent) for($Node child = parent ▷ first; child ▷ valid; child = child ▷ next) // Each child in a parent from first to last
-#define $fer(child, parent) for($Node child = parent ▷ last ; child ▷ valid; child = child ▷ prev) // Each child in a parent from last to first
+#define $Fe( child, list)   for(child ◀ list   ▷ first; child ▷ valid; child = child ▷ next) // Each child under the root node of a $ from first to last
+#define $Fer(child, list)   for(child ◀ list   ▷  last; child ▷ valid; child = child ▷ prev) // Each child under the root node of a $ from last to first
+#define $fe( child, parent) for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next) // Each child under a parent from first to last
+#define $fer(child, parent) for(child ◀ parent ▷ last ; child ▷ valid; child = child ▷ prev) // Each child under a parent from last to first
 #define makeLocalCopyOfArenaListKey(string,stringLength,node) const size_t stringLength = content__ArenaListNode(node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 //D1 Constructors                                                               // Construct a new $.
@@ -1475,7 +1477,7 @@ void test15()                                                                   
   t ▷ free;
  }
 
-void test16()                                                                   //Tmake$FromLines //Tmake$FromWords //Tmake$FromLinesOfWords
+void test16()                                                                   //Tmake$FromLines //Tmake$FromWords //Tmake$FromLinesOfWords //$Fe //$Fer
  {w ◁ make$FromWords("a   bb\n \nccc\n\n   \n dddd \n  \n \n");
 
   ✓ w ▷ countChildren == 4;
@@ -1501,6 +1503,26 @@ void test16()                                                                   
     n4 ◁ n3 ▷  next; ✓!n4 ▷ valid;
 
   ✓ x ▷ printsWithBracketsAs("(a b c d  (abcd)  aa bb cc dd (aabbccdd) aaa   bbb ccc ddd(aaabbbcccddd))");
+
+  if (1)
+   {char s[1024], *p = s;
+    $Fe(y,x)
+     {makeLocalCopyOf$Key(k, l, y);
+       p = stpcpy(p, k);
+       p = stpcpy(p, " - ");
+      }
+    ✓ !strcmp(s, "a b c d   -   aa bb cc dd  -  aaa   bbb ccc ddd - ");
+   }
+
+  if (1)
+   {char s[1024], *p = s;
+    $Fer(y,x)
+     {makeLocalCopyOf$Key(k, l, y);
+       p = stpcpy(p, k);
+       p = stpcpy(p, " - ");
+      }
+    ✓ !strcmp(s, " aaa   bbb ccc ddd -   aa bb cc dd  - a b c d   - ");
+   }
 
   x ▷ free;
  }
