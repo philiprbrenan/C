@@ -46,10 +46,10 @@ typedef struct $EditBuffer                                                      
 #include <$$_prototypes.h>
 
 static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       // Draw the edit buffer and return the location of the pointer and cursor
- ($EditBuffer editBuffer)                                                       // $ edit buffer
- {i    ◁ editBuffer.cti;                                                        // Image description
+ ($EditBuffer * editBuffer)                                                     // $ edit buffer
+ {i    ◀ editBuffer->cti;                                                        // Image description
   cr   ◁ i.cr;                                                                  // Cairo context to draw in
-  draw ◁ !editBuffer.measureOnly;                                               // Draw unless we only want to measure
+  draw ◁ !editBuffer->measureOnly;                                               // Draw unless we only want to measure
   closestSoFar ◀ ULONG_MAX;                                                     // Shortest distance so far to pointer
   lineNumberGutterText ◁ 8;                                                     //Pixels Gutter between line numbers and text
 
@@ -64,18 +64,18 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
   void  lineNumberGutterTextStrokeColor() {cairo_set_source_rgb(cr, 1, 1, 1);}  // Stroke color for the gutter between the line numbers and the text being editted.
   void    blockedOutAreaBackgroundColor() {cairo_set_source_rgb(cr, 1, 1, 1);}  // Fill color for the background of the blocked out area
 
-  cairo_set_font_size (cr, editBuffer.fontSize);                                // Cairo
+  cairo_set_font_size (cr, editBuffer->fontSize);                                // Cairo
   cairo_font_extents_t fontExtents;
   cairo_font_extents  (cr, &fontExtents);
 
   A ◁ fontExtents.ascent;                                                       // Descent from base line
   D ◁ fontExtents.descent;                                                      // Descent from base line
   H ◁ A + D;                                                                    // Interline height
-  editBuffer.lineHeight = H;                                                    // Record line height
-  scrollPixels ◁ H * editBuffer.scroll;                                         // Number of pixels scrolled down
+  editBuffer->lineHeight = H;                                                    // Record line height
+  scrollPixels ◁ H * editBuffer->scroll;                                         // Number of pixels scrolled down
 
   size_t getLineNumberWidth()                                                   // Width of line numbers
-   {N ◁ 8ul; n ◁ editBuffer.xml ▷ count;                                        // Maximum width we will allow
+   {N ◁ 8ul; n ◁ editBuffer->xml ▷ count;                                        // Maximum width we will allow
     char z[2] = {'0', 0};                                                       // A string of one zero
     a ◁ i ▷ textAdvance(z);                                                     // Width of string of one zero
     t ◀ 1ul;                                                                    // Power of ten
@@ -87,7 +87,7 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
    }
 
   lineNumberWidth     ◁ getLineNumberWidth();                                   // Width of line numbers
-  editLineNumbersText ◁ editBuffer.zone ▷ left(lineNumberWidth);                // Split the drawing area into line numbers and text
+  editLineNumbersText ◁ editBuffer->zone ▷ left(lineNumberWidth);                // Split the drawing area into line numbers and text
   editLineNumbers     ◁ editLineNumbersText.a;                                  // Line numbers
   editGutterAndText   ◁ editLineNumbersText.b ▷ left(lineNumberGutterText);     // Split the drawing area into line numbers and text
   editGutter          ◁ editGutterAndText.a;                                    // Gutter just before text
@@ -184,14 +184,14 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
 
       Rectangle charR() {return makeRectangleWH(x, y, width, H);}               // Rectangle occupied by current character
 
-      if (editBuffer.blockIn && editBuffer.block ▷ containsACorner(charR()))    // Skip over blocked out area
+      if (editBuffer->blockIn && editBuffer->block ▷ containsACorner(charR()))  // Skip over blocked out area
        {b ◁ lastBackGroundColourDrawn;                                          // Background colour of line number
         cairo_save          (cr);
         cairo_set_source_rgb(cr, b.r, b.g, b.b);
-        cairo_rectangle     (cr, x, y, editBuffer.block.X - x, H);              // Background for line number
+        cairo_rectangle     (cr, x, y, editBuffer->block.X - x, H);             // Background for line number
         cairo_fill          (cr);
         cairo_restore       (cr);
-        x = editBuffer.block.X;                                                 // Restart after the blocked out area
+        x = editBuffer->block.X;                                                // Restart after the blocked out area
        }
 
       if (x + width >= editText.X) startNewLine(0);                             // Start a new line if the draw would be off the end of the line
@@ -203,25 +203,25 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
        }
 
       ++currentPositionInTag; ++currentChar;                                    // Pointer and cursor location
-      if (editBuffer.py <= y+H && editBuffer.py >= y)                           // Line containing pointer
-       {d ◁ fabs(editBuffer.px - x - width / 2);                                // Distance from the center of the current character to pointer.
+      if (editBuffer->py <= y+H && editBuffer->py >= y)                           // Line containing pointer
+       {d ◁ fabs(editBuffer->px - x - width / 2);                                // Distance from the center of the current character to pointer.
         if (d < closestSoFar)                                                   // Best distance so far
          {closestSoFar = d;
-          editBuffer.pointer.tag           = currentTagOffset;
-          editBuffer.pointer.positionInTag = currentPositionInTag;
-          editBuffer.pointer.editLine      = currentEditLine;
-          editBuffer.pointer.character     = currentChar;
-          editBuffer.pointer.x             = x;
-          editBuffer.pointer.y             = y;
+          editBuffer->pointer.tag           = currentTagOffset;
+          editBuffer->pointer.positionInTag = currentPositionInTag;
+          editBuffer->pointer.editLine      = currentEditLine;
+          editBuffer->pointer.character     = currentChar;
+          editBuffer->pointer.x             = x;
+          editBuffer->pointer.y             = y;
          }
        }
 
-      if (editBuffer.cursor.character   == currentChar)                         // Cursor location
-       {editBuffer.cursor.tag            = currentTagOffset;
-        editBuffer.cursor.positionInTag  = currentPositionInTag;
-        editBuffer.cursor.editLine       = currentEditLine;
-        editBuffer.cursor.x              = x;
-        editBuffer.cursor.y              = y;
+      if (editBuffer->cursor.character   == currentChar)                         // Cursor location
+       {editBuffer->cursor.tag            = currentTagOffset;
+        editBuffer->cursor.positionInTag  = currentPositionInTag;
+        editBuffer->cursor.editLine       = currentEditLine;
+        editBuffer->cursor.x              = x;
+        editBuffer->cursor.y              = y;
        }
 
       cairo_move_to(cr, x += width, y += 0);                                    // Position ready for the next character
@@ -284,7 +284,7 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
     open(); Xmlfe(child, parent) drawTagOrText(child, depth+1); close();        // Draw this level and its children
    }
 
-  root    ◁ editBuffer.xml ▷ root;
+  root    ◁ editBuffer->xml ▷ root;
   rootTag ◁ root ▷ first;
   drawTagOrText(rootTag, 0);                                                    // Start at the root tag
 
@@ -299,21 +299,21 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
     cairo_stroke        (cr);
    }
 
-  if (editBuffer.blockIn)                                                       // Clear the blocked out area
+  if (editBuffer->blockIn)                                                       // Clear the blocked out area
    {cr ◁ i.cr;
-    b ◁ editBuffer.block;
+    b ◁ editBuffer->block;
     cairo_rectangle     (cr, b.x, b.y, b ▷ width, b ▷ height);
     blockedOutAreaBackgroundColor();
     cairo_fill          (cr);
    }
 
-  return editBuffer;                                                            // Return the updated edit buffer
+  return *editBuffer;                                                           // Return the updated edit buffer
  } // drawEditBuffer
 
 static void maintainCursorPosition_$EditBuffer_$EditBuffer                      // Set the scroll amount of the altered edit buffer so that the position on the screen of the line containing the cursor is as close as possible to the position in the base edit buffer when the altered buffer is drawn in the place of the base buffer despite the altered buffer having been zoomed or having its width changed relative to the base buffer.  Both buffers should have been drawn before this operations (with measureOnly=1 if no drawing is required) so that the current position of the line containing the cursor is known in both buffers at the start of this operation. After this operation the altered buffer can be drawn in the area originally occupied by the base buffer while minimizing the amount the user must move their line of sight to track the cursor position.
- ($EditBuffer   base,                                                           // Base    $ edit buffer
+ ($EditBuffer * base,                                                           // Base    $ edit buffer
   $EditBuffer * altered)                                                        // Altered $ edit buffer
- {b ◁ base.    cursor.y;                                                        // Location of cursor line of base $ edit buffer on display in pixels
+ {b ◁ base->   cursor.y;                                                        // Location of cursor line of base $ edit buffer on display in pixels
   a ◁ altered->cursor.y;                                                        // Location of cursor line in altered $ edit buffer on display in pixels
 
   s ◁ (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
@@ -352,7 +352,7 @@ void test0()
     x ▷ scan(drawXml);
    }
 
-  i ◁ makeCairoTextImage(draw, 2000, 2000, "$0.png", "11ff");
+  i ◀ makeCairoTextImage(draw, 2000, 2000, "$0.png", "11ff");
   i ▷ free;
  }
 
@@ -367,7 +367,7 @@ void test1()                                                                    
     wScroll ◁ 4; fontSize ◁ 100;                                                // Scroll amount in wide mode, font size of text in image
 
     ww ◁ page ▷ right(0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
-    we ◁ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a);
+    we ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a);
     wr ◀ we ▷ drawEditBuffer;
          i  ▷ save("$1_wide.png", "a"); i ▷ clearWhite;
 
@@ -402,7 +402,7 @@ void test1()                                                                    
     ✓ nR.cursor.editLine      == nr.cursor.editLine;
    }
 
-  i ◁ makeCairoTextImage(draw, 2000, 2000, "$1.png", "a");                   // Create image containing some text and check its digest
+  i ◀ makeCairoTextImage(draw, 2000, 2000, "$1.png", "a");                   // Create image containing some text and check its digest
   i ▷ free;
  }
 
@@ -417,11 +417,11 @@ void test2()                                                                    
     fontSize ◁ 100;                                                             // Font size of text in image
 
     b ◁ makeRectangleWH(500, 500, 1000, 1000);                                  // Block out this area
-    e ◁ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, zone: page, block: b, blockIn: 1);
+    e ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, zone: page, block: b, blockIn: 1);
     e ▷ drawEditBuffer;
    }
 
-  i ◁ makeCairoTextImage(draw, 2000, 2000, "$2.png", "a");                      // Create image containing some text and check its digest
+  i ◀ makeCairoTextImage(draw, 2000, 2000, "$2.png", "a");                      // Create image containing some text and check its digest
   i ▷ free;
  }
 
