@@ -1,101 +1,137 @@
 static CairoTextFont makeCairoTextFont
  (char * fontFile);
 static void free_CairoTextImage
- (CairoTextImage i);
+ (CairoTextImage * i);
 static void free_CairoTextFont
- (CairoTextFont font);
+ (CairoTextFont * font);
 static void font_CairoText
- (CairoTextImage i,
+ (CairoTextImage * i,
   CairoTextFont font);
+static void fontMetrics_CairoText
+ (CairoTextImage * i);
 static void fontSize_CairoText
- (CairoTextImage i,
+ (CairoTextImage * i,
   int    size);
-static void assertCairoTextImageFile
- (char *             imageFile,
-  const char * const digest);
-static void assertCairoTextResult
- (CairoTextImage i,
-  const char * const digest);
-static void save_CairoText_string
- (CairoTextImage    i,
-  char *    imageFile,
-  const char * const digest);
-static void clearWhite_CairoText
- (CairoTextImage             i);
-static void colour_CairoText
- (CairoTextImage i,
-  Colour c);
-static void clip_CairoText
- (CairoTextImage    i,
-  Rectangle r);
 static double textAdvance_CairoText
- (CairoTextImage i,
+ (CairoTextImage * i,
   char * s);
+static void text_CairoText
+ (CairoTextImage * i,
+  double x,
+  double y,
+  const char * t);
+static void clearWhite_CairoText
+ (CairoTextImage * i);
+static void colour_CairoText
+ (CairoTextImage * i,
+  Colour c);
+static void rgb_CairoText
+ (CairoTextImage * i,
+  double r,
+  double g,
+  double b);
+static void rgba_CairoText
+ (CairoTextImage * i,
+  double r,
+  double g,
+  double b,
+  double a);
+static void clip_CairoText
+ (CairoTextImage   *  i,
+  Rectangle r);
 static void leftArrow
- (CairoTextImage    i,
+ (CairoTextImage   * i,
   Rectangle r,
   Colour    s,
   Colour    f);
 static void leftArrowWithCircle
- (CairoTextImage    i,
+ (CairoTextImage   *  i,
   Rectangle r,
   Colour    s,
   Colour    f);
 static void rightArrow
- (CairoTextImage    i,
+ (CairoTextImage   *  i,
   Rectangle r,
   Colour    s,
   Colour    f);
+static void assertCairoTextImageFile
+ (char *             imageFile,
+  const char * const digest);
+static void assertCairoTextResult
+ (CairoTextImage * i,
+  const char * const digest);
+static void save_CairoText_string
+ (CairoTextImage   *  i,
+  char *    imageFile,
+  const char * const digest);
 struct ProtoTypes_CairoTextFont {
   void  (*free)(                                                                // Free a font if it has been loaded
-    CairoTextFont font);                                                        // CairoTextFont
+    CairoTextFont * font);                                                      // CairoTextFont
  } const ProtoTypes_CairoTextFont =
 {free_CairoTextFont};
 CairoTextFont newCairoTextFont(CairoTextFont allocator) {return allocator;}
 
 struct ProtoTypes_CairoTextImage {
   void  (*assertCairoTextResult)(                                               // Check the image via a digest
-    CairoTextImage i,                                                           // CairoTextImage
+    CairoTextImage * i,                                                         // CairoTextImage
     const char * const digest);                                                 // Expected digest
   void  (*clearWhite)(                                                          // Clear the drawing surface to white
-    CairoTextImage i);                                                          // CairoTextImage
+    CairoTextImage * i);                                                        // CairoTextImage
   void  (*clip)(                                                                // Set the clip area
-    CairoTextImage i,                                                           // CairoTextImage
+    CairoTextImage   * i,                                                       // CairoTextImage
     Rectangle r);                                                               // Rectangle
   void  (*colour)(                                                              // Set the current colour
-    CairoTextImage i,                                                           // CairoTextImage
+    CairoTextImage * i,                                                         // CairoTextImage
     Colour c);                                                                  // Colour
+  void  (*fontMetrics)(                                                         // Load the metrics of the current font
+    CairoTextImage * i);                                                        // CairoTextImage
   void  (*fontSize)(                                                            // Set the size of a font
-    CairoTextImage i,                                                           // CairoTextImage
+    CairoTextImage * i,                                                         // CairoTextImage
     int size);                                                                  // Size
   void  (*font)(                                                                // Start using a font
-    CairoTextImage i,                                                           // CairoTextImage
+    CairoTextImage * i,                                                         // CairoTextImage
     CairoTextFont font);                                                        // Font to use
   void  (*free)(                                                                // Free an image
-    CairoTextImage i);                                                          // CairoTextImage
+    CairoTextImage * i);                                                        // CairoTextImage
   void  (*leftArrow)(                                                           // Draw a left pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
-    CairoTextImage i,                                                           // Image
+    CairoTextImage   * i,                                                       // Image
     Rectangle r,                                                                // Rectangle to draw arrow in
     Colour s,                                                                   // Start colour
     Colour f);                                                                  // Finish colour
   void  (*leftArrowWithCircle)(                                                 // Draw a left pointing arrow with a central circle cut out
-    CairoTextImage i,                                                           // Image
+    CairoTextImage   * i,                                                       // Image
     Rectangle r,                                                                // Rectangle to draw arrow in
     Colour s,                                                                   // Start colour
     Colour f);                                                                  // Finish colour
+  void  (*rgb)(                                                                 // Set the current colour
+    CairoTextImage * i,                                                         // CairoTextImage
+    double r,                                                                   // Red
+    double g,                                                                   // Green
+    double b);                                                                  // Blue
+  void  (*rgba)(                                                                // Set the current colour
+    CairoTextImage * i,                                                         // CairoTextImage
+    double r,                                                                   // Red
+    double g,                                                                   // Green
+    double b,                                                                   // Blue
+    double a);                                                                  // Alpha
   void  (*rightArrow)(                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
-    CairoTextImage i,                                                           // Image
+    CairoTextImage   * i,                                                       // Image
     Rectangle r,                                                                // Rectangle to draw arrow in
     Colour s,                                                                   // Start colour
     Colour f);                                                                  // Finish colour
   void  (*save)(                                                                // Save a copy of the drawing surface to the specified file
-    CairoTextImage i,                                                           // CairoTextImage
+    CairoTextImage   * i,                                                       // CairoTextImage
     char * imageFile,                                                           // Image file name
     const char * const digest);                                                 // Expected digest
   double  (*textAdvance)(                                                       // Get the width of the specified text
-    CairoTextImage i,                                                           // CairoTextImage
+    CairoTextImage * i,                                                         // CairoTextImage
     char * s);                                                                  // String
+  void  (*text)(                                                                // Draw text at the specified position using the current font, fonet size and colour
+    CairoTextImage * i,                                                         // CairoTextImage
+    double x,                                                                   // X position of text
+    double y,                                                                   // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
+    const char * t);                                                            // The text to draw
  } const ProtoTypes_CairoTextImage =
-{assertCairoTextResult, clearWhite_CairoText, clip_CairoText, colour_CairoText, fontSize_CairoText, font_CairoText, free_CairoTextImage, leftArrow, leftArrowWithCircle, rightArrow, save_CairoText_string, textAdvance_CairoText};
+{assertCairoTextResult, clearWhite_CairoText, clip_CairoText, colour_CairoText, fontMetrics_CairoText, fontSize_CairoText, font_CairoText, free_CairoTextImage, leftArrow, leftArrowWithCircle, rgb_CairoText, rgba_CairoText, rightArrow, save_CairoText_string, textAdvance_CairoText, text_CairoText};
 CairoTextImage newCairoTextImage(CairoTextImage allocator) {return allocator;}
 
