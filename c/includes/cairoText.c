@@ -46,7 +46,6 @@ typedef struct CairoTextImage                                                   
   CairoTextFont serifBoldItalic;
   CairoTextFont serifItalic;
   CairoTextFont serif;
-
   double fontAscent, fontDescent, fontHeight;                                   // Metrics for the current font
  } CairoTextImage;
 
@@ -115,24 +114,22 @@ static CairoTextFont makeCairoTextFont                                          
 //D1 Free                                                                       // Free cairo and free type resources associated with the image
 
 static void free_CairoTextImage                                                         // Free an image
- (CairoTextImage * i)                                                                     // CairoTextImage
+ (CairoTextImage * i)                                                                   // CairoTextImage
  {i->out.proto->free(&i->out);
 
   CairoTextFont *fonts[] =
    {&i->sansBoldItalic, &i->sansBold, &i->sansItalic,      &i->sans,
     &i->sansMonoBold,   &i->sansMono, &i->serifBoldItalic, &i->serifBold,
-    &i->serifItalic,    &i->serif};
+    &i->serifItalic,    &i->serif, 0};
 
-  for(CairoTextFont **f = fonts; *f; ++f)                                               // Free any fonts that were loaded
-   {CairoTextFont F = **f;
-    F.proto->free(&F);
-   }
+  for(CairoTextFont **f = fonts; *f; ++f) {CairoTextFont *F = *f; F->proto->free(F);}                    // Free any fonts that were loaded
+
 
   FT_Done_FreeType(i->freeTypeLibrary);                                          // Finished with FreeType library
  }
 
 static void free_CairoTextFont                                                          // Free a font if it has been loaded
- (CairoTextFont * font)                                                                   // CairoTextFont
+ (CairoTextFont * font)                                                                 // CairoTextFont
  {if (font->cairoFontFace)
    {cairo_font_face_destroy(font->cairoFontFace);
     FT_Done_Face           (font->freeTypeFontFace);
@@ -143,7 +140,7 @@ static void free_CairoTextFont                                                  
 //D1 Text                                                                       // Work with text
 
 static void font_CairoText                                                              // Start using a font
- (CairoTextImage * i,                                                                     // CairoTextImage
+ (CairoTextImage * i,                                                                   // CairoTextImage
   CairoTextFont font)                                                                   // Font to use
  {if (!font.cairoFontFace)                                                      // Load the font if this font has not yet been loaded.
    {makeLocalCopyOfStringBuffer(ff, l, font.file);
@@ -176,7 +173,6 @@ static void fontSize_CairoText                                                  
   int    size)                                                                  // Size
  {cairo_set_font_size (i->cr, size);                                             // Set font size
   i->proto->fontMetrics(i);
-say("BBBBB %f\n", i->fontHeight);
  }
 
 static double textAdvance_CairoText                                                     // Get the width of the specified text
@@ -358,23 +354,16 @@ static void save_CairoText_string                                               
 void test0()                                                                    //TcreateImage
  {void draw(CairoTextImage i)                                                           // Draw some text
    {i.proto->fontSize(&i, 20);
-say("AAAA %f\n", i.fontHeight);
-    i.proto->rgb(&i, 0, 0, 0);
-
-    cairo_set_source_rgb(i.cr, 0.5, 0.5, 0.5);
-    cairo_rectangle(i.cr, 0, 0, 1000, 1000);
-    cairo_fill(i.cr);
+    i.proto->rgb(&i, 1, 0, 0);
 
     const typeof("Hello World How is it whirling?") text = "Hello World How is it whirling?";
 
-    cairo_move_to       (i.cr, 1000, 1000);
-    cairo_set_source_rgb(i.cr, 1, 0, 0);
     i.proto->text(&i, 1000, 100 * i.fontHeight, text);
 
     for(size_t j = 0; j < 100; ++j) i.proto->text(&i, 0, j * i.fontHeight, text);
    }
 
-  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText0.png", "ab32")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText0.png", "ab32");                           // Create image containing some text and check its digest
+  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText0.png", "8915")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText0.png", "8915");                           // Create image containing some text and check its digest
   i.proto->free(&i);
  }
 
