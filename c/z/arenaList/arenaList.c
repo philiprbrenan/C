@@ -73,7 +73,7 @@ typedef struct $Description                                                     
 #define $Fer(child, list)   for(child ◀ list   ▷  last; child ▷ valid; child = child ▷ prev) // Each child under the root node of a $ from last to first
 #define $fe( child, parent) for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next) // Each child under a parent from first to last
 #define $fer(child, parent) for(child ◀ parent ▷ last ; child ▷ valid; child = child ▷ prev) // Each child under a parent from last to first
-#define makeLocalCopyOfArenaListKey(string,stringLength,node) const size_t stringLength = content__ArenaListNode(node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
+#define makeLocalCopyOfArenaListKey(string,stringLength,node) stringLength ◁ content__ArenaListNode(&node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(&node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 //D1 Constructors                                                               // Construct a new $.
 
@@ -99,9 +99,9 @@ static $ make$                                                                  
  }
 
 static void swap_$_$                                                            // Swap the arenas of two $
- ($ source,                                                                     // Source $
-  $ target)                                                                     // Target $
- {s ◁ source.arena; t ◁ target.arena;                                           // Arenas
+ ($ *source,                                                                    // Source $
+  $  target)                                                                    // Target $
+ {s ◁ source->arena; t ◁ target.arena;                                          // Arenas
   $Arena u = *t; *t = *s; *s = u;
  }
 
@@ -141,13 +141,12 @@ static $ make$FromLinesOfWords                                                  
  (const char * str)                                                             // String of lines of words separated by spaces;
  {list ◁ make$FromLines(str);
 
-  root ◁ list ▷ root;
-  $fe(line, root)
+  $Fe(line, list)
    {makeLocalCopyOf$Key(s, l, line);
 
     const char * p = s, *q = p;                                                 // Parse the string into new lines
 
-    void save()                                                                   // Save a line
+    void save()                                                                 // Save a line
      {if (p > q) {n ◁ list ▷ node(q, p - q); line ▷ putLast(n);}
       q = p + 1;
      }
@@ -167,83 +166,83 @@ static char * check_string_$                                                    
 //D1 Pointers and Offsets                                                       // Operations on pointers and offsets
 
 static void * pointer__$_size                                                   //PV Return a temporary pointer to data in the arena of the specified $
- (const $      list,                                                            // $
+ (const $   *  list,                                                            // $
   const size_t offset)                                                          // Offset
- {if (offset > list.arena->used)                                                // Check that the offset is valid
+ {if (offset > list->arena->used)                                               // Check that the offset is valid
    {printStackBackTraceAndExit(1, "Accessing area outside arena");
    }
-  return (void *)(list.arena->data + offset);                                   // Convert a non zero delta that is within the arena to a valid pointer
+  return (void *)(list->arena->data + offset);                                  // Convert a non zero delta that is within the arena to a valid pointer
  }
 
 static $Content * content__$Node                                                //PV Convert a node offset to an address so that the content of a node can be updated in situ as long as the $ is not reallocated to a different position.
- (const $Node node)                                                             // $Node
- {return ($Content *)pointer__$_size(node.list, node.offset);
+ (const $Node   * node)                                                         // $Node
+ {return ($Content *)pointer__$_size(&node->list, node->offset);
  }
 
 static size_t width_size__$                                                     // Get the width of the data area for a $
- (const $ list)                                                                 // $Node
- {return list.arena->width;
+ (const $ * list)                                                               // $Node
+ {return list->arena->width;
  }
 
 static size_t width_size__$Node                                                 // Get the width of the data area for a node
- (const $Node node)                                                             // $Node
- {return node.list.arena->width;
+ (const $Node * node)                                                           // $Node
+ {return node->list.arena->width;
  }
 
 static char * key_pointer__$Node                                                //V Get a temporary pointer to the key of a node.
- (const $Node node)                                                             // $Node
- {width ◁ node ▷ width;                                                         // Width of node
-  return pointer__$_size(node.list, node.offset + sizeof($Content) + width);    // The key is stored after the node and optional user data in the arena.
+ (const $Node * node)                                                           // $Node
+ {width ◁ node ▶ width;                                                         // Width of node
+  return pointer__$_size(&node->list, node->offset + sizeof($Content) + width); // The key is stored after the node and optional user data in the arena.
  }
 
-static void * data_pointer__$Node                                                //V Get a temporary pointer to the user data of a node.
- (const $Node node)                                                             // $Node
- {return pointer__$_size(node.list, node.offset + sizeof($Content));            // The optional user data is stored immediately after the node in the arena.
+static void   * data_pointer__$Node                                             //V Get a temporary pointer to the user data of a node.
+ (const $Node * node)                                                           // $Node
+ {return pointer__$_size(&node->list, node->offset + sizeof($Content));         // The optional user data is stored immediately after the node in the arena.
  }
 
-static size_t length_size__$Node                                                // Get the length of the key associated with a node
- (const $Node node)                                                             // $Node
- {return node ▷ content->length;
+static size_t   length_size__$Node                                              // Get the length of the key associated with a node
+ (const $Node * node)                                                           // $Node
+ {return node ▶ content->length;
  }
 
-static size_t maxLength_size__$Node                                             // Get the maximum allowed length of the key associated with a node.
- (const $Node node)                                                             // $Node
+static size_t   maxLength_size__$Node                                           // Get the maximum allowed length of the key associated with a node.
+ (const $Node * node)                                                           // $Node
 #ifndef $Editable
- {return node ▷ length;                                                         // Nodes in not editable $ are allocated just large enough to hold the key
+ {return node ▶ length;                                                         // Nodes in not editable $ are allocated just large enough to hold the key
  }
 #else
- {return (1ul << node ▷ content->size) - sizeof($Node) - node.list.arena->width;
+ {return (1ul << node ▶ content->size) - sizeof($Node)- node->list.arena->width;
  }
 #endif
 
 static  $Node  nodeFromOffset__$_size                                           //P Create a node to locate an allocation within the arena of a $.
- (const $      list,                                                            // $
+ (const $    * list,                                                            // $
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
- {return new $Node(list: list, offset: delta);
+ {return new $Node(list: *list, offset: delta);
  }
 
 //D1 Checks                                                                     // Check the validity of a node
 
 static int keyEquals_int__$Node_pointer_size                                    // Confirm that the key of a node is equal to the specified memory
- (const $Node        node,                                                      // $Node whose key is to be checked
-  const char * const key,                                                       // Expected key value
+ (const $Node * node,                                                           // $Node whose key is to be checked
+  const char  * const key,                                                      // Expected key value
   const size_t       length)                                                    // Length of expected key value
- {l ◁ node ▷ length;                                                            // Recorded length of node
+ {l ◁ node ▶ length;                                                            // Recorded length of node
   if (l != length) return 0;                                                    // Different lengths means the keys is unequal
-  return !memcmp(node ▷ key, key, l);                                           // Compare memory
+  return !memcmp(node ▶ key, key, l);                                           // Compare memory
  }
 
 static int equals_int__$Node_$Node                                              // Confirm two nodes are equal
- (const $Node a,                                                                // First offset
-  const $Node b)                                                                // Second offset
- {return a.list.arena == b.list.arena && a.offset == b.offset;
+ (const $Node * a,                                                              // First offset
+  const $Node   b)                                                              // Second offset
+ {return a->list.arena == b.list.arena && a->offset == b.offset;
  }
 
 //D1 Root node                                                                  // The root node of an $ is at offset 0
 
 static  $Node root_$Node__$                                                     // Return the root node of a $.
- (const $ list)                                                                 // $
- {return new $Node(list: list);                                                 // Root node
+ (const $ *   list)                                                             // $
+ {return new $Node(list: *list);                                                // Root node
  }
 
 static  $Node root_$Node__$Node                                                 // Return the root node of the $ containing the specified node.
@@ -254,37 +253,37 @@ static  $Node root_$Node__$Node                                                 
 //D1 Allocation                                                                 // Allocating memory in the $
 
 static  $Node  allocate_$Node__$_size                                           //P Allocate a node within the arena of a $
- (const $      list,                                                            // $ in which to allocate
+ (const $     *list,                                                            // $ in which to allocate
   const size_t size)                                                            // Amount of memory required
  {
 #ifdef $Editable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
   e ◁ exponentOfNextPowerOfTwo(size);                                           // Exponent of power of two of block size
-  f ◁ list.arena ->freeSpace[e];                                                // First element (if any) on the free space chain of this size
+  f ◁ list->arena ->freeSpace[e];                                               // First element (if any) on the free space chain of this size
   if (f)                                                                        // Free chain has an element
-   {$Content * c = list ▷ pointer(f);                                           // Content of first free node
-    list.arena->freeSpace[e] = c->next;                                         // Remove node from free chain
-    return list ▷ nodeFromOffset(f);                                            // Return node - it was cleared when it was freed
+   {$Content * c = list ▶ pointer(f);                                           // Content of first free node
+    list->arena->freeSpace[e] = c->next;                                        // Remove node from free chain
+    return list ▶ nodeFromOffset(f);                                            // Return node - it was cleared when it was freed
    }
 #endif
 
- if (list.arena->used + size < list.arena->size)                                // Allocate within existing arena
-   {n ◁ list ▷ nodeFromOffset(list.arena->used);                                // Current offset to open memory
-    list.arena->used += size;                                                   // Allocate
+ if (list->arena->used + size < list->arena->size)                              // Allocate within existing arena
+   {n ◁ list ▶ nodeFromOffset(list->arena->used);                               // Current offset to open memory
+    list->arena->used += size;                                                  // Allocate
 #ifdef $Editable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
-    n ▷ content->size = exponentOfNextPowerOfTwo(size);                                   // Node size
+    n ▷ content->size = exponentOfNextPowerOfTwo(size);                         // Node size
 #endif
     return n;                                                                   // Return allocation
    }
   else                                                                          // Reallocate arena
-   {S ◁ nextPowerOfTwo(list.arena->size + size);                                // Round up memory required
+   {S ◁ nextPowerOfTwo(list->arena->size + size);                               // Round up memory required
     if (S < ((size_t)((1l<<(sizeof((($Content *)0)->length)*8)) - 1)))          // The maximum size of a delta if there are 8 bits in a byte
-     {m ◁ realloc(list.arena->data, S);                                         // Reallocate arena - the old one will be copied into it if it is moved.
+     {m ◁ realloc(list->arena->data, S);                                        // Reallocate arena - the old one will be copied into it if it is moved.
       if (m)                                                                    // Retry the memory allocation
-       {list.arena->data = m;                                                   // New arena
-        list.arena->size = S;                                                   // Arena size
-        u ◁ list.arena->used;                                                   // Length of free space
-        memset(list.arena->data + u, 0, S - u);                                 // Clear free space
-        return list ▷ allocate(size);                                           // Allocate within arena
+       {list->arena->data = m;                                                  // New arena
+        list->arena->size = S;                                                  // Arena size
+        u ◁ list->arena->used;                                                  // Length of free space
+        memset(list->arena->data + u, 0, S - u);                                // Clear free space
+        return list ▶ allocate(size);                                           // Allocate within arena
        }
      }
    }
@@ -292,20 +291,20 @@ static  $Node  allocate_$Node__$_size                                           
  }
 
 static size_t used_size__$                                                      // Amount of space currently being used within the arena of a $.
- (const $ list)                                                                 // $
- {return list.arena->used;
+ (const $ * list)                                                               // $
+ {return list->arena->used;
  }
 
 static $Node node_$Node__$_string_size                                          // Create a new $ node with the specified key.
- (const $            list,                                                      // $ in which to create the node
+ (const $    *       list,                                                      // $ in which to create the node
   const void * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the $ is determined solely by the user.
   const size_t       length)                                                    // Length of the key.
- {s ◁ sizeof($Node) + length + list ▷ width;                                    // Minimum width of node
+ {s ◁ sizeof($Node) + length + list ▶ width;                                    // Minimum width of node
 #ifndef $Editable
-  n ◁ list ▷ allocate(s);                                                       // Offset of space allocated for a node and key
+  n ◁ list ▶ allocate(s);                                                       // Offset of space allocated for a node and key
 #else
   t ◁ exponentOfNextPowerOfTwo(s);                                              // Round size up to next power of two
-  n ◁ list ▷ allocate(1ul<<t);                                                  // Offset of space allocated for a node and key
+  n ◁ list ▶ allocate(1ul<<t);                                                  // Offset of space allocated for a node and key
 #endif
   c ◁ n ▷ content;                                                              // Address content
   c->length = length;                                                           // Save key length
@@ -314,37 +313,37 @@ static $Node node_$Node__$_string_size                                          
  }
 
 static void setKey__$Node_string_size                                           // Set the key of a node to a different value as long as there is enough room from the last setting.
- (const $Node        node,                                                      // $Node
+ ($Node      *       node,                                                      // $Node
   const void * const key,                                                       // Key
   const size_t       length)                                                    // Length of key
- {m ◁ node ▷ maxLength;                                                         // Maximum length of key
+ {m ◁ node ▶ maxLength;                                                         // Maximum length of key
   if (length <= m)                                                              // There is enough room in the existing key for the new key
-   {memcpy(node ▷ key, key, length);                                            // Copy in the key
-    node ▷ content -> length = length;                                          // Set key length
+   {memcpy(node ▶ key, key, length);                                            // Copy in the key
+    node ▶ content -> length = length;                                          // Set key length
     return;
    }
 #ifndef $Editable
   printStackBackTraceAndExit(1, "Attempt to set longer key\n");                 // Error: no room for the key and not editable
 #else
-  n ◁ node.list ▷ node(key, length);                                            // Create a node capable of storing the key
-  n ▷ replace(node);                                                            // Replace the existing node with the new node
-  node ▷ free;                                                                  // Place the original node on the appropriate free chain
+  n ◁ node->list ▷ node(key, length);                                           // Create a node capable of storing the key
+  n ▷ replace(*node);                                                           // Replace the existing node with the new node
+  node ▶ free;                                                                  // Place the original node on the appropriate free chain
 #endif
  }
 
 static size_t freedSpace_size__$                                                //P Amount of space on the free chains
- (const $     list)                                                             // $
+ (const $ * list)                                                               // $
 #ifndef $Editable
- {return 0 * sizeof(list);
+ {return 0 * sizeof(*list);
  }
 #else
  {N ◁ sizeof((($Arena *)0)->freeSpace) / sizeof((($Arena *)0)->freeSpace[0]);   // Number of free space chains
   F ◀  0ul;                                                                     // Total free space
   for(size_t i = 0; i < N; ++i)                                                 // Each chain
-   {f ◀ list.arena->freeSpace[i];                                               // First element of chain
+   {f ◀ list->arena->freeSpace[i];                                              // First element of chain
     while(f)                                                                    // Run along chain
      {F += 1ul<<i;                                                              // Size of node
-      $Content * c = list ▷ pointer(f); f = c -> next;                          // Next element
+      $Content * c = list ▶ pointer(f); f = c -> next;                          // Next element
      }
    }
   return F;                                                                     // Freed space
@@ -352,37 +351,37 @@ static size_t freedSpace_size__$                                                
 #endif
 
 static void setData_$Node_pointer                                               // Set the optional user data associated with a node in an $
- (const $Node        node,                                                      // $Node
-  const void * const data)                                                      // Data
- {memcpy(node ▷ data, data, node ▷ width);                                      // Copy in the data
+ ($Node       *       node,                                                     // $Node
+  const void  * const data)                                                     // Data
+ {memcpy(node ▶ data, data, node ▶ width);                                      // Copy in the data
  }
 
 static void getData_$Node_pointer                                               // Get the optional user data associated with a node in an $
- (const $Node  node,                                                            // $Node
-   void * const data)                                                           // Data
- {memcpy(data, node ▷ data, node ▷ width);                                      // Copy out the data
+ (const $Node * node,                                                           // $Node
+  void * const  data)                                                           // Data
+ {memcpy(data, node ▶ data, node ▶ width);                                      // Copy out the data
  }
 
 static void copyData_$Node_$Node                                                // Copy the data from the source node to the target node.
- (const $Node target,                                                           // Target $Node
-  const $Node source)                                                           // Source $Node
- {memcpy(target ▷ data, source ▷ data, source ▷ width);                         // Copy the data if any
+ (      $Node * target,                                                         // Target $Node
+  const $Node   source)                                                         // Source $Node
+ {memcpy(target ▶ data, source ▷ data, source ▷ width);                         // Copy the data if any
  }
 
 static $Node  copy_$Node__$Node_$                                               // Copy a node from one $ to another $
- (const $Node source,                                                           // Source $Node
-  const $     target)                                                           // Target $
- {makeLocalCopyOf$Key(s, l, source);
-  n ◁ target ▷ node  (s, l);                                                    // Copy node to target
-  if  (n ▷ width != source ▷ width) printStackBackTrace("Width of target different from width of source\n");
-  else n ▷ copyData(source);                                                    // Copy data from source to target
+ (const $Node * source,                                                         // Source $Node
+  const $       target)                                                         // Target $
+ {makeLocalCopyOf$Key(s, l, *source);
+  n ◀ target ▷ node  (s, l);                                                    // Copy node to target
+  if  (n ▷ width != source ▶ width) printStackBackTrace("Width of target different from width of source\n");
+  else n ▷ copyData(*source);                                                   // Copy data from source to target
   return n;                                                                     // Copy any data associated with the node
  }                                                                              // Return new node
 
 static void fromLetters__$_string                                               // Load $ from a string of letters and brackets.  The root node of the $ so constructed is always given the letter 'a'.
- (const $      list,                                                            // $
+ (const $    * list,                                                            // $
   const char * str)                                                             // String of letters and brackets describing desired list structure
- {const $Node n = list ▷ root;                                                  // The node we are currently  adding to
+ {const $Node n = list ▶ root;                                                  // The node we are currently  adding to
 
   void parse($Node current)                                                     // Parse the string of letters and brackets to construct the desired $
    {while(*str)
@@ -397,7 +396,7 @@ static void fromLetters__$_string                                               
          {++str; return;
          }
         default:                                                                // Add to current parent
-         {current ▷ putLast(list ▷ node(&c, 1));
+         {current ▷ putLast(list ▶ node(&c, 1));
           ++str; continue;
          }
        }
@@ -408,21 +407,21 @@ static void fromLetters__$_string                                               
  };
 
 static void free__$                                                             // Free an entire $.
- (const $ list)                                                                 // $ to free
- {a ◁ list.arena;
+ (const $ * list)                                                               // $ to free
+ {a ◁ list->arena;
   if  (a->data) free(a->data);
   free(a);
  }
 
 static void free__$Node                                                         // Free a node. If the $ is editable the node is made available for reuse otherwise the node wastes space. A new copy of the $ without wasted space can be made with copyAndCompact_$ .
- ($Node node)                                                                   // $Node to free
+ ($Node * node)                                                                 // $Node to free
 #ifdef $Editable
- {c ◁ node ▷ content;                                                           // Content of node
+ {c ◁ node ▶ content;                                                           // Content of node
   s ◁ c->size;                                                                  // Size of node as a power of two
   memset(c, 0, 1ul<<s);                                                         // Clear node
-  f ◁ node.list.arena->freeSpace[c->size  = s];                                 // First element  of free space chain
+  f ◁ node->list.arena->freeSpace[c->size  = s];                                // First element  of free space chain
   if (f) c->next  = f;                                                          // Place the incoming node at the front of the chain
-      node.list.arena->freeSpace[s] = node.offset;                              // New first node on the free space chain
+      node->list.arena->freeSpace[s] = node->offset;                            // New first node on the free space chain
  }
 #else
  {node=node;                                                                    // Free has no effect if we are not editable.
@@ -432,79 +431,79 @@ static void free__$Node                                                         
 //D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
 
 static void insertChar__$Node_char_size                                         // Insert the specified character into the key string of a node at the specified position.
- (const $Node node,                                                             // $Node
-  const char  ins,                                                              // Character to insert
-  size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
- {m ◁ node ▷ maxLength;                                                         // Maximum length of key
-  l ◁ node ▷ length;                                                            // Current length of key
+ ($Node * node,                                                                 // $Node
+  const char    ins,                                                            // Character to insert
+  size_t        pos)                                                            // Position in key. 0 prepends the char, while >= length appends the char.
+ {m ◁ node ▶ maxLength;                                                         // Maximum length of key
+  l ◁ node ▶ length;                                                            // Current length of key
   if (pos > l) pos = l;                                                         // Append to end of string if requested position is beyond the end of the string
   if (l + 1 <= m)                                                               // There is enough room in the existing key for the new key
-   {char * k = node ▷ key;                                                      // Address key
+   {char * k = node ▶ key;                                                      // Address key
     memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
-    node ▷ content->length++;                                                   // Update key length
+    node ▶ content->length++;                                                   // Update key length
     k[pos] = ins;                                                               // Insert
    }
   else                                                                          // Create a new node to hold a key that is too large for the current node
-   {makeLocalCopyOf$Key(k, l, node);                                            // Local copy with trailing zero
+   {makeLocalCopyOf$Key(k, l, *node);                                           // Local copy with trailing zero
     memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
     k[pos] = ins;                                                               // Insert
-    n ◁ node.list ▷ node(k, l+1);                                               // Create a node capable of storing the key
-    n ▷ replace(node);                                                          // Replace the existing node with the new node
-    node ▷ free;                                                                // Place the original node on the appropriate free chain
+    n ◁ node->list ▷ node(k, l+1);                                              // Create a node capable of storing the key
+    n ▷ replace(*node);                                                         // Replace the existing node with the new node
+    node ▶ free;                                                                // Place the original node on the appropriate free chain
    }
  }
 
 static void replaceChar__$Node_size                                             // Replace the character at the specified position in the key string of a node with the specified character.
- (const $Node node,                                                             // $Node
-  const char  repl,                                                             // Replacement character
-  size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
- {l ◁ node ▷ length;                                                            // Current length of key
+ (const $Node * node,                                                           // $Node
+  const char    repl,                                                           // Replacement character
+  size_t        pos)                                                            // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
+ {l ◁ node ▶ length;                                                            // Current length of key
   if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
-  char * k = node ▷ key;                                                        // Address key
+  char * k = node ▶ key;                                                        // Address key
   k[pos] = repl;                                                                // Replace
  }
 
 static void swapChars__$Node_size                                               // Swap the characters on either side of the specified position if it is between 1 and length - 1.
- (const $Node node,                                                             // $Node
-  size_t      pos)                                                              // Position in key. 1 swaps the first two characters.  length - 1 swaps the last two characters.
- {l ◁ node ▷ length;                                                            // Current length of key
+ (const $Node * node,                                                           // $Node
+  size_t        pos)                                                            // Position in key. 1 swaps the first two characters.  length - 1 swaps the last two characters.
+ {l ◁ node ▶ length;                                                            // Current length of key
   if (pos == 0 || pos >= l) return;                                             // Not in a swappable range
-  char * k = node ▷ key;                                                        // Address key
+  char * k = node ▶ key;                                                        // Address key
   const char c = k[pos]; k[pos] = k[pos - 1]; k[pos - 1] = c;                   // Swap
  }
 
 static void deleteChar__$Node_size                                              // Delete the character at the specified position in the key string of a node.
- (const $Node node,                                                             // $Node
-  size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
- {l ◁ node ▷ length;                                                            // Current length of key
+ (const $Node * node,                                                           // $Node
+  size_t        pos)                                                            // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
+ {l ◁ node ▶ length;                                                            // Current length of key
   if (pos >= l) return;                                                         // Cannot delete the character specified because it is beyond the end of the string
-  char * k = node ▷ key;                                                        // Address key
+  char * k = node ▶ key;                                                        // Address key
   memmove(k + pos, k + pos + 1, l - pos + 1);                                   // Overlapping move
-  node ▷ content->length--;                                                     // Update key length
+  node ▶ content->length--;                                                     // Update key length
  }
 
 //D1 Navigation                                                                 // Navigate through a $.
 
 static int valid_int__$Node                                                     // Check that a node is valid.
- (const $Node child)                                                            // $Node
- {return child.offset;                                                          // A node is valid unless it has a zero offset in which case it is not a valid node. Typically an invalid node is returned when a method applied to a valid node cannot be completed as in: get the next sibling following the last sibling.
+ (const $Node * child)                                                          // $Node
+ {return child->offset;                                                         // A node is valid unless it has a zero offset in which case it is not a valid node. Typically an invalid node is returned when a method applied to a valid node cannot be completed as in: get the next sibling following the last sibling.
  }
 
 static  $Node parent_$Node__$Node                                               // Get the parent of a child
- (const $Node child)                                                            // Child
- {if (child ▷ isRoot) return child;
-  return child.list ▷ nodeFromOffset(child ▷ content->parent);
+ (const $Node * child)                                                          // Child
+ {if (child ▶ isRoot) return *child;
+  return child->list ▷ nodeFromOffset(child ▶ content->parent);
  }
 
 static  $Node first_$Node__$Node                                                // Get the first child under a parent.
- (const $Node parent)                                                           // Parent
- {return  parent.list ▷ nodeFromOffset(parent ▷ content->first);
+ (const $Node * parent)                                                         // Parent
+ {return  parent->list ▷ nodeFromOffset(parent ▶ content->first);
  }
 duplicate s/first/last/g s/first/next/g s/first/prev/g
 
 static  $Node first_$Node__$                                                    // Get the first child in the specified $.
- (const $ list)                                                                 // Parent
- {const $Node root = list ▷ root;
+ (const $ * list)                                                               // Parent
+ {root ◁ list ▶ root;
   return root ▷ first;
  }
 duplicate s/first/last/g s/first/next/g s/first/prev/g
@@ -512,16 +511,16 @@ duplicate s/first/last/g s/first/next/g s/first/prev/g
 //D1 Search                                                                     // Search for nodes.
 
 static int equalsString_int__$Node_string                                       // Check that the key of a node equals a string
- (const $Node        node,                                                      // $Node
+ (const $Node      * node,                                                      // $Node
   const char * const key)                                                       // Key
- {return node ▷ keyEquals(key, strlen(key));
+ {return node ▶ keyEquals(key, strlen(key));
  }
 
 static  $Node findFirst_$Node__string                                           // Find the first node with the specified key in a post-order traversal of the $ starting at the specified node.
- (const $Node        node,                                                      // $Node at the start of the list to be searched
-  const char * const key)                                                       // Key to find
+ (const $Node * node,                                                           // $Node at the start of the list to be searched
+  const char  * const key)                                                      // Key to find
  {jmp_buf found;
-  $Node F = new $Node(list: node.list);                                         // An invalid node
+  $Node F = new $Node(list: node->list);                                        // An invalid node
 
   void find($Node node)                                                         // Check whether the key of the current node matches the specified key
    {if (node ▷ equalsString(key))                                               // Found
@@ -530,16 +529,16 @@ static  $Node findFirst_$Node__string                                           
      }
    }
 
-  if (!setjmp(found)) node ▷ by(find);                                          // Search the $
+  if (!setjmp(found)) node ▶ by(find);                                          // Search the $
 
   return F;                                                                     // Return an invalid node
  }
 
 static  $Node findFirst_$Node__$_string                                         // Find the first node with the specified key in a post-order traversal of the $.
- (const $            list,                                                      // $
+ (const $    *       list,                                                      // $
   const char * const key)                                                       // Key to find
  {jmp_buf found;
-  $Node F = new $Node(list: list);                                              // An invalid node
+  $Node F = new $Node(list: *list);                                             // An invalid node
 
   void find($Node node)                                                         // Check whether the key of the current node matches the specified key
    {if (node ▷ equalsString(key))                                               // Found
@@ -548,61 +547,62 @@ static  $Node findFirst_$Node__$_string                                         
      }
    }
 
-  if (!setjmp(found)) list ▷ by(find);                                          // Search the $
+  if (!setjmp(found)) list ▶ by(find);                                          // Search the $
 
   return F;                                                                     // Return an invalid node
  }
 
 static  $Node findFirstChild_$Node__$Node_string                                // Find the first child of the specified parent with the specified key.
- (const $Node        parent,                                                    // Parent node
-  const char * const key)                                                       // Key to find immediately under parent
- {$fe(child, parent) if (child ▷ equalsString(key)) return child;               // Found matching child
+ (const $Node *       Parent,                                                   // Parent node
+  const char  * const key)                                                      // Key to find immediately under parent
+ {parent ◁ *Parent;
+  $fe(child, parent) if (child ▷ equalsString(key)) return child;               // Found matching child
 
   const $Node invalid = {};                                                     // An invalid node
   return invalid;                                                               // Failed - return an invalid node
  }
 
 static  $Node findFirstChild_$Node__$_string                                    // Find the first child immediately under the root with the specified key.
- (const $            list,                                                      // $
+ (const $          * list,                                                      // $
   const char * const key)                                                       // Key to find
- {const $Node  r = list ▷ root;                                                 // Root node of the $
+ {       r ◁ list ▶ root;                                                       // Root node of the $
   return r ▷ findFirstChild(key);                                               // Search the $
  }
 
 //D1 Location                                                                   // Verify the current location.
 
 static int context_int__$Node_$Node_string                                      // Return true if the parent of the specified child has the specified key.
- (const $Node         child,                                                    // Child
+ (const $Node *       child,                                                    // Child
         $Node * const parent,                                                   // Parent container
   const char  * const key)                                                      // Key
- {if (child ▷ isRoot) return 0;                                                 // The root node has no context
-  p ◁ *parent = child ▷ parent;
+ {if (child ▶ isRoot) return 0;                                                 // The root node has no context
+  p ◁ *parent = child ▶ parent;
   makeLocalCopyOf$Key(k, l, p);
   return p ▷ valid && !memcmp(k, key, l);                                       // Check key
  }
 
 static int isFirst_int__$Node                                                   // Confirm a child is first under its parent
- (const $Node child)                                                            // Child
- {const $Node parent = child ▷ parent;
-  return child ▷ equals(parent ▷ first);
+ (const $Node * child)                                                          // Child
+ {parent ◁ child ▶ parent;
+  return child ▶ equals(parent ▷ first);
  }
 duplicate s/First/Last/,s/first/last/
 
 static int isEmpty_int__$Node                                                   // Confirm a node has no children.
- (const $Node node)                                                             // $Node
- {const $Node child = node ▷ first;
+ (const $Node * node)                                                           // $Node
+ {child ◁ node ▶ first;
   return !child ▷ valid;                                                        // No first child so the node is empty
  }
 
 static int isOnlyChild_int__$Node                                               // Confirm that this child is the only child of its parent
- (const $Node child)                                                            // Child
- {parent ◁ child ▷ parent;                                                      // Parent
-  return parent ▷ valid && child ▷ isFirst && child ▷ isLast;                   // Child is first and last and not the root so it is an only child
+ (const $Node * child)                                                          // Child
+ {parent ◁ child ▶ parent;                                                      // Parent
+  return parent ▷ valid && child ▶ isFirst && child ▶ isLast;                   // Child is first and last and not the root so it is an only child
  }
 
 static int isRoot_int__$Node                                                    // Confirm a node is the root
- (const $Node node)                                                             // $Node
- {return !node.offset;
+ (const $Node * node)                                                           // $Node
+ {return !node->offset;
  }
 
 //D1 Put                                                                        // Insert children into a $.
@@ -629,18 +629,18 @@ static  $Node putFL_$Node__int_$Node_$Node                                      
   return child;
  }
 
-static  $Node putTreeFirst_$Node__$Node                                         // Put a child first in the $ containing the arena in which the child was allocated.
- (const $Node child)                                                            // Child
- {t ◁ child.list;                                                               // $ containing arena containing child
+static  $Node   putTreeFirst_$Node__$Node                                       // Put a child first in the $ containing the arena in which the child was allocated.
+ (const $Node * child)                                                          // Child
+ {t ◁ child->list;                                                              // $ containing arena containing child
   r ◁ t ▷ root;
-  return r ▷ putFirst(child);                                                   // Put the child first
+  return r ▷ putFirst(*child);                                                  // Put the child first
  }
 duplicate s/First/Last/g,s/first/last/g,
 
-static  $Node putFirst_$Node__$Node_$Node                                       // Put a child first under its parent
- (const $Node parent,                                                           // Parent
-  const $Node child)                                                            // Child
- {return putFL_$Node__int_$Node_$Node(1, parent, child);                        // Put a child first under its parent
+static  $Node   putFirst_$Node__$Node_$Node                                     // Put a child first under its parent
+ (const $Node * parent,                                                         // Parent
+  const $Node   child)                                                          // Child
+ {return putFL_$Node__int_$Node_$Node(1, *parent, child);                       // Put a child first under its parent
  }
 duplicate s/First/Last/g,s/first/last/g,s/1/0/
 
@@ -681,27 +681,28 @@ static void setUp__$Node_$Node                                                  
  {child ▷ content->parent = parent.offset;                                      // Set parent of child
  }
 
-static  $Node putNext_$Node__$Node_$Node                                        // Put a child next after the specified sibling
- (const $Node sibling,                                                          // Sibling
-  const $Node child)                                                            // Child
- {return putNP_$Node__int_$Node_$Node(1, sibling, child);                       // Put child next
+static  $Node   putNext_$Node__$Node_$Node                                        // Put a child next after the specified sibling
+ (const $Node * sibling,                                                          // Sibling
+  const $Node   child)                                                            // Child
+ {return putNP_$Node__int_$Node_$Node(1, *sibling, child);                      // Put child next
  }
 duplicate s/Next/Prev/g,s/next/previous/g,s/1/0/
 
 static  void replace__$Node_$Node                                               // Replace the specified node with this node
- (const $Node with,                                                             // Replace with this node
-  const $Node over)                                                             // Node to be replaced
- {over ▷ putPrev(with);                                                         // Place new node
-  $Content * w = with ▷ content;                                                // Transfer children
+ (const $Node * with,                                                           // Replace with this node
+  const $Node   over)                                                           // Node to be replaced
+ {over ▷ putPrev(*with);                                                         // Place new node
+  $Content * w = with ▶ content;                                                // Transfer children
   $Content * o = over ▷ content;
   w->first = o->first; w->last = o->last;
   over ▷ cut;                                                                   // Remove node being replaced
  }
 
 static void splitKey_$Node_$Node                                                // Split the specified node at the specified position.
- (const $Node node,                                                             // $Node
-  size_t      pos)                                                              // Position in key at which to split.
- {makeLocalCopyOf$Key(k, l, node);                                              // Local copy
+ (const $Node * Node,                                                           // $Node
+  const size_t  pos)                                                            // Position in key at which to split.
+ {node ◁ *Node;                                                                 // Local copy
+  makeLocalCopyOf$Key(k, l, node);                                              // Local copy
   if (pos == 0 || pos >= l) return;                                             // Requested position would result in an empty key
   node ▷ content -> length = pos;                                               // New length of left node
   n    ◁ node.list ▷ node(k+pos, l - pos);                                      // Create right hand node
@@ -711,11 +712,11 @@ static void splitKey_$Node_$Node                                                
 //D1 Traverse                                                                   // Traverse a $.
 
 static void by__$Node_sub                                                       // Traverse the $ rooted at the specified node in post-order calling the specified function to process each child node.  The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
- ($Node node,                                                                   // $Node
+ (const $Node * node,                                                           // $Node
   void (* const function) (const $Node node))                                   // Function
  {void children(const $Node parent)                                             // Process the children of the specified parent
    {if (!parent ▷ valid) return;                                                // Empty child
-    N ◁ parent ▷ countChildren;                                                 // Number of children
+    N ◁  parent ▷ countChildren;                                                // Number of children
     if (N)                                                                      // Process children if there are any
      {size_t c[N+1];                                                            // Array of children terminated by a trailing zero
       size_t n = 0; $fe(child, parent) c[n++] = child.offset;                   // Load each child into an array
@@ -725,19 +726,19 @@ static void by__$Node_sub                                                       
      }
     function(parent);                                                           // Process the parent
    }
-  children(node);                                                               // Start at the specified node
+  children(*node);                                                              // Start at the specified node
  }
 
 static void by__$_sub                                                           // Traverse a $ in post-order calling the specified function to process each child node.  The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
- (const $ list,                                                                 // $
+ (const $ * list,                                                               // $
   void (* const function) (const $Node node))                                   // Function
- {root ◁ list ▷ root;                                                           // Root node
-  N    ◁ list ▷ countChildren;                                                  // Number of children under root
+ {root ◁ list ▶ root;                                                           // Root node
+  N    ◁ list ▶ countChildren;                                                  // Number of children under root
   if (N)                                                                        // Process children under root if there are any
    {size_t c[N+1];                                                              // Array of children terminated by a trailing zero
     size_t n = 0; $fe(child, root) c[n++] = child.offset;                       // Load each child into an array
     for(size_t i = 0; i < N; ++i)
-     {$Node n = new $Node(list: list, offset: c[i]);                            // Process each child allowing it to change position
+     {$Node n = new $Node(list: *list, offset: c[i]);                           // Process each child allowing it to change position
       n ▷ by(function);
      }
    }
@@ -745,7 +746,7 @@ static void by__$_sub                                                           
  }
 
 static void scan__$Node_sub                                                     // Traverse the $ rooted at the specified node calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
- ($Node node,                                                                   // $Node
+ (const $Node * node,                                                           // $Node
   void (* const function) ($Node node, int start, int depth))                   // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
  {void children($Node parent, int depth)                                        // Process the children of the specified parent
    {if (!parent ▷ valid) return;                                                // Empty child
@@ -761,20 +762,20 @@ static void scan__$Node_sub                                                     
      }
     else function(parent, 0, depth);                                            // Call once as there are no child nodes
    }
-  children(node, 1);                                                            // Start at the root node
+  children(*node, 1);                                                           // Start at the root node
  }
 
 static void scan__$_sub                                                         // Traverse a $ calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
- (const $ list,                                                                 // $
+ (const $ * list,                                                               // $
   void (* const function) ($Node node, int start, int depth))                   // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
- {root ◁ list ▷ root;                                                           // Root node
-  N    ◁ list ▷ countChildren;                                                  // Number of children under root
+ {root ◁ list ▶ root;                                                           // Root node
+  N    ◁ list ▶ countChildren;                                                  // Number of children under root
   if (N)                                                                        // Process children under root if there are any
    {size_t c[N+1];                                                              // Array of children terminated by a trailing zero
     size_t n = 0; $fe(child, root) c[n++] = child.offset;                       // Load each child into an array
     function(root, 1, 0);                                                       // Call before
     for(size_t i = 0; i < N; ++i)
-     {$Node n = new $Node(list: list, offset: c[i]);                            // Process each child allowing it to change position
+     {n ◁ new $Node(list: *list, offset: c[i]);                                 // Process each child allowing it to change position
       n ▷ scan(function);
      }
     function(root, -1, 0);                                                      // Call after
@@ -783,22 +784,23 @@ static void scan__$_sub                                                         
  }
 
 static  size_t countChildren_size__$                                            // Count the number of children directly under a parent.
- (const $ list)                                                                 // $
+ (const $ * list)                                                               // $
  {size_t l = 0;
-  root ◁ list ▷ root;
+  root ◁ list ▶ root;
   $fe(child, root) ++l;
   return l;                                                                     // Return count
  }
 
 static  size_t countChildren_size__$Node                                        // Count the number of children directly under a node.
- (const $Node parent)                                                           // Parent
+ (const $Node * Parent)                                                         // Parent
  {size_t l = 0;
+  parent  ◁ *Parent;
   $fe(child, parent) ++l;
   return l;                                                                     // Return count
  }
 
 static  size_t count_size__$Node                                                // Count the number of nodes under a specified node but not including the specified node.
- (const $Node node)                                                             // $Node
+ (const $Node * node)                                                           // $Node
  {size_t l = 0;
 
   void count(const $Node parent)                                                // Process the children of the specified parent
@@ -806,23 +808,23 @@ static  size_t count_size__$Node                                                
     l++; $fe(child, parent) count(child);                                       // Each child
    }
 
-  count(node);                                                                  // Start at the specified node
+  count(*node);                                                                 // Start at the specified node
   return l - 1;                                                                 // Return count without counting the root node
  }
 
 
 static  size_t count_size__$                                                    // Count the number of nodes in a $
- (const $ list)                                                                 // $
+ (const $ * list)                                                               // $
  {size_t l = 0;
 
-  root ◁ list ▷ root;                                                           // Root is always invalid
+  root ◁ list ▶ root;                                                           // Root is always invalid
   $fe(child, root) l += 1 + child ▷ count;                                      // Child under root plus its children
   return l;                                                                     // Return count without counting the root node
  }
 
-static $ copyAndCompact_$__$                                                    // Copy a $ compacting any free space.  This method assumes that there are no direct external references to the nodes in the list as this process might change the location of one or more nodes in the arena.
- (const $ source)                                                               // Source $
- {target ◁ make$WithWidth(source ▷ width);                                      // $ with same width
+static  $ copyAndCompact_$__$                                                   // Copy a $ compacting any free space.  This method assumes that there are no direct external references to the nodes in the list as this process might change the location of one or more nodes in the arena.
+ (const $ * source)                                                             // Source $
+ {target ◁ make$WithWidth(source ▶ width);                                      // $ with same width
   void children($Node old, $Node new)                                           // Make a new copy of each node in the source $.
    {$fe(child, old)                                                             // Each child of old parent
      {n ◁ child ▷ copy(target);                                                 // Copy child to new $
@@ -830,7 +832,7 @@ static $ copyAndCompact_$__$                                                    
       children(child, n);                                                       // Copy grand children
      }
    }
-  rs ◁ source ▷ root; rt ◁ target ▷ root;                                       // Start at root
+  rs ◁ source ▶ root; rt ◁ target ▷ root;                                       // Start at root
   children(rs, rt);                                                             // Each child of the root node
   return target;                                                                // Return new $
  }
@@ -838,7 +840,7 @@ static $ copyAndCompact_$__$                                                    
 //D1 Print                                                                      // Print $s in various ways
 
 static void printWithBrackets__$Node_function                                   // Apply a function to a string containing a print of the specified  node and the $ below it in preorder as a string with each sub $ enclosed in brackets.
- (const $Node   node,                                                           // $Node
+ (const $Node * node,                                                           // $Node
   void (*printer)(char * string, size_t length))                                // Function to apply to printed $
  {size_t l = 0;                                                                 // Length of output string
   void len(const $Node parent)                                                  // Find the size of buffer we will need
@@ -861,41 +863,39 @@ static void printWithBrackets__$Node_function                                   
     *p = 0;                                                                     // End the string
    }
 
-  len(node); char P[l+1]; P[0] = 0; p = P; print(node);                         // Print in local string
+  len(*node); char P[l+1]; P[0] = 0; p = P; print(*node);                       // Print in local string
   printer(P, l);                                                                // Apply function
  }
 
 static void printWithBrackets__string_$                                         // Print an entire $ in preorder as a string with brackets around each sub $
- (const $ list,                                                                 // $
+ (const $ * list,                                                               // $
   void (*printer)(char * string, size_t length))                                // Function to apply to printed $
- {node ◁ list ▷ root;                                                           // Root
+ {node ◁ list ▶ root;                                                           // Root
   node ▷ printWithBrackets(printer);
  }
 
 static int printsWithBracketsAs_int__$Node_string                               // Check that the $ starting at the specified node prints with brackets as expected.
- (const $Node        node,                                                      // $Node
-  const char * const expected)                                                  // Expected string when printed
+ (const $Node *       node,                                                     // $Node
+  const char  * const expected)                                                 // Expected string when printed
  {int r;
   void printer(char * s, size_t l)
    {r = !strncmp(s, expected, l);
    }
-  node ▷ printWithBrackets(printer);
+  node ▶ printWithBrackets(printer);
   return r;
  }
 
-static void dumpWithBrackets__$                                                 //P Dump a $ printed with brackets to stderr
- (const $ list)                                                                 // $
- {void printer(char * s, size_t l)
-   {say("\n%s\n", s); l=l;
-   }
-  list ▷ printWithBrackets(printer);
+static int printsWithBracketsAs_int__$_string                                   // Check that the specified $ prints with brackets as expected.
+ (const $    *       list,                                                      // $
+  const char * const expected)                                                  // Expected string when printed
+ {       root ◁ list ▶ root;                                                    // Root
+  return root ▷ printsWithBracketsAs(expected);
  }
 
-static int printsWithBracketsAs_int__$_string                                   // Check that the specified $ prints with brackets as expected.
- (const $            list,                                                      // $
-  const char * const expected)                                                  // Expected string when printed
- {       root ◁ list ▷ root;                                                    // Root
-  return root ▷ printsWithBracketsAs(expected);
+static void dumpWithBrackets__$                                                 //P Dump a $ printed with brackets to stderr
+ (const $ * list)                                                               // $
+ {void printer(char * s, size_t l) {say("\n%s\n", s); l=l;}
+  list ▶ printWithBrackets(printer);
  }
 
 static void dump__$                                                             //P Dump a $ on stderr
@@ -916,11 +916,11 @@ static void dump__$                                                             
 static void dump__$Node                                                         //P Dump a $Node on stderr
  (const $Node node)                                                             // $Node
  {makeLocalCopyOf$Key(k, l, node);                                              // Local copy of key
-  say("%lu %s\n", l, k);                                                        // Print key number
+  say("%d %s\n", l, k);                                                        // Print key number
  }
 
 static void print__$Node_function                                               // Apply a function to the print of a $Node and the tree below it.
- (const $Node   node,                                                           // $Node
+ (const $Node * node,                                                           // $Node
   void (*printer)(char * string, size_t length))                                // Function to apply to printed $
  {size_t l = 0;                                                                 // Length of output string
   void len(const $Node parent)                                                  // Find the size of buffer we will need
@@ -936,52 +936,52 @@ static void print__$Node_function                                               
     *p = 0;                                                                     // End the string
    }
 
-  len(node); char P[l+1]; P[0] = 0; p = P; print(node);                         // Print in local string
+  len(*node); char P[l+1]; P[0] = 0; p = P; print(*node);                       // Print in local string
   printer(P, l);                                                                // Apply function
  }
 
 static int printsAs_int__$Node_string                                           // Check that the specified node prints as expected.
- (const $Node        node,                                                      // $
-  const char * const expected)                                                  // Expected string when printed
+ (const $Node *       node,                                                     // $
+  const char  * const expected)                                                 // Expected string when printed
  {int r;
   void printer(char * s, size_t l)
    {r = !strncmp(s, expected, l);
    }
-  node ▷ print(printer);
+  node ▶ print(printer);
   return r;
  }
 
 static int printsAs_int__$_string                                               // Check that the specified $ prints as expected.
- (const $            list,                                                      // $
+ (const $    *       list,                                                      // $
   const char * const expected)                                                  // Expected string when printed
  {int r;
   void printer(char * s, size_t l)
    {r = !strncmp(s, expected, l);
    }
-  root ◁ list ▷ root;                                                           // Print from root of $
+  root ◁ list ▶ root;                                                           // Print from root of $
   root ▷ print(printer);
   return r;
  }
 
 static int printContains_int__$Node                                             // Check the print of an $ starting at the specified tag contains the expected string.
- (const $Node   node,                                                           // Starting node
-  const char *  expected)                                                       // Expected string
+ (const $Node * node,                                                           // Starting node
+  const char  * expected)                                                       // Expected string
  {int r;
   void printer(char * s, size_t l)
    {r = !!strstr(s, expected); if(0)l=l;
    }
-  node ▷ print(printer);
+  node ▶ print(printer);
   return r;
  }
 
 static int printContains_int__$                                                 // Check the print of an $ contains the expected string.
- (const $       list,                                                           // $ parse $
+ (const $    *  list,                                                           // $ parse $
   const char *  expected)                                                       // Expected string
  {int r;
   void printer(char * s, size_t l)
    {r = !!strstr(s, expected); if(0)l=l;
    }
-  root ◁ list ▷ root;                                                           // Print from root of $
+  root ◁ list ▶ root;                                                           // Print from root of $
   root ▷ print(printer);
   return r;
  }
@@ -989,72 +989,72 @@ static int printContains_int__$                                                 
 //D1 Edit                                                                       // Edit a $ in situ.
 
 static  $Node cut_$Node__$Node                                                  // Cut out a child.
- (const $Node child)                                                            // Child to cut out
- {const $Node parent = child  ▷ parent;                                         // Parent
-  p ◁ parent ▷ content; c ◁ child ▷ content;                                    // Parent pointer, child content
+ (const $Node * child)                                                          // Child to cut out
+ {parent ◁ child ▶ parent;                                                      // Parent
+  p ◁ parent ▷ content; c ◁ child ▶ content;                                    // Parent pointer, child content
 
-  if (child ▷ isOnlyChild)                                                      // Only child
+  if (child ▶ isOnlyChild)                                                      // Only child
    {p->first = p->last = 0;                                                     // Remove child
    }
-  else if (child ▷ isLast)                                                      // Last child
-   {L ◁ child  ▷ prev;
+  else if (child ▶ isLast)                                                      // Last child
+   {L ◁ child  ▶ prev;
     l ◁ L ▷ content;
     p->last = L.offset; l->next = 0;                                            // Last child under parent
    }
-  else if (child ▷ isFirst)                                                     // First child
-   {F ◁ child ▷ next;
+  else if (child ▶ isFirst)                                                     // First child
+   {F ◁ child ▶ next;
     f ◁ F     ▷ content;
     p->first  = F.offset; f->prev = 0;                                          // Last child under parent
    }
   else                                                                          // Some where in the middle
-   {N ◁ child ▷ next;    P ◁ child ▷ prev;
+   {N ◁ child ▶ next;    P ◁ child ▶ prev;
     n ◁     N ▷ content; p ◁     P ▷ content;
     p->next   = N.offset; n->prev  = P.offset;
    }
 
   c->next = c->prev = 0;                                                        // Remove child
 
-  return child;
+  return *child;
  }
 
 static  $Node unwrap_$Node__$Node                                               // Unwrap the specified parent and return it.
- (const $Node parent)                                                           // Parent to unwrap
- {for($Node child = new $Node(list: parent.list, offset: parent ▷ last.offset); // Remove last children
+ (const $Node * parent)                                                         // Parent to unwrap
+ {for($Node child = new $Node(list: parent->list, offset: parent ▶ last.offset);// Remove last children
     child ▷ valid;
-    child.offset = parent ▷ last.offset)
-   {parent ▷ putNext(child ▷ cut);                                              // Place each child after the parent
+    child.offset = parent ▶ last.offset)
+   {parent ▶ putNext(child ▷ cut);                                              // Place each child after the parent
    }
-  return parent ▷ cut;                                                          // Remove and return empty parent
+  return parent ▶ cut;                                                          // Remove and return empty parent
  }
 
 static  $Node wrap_$Node__string                                                // Wrap the specified child with a new parent and return the new parent optionally setting its L[key] and L[value].
- (const $Node   child,                                                          // Child to wrap
-  const char * const key)                                                       // Key for new parent
- {list   ◁ child.list;                                                          // Tree
+ (const $Node *       child,                                                    // Child to wrap
+  const char  * const key)                                                      // Key for new parent
+ {list   ◁ child->list;                                                         // Tree
   parent ◁ list ▷ node(key, strlen(key));                                       // New parent
-  child  ▷ putNext(parent);                                                     // Place parent after child
-  parent ▷ putLast(child ▷ cut);                                                // Place child under parent
+  child  ▶ putNext(parent);                                                     // Place parent after child
+  parent ▷ putLast(child ▶ cut);                                                // Place child under parent
   return parent;
  }
 
 //D1 Input and Output                                                           // Read and write a $ from/to a file
 
 static void write__$_string                                                     // Write a $ to a named file or abort
- (const $       list,                                                           // $
+ (const $    * list,                                                            // $
   const char * const file)                                                      // File
  {    o ◁ open(file, O_CREAT| O_WRONLY, S_IRWXU);                               // Open for output creating if needed
   if (o < 0) printStackBackTrace("Cannot open file: %s for write\n", file);
 
   time_t current; time(&current);
   const $Description h =                                                        // Create $ header describing the $
-   {1, 1, 0, list ▷ used, list ▷ root.offset, list ▷ width, current};
+   {1, 1, 0, list ▶ used, list ▶ root.offset, list ▶ width, current};
 
   if (sizeof(h) != write(o, &h, sizeof(h)))                                     // Write header
    {printStackBackTrace("Cannot write $ header to file: %s\n", file);
    }
 
-  w ◁ write(o, list.arena->data, list.arena->used);                             // Write arena
-  if (w < 0 || list.arena->used != (size_t)w)
+  w ◁ write(o, list->arena->data, list->arena->used);                           // Write arena
+  if (w < 0 || list->arena->used != (size_t)w)
    {printStackBackTrace("Cannot write $ arena to file: %s\n", file);
    }
 
@@ -1092,13 +1092,13 @@ $ read$                                                                         
 
 void test0()                                                                    //Tmake$ //Tnode //Tfree //TputFirst //TputLast //Tfe //Tfer
  {   t ◁ make$();                                                               // Create a $
-  root ◁ t ▷ root;
+  root ◀ t ▷ root;
 
   for(int i = 0; i < 10; ++i)                                                   // Load $
    {char c = 'a'+i;
 
     c1 ◁ t ▷ node(&c, 1); root ▷ putLast (c1);
-    c2 ◁ t ▷ node(&c, 1); root ▷ putFirst(c2);
+    c2 ◀ t ▷ node(&c, 1); root ▷ putFirst(c2);
     c = 'A'+i; c2 ▷ setKey(&c, 1);
     makeLocalCopyOf$Key(k2, l2, c2);
     ✓ k2[0] == c;
@@ -1120,9 +1120,9 @@ void test0()                                                                    
  }
 
 void test1()                                                                    //Troot //Tfirst //Tlast //Tnext //Tprev //Tparent //Tequals //Tprint //TprintWithBrackets //TfromLetters //TprintsAs
- {t ◁ make$();    t ▷ fromLetters("b(c(de)f)g(hi)j");
-  ✓t ▷ printsWithBracketsAs("(b(c(de)f)g(hi)j)");
-  ✓t ▷ printsAs("bcdefghij");
+ {  t ◁ make$();    t ▷ fromLetters("b(c(de)f)g(hi)j");
+  ✓ t ▷ printsWithBracketsAs("(b(c(de)f)g(hi)j)");
+  ✓ t ▷ printsAs("bcdefghij");
 
   a ◁ t ▷ root;
   b ◁ a ▷ first;
@@ -1132,16 +1132,16 @@ void test1()                                                                    
 
   char * k = d ▷ key;
   ✓k[0] == 'd';
-  b ▷ printsWithBracketsAs("b(c(de)f)");
-  c ▷ printsWithBracketsAs(  "c(de)");
+    b ▷ printsWithBracketsAs("b(c(de)f)");
+    c ▷ printsWithBracketsAs(  "c(de)");
 
-  ✓c ▷ equals(d ▷ parent);
-  ✓b ▷ equals(c ▷ parent);
-  ✓a ▷ equals(b ▷ parent);
-  ✓a ▷ equals(t ▷ root);
+  ✓ c ▷ equals(d ▷ parent);
+  ✓ b ▷ equals(c ▷ parent);
+  ✓ a ▷ equals(b ▷ parent);
+  ✓ a ▷ equals(t ▷ root);
 
-  ✓c ▷ printsAs("cde");
-  ✓t ▷ printsAs("bcdefghij");
+  ✓ c ▷ printsAs("cde");
+  ✓ t ▷ printsAs("bcdefghij");
 
   t ▷ free;
  }
@@ -1265,7 +1265,7 @@ void test6()                                                                    
   ✓ t ▷ printsWithBracketsAs("(bce)");
   ✓ t ▷ count == 3;
 
-         c ◁ t ▷ findFirst("c");
+    c ◁ t ▷ findFirst("c");
   ✓ c ▷ valid;
 
     d ◁ c ▷ wrap("d");
@@ -1300,7 +1300,7 @@ void test8()                                                                    
 
   c ◁ t ▷ node("c", 1); c ▷ putTreeFirst;
   d ◁ t ▷ node("d", 1); d ▷ putTreeLast;
-  b ◁ t ▷ node("b", 1); b ▷ putTreeFirst;
+  b ◀ t ▷ node("b", 1); b ▷ putTreeFirst;
 
   b ▷ setKey("B", 1);
   ✓ b ▷ length == 1;
@@ -1319,7 +1319,7 @@ void test8()                                                                    
  }
 
 void test9()                                                                    //Tswap
- {  s ◁ make$(); s ▷ fromLetters("s");
+ {  s ◀ make$(); s ▷ fromLetters("s");
     t ◁ make$(); t ▷ fromLetters("t");
   ✓ s ▷ printsWithBracketsAs("(s)");
   ✓ t ▷ printsWithBracketsAs("(t)");
@@ -1340,7 +1340,7 @@ void test10()                                                                   
 
   for(size_t i = 0; i < 10; ++i)
    {char c = '0'+i;
-    n ◁ t ▷ node(&c, 1);
+    n ◀ t ▷ node(&c, 1);
     n ▷ putTreeLast;
     n ▷ setData(D);
    }
@@ -1359,9 +1359,9 @@ void test10()                                                                   
 void test11()                                                                   //TcopyAndCompact //Tcopy //TcopyData
  {  s ◁ make$WithWidth(sizeof(size_t)); s ▷ fromLetters("b(c(de)f)g");
     d ◀ 2ul;
-    e ◁ s ▷ findFirst("e");
+    e ◀ s ▷ findFirst("e");
     e ▷ setData(&d);
-    E ◁ e ▷ copy(s);
+    E ◀ e ▷ copy(s);
   ✓ e ▷ keyEquals(E ▷ key,  E ▷ length);
 
     D ◀ 1ul;
@@ -1396,7 +1396,7 @@ void test12()                                                                   
 void test13()
  {t ◁ make$();
 
-  a ◁ t ▷ node("a", 1);
+  a ◀ t ▷ node("a", 1);
 
   a ▷ putTreeLast;
 #ifndef $Editable
@@ -1406,7 +1406,8 @@ void test13()
 #endif
 
   ✓ t ▷ freedSpace == 0;
-  a ▷ cut; a ▷ free;
+  a ▷ cut;
+  a ▷ free;
 #ifndef $Editable
   ✓ t ▷ freedSpace == 0;
 #else
@@ -1428,7 +1429,7 @@ void test13()
 void test14()                                                                   //TdeleteChar //TinsertChar //TmaxLength //TreplaceChar //TswapChars
  {t ◁ make$();
 
-    a ◁ t ▷ node("abce", 4);
+    a ◀ t ▷ node("abce", 4);
 #ifndef $Editable
   ✓ a ▷ maxLength == 4;
 #else
