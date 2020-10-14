@@ -45,7 +45,6 @@ typedef struct $Image                                                           
   $Font serifBoldItalic;
   $Font serifItalic;
   $Font serif;
-
   double fontAscent, fontDescent, fontHeight;                                   // Metrics for the current font
  } $Image;
 
@@ -114,24 +113,22 @@ static $Font make$Font                                                          
 //D1 Free                                                                       // Free cairo and free type resources associated with the image
 
 static void free_$Image                                                         // Free an image
- ($Image * i)                                                                     // $Image
+ ($Image * i)                                                                   // $Image
  {i->out ▷ free;
 
   $Font *fonts[] =
    {&i->sansBoldItalic, &i->sansBold, &i->sansItalic,      &i->sans,
     &i->sansMonoBold,   &i->sansMono, &i->serifBoldItalic, &i->serifBold,
-    &i->serifItalic,    &i->serif};
+    &i->serifItalic,    &i->serif, 0};
 
-  for($Font **f = fonts; *f; ++f)                                               // Free any fonts that were loaded
-   {$Font F = **f;
-    F ▷ free;
-   }
+  for($Font **f = fonts; *f; ++f) {$Font *F = *f; F ▶ free;}                    // Free any fonts that were loaded
+
 
   FT_Done_FreeType(i->freeTypeLibrary);                                          // Finished with FreeType library
  }
 
 static void free_$Font                                                          // Free a font if it has been loaded
- ($Font * font)                                                                   // $Font
+ ($Font * font)                                                                 // $Font
  {if (font->cairoFontFace)
    {cairo_font_face_destroy(font->cairoFontFace);
     FT_Done_Face           (font->freeTypeFontFace);
@@ -142,7 +139,7 @@ static void free_$Font                                                          
 //D1 Text                                                                       // Work with text
 
 static void font_$                                                              // Start using a font
- ($Image * i,                                                                     // $Image
+ ($Image * i,                                                                   // $Image
   $Font font)                                                                   // Font to use
  {if (!font.cairoFontFace)                                                      // Load the font if this font has not yet been loaded.
    {makeLocalCopyOfStringBuffer(ff, l, font.file);
@@ -175,7 +172,6 @@ static void fontSize_$                                                          
   int    size)                                                                  // Size
  {cairo_set_font_size (i->cr, size);                                             // Set font size
   i ▶ fontMetrics;
-say("BBBBB %f\n", i->fontHeight);
  }
 
 static double textAdvance_$                                                     // Get the width of the specified text
@@ -357,23 +353,16 @@ static void save_$_string                                                       
 void test0()                                                                    //TcreateImage
  {void draw($Image i)                                                           // Draw some text
    {i ▷ fontSize(20);
-say("AAAA %f\n", i.fontHeight);
-    i ▷ rgb(0, 0, 0);
-
-    cairo_set_source_rgb(i.cr, 0.5, 0.5, 0.5);
-    cairo_rectangle(i.cr, 0, 0, 1000, 1000);
-    cairo_fill(i.cr);
+    i ▷ rgb(1, 0, 0);
 
     text ◁ "Hello World How is it whirling?";
 
-    cairo_move_to       (i.cr, 1000, 1000);
-    cairo_set_source_rgb(i.cr, 1, 0, 0);
     i ▷ text(1000, 100 * i.fontHeight, text);
 
     for(size_t j = 0; j < 100; ++j) i ▷ text(0, j * i.fontHeight, text);
    }
 
-  i ◀ make$Image(draw, 2000, 2000, "$0.png", "ab32");                           // Create image containing some text and check its digest
+  i ◀ make$Image(draw, 2000, 2000, "$0.png", "8915");                           // Create image containing some text and check its digest
   i ▷ free;
  }
 
