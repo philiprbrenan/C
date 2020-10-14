@@ -56,7 +56,9 @@ if (1)                                                                          
 
   for my $f(sort keys %files)                                                   # Upload each selected file
    {my $t = swapFilePrefix($f, $home);
-       $t = swapFilePrefix($t, q(c/)) if $t =~ m(readme)i and $t !~ m(samples);
+    if (($t =~ m(readme)i and $t !~ m(samples)) or $t =~ m(license)i)
+     {$t = swapFilePrefix($t, q(c/));
+     }
     lll "$f to $t ",
       GitHub::Crud::writeFileUsingSavedToken($user, $repo, $t, readFile($f));
    }
