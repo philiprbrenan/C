@@ -61,141 +61,143 @@ static int $near                                                                
 //D1 Methods                                                                    // $ methods.
 
 static int zero_int_$                                                           // Whether the specified $ is equal to zero within the accuracy of floating point arithmetic
- ($ o)                                                                          // $
- {return $near(o.x, 0) && $near(o.y, 0);
+ ($ * o)                                                                        // $
+ {return $near(o->x, 0) && $near(o->y, 0);
  }
 
 static int eq_int_$                                                             // Whether two vectors are equal to within the accuracy of floating point arithmetic
- ($ o,                                                                          // First
-  $ p)                                                                          // Second
- {return $near(o.x, p.x) && $near(o.y, p.y);
+ ($ * o,                                                                        // First
+  $   p)                                                                        // Second
+ {return $near(o->x, p.x) && $near(o->y, p.y);
  }
 
 static void dump_$                                                              //P Print a $ to stderr
- ($ o)                                                                          // $
- {lsprintf(d, 32, "(%f,%f)\n", o.x, o.y);
+ ($ * o)                                                                        // $
+ {lsprintf(d, 32, "(%f,%f)\n", o->x, o->y);
   say("%s", d);
  }
 
 static $ clone_$_$                                                              // Clone a $
- ($ o)                                                                          // First
- {return new$(x: o.x, y: o.y);
+ ($ * o)                                                                        // First
+ {return new$(x: o->x, y: o->y);
  }
 
 static $ plus_$_$_$                                                             // Add the first $ to the second $ and return the result.
- ($ o,                                                                          // First $
-  $ p)                                                                          // Second $
- {return new $(x: o.x + p.x, y: o.y + p.y);
+ ($ * o,                                                                        // First $
+  $   p)                                                                        // Second $
+ {return new $(x: o->x + p.x, y: o->y + p.y);
  }
 
 static $ minus_$_$_$                                                            // Subtract the second $ from the first $ and return the result.
- ($ o,                                                                          // First $
-  $ p)                                                                          // Second $
- {return new $(x: o.x - p.x, y: o.y - p.y);
+ ($ * o,                                                                        // First $
+  $   p)                                                                        // Second $
+ {return new $(x: o->x - p.x, y: o->y - p.y);
  }
 
 static $ multiply_$_$_double                                                    // Multiply the specified vector by the specified scalar and return the result.
- ($      o,                                                                     // $
+ ($    * o,                                                                     // $
   double s)                                                                     // Scalar
- {return new $(x: o.x * s, y: o.y * s);
+ {return new $(x: o->x * s, y: o->y * s);
  }
 
 static $ divide_$_$_double                                                      // Divide the specified vector by the specified scalar and return the result.
- ($      o,                                                                     // $
+ ($    * o,                                                                     // $
   double s)                                                                     // Scalar
- {return new $(x: o.x / s, y: o.y / s);
+ {return new $(x: o->x / s, y: o->y / s);
  }
 
 static double  l_double_$                                                       // Length of the specified $
- ($ o)                                                                          // $
- {return sqrt(o.x*o.x + o.y*o.y);
+ ($ * o)                                                                        // $
+ {return sqrt(o->x*o->x + o->y*o->y);
  }
 
 static double  l2_double_$                                                      // Length squared of the specified $
- ($ o)                                                                          // $
- {return o.x*o.x + o.y*o.y;
+ ($ * o)                                                                        // $
+ {return o->x*o->x + o->y*o->y;
  }
 
 static double d_double_$_$                                                      // Distance between the points identified by the specified $
- ($ o,                                                                          // First $
-  $ p)                                                                          // Second $
- {x ◁ o.x - p.x; y ◁ o.y - p.y;
+ ($ * o,                                                                        // First $
+  $   p)                                                                        // Second $
+ {x ◁ o->x - p.x; y ◁ o->y - p.y;
   return sqrt(x * x + y * y);
  }
 
 static double d2_double_$_$                                                     // Distance squared between the points identified by the specified $
- ($ o,                                                                          // First $
-  $ p)                                                                          // Second $
- {x ◁ o.x - p.x; y ◁ o.y - p.y;
+ ($ * o,                                                                        // First $
+  $   p)                                                                        // Second $
+ {x ◁ o->x - p.x; y ◁ o->y - p.y;
   return x * x + y * y;
  }
 
 static $ n_$_$                                                                  // Return a normalized a copy of the specified $.
- ($ o)                                                                          // $
- {l ◁ o ▷ l;
-  if ($near(l, 0)) printStackBackTrace("Cannot normalize a zero length vector\n");
-  return make$(o.x / l, o.y / l);
+ ($ * o)                                                                        // $
+ {l ◁ o ▶ l;
+  if ($near(l, 0))
+   {printStackBackTrace("Cannot normalize a zero length vector\n");
+   }
+  return make$(o->x / l, o->y / l);
  }
 
 static double dot_double_$_$                                                    // Dot product of two vectors.
- ($ o,                                                                          // First $
-  $ p)                                                                          // Second $
- {return o.x * p.x + o.y * p.y;
+ ($ * o,                                                                        // First $
+  $   p)                                                                        // Second $
+ {return o->x * p.x + o->y * p.y;
  }
 
 static double area_double_$_$                                                   // Signed area of the parallelogram defined by the two vectors. The area is negative if the second vector appears to the right of the first if they are both placed at the origin and the observer stands against the z-axis in a left handed coordinate system.
- ($ o,                                                                          // First $
-  $ p)                                                                          // Second $
- {return o.x * p.y - o.y * p.x;
+ ($ * o,                                                                        // First $
+  $   p)                                                                        // Second $
+ {return o->x * p.y - o->y * p.x;
  }
 
 static double cosine_double_$_$                                                 // cos(angle between two vectors)
- ($ o,                                                                          // First $
-  $ p)                                                                          // Second $
- {return o ▷ dot(p) / o ▷ l / p ▷ l;
+ ($ * o,                                                                        // First $
+  $   p)                                                                        // Second $
+ {return o ▶ dot(p) / o ▶ l / p ▷ l;
  }
 
 static double  sine_double_$_$                                                  // sin(angle between two vectors)
- ($ o,                                                                          // First $
-  $ p)                                                                          // Second $
- {return o ▷ area(p) / o ▷ l / p ▷ l;
+ ($ * o,                                                                        // First $
+  $   p)                                                                        // Second $
+ {return o ▶ area(p) / o ▶ l / p ▷ l;
  }
 
 static double  angle_double_$_$                                                 // Angle in radians anticlockwise that the first vector must be rotated to point along the second vector normalized to the range: -pi to +pi.
- ($ o,                                                                          // First $
-  $ p)                                                                          // Second $
- {c ◁ o ▷ cosine(p);
-  s ◁ o ▷ sine(p);
+ ($ * o,                                                                        // First $
+  $   p)                                                                        // Second $
+ {c ◁ o ▶ cosine(p);
+  s ◁ o ▶ sine(p);
   a ◁ acos(c);
   return s > 0 ? a : -a;
  }
 
 static double  smallestAngleToNormalPlane_double_$_$                            // The smallest angle between the second vector and a plane normal to the first vector.
- ($ a,                                                                          // First $
-  $ b)                                                                          // Second $
- {r ◁ fabs(a ▷ angle(b));
+ ($ * a,                                                                        // First $
+  $   b)                                                                        // Second $
+ {r ◁ fabs(a ▶ angle(b));
   p ◁ M_PI / 2;
   return r < p ? p - r : r - p;
  }
 
 static $  r90_$_$                                                               // Rotate the specified $ by 90 degrees anticlockwise.
- ($ o)                                                                          // $
- {return make$(-o.y, o.x);
+ ($ * o)                                                                        // $
+ {return make$(-o->y, o->x);
  }
 
 static $  r180_$_$                                                              // Rotate the specified $ by 180 degrees.
- ($ o)                                                                          // $
- {return make$(-o.x, -o.y);
+ ($ * o)                                                                        // $
+ {return make$(-o->x, -o->y);
  }
 
 static $  r270_$_$                                                              // Rotate the specified $ by 270 degrees.
- ($ o)                                                                          // $
- {return make$(o.y, -o.x);
+ ($ * o)                                                                        // $
+ {return make$(o->y, -o->x);
  }
 
 static $  swap_$_$                                                              // Sap the components of the specified $ and return the result.
- ($ o)                                                                          // $
- {return make$(o.y, o.x);
+ ($ * o)                                                                        // $
+ {return make$(o->y, o->x);
  }
 #endif
 
@@ -203,22 +205,25 @@ static $  swap_$_$                                                              
 #if __INCLUDE_LEVEL__ == 0
 
 void test0()                                                                    //Tmake$ //Teq //T$near //T$zero //T$one //Tswap //Tclone //Tplus //Tmultiply //Td //Td2 //Tl //Tl2 //Tdot //Tr90 //Tr180 //Tr270 //Tsine //Tcosine //Tarea //Tangle //TsmallestAngleToNormalPlane //Tn //Tzero //Tdivide //Tminus
- {z ◁ $Z(); x ◁ $X(); y ◁ $Y(); X ◁ x ▷ r180; Y ◁ y ▷ r180;
+ {z ◀ $Z(); x ◀ $X(); y ◀ $Y(); X ◀ x ▷ r180; Y ◀ y ▷ r180;
 
-  ✓ z ▷ zero;  ✓ x ▷ eq(make$(1, 0)); ✓ y ▷ eq(make$(0, 1)); ✓ z ▷ eq(x ▷ minus(x));
+  ✓ z ▷ zero;
+  ✓ x ▷ eq(make$(1, 0));
+  ✓ y ▷ eq(make$(0, 1));
+  ✓ z ▷ eq(x ▷ minus(x));
 
   ✓ y ▷ eq(x ▷ swap);
   ✓ x ▷ eq(y ▷ swap);
   ✓ x ▷ eq(x ▷ clone);
   ✓ y ▷ eq(y ▷ clone);
 
-  x3 ◁ x ▷ multiply(3); y4 ◁ y ▷ multiply(4); h5 ◁ x3 ▷ plus(y4);
+  x3 ◀ x ▷ multiply(3); y4 ◀ y ▷ multiply(4); h5 ◀ x3 ▷ plus(y4);
   ✓ $near(h5 ▷ l      ,  5);
   ✓ $near(h5 ▷ l2     , 25);
   ✓ $near(z  ▷ d (h5) ,  5);
   ✓ $near(z  ▷ d2(h5) , 25);
 
-    H5 ◁ h5 ▷ divide(5);
+    H5 ◀ h5 ▷ divide(5);
   ✓ H5 ▷ eq(h5 ▷ n);
 
   ✓ $zero(x ▷ dot(y));
@@ -244,7 +249,7 @@ void test0()                                                                    
   ✓ $near(y ▷ sine(x), -1);
 
 
-  xy ◁ make$(1, 1);  ✓ xy.x == 1;  ✓ xy.y == 1;
+  xy ◀ make$(1, 1);  ✓ xy.x == 1;  ✓ xy.y == 1;
 
   ✓ $near(-sqrt(1.0/2.0), xy ▷ sine(x));
   ✓ $near(+sqrt(1.0/2.0), xy ▷ sine(y));
