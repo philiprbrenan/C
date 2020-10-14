@@ -25,9 +25,9 @@ typedef struct $Parse                                                           
 
 typedef struct $Validate                                                        // $ single step validation
  {const struct ProtoTypes_$Validate *proto;                                     // Prototypes for methods
-  const ArenaTree         possibilities;                                        // Possibility sets for each Dita tag
-  const ArenaTree         first;                                                // First set of possibilities for each Dita tag
-  const ArenaTree         next;                                                 // Next set of possibilities for each Dita child tag under a given parent tag
+  ArenaTree    possibilities;                                                   // Possibility sets for each Dita tag
+  ArenaTree    first;                                                           // First set of possibilities for each Dita tag
+  ArenaTree    next;                                                            // Next set of possibilities for each Dita child tag under a given parent tag
  } $Validate;
 
 typedef struct $Tag                                                             // Tag in an $ parse tree
@@ -49,7 +49,7 @@ typedef struct $ParseOptions                                                    
  } $ParseOptions;
 
 #include <$$_prototypes.h>
-#define makeLocalCopyOf$TagString(string,stringLength,tag) const size_t stringLength = content__ArenaListNode(tag.node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(tag.node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
+#define makeLocalCopyOf$TagString(string,stringLength,tag) stringLength ◁ content__ArenaListNode(&tag.node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(&tag.node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 #define $Open     '<'                                                           // Important $ characters
 #define $Close    '>'
@@ -113,7 +113,7 @@ $Parse make$Parse                                                               
           }
 
         if (!allBlank())                                                        // Save the text as the key of the node
-         {n ◁ parseTree ▷ node(p, o - p);                                       // Create node
+         {n ◀ parseTree ▷ node(p, o - p);                                       // Create node
           $NodeExt e = {text: 1};                                               // Text marker
           n ▷ setData(&e);                                                      // Save  text marker
           currentParent ▷ putLast(n);                                           // Save node in parse tree
@@ -171,13 +171,13 @@ $Parse make$Parse                                                               
     else if (N > 1) return error(source, "More than one root xml tag found");
    }
 
-  if (0)                                                                        // Make the single root xml tag the root of the parse tree
-   {r ◁ parseTree ▷ root;
-    f ◁ r ▷ first;
-    ArenaListContent * const a = r ▷ content, * const b = f ▷ content;
-    *a = *b;
-    ArenaListfe(c, r) c ▷ setUp(r);
-   }
+//  if (0)                                                                        // Make the single root xml tag the root of the parse tree
+//   {r ◁ parseTree ▷ root;
+//    f ◁ r ▷ first;
+//    ArenaListContent * const a = r ▷ content, * const b = f ▷ content;
+//    *a = *b;
+//    ArenaListfe(c, r) c ▷ setUp(r);
+//   }
 
   return xml;
  } // make$Parse
@@ -224,18 +224,20 @@ static $Parse  parse$FromString                                                 
  }
 
 static void free_$Parse                                                         // Free an $ parse
- (const $Parse x)                                                               // $ descriptor
- {x.tree ▷ free; x.errors ▷ free; if (x.fileName.proto) x.fileName ▷ free;
+ (const $Parse * x)                                                               // $ descriptor
+ {x->tree ▷ free; x->errors ▷ free; if (x->fileName.proto) x->fileName ▷ free;
  }
 
 static void free_$Validate                                                      // Free an $ validator
- (const $Validate x)                                                            // $ validator
- {x.possibilities ▷ free; x.first ▷ free; x.next ▷ free;
+ ($Validate * x)                                                            // $ validator
+ {x->possibilities ▷ free;
+  x->first ▷ free;
+  x->next ▷ free;
  }
 
 static size_t errors_size_$Parse                                                // Number of errors encountered while creating an $ parse tree.
- (const $Parse x)                                                               // $ descriptor
- {return x.errors ▷ count;
+ (const $Parse * x)                                                               // $ descriptor
+ {return x->errors ▷ count;
  }
 
 static char  * parse$TagNameInAngleBrackets                                     //P Get the tag name from an $ tag string. The tag name will be truncated if it is longer than $tagNameLength. The returned  name is held in the fixed buffer $tagName.
@@ -269,32 +271,33 @@ static  char * parse$TagName                                                    
  }
 
 static char * tagName_string_$Tag                                               // Get the tag name from a node in the $ parse tree. The tag name is returned in a reused static buffer that the caller should not free.
- (const $Tag tag)                                                               // Tag
- {if (tag ▷ isText) return "text";                                              // Text node
+ (const $Tag * Tag)                                                               // Tag
+ {tag ◁  *Tag;
+  if (tag ▷ isText) return "text";                                              // Text node
   makeLocalCopyOf$TagString(t, l, tag);
   return parse$TagName(t, l);
  }
 
 static int tagNameEquals_int_$Tag_string                                        // Check the name of a tag.
- (const $Tag         tag,                                                       // Tag
+ (const $Tag *       tag,                                                       // Tag
   const char * const expected)                                                  // Expected name of tag
- {return !strcmp(tag ▷ tagName, expected);
+ {return !strcmp(tag ▶ tagName, expected);
  }
 
 static char * tagString_string_$Tag                                             //V Get the entire tag from a node in the $ parse tree.
- (const $Tag tag)                                                               // Tag
- {return tag.node ▷ key;
+ (const $Tag * tag)                                                               // Tag
+ {return tag->node ▷ key;
  }
 
 static size_t tagStringLength_size_$Tag                                         // Get the length of the entire tag
- (const $Tag tag)                                                               // Tag
- {return tag.node ▷ length;
+ (const $Tag * tag)                                                               // Tag
+ {return tag->node ▷ length;
  }
 
 static int tagStringEquals_int_$Tag_string                                      // Check the string of a tag.
- (const $Tag         tag,                                                       // Tag
+ (const $Tag *       tag,                                                       // Tag
   const char * const expected)                                                  // Expected name of tag
- {return tag.node ▷ equalsString(expected);
+ {return tag->node ▷ equalsString(expected);
  }
 
 //D1 Navigation                                                                 // Navigate through an $ parse tree.
@@ -303,35 +306,37 @@ static int tagStringEquals_int_$Tag_string                                      
 #define $fer(child, parent) for($Tag child = new $Tag(xml: parent.xml, node: parent ▷ last.node);  child ▷ valid; child.node.offset = child ▷ prev.node.offset) // Each child in a parent from last to first
 
 static $Tag first_$Tag                                                          // Return the first child tag under the specified parent tag.
- (const $Tag parent)                                                            // Parent tag
- {return new $Tag(xml: parent.xml, node: parent.node ▷ first);
+ (const $Tag * parent)                                                            // Parent tag
+ {return new $Tag(xml: parent->xml, node: parent->node ▷ first);
  }
 duplicate s/first/last/  s/first/next/ s/first/prev/ s/first/parent/
 
 static $Tag first_$Parse                                                        // Return the first child tag in the specified $ parse tree.
- (const $Parse xml)                                                             // Parent tag
- {return new $Tag(xml: xml, node: xml.tree ▷ first);
+ (const $Parse * xml)                                                             // Parent tag
+ {return new $Tag(xml: *xml, node: xml->tree ▷ first);
  }
 duplicate s/first/last/
 
 //D1 Location                                                                   // Check the current location in the $ parse tre
 
 static int depth_int_$Tag                                                       // The depth of a tag
- (const $Tag tag)                                                               // Tag
+ (const $Tag * Tag)                                                               // Tag
  {i ◀ 0;
+  tag ◁ *Tag;
   for($Tag t = tag; t ▷ valid; t.node.offset = t ▷ parent.node.offset) ++i;     // Count up to root
   return i - 1;                                                                 // We have included the root node
  }
 
 static int isRoot_int_$Tag                                                      // Check whether the specified tag is the root tag
- (const $Tag tag)                                                               // Tag
- {p ◁ tag ▷ parent;                                                             // Possibly the root of the ArenaList
+ (const $Tag * tag)                                                               // Tag
+ {p ◁ tag ▶ parent;                                                             // Possibly the root of the ArenaList
   return !p ▷ valid;                                                            // The root of the xml tree is one level below the root of the ArenaList
  }
 
 static int isFirst_int_$Tag                                                     // Check that the specified tag is first under its parent
- (const $Tag tag)                                                               // Tag
- {if (tag ▷ isRoot) return 1;                                                   // The root tag is always first
+ (const $Tag * Tag)                                                               // Tag
+ {tag ◁ *Tag;
+  if (tag ▷ isRoot) return 1;                                                   // The root tag is always first
       parent ◁ tag ▷ parent;
   f ◁ parent ▷ first;
   return f ▷ equals(tag);
@@ -341,80 +346,83 @@ duplicate s/first/last/g,s/First/Last/g
 //D1 Text methods                                                               // Methods that operate on text tags
 
 static int isText_int_$Tag                                                      // Check whether we are on a text element
- (const $Tag tag)                                                               // Tag
+ (const $Tag * tag)                                                               // Tag
  {$NodeExt e;                                                                   // Extension data for node
-  tag.node ▷ getData(&e);                                                       // Get extension data from node
+  tag->node ▷ getData(&e);                                                       // Get extension data from node
   return e.text;                                                                // Text or not
  }
 
 static int onlyText_$Tag                                                        // Return true if a tag contains just one text element and nothing else
- (const $Tag parent)                                                            // Tag
- {n ◁ parent ▷ countChildren;
+ (const $Tag * parent)                                                            // Tag
+ {n ◁ parent ▶ countChildren;
   if (n != 1) return 0;                                                         // If there is more than one tag than there must be a non text tag present to separate the text
-  f ◁ parent ▷ first;
+  f ◁ parent ▶ first;
   return f ▷ isText;
  }
 
 //D1 Statistics                                                                 // Counts on the tag
 
 static int empty_int_$Tag                                                       // Check whether the specified parent tag is empty
- (const $Tag parent)                                                            // Parent tag
- {return !parent ▷ countChildren;
+ (const $Tag * parent)                                                            // Parent tag
+ {return !parent ▶ countChildren;
  }
 
 static int isTag_int_tag                                                        // Check that the tag is a tag not text
- (const $Tag tag)                                                               // Parent tag
- {return !tag ▷ isText;
+ (const $Tag * tag)                                                               // Parent tag
+ {return !tag ▶ isText;
  }
 
 static int hasText_int_$Tag                                                     // Check whether the tag contains a text element
- (const $Tag parent)                                                            // Parent tag
- {$fe(child, parent) if (child ▷ isText) return 1;
+ (const $Tag * Parent)                                                            // Parent tag
+ {parent ◁ *Parent;
+   $fe(child, parent) if (child ▷ isText) return 1;
   return 0;
  }
 
 static int stayInLine_int_$Tag                                                  // Check whether a tag is text or is preceded or followed by text
- (const $Tag tag)                                                               // Tag
- {if ( tag ▷ isText)                   return 1;
+ (const $Tag * Tag)                                                               // Tag
+ {tag ◁ *Tag;
+  if ( tag ▷ isText)                   return 1;
   if (!tag ▷ isFirst) {p ◁ tag ▷ prev; return p ▷ isText;}
   if (!tag ▷ isLast)  {n ◁ tag ▷ next; return n ▷ isText;}
   return 0;
  }
 
 static size_t length_size__$Tag                                                 // Length of a tag string
- (const $Tag tag)                                                               // $Tag
- {return tag.node ▷ content->length;
+ (const $Tag * tag)                                                               // $Tag
+ {return tag->node ▷ content->length;
  }
 
 //D1 Search                                                                     // Search the $ parse tree
 
 static int valid_int_$Tag                                                       // Check that a tag is valid.
- (const $Tag tag)                                                               // Tag
- {return tag.node.offset;                                                       // A tag is valid unless it is the root node of the arena tree backing the $ parse tree.
+ (const $Tag * tag)                                                               // Tag
+ {return tag->node.offset;                                                       // A tag is valid unless it is the root node of the arena tree backing the $ parse tree.
  }
 
 static $Tag findFirstChild_$Tag_$Tag_string                                     // Find the first child tag with the specified name under the specified parent tag.
- (const $Tag   parent,                                                          // Parent
+ (const $Tag *       Parent,                                                          // Parent
   const char * const key)                                                       // Name of the tag to find
- {$fe(child, parent)                                                            // Each child of the parent
+ {parent ◁ *Parent;
+  $fe(child, parent)                                                            // Each child of the parent
    {if (child ▷ tagNameEquals(key)) return child;                               // First child with matching tag
    }
   return new $Tag;
  }
 
 static $Tag findFirstChild_$Tag_$Parse_string                                   // Find the first child tag with the specified name under the root tag of the specified parse tree.
- (const $Parse xml,                                                             // Parent
-  const char * const key)                                                       // Name of the tag to find
- {    root ◁ xml ▷ root;                                                        // Root tag
+ (const $Parse * xml,                                                             // Parent
+  const char   * const key)                                                       // Name of the tag to find
+ {    root ◁ xml ▶ root;                                                        // Root tag
   f ◁ root ▷ first;
   return f ▷ findFirstChild(key);                                               // Each child of the parent
  }
 
 static $Tag findFirstTag_$Tag_$Tag_string                                       // Find the first tag with the specified name in the $ parse tree starting at the specified tag.
- (const $Tag   parent,                                                          // Parent tag
+ (const $Tag *       parent,                                                          // Parent tag
   const char * const key)                                                       // Name of the tag to find
  {jmp_buf found;
-  $Tag T = new $Tag(xml: parent.xml);                                           // Tag found if any
+  $Tag T = new $Tag(xml: parent->xml);                                           // Tag found if any
 
   void find(const $Tag tag)                                                     // Check whether the name of the tag matches the specified key
    {if (tag ▷ tagNameEquals(key))
@@ -423,15 +431,15 @@ static $Tag findFirstTag_$Tag_$Tag_string                                       
      }
    }
 
-  if (!setjmp(found)) parent ▷ by(find);                                        // Search the $ parse tree
+  if (!setjmp(found)) parent ▶ by(find);                                        // Search the $ parse tree
   return T;
  }
 
 static $Tag findFirstTag_$Tag_$Parse_string                                     // Find the first tag in an $ parse tree with the specified name.
- (const $Parse       xml,                                                       // Xml parse tree
-  const char * const key)                                                       // Name of the tag to find
+ (const $Parse *       xml,                                                       // Xml parse tree
+  const char   * const key)                                                       // Name of the tag to find
  {jmp_buf found;
-  $Tag T = new $Tag(xml: xml);                                                  // Tag found if any
+  $Tag T = new $Tag(xml: *xml);                                                  // Tag found if any
 
   void find(const $Tag tag)                                                     // Check whether the name of the tag matches the specified key
    {if (tag ▷ tagNameEquals(key))
@@ -440,92 +448,93 @@ static $Tag findFirstTag_$Tag_$Parse_string                                     
      }
    }
 
-  if (!setjmp(found)) xml ▷ by(find);                                           // Search the $ parse tree
+  if (!setjmp(found)) xml ▶ by(find);                                           // Search the $ parse tree
   return T;
  }
 
 static $Tag root_$Parse                                                         // Return the root tag of the specified $ parse tree
- (const $Parse xml)                                                             // $ parse tree
- {return new $Tag(xml: xml, node: xml.tree ▷ root);
+ (const $Parse * xml)                                                             // $ parse tree
+ {return new $Tag(xml: *xml, node: xml->tree ▷ root);
  }
 
 static $Tag root_$Tag                                                           // Return the root tsg of the $ parse tree containing the specified tag.
- (const $Tag tag)                                                               // Tag
- {return new $Tag(xml: tag.xml, node: tag.xml.tree ▷ root);
+ (const $Tag * tag)                                                               // Tag
+ {return new $Tag(xml: tag->xml, node: tag->xml.tree ▷ root);
  }
 
 static int equals_$Tag_$Tag                                                     // Confirm that two tags refer to the same text location in the source document.
- (const $Tag a,                                                                 // First tag
+ (const $Tag * a,                                                                 // First tag
   const $Tag b)                                                                 // Second tag
- {return a.node.offset == b.node.offset;
+ {return a->node.offset == b.node.offset;
  }
 
 //D1 Traverse                                                                   // Traverse the $ parse tree.
 
 static void by_$Tag_sub                                                         // Traverse the $ parse tree rooted at the specified tag in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
- (const $Tag tag,                                                               // Starting tag
+ (const $Tag * tag,                                                               // Starting tag
   void (* const function) (const $Tag tag))                                     // Function to call on each tag
  {void f(const ArenaListNode node)
-   {function(new $Tag(xml: tag.xml, node: node));
+   {function(new $Tag(xml: tag->xml, node: node));
    }
-  tag.node ▷ by(f);
+  tag->node ▷ by(f);
  }
 
 static void by_$Parse_sub                                                       // Traverse the $ parse tree in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
- (const $Parse xml,                                                             // $ parse tree
+ (const $Parse * xml,                                                             // $ parse tree
   void (* const function) (const $Tag tag))                                     // Function to call on each tag
  {void f(const ArenaListNode node)
-   {function(new $Tag(xml: xml, node: node));
+   {function(new $Tag(xml: *xml, node: node));
    }
-  F ◁ xml.tree ▷ first;
+  F ◁ xml->tree ▷ first;
   F ▷ by(f);
  }
 
 static void scan_$Tag_sub                                                       // Traverse the $ parse tree rooted at the specified tag calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
- (const $Tag tag,                                                               // Starting tag
+ (const $Tag * tag,                                                               // Starting tag
   void (* const function) ($Tag tag, int start, int depth))                     // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
  {void f(const ArenaListNode node,   int start, int depth)
-   {function(new $Tag(xml: tag.xml, node: node), start, depth);
+   {function(new $Tag(xml: tag->xml, node: node), start, depth);
    }
-  tag.node ▷ scan(f);
+  tag->node ▷ scan(f);
  }
 
 static void scan_$Parse_sub                                                     // Traverse the $ parse tree calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
- (const $Parse xml,                                                             // $ parse tree
+ (const $Parse * xml,                                                             // $ parse tree
   void (* const function) ($Tag tag, int start, int depth))                     // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
  {void f(const ArenaListNode node,   int start, int depth)
-   {function(new $Tag(xml: xml, node: node), start, depth);
+   {function(new $Tag(xml: *xml, node: node), start, depth);
    }
-  xml.tree ▷ scan(f);
+  xml->tree ▷ scan(f);
  }
 
 static  size_t countChildren_size_$                                             // Count the number of tags at the first level in an xml parse tree.
- (const $Parse xml)                                                             // $ parse
- {       root ◁ xml.tree ▷ root;                                                // Root node
+ (const $Parse * xml)                                                             // $ parse
+ {       root ◁ xml->tree ▷ root;                                                // Root node
   return root ▷ countChildren - 1;                                              // Count the level immediately below the root tag of which there is always just one
  }
 
 static  size_t countChildren_size_$Tag                                          // Count the number of child tags directly under a parent tag
- (const $Tag parent)                                                            // Parent tag
- {return parent.node ▷ countChildren;
+ (const $Tag * parent)                                                            // Parent tag
+ {return parent->node ▷ countChildren;
  }
 
 static  size_t count_size_$                                                     // Count the number of tags in an $ parse tree
- (const $Parse x)                                                               // $ parse tree
- {return x.tree ▷ count;
+ (const $Parse * x)                                                               // $ parse tree
+ {return x->tree ▷ count;
  }
 
 static  size_t count_size_$Tag                                                  // Count the number of tags under the specified tag in an $ parse tree
- (const $Tag t)                                                                 // Parent tag
- {return t.node ▷ count;
+ (const $Tag * t)                                                                 // Parent tag
+ {return t->node ▷ count;
  }
 
 //D1 Edit                                                                       // Change the structure of an $ parse tree.
 
 static void changeName_$Tag                                                     // Change the name of the specified tag.
- (const $Tag         tag,                                                       // Tag
+ (const $Tag * Tag,                                                       // Tag
   const char * const newName)                                                   // New name                                                                               //vconst $Tag t)                                                                 // Tag
- {oldName ◁ tag ▷ tagName;                                                      // Old name
+ {tag ◁ *Tag;
+  oldName ◁ tag ▷ tagName;                                                      // Old name
   string  ◁ tag ▷ tagString;                                                    // Tag string
   o ◁ strlen(oldName); n ◁ strlen(newName); l ◁ strlen(string);
   if (n > o) printStackBackTraceAndExit(1, "New code needed to deal with the case where the new name is longer than the old name\n");
@@ -534,57 +543,59 @@ static void changeName_$Tag                                                     
   p = stpncpy(p, string, q - string);
   p = stpcpy (p, newName);
   p = stpcpy (p, q + o);
-  tag.node ▷ setKey(key, strlen(key));
+  ArenaListNode t = *(ArenaListNode *)(&tag.node);
+  t ▷ setKey(key, strlen(key));
  }
 
 static void insertChar__$Tag_char_size                                          // Insert the specified character into the string of a tag at the specified position.
- (const $Tag  tag,                                                              // $Tag
+ ($Tag  * tag,                                                              // $Tag
   const char  ins,                                                              // Character to insert
   size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
- {tag.node ▷ insertChar(ins, pos);
+ {tag->node ▷ insertChar(ins, pos);
  }
 
 static void replaceChar__$Tag_char_size                                         // Replace the character at the specified position in the key string of a tag with the specified character.
- (const $Tag  tag,                                                              // $Tag
+ (const $Tag  * tag,                                                              // $Tag
   const char  repl,                                                             // Replacement character
   size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
- {tag.node ▷ replaceChar(repl, pos);
+ {tag->node ▷ replaceChar(repl, pos);
  }
 
 static void swapChars__$Tag_size                                                // Delete the character at the specified position in the string of a tag.
- (const $Tag  tag,                                                              // $Tag
+ (const $Tag  * tag,                                                              // $Tag
   size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
- {tag.node ▷ swapChars(pos);
+ {tag->node ▷ swapChars(pos);
  }
 
 static void deleteChar__$Tag_size                                               // Delete the character at the specified position in the string of a tag.
- (const $Tag  tag,                                                              // $Tag
+ (const $Tag  * tag,                                                              // $Tag
   size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
- {tag.node ▷ deleteChar(pos);
+ {tag->node ▷ deleteChar(pos);
  }
 
 //D1 Wrap and Unwrap                                                            // Wrap and unwrap nodes
 
 static $Tag wrap_$Tag_string                                                    // Wrap a specified tag with a new tag and return the newly createdf wraping tag.
- (const $Tag         tag,                                                       // Tag
+ (const $Tag *       Tag,                                                       // Tag
   const char * const string)                                                    // Wrapper without the leading < or trailing or >
- {if (tag ▷ isRoot) return tag;
+ {tag ◁ *Tag;                                                                   // Tag
+  if (tag ▷ isRoot) return tag;
   char s[strlen(string)+4], *p = stpcpy(s, string); *p = 0;
   const ArenaListNode n =  tag.node ▷ wrap(s);
   return new $Tag(xml: tag.xml, node: n);
  }
 
 static $Tag unwrap_$Tag                                                         // Unwrap the specified tag.
- (const $Tag         tag)                                                       // Tag
- {if (!tag ▷ isRoot) tag.node ▷ unwrap;                                         // Cannot unwrap the root tag
-  return tag;
+ (const $Tag  *      tag)                                                       // Tag
+ {if (!tag ▶ isRoot) tag->node ▷ unwrap;                                         // Cannot unwrap the root tag
+  return *tag;
  }
 
 //D1 Print                                                                      // Print an $ parse tree starting at the specified tag.
 
 static StringBuffer prettyPrint_stringBuffer_$Tag                               // Pretty print the $ parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
- (const $Tag tag)                                                               // Starting tag
- {const StringBuffer p = makeStringBuffer();
+ (const $Tag * tag)                                                               // Starting tag
+ {p ◀ makeStringBuffer();
 
   void print(const $Tag parent, const int depth)                                // Print the specified parent and its children
    {void open()                                                                 // Add open tag
@@ -621,21 +632,21 @@ static StringBuffer prettyPrint_stringBuffer_$Tag                               
     close();
    }
 
-  print(tag, 0);
+  print(*tag, 0);
   p ▷ addNewLine;                                                             // Terminating new line
   p ▷ join;
   return p;
  } // prettyPrint
 
 static StringBuffer prettyPrint_stringBuffer_$                                  // Pretty print the $ parse tree with additional spacing between tags to make the tree easier to read.
- (const $Parse xml)                                                             // $ parse tree
- {    root ◁ xml ▷ root;
+ (const $Parse * xml)                                                             // $ parse tree
+ {    root ◁ xml ▶ root;
   f ◁ root ▷ first;
   return f ▷ prettyPrint;
  } // prettyPrint
 
 static StringBuffer print_stringBuffer_$Tag                                     // Print the $ parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
- (const $Tag tag)                                                               // Starting tag
+ (const $Tag * tag)                                                               // Starting tag
  {const StringBuffer p = makeStringBuffer();
 
   void print(const $Tag parent, const int depth)                                // Print the specified parent and its children
@@ -666,31 +677,39 @@ static StringBuffer print_stringBuffer_$Tag                                     
     close();
    }
 
-  print(tag, 0);
+  print(*tag, 0);
   return p;
  }
 
 static StringBuffer print_stringBuffer_$                                        // Print the $ parse tree with additional spacing between tags to make the tree easier to read.
- (const $Parse xml)                                                             // $ parse tree
- {    root ◁ xml ▷ root;
+ (const $Parse * xml)                                                             // $ parse tree
+ {    root ◁ xml ▶ root;
   f ◁ root ▷ first;
   return f ▷ print;
  }
 
 static int printsAs_int_$_string                                                // Check that the $ parse tree prints as expected
- (const $Parse xml,                                                             // $ parse tree
-  const char * const expected)                                                  // Expected print
- {s ◁ xml ▷ print;
+ (const $Parse *       xml,                                                     // $ parse tree
+  const char   * const expected)                                                // Expected print
+ {s ◁ xml ▶ print;
   r ◁ s ▷ printsAs(expected);
   s ▷ free;
   return r;
  }
-duplicate s/_\$_/_\$Tag_/,s/Parse\sxml/Tag\x20tag/,s/xml/tag/
+
+static int printsAs_int_$Tag_string                                             // Check that the $ parse tree prints as expected
+ (const $Tag * tag,                                                             // $ parse tree
+  const char * const expected)                                                  // Expected print
+ {s ◁ tag ▶ print;
+  r ◁ s ▷ printsAs(expected);
+  s ▷ free;
+  return r;
+ }
 
 static void printAssert_$Tag                                                    //P Print the $ parse tree starting at the specified tag as an assert statement
- (const $Tag         tag,                                                       // Starting tag
+ (const $Tag *       tag,                                                       // Starting tag
   const char * const variable)                                                  // The name of the variable preceding this call
- {t ◁ tag ▷ print;
+ {t ◀ tag ▶ print;
   t ▷ splitLines;
   s ◁ makeStringBuffer();
   s ▷ addFormat("assert(printsAs_int_$_string(%s,\n", variable);
@@ -709,23 +728,24 @@ static void printAssert_$Tag                                                    
  }
 
 static void printAssert_$_string                                                //P Pretty print the $ parse tree as an assert statement
- (const $Parse       xml,                                                       // $
+ (const $Parse *     xml,                                                       // $
   const char * const variable)                                                  // The name of the variable preceding this call
- {const $Tag t = xml ▷ root;
+ {const $Tag t = xml ▶ root;
   t ▷ printAssert(variable);
  }
 
 static void dump_$                                                              //P Print the $ parse tree starting to stderr
- (const $Parse x)                                                               // $
- {t ◁ x ▷ prettyPrint;
+ (const $Parse * x)                                                               // $
+ {t ◀ x ▶ prettyPrint;
   t ▷ join;
   t ▷ dump;
   t ▷ free;
  }
 
 static void dump_$Tag                                                           //P Dump the specified tag
- (const $Tag tag)                                                               // $
- {makeLocalCopyOf$TagString(t, l, tag);
+ (const $Tag * Tag)                                                               // $
+ {tag ◁ *Tag;
+  makeLocalCopyOf$TagString(t, l, tag);
   say("%s\n", t);
  }
 #endif
@@ -821,15 +841,15 @@ void test1()                                                                    
 
   F ◁ f ▷ wrap("FFFF id='1'");
 //d ▷ printAssert("d");
-  ✓ printsAs_int_$Tag_string(d, "<d><e/>e<FFFF id='1'><f/></FFFF>f<g>g</g></d>");
+  ✓ d ▷ printsAs("<d><e/>e<FFFF id='1'><f/></FFFF>f<g>g</g></d>");
 
   F ▷ changeName("NNNN");
 //d ▷ printAssert("d");
-  ✓ printsAs_int_$Tag_string(d, "<d><e/>e<NNNN id='1'><f/></NNNN>f<g>g</g></d>");
+  ✓ d ▷ printsAs("<d><e/>e<NNNN id='1'><f/></NNNN>f<g>g</g></d>");
 
   F ▷ unwrap;
 //d ▷ printAssert("d");
-  ✓ printsAs_int_$Tag_string(d, "<d><e/>e<f/>f<g>g</g></d>");
+  ✓ d ▷ printsAs("<d><e/>e<f/>f<g>g</g></d>");
 
   x ▷ free;
  } // test1
@@ -862,7 +882,7 @@ void test3()                                                                    
   ✓ h ▷ onlyText;
   ✓ h ▷ depth == 2;
 
-    s ◁ makeStringBuffer();
+    s ◀ makeStringBuffer();
 
     void action(const $Tag tag)
      {if (tag ▷ isTag) s ▷ add(tag ▷ tagName);
@@ -880,7 +900,7 @@ void test4()                                                                    
   if (!developmentMode()) return;                                               // Does not work on gitHub - possibly out of memory or Cpu?
 
   xml ◁ make$ParseFromFile(file, 0);
-  validate ◁ make$Validate();
+  validate ◀ make$Validate();
 
     possibilities ◁ xml ▷ findFirstChild("possibilities");                      // The possibilities possibilitiesArray assigns a number to each set of possible tags
   ✓ possibilities ▷ valid;
@@ -907,7 +927,7 @@ void test4()                                                                    
   if (1)                                                                        // Possibilities possibilitiesArray
    {ArenaTreeNode pa[possibilitiesCount];
     ✓ validate.possibilities ▷ count == 0;
-    size_t i = 0;
+    i ◀ 0ul;
 
     $fe(element, possibilitiesArray)                                            // Load possibilities
      {char buffer[256];
@@ -1021,8 +1041,8 @@ void test7()                                                                    
      x ◁ parse$FromString(xml, 0);
   ✓ !x ▷ errors;
 
-  a ◁ x ▷ findFirstChild("abcd");
-  t ◁ a ▷ first;
+  a ◀ x ▷ findFirstChild("abcd");
+  t ◀ a ▷ first;
 
   a ▷ insertChar('D', 3);  ✓ x ▷ printsAs("<a><abcDd>1234</abcDd></a>");
   t ▷ insertChar('T', 3);  ✓ x ▷ printsAs("<a><abcDd>123T4</abcDd></a>");
