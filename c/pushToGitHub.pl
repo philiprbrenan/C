@@ -31,18 +31,18 @@ my $dir     = fpd($home, q(c/));                                                
 my @cz      =  grep {!/\A#/} split /\s+/, <<END;                                # z files to run
 arenaList
 arenaTree
+cairoText
 colour
+mimagem
 rectangle
 stringBuffer
-xml
 utilities
 vector2d
+xml
 END
 
 my @cg      =  grep {!/\A#/} split /\s+/, <<END;                                # g files to run
 END
-#cairoText
-#mimagem
 
 if (1)                                                                          # Upload files
  {my @files = ($compile, $licence);
