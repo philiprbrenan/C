@@ -218,7 +218,7 @@ if ($perl)                                                                      
 elsif ($c)                                                                      # GCC
  {# my $cp = qq(-fstack-protector-strong -finput-charset=UTF-8 -fopenmp -fopenacc -foffload=nvptx-none);
   my $cp = join ' ', map {split /\s+/} grep {!/\A#/} split /\n/, <<END;         # Compiler options
--finput-charset=UTF-8 -fmax-errors=132 -rdynamic
+-finput-charset=UTF-8 -fmax-errors=7 -rdynamic
 -Wall -Wextra -Wno-unused-function
 -fopenmp -foffload=nvptx-none
 #-fopenacc
