@@ -45,6 +45,8 @@ typedef struct $Image                                                           
   $Font serifBoldItalic;
   $Font serifItalic;
   $Font serif;
+
+  double fontAscent, fontDescent, fontHeight;                                   // Metrics for the current font
  } $Image;
 
 #include <$$_prototypes.h>
@@ -112,39 +114,39 @@ static $Font make$Font                                                          
 //D1 Free                                                                       // Free cairo and free type resources associated with the image
 
 static void free_$Image                                                         // Free an image
- ($Image i)                                                                     // $Image
- {i.out ▷ free;
+ ($Image * i)                                                                     // $Image
+ {i->out ▷ free;
 
   $Font *fonts[] =
-   {&i.sansBoldItalic, &i.sansBold, &i.sansItalic,      &i.sans,
-    &i.sansMonoBold,   &i.sansMono, &i.serifBoldItalic, &i.serifBold,
-    &i.serifItalic,    &i.serif};
+   {&i->sansBoldItalic, &i->sansBold, &i->sansItalic,      &i->sans,
+    &i->sansMonoBold,   &i->sansMono, &i->serifBoldItalic, &i->serifBold,
+    &i->serifItalic,    &i->serif};
 
   for($Font **f = fonts; *f; ++f)                                               // Free any fonts that were loaded
    {$Font F = **f;
     F ▷ free;
    }
 
-  FT_Done_FreeType(i.freeTypeLibrary);                                          // Finished with FreeType library
+  FT_Done_FreeType(i->freeTypeLibrary);                                          // Finished with FreeType library
  }
 
 static void free_$Font                                                          // Free a font if it has been loaded
- ($Font font)                                                                   // $Font
- {if (font.cairoFontFace)
-   {cairo_font_face_destroy(font.cairoFontFace);
-    FT_Done_Face           (font.freeTypeFontFace);
-    font.file ▷ free;
+ ($Font * font)                                                                   // $Font
+ {if (font->cairoFontFace)
+   {cairo_font_face_destroy(font->cairoFontFace);
+    FT_Done_Face           (font->freeTypeFontFace);
+    font->file ▷ free;
    }
  }
 
-//D1 Methods                                                                    // Methods that operate on an $
+//D1 Text                                                                       // Work with text
 
 static void font_$                                                              // Start using a font
- ($Image i,                                                                     // $Image
+ ($Image * i,                                                                     // $Image
   $Font font)                                                                   // Font to use
  {if (!font.cairoFontFace)                                                      // Load the font if this font has not yet been loaded.
    {makeLocalCopyOfStringBuffer(ff, l, font.file);
-    e2 ◁ FT_New_Face(i.freeTypeLibrary, ff, 0, &font.freeTypeFontFace);
+    e2 ◁ FT_New_Face(i->freeTypeLibrary, ff, 0, &font.freeTypeFontFace);
     if (e2 == FT_Err_Unknown_File_Format) printStackBackTraceAndExit
      (1, "FontFace not supported: %s\n", ff);
     else if (e2) printStackBackTraceAndExit
@@ -153,86 +155,98 @@ static void font_$                                                              
     font.cairoFontFace = cairo_ft_font_face_create_for_ft_face(font.freeTypeFontFace, 0);
    }
 
-  cairo_set_font_face (i.cr, font.cairoFontFace);                               // Set the font as the currently active one
+  cairo_set_font_face (i->cr, font.cairoFontFace);                               // Set the font as the currently active one
+
+  i ▶ fontMetrics;
+ }
+
+static void fontMetrics_$                                                       // Load the metrics of the current font
+ ($Image * i)                                                                     // $Image
+ {cairo_font_extents_t fontExtents;
+  cairo_font_extents (i->cr, &fontExtents);
+
+  i->fontAscent  = fontExtents.ascent;                                           // Ascent from base line
+  i->fontDescent = fontExtents.descent;                                          // Descent from base line
+  i->fontHeight  = i->fontAscent + i->fontDescent;                                 // Interline height
  }
 
 static void fontSize_$                                                          // Set the size of a font
- ($Image i,                                                                     // $Image
+ ($Image * i,                                                                     // $Image
   int    size)                                                                  // Size
- {cairo_set_font_size (i.cr, size);                                             // Set font size
- }
-
-static void assert$ImageFile                                                    //P Check that the digest of an image file contains the specified string
- (char *             imageFile,                                                 // Image file name
-  const char * const digest)                                                    // Expected digest
- {      c ◁ makeStringBufferFromString("b2sum ");
-        c ▷ add(imageFile);
-        c ▷ system;
-
-  if (! c ▷ containsString(digest))
-   {makeLocalCopyOfStringBuffer(d, l, c);
-    say("\nImage file: %s\n",   imageFile);
-    say("Have: %s\nWant: %s\n", d, digest);
-    assert(0);
-   }
-
-  c ▷ free;
- }
-
-static void assert$Result                                                       // Check the image via a digest
- ($Image i,                                                                     // $Image
-  const char * const digest)                                                    // Expected digest
- {makeLocalCopyOfStringBuffer(s, l, i.out);
-  assert$ImageFile(s, digest);
- }
-
-static void save_$_string                                                       // Save a copy of the drawing surface to the specified file
- ($Image    i,                                                                  // $Image
-  char *    imageFile,                                                          // Image file name
-  const char * const digest)                                                    // Expected digest
- {cairo_surface_write_to_png(i.surface, imageFile);
-  assert$ImageFile(imageFile, digest);
- }
-
-static void clearWhite_$                                                        // Clear the drawing surface to white
- ($Image             i)                                                         // $Image
- {cr ◁ i.cr;
-  cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-  cairo_paint         (cr);
- }
-
-static void colour_$                                                            // Set the current colour
- ($Image i,                                                                     // $Image
-  Colour c)                                                                     // Colour
- {cr ◁ i.cr;
-  cairo_set_source_rgba(cr, c.r, c.g, c.b, c.a);
- }
-
-static void clip_$                                                              // Set the clip area
- ($Image    i,                                                                  // $Image
-  Rectangle r)                                                                  // Rectangle
- {cr ◁ i.cr;
-  cairo_rectangle(cr, r.x, r.y, r ▷ width, r ▷ height);
-  cairo_clip     (cr);
+ {cairo_set_font_size (i->cr, size);                                             // Set font size
+  i ▶ fontMetrics;
+say("BBBBB %f\n", i->fontHeight);
  }
 
 static double textAdvance_$                                                     // Get the width of the specified text
- ($Image i,                                                                     // $Image
+ ($Image * i,                                                                     // $Image
   char * s)                                                                     // String
- {cr ◁ i.cr;
+ {cr ◁ i->cr;
   cairo_text_extents_t textExtents;
   cairo_text_extents (cr, s, &textExtents);
   return textExtents.x_advance;
  }
 
+static void text_$                                                              // Draw text at the specified position using the current font, fonet size and colour
+ ($Image * i,                                                                     // $Image
+  double x,                                                                     // X position of text
+  double y,                                                                     // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
+  const char * t)                                                               // The text to draw
+ {cairo_move_to  (i->cr, x, y + i->fontAscent);
+  cairo_show_text(i->cr, t);
+ }
+
+//D1 Colours                                                                    // Colours
+
+static void clearWhite_$                                                        // Clear the drawing surface to white
+ ($Image * i)                                                         // $Image
+ {cr ◁ i->cr;
+  cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+  cairo_paint         (cr);
+ }
+
+static void colour_$                                                            // Set the current colour
+ ($Image * i,                                                                     // $Image
+  Colour c)                                                                     // Colour
+ {cr ◁ i->cr;
+  cairo_set_source_rgba(cr, c.r, c.g, c.b, c.a);
+ }
+
+static void rgb_$                                                               // Set the current colour
+ ($Image * i,                                                                     // $Image
+  double r,                                                                     // Red
+  double g,                                                                     // Green
+  double b)                                                                     // Blue
+ {cairo_set_source_rgb(i->cr, r, g, b);
+ }
+
+static void rgba_$                                                              // Set the current colour
+ ($Image * i,                                                                     // $Image
+  double r,                                                                     // Red
+  double g,                                                                     // Green
+  double b,                                                                     // Blue
+  double a)                                                                     // Alpha
+ {cairo_set_source_rgba(i->cr, r, g, b, a);
+ }
+
+//D1 Clipping                                                                   // Set the clip area
+
+static void clip_$                                                              // Set the clip area
+ ($Image   *  i,                                                                  // $Image
+  Rectangle r)                                                                  // Rectangle
+ {cr ◁ i->cr;
+  cairo_rectangle(cr, r.x, r.y, r ▷ width, r ▷ height);
+  cairo_clip     (cr);
+ }
+
 //D1 Shapes                                                                     // Draw shapes
 
 static void leftArrow                                                           // Draw a left pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
- ($Image    i,                                                                  // Image
+ ($Image   * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
- {cr ◀ i.cr;
+ {cr ◀ i->cr;
 
   cairo_save(cr);
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
@@ -251,11 +265,11 @@ static void leftArrow                                                           
  }
 
 static void leftArrowWithCircle                                                 // Draw a left pointing arrow with a central circle cut out
- ($Image    i,                                                                  // Image
+ ($Image   *  i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
- {cr ◀ i.cr;
+ {cr ◀ i->cr;
 
   cairo_save(cr);
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
@@ -280,11 +294,11 @@ static void leftArrowWithCircle                                                 
  }
 
 static void rightArrow                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
- ($Image    i,                                                                  // Image
+ ($Image   *  i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
- {cr ◀ i.cr;
+ {cr ◀ i->cr;
 
   cairo_save(cr);
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
@@ -301,6 +315,40 @@ static void rightArrow                                                          
   cairo_pattern_destroy(lg);
   cairo_restore(cr);
  }
+
+//D1 Output                                                                     // Write the image and check the results
+
+static void assert$ImageFile                                                    //P Check that the digest of an image file contains the specified string
+ (char *             imageFile,                                                 // Image file name
+  const char * const digest)                                                    // Expected digest
+ {      c ◀ makeStringBufferFromString("b2sum ");
+        c ▷ add(imageFile);
+        c ▷ system;
+
+  if (! c ▷ containsString(digest))
+   {makeLocalCopyOfStringBuffer(d, l, c);
+    say("\nImage file: %s\n",   imageFile);
+    say("Have: %s\nWant: %s\n", d, digest);
+    assert(0);
+   }
+
+  c ▷ free;
+ }
+
+static void assert$Result                                                       // Check the image via a digest
+ ($Image * i,                                                                     // $Image
+  const char * const digest)                                                    // Expected digest
+ {makeLocalCopyOfStringBuffer(s, l, i->out);
+  assert$ImageFile(s, digest);
+ }
+
+static void save_$_string                                                       // Save a copy of the drawing surface to the specified file
+ ($Image   *  i,                                                                  // $Image
+  char *    imageFile,                                                          // Image file name
+  const char * const digest)                                                    // Expected digest
+ {cairo_surface_write_to_png(i->surface, imageFile);
+  assert$ImageFile(imageFile, digest);
+ }
 #endif
 
 //D1 Tests                                                                      // Tests
@@ -308,23 +356,24 @@ static void rightArrow                                                          
 
 void test0()                                                                    //TcreateImage
  {void draw($Image i)                                                           // Draw some text
-   {cr ◀ i.cr;
-    cairo_set_font_size (cr, 20);
-    cairo_set_source_rgb(cr, 0, 0, 0);
-    cairo_font_extents_t fontExtents;
-    cairo_font_extents (cr, &fontExtents);
+   {i ▷ fontSize(20);
+say("AAAA %f\n", i.fontHeight);
+    i ▷ rgb(0, 0, 0);
 
-    const char * const text = "Hello World How is it whirling?";
-    for(size_t j = 0; j < 100; ++j)
-     {cairo_move_to(cr, 0, (j + 1) * fontExtents.height);
-      for(size_t i = 0; i < strlen(text); ++i)
-       {char c[2]; c[0] = text[i]; c[1] = 0;
-        cairo_show_text(cr, c);
-       }
-     }
+    cairo_set_source_rgb(i.cr, 0.5, 0.5, 0.5);
+    cairo_rectangle(i.cr, 0, 0, 1000, 1000);
+    cairo_fill(i.cr);
+
+    text ◁ "Hello World How is it whirling?";
+
+    cairo_move_to       (i.cr, 1000, 1000);
+    cairo_set_source_rgb(i.cr, 1, 0, 0);
+    i ▷ text(1000, 100 * i.fontHeight, text);
+
+    for(size_t j = 0; j < 100; ++j) i ▷ text(0, j * i.fontHeight, text);
    }
 
-  i ◁ make$Image(draw, 2000, 2000, "$0.png", "ab32");                           // Create image containing some text and check its digest
+  i ◀ make$Image(draw, 2000, 2000, "$0.png", "ab32");                           // Create image containing some text and check its digest
   i ▷ free;
  }
 
@@ -334,13 +383,13 @@ void test1()                                                                    
     Colour blue  = makeColour(0,0,1,1);
 
     w ◁ i.width; h ◁ i.height;
-    r ◁ makeRectangleWH(w/4, 0, w/4, h/2);
+    r ◀ makeRectangleWH(w/4, 0, w/4, h/2);
     s ◁ r ▷ translate(w/2, 0);
     i ▷ leftArrowWithCircle(r, red, blue);
     i ▷ rightArrow(s, red, blue);
    }
 
-  i ◁ make$Image(draw, 1000, 2000, "$1.png", "a");
+  i ◀ make$Image(draw, 1000, 2000, "$1.png", "a");
   i ▷ free;
  }
 
@@ -381,7 +430,7 @@ void test2()                                                                    
      }
    }
 
-  i ◁ make$Image(draw, 2000, 2000, "$2.png", "a");
+  i ◀ make$Image(draw, 2000, 2000, "$2.png", "a");
   i ▷ free;
  }
 
