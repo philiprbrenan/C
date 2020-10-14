@@ -25,14 +25,13 @@ my $user    = q(philiprbrenan);                                                 
 my $repo    = q(C);                                                             # Repo
 my $wf      = q(.github/workflows/main.yml);                                    # Work flow
 my $compile = q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);                  # Compile
+my $licence = q(/home/phil/c/LICENSE.md);                                       # License
 my $dir     = fpd($home, q(c/));                                                # Directories to upload
 
 my @cz      =  grep {!/\A#/} split /\s+/, <<END;                                # z files to run
 arenaList
 arenaTree
-cairoText
 colour
-mimagem
 rectangle
 stringBuffer
 xml
@@ -42,9 +41,11 @@ END
 
 my @cg      =  grep {!/\A#/} split /\s+/, <<END;                                # g files to run
 END
+#cairoText
+#mimagem
 
 if (1)                                                                          # Upload files
- {my @files = $compile;
+ {my @files = ($compile, $licence);
 
   if (1)                                                                        # Select files ignoring backups and tests
    {push @files, grep {-T $_ and !m(/backup/|/z/z/)}
