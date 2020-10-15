@@ -76,7 +76,7 @@ sub test($$)                                                                    
     - name: Run $c
       if: always()
       run: |
-        (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes $valg)
+        (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes $valg --gccVersion gcc-10)
 END
     join '', @r;
    }
@@ -129,12 +129,16 @@ jobs:
 
     - name: Check
       run: |
-        tree
         perl -v
         gcc -v
+
+    - name: Tree
+      run: |
+        tree
 
 $tests
 END
 #        sudo apt -y install build-essential libgtk-3-dev gdb tree
 
-lll GitHub::Crud::writeFileUsingSavedToken($user, $repo, $wf, $y);              # Upload workflow
+lll "Work flow to $wf ",
+  GitHub::Crud::writeFileUsingSavedToken($user, $repo, $wf, $y);                # Upload workflow
