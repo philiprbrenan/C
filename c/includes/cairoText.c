@@ -240,15 +240,15 @@ static void restore_CairoText                                                   
 
 static void move_CairoText                                                              // Move to a position without drawing
  (CairoTextImage * i,                                                                   // CairoTextImage
-  double   x,                                                                   // X coordinate to move to
-  double   y)                                                                   // Y coordinate to move to
+  double x,                                                                     // X coordinate to move to
+  double y)                                                                     // Y coordinate to move to
  {cairo_move_to(i->cr, x, y);
  }
 
 static void line_CairoText                                                              // Draw a line to the specified position from the current position
  (CairoTextImage * i,                                                                   // CairoTextImage
-  double   x,                                                                   // X coordinate to move to
-  double   y)                                                                   // Y coordinate to move to
+  double x,                                                                     // X coordinate to move to
+  double y)                                                                     // Y coordinate to move to
  {cairo_line_to(i->cr, x, y);
  }
 
@@ -332,7 +332,7 @@ static void leftArrowWithCircle                                                 
  }
 
 static void rightArrow                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
- (CairoTextImage   *  i,                                                                // Image
+ (CairoTextImage  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
@@ -357,7 +357,7 @@ static void rightArrow                                                          
 //D1 Output                                                                     // Write the image and check the results
 
 static void assertCairoTextImageFile                                                    //P Check that the digest of an image file contains the specified string
- (char *             imageFile,                                                 // Image file name
+ (char       *       imageFile,                                                 // Image file name
   const char * const digest)                                                    // Expected digest
  {      typeof(makeStringBufferFromString("b2sum ")) c = makeStringBufferFromString("b2sum ");
         c.proto->add(&c, imageFile);
@@ -374,15 +374,15 @@ static void assertCairoTextImageFile                                            
  }
 
 static void assertCairoTextResult                                                       // Check the image via a digest
- (CairoTextImage * i,                                                                   // CairoTextImage
+ (CairoTextImage     *       i,                                                         // CairoTextImage
   const char * const digest)                                                    // Expected digest
  {makeLocalCopyOfStringBuffer(s, l, i->out);
   assertCairoTextImageFile(s, digest);
  }
 
 static void saveAsPng_CairoText_string                                                  // Save a copy of the drawing surface to the specified file
- (CairoTextImage   *  i,                                                                // CairoTextImage
-  char *    imageFile,                                                          // Image file name
+ (CairoTextImage     *       i,                                                         // CairoTextImage
+  char       *       imageFile,                                                 // Image file name
   const char * const digest)                                                    // Expected digest
  {cairo_surface_write_to_png(i->surface, imageFile);
   assertCairoTextImageFile(imageFile, digest);
@@ -408,11 +408,11 @@ void test0()                                                                    
 
 void test1()                                                                    // Linear gradient
  {void draw(CairoTextImage i)
-   {Colour red   = makeColour(1,0,0,1);
-    Colour blue  = makeColour(0,0,1,1);
+   {const typeof(makeColour(1,0,0,1)) red = makeColour(1,0,0,1);
+    const typeof(makeColour(0,0,1,1)) blue = makeColour(0,0,1,1);
 
     const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
-    typeof(makeRectangleWH(w/4, 0, w/4, h/2)) r = makeRectangleWH(w/4, 0, w/4, h/2);
+    typeof(makeRectangleWH    (w/4, 0, w/4, h/2)) r = makeRectangleWH    (w/4, 0, w/4, h/2);
     const typeof(r.proto->translate(&r, w/2, 0)) s = r.proto->translate(&r, w/2, 0);
     i.proto->leftArrowWithCircle(&i, r, red, blue);
     i.proto->rightArrow(&i, s, red, blue);
@@ -424,7 +424,7 @@ void test1()                                                                    
 
 void test2()                                                                    // Text table
  {void draw(CairoTextImage i)
-   {Colour black = makeColour(0,0,0,1);
+   {const typeof(makeColour(0,0,0,1)) black = makeColour(0,0,0,1);
 
     const typeof(makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d")) table = makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d");
 
@@ -454,8 +454,39 @@ void test2()                                                                    
   i.proto->free(&i);
  }
 
+void test3()                                                                    // Text table using tab stops
+ {void draw(CairoTextImage i)
+   {const typeof(makeColour(0,0,0,1)) black = makeColour(0,0,0,1);
+
+    const typeof(makeArenaListFromWords("aaaa bbbb cc d\n A Bb Ccc Dddd\n e f g h")) list = makeArenaListFromWords("aaaa bbbb cc d\n A Bb Ccc Dddd\n e f g h");
+    const typeof(2) startAtEntry = 2;
+int nᵢ = 0;
+    i.proto->font(&i, i.serif);                                                      // Font
+    i.proto->fontSize(&i, 100);                                                          // Size of text
+    i.proto->colour(&i, black);                                                        // Colour of text
+
+    const typeof(makeRectangleWH(500, 500, 500, 800)) drawTable = makeRectangleWH(500, 500, 500, 800);                            // Drawing area
+    i.proto->clip(&i, drawTable);
+
+    double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
+
+    ArenaListFe(word, list)                                                     // Each word
+     {makeLocalCopyOfArenaListKey(k, l, word);
+      const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);
+      const typeof(i.fontHeight) H = i.fontHeight;
+      x = H * ceil(x / H);                                                      // Next tab stop
+      if (x + a > drawTable.X) {x = drawTable.x; y += H;}                       //
+      i.proto->text(&i, x, y, k);
+      x += a;
+     }
+   }
+
+  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a");
+  i.proto->free(&i);
+ }
+
 int main (void)
- {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3,  0};
   run_tests("CairoText", 1, tests);
   return 0;
 }
