@@ -418,7 +418,7 @@ void test1()                                                                    
     i.proto->rightArrow(&i, s, red, blue);
    }
 
-  typeof(makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "a")) i = makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "a");
+  typeof(makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "55d2")) i = makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "55d2");
   i.proto->free(&i);
  }
 
@@ -450,7 +450,7 @@ void test2()                                                                    
      }
    }
 
-  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "a");
+  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "ba23")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "ba23");
   i.proto->free(&i);
  }
 
@@ -459,8 +459,8 @@ void test3()                                                                    
    {const typeof(makeColour(0,0,0,1)) black = makeColour(0,0,0,1);
 
     const typeof(makeArenaListFromWords("aaaa bbbb cc d\n A Bb Ccc Dddd\n e f g h")) list = makeArenaListFromWords("aaaa bbbb cc d\n A Bb Ccc Dddd\n e f g h");
-    const typeof(2) startAtEntry = 2;
-int nᵢ = 0;
+    const typeof(2ul) startAtEntry = 2ul;
+
     i.proto->font(&i, i.serif);                                                      // Font
     i.proto->fontSize(&i, 100);                                                          // Size of text
     i.proto->colour(&i, black);                                                        // Colour of text
@@ -470,14 +470,16 @@ int nᵢ = 0;
 
     double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
 
-    ArenaListFe(word, list)                                                     // Each word
-     {makeLocalCopyOfArenaListKey(k, l, word);
-      const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);
-      const typeof(i.fontHeight) H = i.fontHeight;
-      x = H * ceil(x / H);                                                      // Next tab stop
-      if (x + a > drawTable.X) {x = drawTable.x; y += H;}                       //
-      i.proto->text(&i, x, y, k);
-      x += a;
+    ArenaListfec(word, list)                                                    // Each word
+     {if (wordⁱ >= startAtEntry)
+       {makeLocalCopyOfArenaListKey(k, l, word);
+        const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);
+        const typeof(i.fontHeight) H = i.fontHeight;
+        x = H * ceil(x / H);                                                    // Next tab stop
+        if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     //
+        i.proto->text(&i, x, y, k);
+        x += a;
+       }
      }
    }
 
