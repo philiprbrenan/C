@@ -2,7 +2,7 @@
 
 Use the Minimal Operator Preprocessor:
 
-https://metacpan.org/release/Preprocess-Ops
+https://metacpan.org/pod/Preprocess::Ops
 
 to make ANSI-C code object oriented.
 
