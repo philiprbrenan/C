@@ -52,7 +52,11 @@ static void close_CairoText
  (CairoTextImage * i);
 static void fill_CairoText
  (CairoTextImage * i);
+static void fillPreserve_CairoText
+ (CairoTextImage * i);
 static void stroke_CairoText
+ (CairoTextImage * i);
+static void strokePreserve_CairoText
  (CairoTextImage * i);
 static void clip_CairoText
  (CairoTextImage  * i,
@@ -103,7 +107,9 @@ struct ProtoTypes_CairoTextImage {
   void  (*colour)(                                                              // Set the current colour
     CairoTextImage * i,                                                         // CairoTextImage
     Colour c);                                                                  // Colour
-  void  (*fill)(                                                                // Fill the current path
+  void  (*fillPreserve)(                                                        // Fill the current path and keep the path.
+    CairoTextImage * i);                                                        // CairoTextImage
+  void  (*fill)(                                                                // Fill the current path and delete the path.
     CairoTextImage * i);                                                        // CairoTextImage
   void  (*fontMetrics)(                                                         // Load the metrics of the current font
     CairoTextImage * i);                                                        // CairoTextImage
@@ -157,7 +163,9 @@ struct ProtoTypes_CairoTextImage {
     const char * const digest);                                                 // Expected digest
   void  (*save)(                                                                // Save the drawing context
     CairoTextImage * i);                                                        // CairoTextImage
-  void  (*stroke)(                                                              // Stroke the current path
+  void  (*strokePreserve)(                                                      // Stroke the current path and keep the path.
+    CairoTextImage * i);                                                        // CairoTextImage
+  void  (*stroke)(                                                              // Stroke the current path and delete the path.
     CairoTextImage * i);                                                        // CairoTextImage
   double  (*textAdvance)(                                                       // Get the width of the specified text
     CairoTextImage * i,                                                         // CairoTextImage
@@ -168,6 +176,6 @@ struct ProtoTypes_CairoTextImage {
     double y,                                                                   // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
     const char * t);                                                            // The text to draw
  } const ProtoTypes_CairoTextImage =
-{assertCairoTextResult, clearWhite_CairoText, clip_CairoText, close_CairoText, colour_CairoText, fill_CairoText, fontMetrics_CairoText, fontSize_CairoText, font_CairoText, free_CairoTextImage, leftArrow, leftArrowWithCircle, line_CairoText, move_CairoText, restore_CairoText, rgb_CairoText, rgba_CairoText, rightArrow, saveAsPng_CairoText_string, save_CairoText, stroke_CairoText, textAdvance_CairoText, text_CairoText};
+{assertCairoTextResult, clearWhite_CairoText, clip_CairoText, close_CairoText, colour_CairoText, fillPreserve_CairoText, fill_CairoText, fontMetrics_CairoText, fontSize_CairoText, font_CairoText, free_CairoTextImage, leftArrow, leftArrowWithCircle, line_CairoText, move_CairoText, restore_CairoText, rgb_CairoText, rgba_CairoText, rightArrow, saveAsPng_CairoText_string, save_CairoText, strokePreserve_CairoText, stroke_CairoText, textAdvance_CairoText, text_CairoText};
 CairoTextImage newCairoTextImage(CairoTextImage allocator) {return allocator;}
 
