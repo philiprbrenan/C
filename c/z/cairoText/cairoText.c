@@ -256,14 +256,24 @@ static void close_$                                                             
  {cairo_close_path(i->cr);
  }
 
-static void fill_$                                                              // Fill the current path
+static void fill_$                                                              // Fill the current path and delete the path.
  ($Image * i)                                                                   // $Image
  {cairo_fill(i->cr);
  }
 
-static void stroke_$                                                            // Stroke the current path
+static void fillPreserve_$                                                      // Fill the current path and keep the path.
+ ($Image * i)                                                                   // $Image
+ {cairo_fill_preserve(i->cr);
+ }
+
+static void stroke_$                                                            // Stroke the current path and delete the path.
  ($Image * i)                                                                   // $Image
  {cairo_stroke(i->cr);
+ }
+
+static void strokePreserve_$                                                    // Stroke the current path and keep the path.
+ ($Image * i)                                                                   // $Image
+ {cairo_stroke_preserve(i->cr);
  }
 
 //D1 Clipping                                                                   // Set the clip area
