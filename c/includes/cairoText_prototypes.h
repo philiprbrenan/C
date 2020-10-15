@@ -42,12 +42,12 @@ static void restore_CairoText
  (CairoTextImage * i);
 static void move_CairoText
  (CairoTextImage * i,
-  double   x,
-  double   y);
+  double x,
+  double y);
 static void line_CairoText
  (CairoTextImage * i,
-  double   x,
-  double   y);
+  double x,
+  double y);
 static void close_CairoText
  (CairoTextImage * i);
 static void fill_CairoText
@@ -68,19 +68,19 @@ static void leftArrowWithCircle
   Colour    s,
   Colour    f);
 static void rightArrow
- (CairoTextImage   *  i,
+ (CairoTextImage  * i,
   Rectangle r,
   Colour    s,
   Colour    f);
 static void assertCairoTextImageFile
- (char *             imageFile,
+ (char       *       imageFile,
   const char * const digest);
 static void assertCairoTextResult
- (CairoTextImage * i,
+ (CairoTextImage     *       i,
   const char * const digest);
 static void saveAsPng_CairoText_string
- (CairoTextImage   *  i,
-  char *    imageFile,
+ (CairoTextImage     *       i,
+  char       *       imageFile,
   const char * const digest);
 struct ProtoTypes_CairoTextFont {
   void  (*free)(                                                                // Free a font if it has been loaded
@@ -91,7 +91,7 @@ CairoTextFont newCairoTextFont(CairoTextFont allocator) {return allocator;}
 
 struct ProtoTypes_CairoTextImage {
   void  (*assertCairoTextResult)(                                               // Check the image via a digest
-    CairoTextImage * i,                                                         // CairoTextImage
+    CairoTextImage     * i,                                                     // CairoTextImage
     const char * const digest);                                                 // Expected digest
   void  (*clearWhite)(                                                          // Clear the drawing surface to white
     CairoTextImage * i);                                                        // CairoTextImage
@@ -147,13 +147,13 @@ struct ProtoTypes_CairoTextImage {
     double b,                                                                   // Blue
     double a);                                                                  // Alpha
   void  (*rightArrow)(                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
-    CairoTextImage   * i,                                                       // Image
+    CairoTextImage  * i,                                                        // Image
     Rectangle r,                                                                // Rectangle to draw arrow in
     Colour s,                                                                   // Start colour
     Colour f);                                                                  // Finish colour
   void  (*saveAsPng)(                                                           // Save a copy of the drawing surface to the specified file
-    CairoTextImage   * i,                                                       // CairoTextImage
-    char * imageFile,                                                           // Image file name
+    CairoTextImage     * i,                                                     // CairoTextImage
+    char       * imageFile,                                                     // Image file name
     const char * const digest);                                                 // Expected digest
   void  (*save)(                                                                // Save the drawing context
     CairoTextImage * i);                                                        // CairoTextImage
