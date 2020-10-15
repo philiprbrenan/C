@@ -370,7 +370,7 @@ void test1()                                                                    
     const typeof(page.proto->right(&page, 0)) ww = page.proto->right(&page, 0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
     typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     typeof(we.proto->drawEditBuffer(&we)) wr = we.proto->drawEditBuffer(&we);
-         i.proto->save(&i, "Mimagem1_wide.png", "a"); i.proto->clearWhite(&i);
+         i.proto->saveAsPng(&i, "Mimagem1_wide.png", "a"); i.proto->clearWhite(&i);
 
     const typeof(X.tree.proto->nodeFromOffset(&X.tree, wr.pointer.tag)) wn = X.tree.proto->nodeFromOffset(&X.tree, wr.pointer.tag);                               // Pointer location in wide version
     assert( wn.proto->equalsString(&wn, "GGG"));
@@ -381,7 +381,7 @@ void test1()                                                                    
     const typeof(page.proto->left(&page, i.width * 4 / 8)) nw = page.proto->left(&page, i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
     typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: wr.pointer, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) ne = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: wr.pointer, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     typeof(ne.proto->drawEditBuffer(&ne)) nr = ne.proto->drawEditBuffer(&ne);
-    i.proto->save(&i, "Mimagem1_narrow.png", "a"); i.proto->clearWhite(&i);
+    i.proto->saveAsPng(&i, "Mimagem1_narrow.png", "a"); i.proto->clearWhite(&i);
 
     const typeof(X.tree.proto->nodeFromOffset(&X.tree, nr.cursor.tag)) nn = X.tree.proto->nodeFromOffset(&X.tree, nr.cursor.tag);                                // Cursor location in narrow mode
     assert( nn.proto->equalsString(&nn, "GGG"));
