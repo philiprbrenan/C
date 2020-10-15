@@ -239,15 +239,15 @@ static void restore_$                                                           
 
 static void move_$                                                              // Move to a position without drawing
  ($Image * i,                                                                   // $Image
-  double   x,                                                                   // X coordinate to move to
-  double   y)                                                                   // Y coordinate to move to
+  double x,                                                                     // X coordinate to move to
+  double y)                                                                     // Y coordinate to move to
  {cairo_move_to(i->cr, x, y);
  }
 
 static void line_$                                                              // Draw a line to the specified position from the current position
  ($Image * i,                                                                   // $Image
-  double   x,                                                                   // X coordinate to move to
-  double   y)                                                                   // Y coordinate to move to
+  double x,                                                                     // X coordinate to move to
+  double y)                                                                     // Y coordinate to move to
  {cairo_line_to(i->cr, x, y);
  }
 
@@ -331,7 +331,7 @@ static void leftArrowWithCircle                                                 
  }
 
 static void rightArrow                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
- ($Image   *  i,                                                                // Image
+ ($Image  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
@@ -356,7 +356,7 @@ static void rightArrow                                                          
 //D1 Output                                                                     // Write the image and check the results
 
 static void assert$ImageFile                                                    //P Check that the digest of an image file contains the specified string
- (char *             imageFile,                                                 // Image file name
+ (char       *       imageFile,                                                 // Image file name
   const char * const digest)                                                    // Expected digest
  {      c ◀ makeStringBufferFromString("b2sum ");
         c ▷ add(imageFile);
@@ -373,15 +373,15 @@ static void assert$ImageFile                                                    
  }
 
 static void assert$Result                                                       // Check the image via a digest
- ($Image * i,                                                                   // $Image
+ ($Image     *       i,                                                         // $Image
   const char * const digest)                                                    // Expected digest
  {makeLocalCopyOfStringBuffer(s, l, i->out);
   assert$ImageFile(s, digest);
  }
 
 static void saveAsPng_$_string                                                  // Save a copy of the drawing surface to the specified file
- ($Image   *  i,                                                                // $Image
-  char *    imageFile,                                                          // Image file name
+ ($Image     *       i,                                                         // $Image
+  char       *       imageFile,                                                 // Image file name
   const char * const digest)                                                    // Expected digest
  {cairo_surface_write_to_png(i->surface, imageFile);
   assert$ImageFile(imageFile, digest);
@@ -407,14 +407,14 @@ void test0()                                                                    
 
 void test1()                                                                    // Linear gradient
  {void draw($Image i)
-   {Colour red   = makeColour(1,0,0,1);
-    Colour blue  = makeColour(0,0,1,1);
+   {red  ◁ makeColour(1,0,0,1);
+    blue ◁ makeColour(0,0,1,1);
 
     w ◁ i.width; h ◁ i.height;
-    r ◀ makeRectangleWH(w/4, 0, w/4, h/2);
-    s ◁ r ▷ translate(w/2, 0);
+    r ◀ makeRectangleWH    (w/4, 0, w/4, h/2);
+    s ◁ r ▷ translate      (w/2, 0);
     i ▷ leftArrowWithCircle(r, red, blue);
-    i ▷ rightArrow(s, red, blue);
+    i ▷ rightArrow         (s, red, blue);
    }
 
   i ◀ make$Image(draw, 1000, 2000, "$1.png", "a");
@@ -423,7 +423,7 @@ void test1()                                                                    
 
 void test2()                                                                    // Text table
  {void draw($Image i)
-   {Colour black = makeColour(0,0,0,1);
+   {black ◁ makeColour(0,0,0,1);
 
     table ◁ makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d");
 
@@ -453,8 +453,39 @@ void test2()                                                                    
   i ▷ free;
  }
 
+void test3()                                                                    // Text table using tab stops
+ {void draw($Image i)
+   {black ◁ makeColour(0,0,0,1);
+
+    list ◁ makeArenaListFromWords("aaaa bbbb cc d\n A Bb Ccc Dddd\n e f g h");
+    startAtEntry ◁ 2;
+int nᵢ = 0;                                                                     //
+    i ▷ font    (i.serif);                                                      // Font
+    i ▷ fontSize(100);                                                          // Size of text
+    i ▷ colour  (black);                                                        // Colour of text
+
+    drawTable ◁ makeRectangleWH(500, 500, 500, 800);                            // Drawing area
+    i ▷ clip(drawTable);
+
+    double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
+
+    ArenaListFec(word, list)                                                    // Each word
+     {makeLocalCopyOfArenaListKey(k, l, word);
+      a ◁ i ▷ textAdvance(k);
+      H ◁ i.fontHeight;
+      x = H * ceil(x / H);                                                      // Next tab stop
+      if (x + a > drawTable.X) {x = drawTable.x; y += H;}                       //
+      i ▷ text(x, y, k);
+      x += a;
+     }
+   }
+
+  i ◀ make$Image(draw, 2000, 2000, "$3.png", "a");
+  i ▷ free;
+ }
+
 int main (void)
- {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3,  0};
   run_tests("$", 1, tests);
   return 0;
 }
