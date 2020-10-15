@@ -124,7 +124,7 @@ static void free_$Image                                                         
   for($Font **f = fonts; *f; ++f) {$Font *F = *f; F ▶ free;}                    // Free any fonts that were loaded
 
 
-  FT_Done_FreeType(i->freeTypeLibrary);                                          // Finished with FreeType library
+  FT_Done_FreeType(i->freeTypeLibrary);                                         // Finished with FreeType library
  }
 
 static void free_$Font                                                          // Free a font if it has been loaded
@@ -152,30 +152,30 @@ static void font_$                                                              
     font.cairoFontFace = cairo_ft_font_face_create_for_ft_face(font.freeTypeFontFace, 0);
    }
 
-  cairo_set_font_face (i->cr, font.cairoFontFace);                               // Set the font as the currently active one
+  cairo_set_font_face (i->cr, font.cairoFontFace);                              // Set the font as the currently active one
 
   i ▶ fontMetrics;
  }
 
 static void fontMetrics_$                                                       // Load the metrics of the current font
- ($Image * i)                                                                     // $Image
+ ($Image * i)                                                                   // $Image
  {cairo_font_extents_t fontExtents;
   cairo_font_extents (i->cr, &fontExtents);
 
-  i->fontAscent  = fontExtents.ascent;                                           // Ascent from base line
-  i->fontDescent = fontExtents.descent;                                          // Descent from base line
-  i->fontHeight  = i->fontAscent + i->fontDescent;                                 // Interline height
+  i->fontAscent  = fontExtents.ascent;                                          // Ascent from base line
+  i->fontDescent = fontExtents.descent;                                         // Descent from base line
+  i->fontHeight  = i->fontAscent + i->fontDescent;                              // Interline height
  }
 
 static void fontSize_$                                                          // Set the size of a font
- ($Image * i,                                                                     // $Image
+ ($Image * i,                                                                   // $Image
   int    size)                                                                  // Size
- {cairo_set_font_size (i->cr, size);                                             // Set font size
+ {cairo_set_font_size(i->cr, size);                                             // Set font size
   i ▶ fontMetrics;
  }
 
 static double textAdvance_$                                                     // Get the width of the specified text
- ($Image * i,                                                                     // $Image
+ ($Image * i,                                                                   // $Image
   char * s)                                                                     // String
  {cr ◁ i->cr;
   cairo_text_extents_t textExtents;
@@ -184,7 +184,7 @@ static double textAdvance_$                                                     
  }
 
 static void text_$                                                              // Draw text at the specified position using the current font, fonet size and colour
- ($Image * i,                                                                     // $Image
+ ($Image * i,                                                                   // $Image
   double x,                                                                     // X position of text
   double y,                                                                     // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
   const char * t)                                                               // The text to draw
@@ -195,21 +195,21 @@ static void text_$                                                              
 //D1 Colours                                                                    // Colours
 
 static void clearWhite_$                                                        // Clear the drawing surface to white
- ($Image * i)                                                         // $Image
+ ($Image * i)                                                                   // $Image
  {cr ◁ i->cr;
   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
   cairo_paint         (cr);
  }
 
 static void colour_$                                                            // Set the current colour
- ($Image * i,                                                                     // $Image
+ ($Image * i,                                                                   // $Image
   Colour c)                                                                     // Colour
  {cr ◁ i->cr;
   cairo_set_source_rgba(cr, c.r, c.g, c.b, c.a);
  }
 
 static void rgb_$                                                               // Set the current colour
- ($Image * i,                                                                     // $Image
+ ($Image * i,                                                                   // $Image
   double r,                                                                     // Red
   double g,                                                                     // Green
   double b)                                                                     // Blue
@@ -217,7 +217,7 @@ static void rgb_$                                                               
  }
 
 static void rgba_$                                                              // Set the current colour
- ($Image * i,                                                                     // $Image
+ ($Image * i,                                                                   // $Image
   double r,                                                                     // Red
   double g,                                                                     // Green
   double b,                                                                     // Blue
@@ -225,10 +225,51 @@ static void rgba_$                                                              
  {cairo_set_source_rgba(i->cr, r, g, b, a);
  }
 
+//D1 Drawing                                                                    // Draw objects
+
+static void save_$                                                              // Save the drawing context
+ ($Image * i)                                                                   // $Image
+ {cairo_save(i->cr);
+ }
+
+static void restore_$                                                           // Restore the drawing context
+ ($Image * i)                                                                   // $Image
+ {cairo_restore(i->cr);
+ }
+
+static void move_$                                                              // Move to a position without drawing
+ ($Image * i,                                                                   // $Image
+  double   x,                                                                   // X coordinate to move to
+  double   y)                                                                   // Y coordinate to move to
+ {cairo_move_to(i->cr, x, y);
+ }
+
+static void line_$                                                              // Draw a line to the specified position from the current position
+ ($Image * i,                                                                   // $Image
+  double   x,                                                                   // X coordinate to move to
+  double   y)                                                                   // Y coordinate to move to
+ {cairo_line_to(i->cr, x, y);
+ }
+
+static void close_$                                                             // Close the current path
+ ($Image * i)                                                                   // $Image
+ {cairo_close_path(i->cr);
+ }
+
+static void fill_$                                                              // Fill the current path
+ ($Image * i)                                                                   // $Image
+ {cairo_fill(i->cr);
+ }
+
+static void stroke_$                                                            // Stroke the current path
+ ($Image * i)                                                                   // $Image
+ {cairo_stroke(i->cr);
+ }
+
 //D1 Clipping                                                                   // Set the clip area
 
 static void clip_$                                                              // Set the clip area
- ($Image   *  i,                                                                  // $Image
+ ($Image  * i,                                                                  // $Image
   Rectangle r)                                                                  // Rectangle
  {cr ◁ i->cr;
   cairo_rectangle(cr, r.x, r.y, r ▷ width, r ▷ height);
@@ -238,78 +279,78 @@ static void clip_$                                                              
 //D1 Shapes                                                                     // Draw shapes
 
 static void leftArrow                                                           // Draw a left pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
- ($Image   * i,                                                                  // Image
+ ($Image  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
  {cr ◀ i->cr;
 
-  cairo_save(cr);
+  i ▶ save;
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
   cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
   cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
 
-  cairo_move_to    (cr, r.x, r.y + r ▷ height / 2);
-  cairo_line_to    (cr, r.X, r.y);
-  cairo_line_to    (cr, r.X, r.Y);
-  cairo_close_path (cr);
+  i ▶ move(r.x, r.y + r ▷ height / 2);
+  i ▶ line(r.X, r.y);
+  i ▶ line(r.X, r.Y);
+  i ▶ close;
 
   cairo_set_source (cr, lg);
-  cairo_fill       (cr);
+  i ▶ fill;
   cairo_pattern_destroy(lg);
-  cairo_restore(cr);
+  i ▶ restore;
  }
 
 static void leftArrowWithCircle                                                 // Draw a left pointing arrow with a central circle cut out
- ($Image   *  i,                                                                  // Image
+ ($Image  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
  {cr ◀ i->cr;
 
-  cairo_save(cr);
+  i ▶ save;
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
   cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
   cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
 
-  cairo_move_to        (cr, r.x, r.y + r ▷ height / 2);
-  cairo_line_to        (cr, r.X, r.y);
-  cairo_line_to        (cr, r.X, r.Y);
-  cairo_close_path     (cr);
+  i ▶ move(r.x, r.y + r ▷ height / 2);
+  i ▶ line(r.X, r.y);
+  i ▶ line(r.X, r.Y);
+  i ▶ close;
 
   w ◁ r ▷ width; h ◁ r ▷ height;
-  cairo_new_sub_path   (cr);
-  cairo_arc            (cr, r.x + w * 7 / 12, r.y + h / 2, w / 3, 0,  2 * M_PI);
-  cairo_close_path     (cr);
+  cairo_new_sub_path(cr);
+  cairo_arc         (cr, r.x + w * 7 / 12, r.y + h / 2, w / 3, 0,  2 * M_PI);
+  i ▶ close;
 
   cairo_set_source     (cr, lg);
   cairo_set_fill_rule  (cr, CAIRO_FILL_RULE_EVEN_ODD);
-  cairo_fill           (cr);
+  i ▶ fill;
   cairo_pattern_destroy(lg);
-  cairo_restore(cr);
+  i ▶ restore;
  }
 
 static void rightArrow                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
- ($Image   *  i,                                                                  // Image
+ ($Image   *  i,                                                                // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
  {cr ◀ i->cr;
 
-  cairo_save(cr);
+  i ▶ save;
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
   cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
   cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
 
-  cairo_move_to    (cr, r.X, r.y + r ▷ height / 2);
-  cairo_line_to    (cr, r.x, r.y);
-  cairo_line_to    (cr, r.x, r.Y);
-  cairo_close_path (cr);
+  i ▶ move(r.X, r.y + r ▷ height / 2);
+  i ▶ line(r.x, r.y);
+  i ▶ line(r.x, r.Y);
+  i ▶ close;
 
   cairo_set_source (cr, lg);
-  cairo_fill       (cr);
+  i ▶ fill;
   cairo_pattern_destroy(lg);
-  cairo_restore(cr);
+  i ▶ restore;
  }
 
 //D1 Output                                                                     // Write the image and check the results
@@ -332,14 +373,14 @@ static void assert$ImageFile                                                    
  }
 
 static void assert$Result                                                       // Check the image via a digest
- ($Image * i,                                                                     // $Image
+ ($Image * i,                                                                   // $Image
   const char * const digest)                                                    // Expected digest
  {makeLocalCopyOfStringBuffer(s, l, i->out);
   assert$ImageFile(s, digest);
  }
 
-static void save_$_string                                                       // Save a copy of the drawing surface to the specified file
- ($Image   *  i,                                                                  // $Image
+static void saveAsPng_$_string                                                  // Save a copy of the drawing surface to the specified file
+ ($Image   *  i,                                                                // $Image
   char *    imageFile,                                                          // Image file name
   const char * const digest)                                                    // Expected digest
  {cairo_surface_write_to_png(i->surface, imageFile);
@@ -386,18 +427,18 @@ void test2()                                                                    
 
     table ◁ makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d");
 
-    i ▷ font(i.serif);                                                          // Font
+    i ▷ font    (i.serif);                                                      // Font
     i ▷ fontSize(100);                                                          // Size of text
     i ▷ colour  (black);                                                        // Colour of text
 
-    drawTable ◁ makeRectangleWH(500, 500, 500, 800);
+    drawTable ◁ makeRectangleWH(500, 500, 500, 800);                            // Drawing area
     i ▷ clip(drawTable);
 
     size_t x = drawTable.x, y = drawTable.y;
-    ArenaListFe(col, table)
+    ArenaListFe(col, table)                                                     // Each column
      {max ◀ 0ul;
       y = drawTable.y;
-      ArenaListfe(row, col)
+      ArenaListfe(row, col)                                                     // Each row
        {makeLocalCopyOfArenaListKey(k, l, row);
         i ▷ text(x, y, k);
         y += i.fontHeight;
