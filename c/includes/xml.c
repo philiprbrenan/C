@@ -1009,7 +1009,7 @@ void test4()                                                                    
    {  const typeof(validate.first.proto->locate(&validate.first, "appendices", 10)) f = validate.first.proto->locate(&validate.first, "appendices", 10);
     assert( f.proto->valid(&f));
 
-      const typeof(validate.possibilities.proto->nodeFromOffset(&validate.possibilities, *(size_t *)(f.proto->data(&f)))) n = validate.possibilities.proto->nodeFromOffset(&validate.possibilities, *(size_t *)(f.proto->data(&f)));       // Create a node representing the Appendices Tag first possibilities set
+      const typeof(validate.possibilities.proto->offset(&validate.possibilities, *(size_t *)(f.proto->data(&f)))) n = validate.possibilities.proto->offset(&validate.possibilities, *(size_t *)(f.proto->data(&f)));               // Create a node representing the Appendices Tag first possibilities set
     assert( n.proto->equalsString(&n, "8"));                                                    // Appendices is tag 8
       const typeof(n.proto->locate(&n, "appendix", 8)) p = n.proto->locate(&n, "appendix", 8);                                            // Check whether Appendix is in the set of first tag possibilities for Appendices
     assert( p.proto->valid(&p));                                                                // Appendix is in the first tag set of Appendices
@@ -1018,7 +1018,7 @@ void test4()                                                                    
   if (1)                                                                        // Check that 'dd' can follow child 'dt' under parent 'dlentry'.
    {  const typeof(validate.next.proto->ll(&validate.next, "dlentry", "dt", 0)) F = validate.next.proto->ll(&validate.next, "dlentry", "dt", 0);                               // Parent + child
     assert( F.proto->valid(&F));
-      const typeof(validate.possibilities.proto->nodeFromOffset(&validate.possibilities, *(size_t *)(F.proto->data(&F)))) n = validate.possibilities.proto->nodeFromOffset(&validate.possibilities, *(size_t *)(F.proto->data(&F)));       // Next child possibilities under parent
+      const typeof(validate.possibilities.proto->offset(&validate.possibilities, *(size_t *)(F.proto->data(&F)))) n = validate.possibilities.proto->offset(&validate.possibilities, *(size_t *)(F.proto->data(&F)));               // Next child possibilities under parent
       const typeof(n.proto->locate(&n, "dd", 2)) p = n.proto->locate(&n, "dd", 2);
     assert( p.proto->valid(&p));                                                                // Check whether 'dd' can follow 'dt' under 'dlentry'
    }
