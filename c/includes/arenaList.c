@@ -73,7 +73,7 @@ typedef struct ArenaListDescription                                             
 #define ArenaListFe( child, list)   for(typeof(list.proto->first(&list)) child = list.proto->first(&list); child.proto->valid(&child); child = child.proto->next(&child)) // Each child under the root node of a ArenaList from first to last
 #define ArenaListFer(child, list)   for(typeof(list.proto->last(&list)) child = list.proto->last(&list); child.proto->valid(&child); child = child.proto->prev(&child)) // Each child under the root node of a ArenaList from last to first
 #define ArenaListfe( child, parent) for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child)) // Each child under a parent from first to last
-#define ArenaListfec(child, parent) size_t child##ⁱ = 0; for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child), ++child##ⁱ) // Each child under a parent from first to last with a counter
+#define ArenaListfec(child, parent) size_t child##ⁱ = 1; for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child), ++child##ⁱ) // Each child under a parent from first to last with a counter
 #define ArenaListfer(child, parent) for(typeof(parent.proto->last(&parent) ) child = parent.proto->last(&parent) ; child.proto->valid(&child); child = child.proto->prev(&child)) // Each child under a parent from last to first
 #define makeLocalCopyOfArenaListKey(string,stringLength,node) const typeof(content__ArenaListNode(&node)->length) stringLength = content__ArenaListNode(&node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(&node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
@@ -1538,7 +1538,7 @@ void test16()                                                                   
   assert( w.proto->countChildren(&w) == 4);
   assert( w.proto->printsWithBracketsAs(&w, "(abbcccdddd)"));
 
-   {typeof(0ul) c = 0ul; ArenaListfec(x, w) c += xⁱ; assert( c == 6);}
+   {typeof(0ul) c = 0ul; ArenaListfec(x, w) c += xⁱ; assert( c == 10);}
 
   w.proto->free(&w);
 
