@@ -29,7 +29,12 @@ jobs:
       run: |
         sudo apt -y install valgrind
 
-    - name: Home
+    - name: Check
+      run: |
+        tree
+        gcc -v
+
+    - name: Test
       run: |
         tree
 
