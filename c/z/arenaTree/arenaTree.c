@@ -65,7 +65,7 @@ static  $Found make$Found                                                       
 
 static $Node root_$                                                             // The root node in a $
  (const $ * tree)                                                               // $
- {return tree ▶ nodeFromOffset(tree->arena->root);
+ {return tree ▶ offset(tree->arena->root);
  }
 
 static size_t height_$Node                                                      // Height of a sub $ starting at the specified node
@@ -84,22 +84,22 @@ static int keyEquals_$Node_string_size                                          
 
 static $Node up_$Node_$Node                                                     // Parent node for the specified node.
  (const $Node * node)                                                           // Node
- {return node->list ▷ nodeFromOffset(node ▶ content->up);
+ {return node->list ▷ offset(node ▶ content->up);
  }
 
 static $Node left_$Node_$Node                                                   // Left child node below the specified parent node.
  (const $Node * parent)                                                         // Parent
- {return parent->list ▷ nodeFromOffset(parent ▶ content->left);
+ {return parent->list ▷ offset(parent ▶ content->left);
  }
 
 static $Node right_$Node_$Node                                                  // Right child node below the specified parent node.
  (const $Node * parent)                                                         // Parent
- {return  parent->list ▷ nodeFromOffset(parent ▶ content->right);
+ {return  parent->list ▷ offset(parent ▶ content->right);
  }
 
 static $Node ownedTreeRoot_$Node_$Node                                          //P Root of $ owned by this node if there is  one, else the returned node has an offset of zero.
  (const $Node * parent)                                                         // Parent
- {return parent->list ▷ nodeFromOffset(parent ▶ content->tree);
+ {return parent->list ▷ offset(parent ▶ content->tree);
  }
 
 static void setHeight_$Node                                                     //P Save the height of the sub $ starting at the specified node
@@ -256,7 +256,7 @@ static  $Found find_$Found_$_string                                             
   const size_t length)                                                          // Length of the key to find
  {f ◀ make$Found(*tree, key, length);                                           // Status of find
   if (!tree->arena->root) return f;                                             // Empty $
-  return f ▷ find(tree ▶ nodeFromOffset(tree->arena->root));                    // Search the non empty base $ starting at the specified node.
+  return f ▷ find(tree ▶ offset(tree->arena->root));                            // Search the non empty base $ starting at the specified node.
  }
 
 static $Node ll_$Node_$_strings                                                 // Search through a series of owned trees starting at the base $ as directed by the specified keys
