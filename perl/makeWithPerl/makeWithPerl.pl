@@ -77,7 +77,7 @@ GetOptions(
   'coverage'    =>\$coverage,
   'cpp'         =>\$cpp,
   'doc'         =>\$doc,
-  'gccVersion'  =>\$gccVersion,
+  'gccVersion=s'=>\$gccVersion,
   'html'        =>\$html,
   'java'        =>\$java,
   'javascript'  =>\$javascript,
