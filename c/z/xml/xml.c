@@ -977,7 +977,7 @@ void test4()                                                                    
    {  f ◁ validate.first ▷ locate("appendices", 10);
     ✓ f ▷ valid;
 
-      n ◁ validate.possibilities ▷ nodeFromOffset(*(size_t *)(f ▷ data));       // Create a node representing the Appendices Tag first possibilities set
+      n ◁ validate.possibilities ▷ offset(*(size_t *)(f ▷ data));               // Create a node representing the Appendices Tag first possibilities set
     ✓ n ▷ equalsString("8");                                                    // Appendices is tag 8
       p ◁ n ▷ locate("appendix", 8);                                            // Check whether Appendix is in the set of first tag possibilities for Appendices
     ✓ p ▷ valid;                                                                // Appendix is in the first tag set of Appendices
@@ -986,7 +986,7 @@ void test4()                                                                    
   if (1)                                                                        // Check that 'dd' can follow child 'dt' under parent 'dlentry'.
    {  F ◁ validate.next ▷ ll("dlentry", "dt", 0);                               // Parent + child
     ✓ F ▷ valid;
-      n ◁ validate.possibilities ▷ nodeFromOffset(*(size_t *)(F ▷ data));       // Next child possibilities under parent
+      n ◁ validate.possibilities ▷ offset(*(size_t *)(F ▷ data));               // Next child possibilities under parent
       p ◁ n ▷ locate("dd", 2);
     ✓ p ▷ valid;                                                                // Check whether 'dd' can follow 'dt' under 'dlentry'
    }
