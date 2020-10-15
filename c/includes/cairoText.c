@@ -469,7 +469,7 @@ void test3()                                                                    
    {const typeof(makeColour(0,0,0,1)) black = makeColour(0,0,0,1);
 
     const typeof(makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn")) list = makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn");
-    const typeof(2ul) startAtEntry = 2ul; typeof(0ul) lastVisibleEntry = 0ul;
+    const typeof(2ul) startAtEntry = 2ul;     typeof(0ul) firstEntry = 0ul; typeof(0ul) lastEntry = 0ul;
     typeof(717ul) px = 717ul; typeof(717ul) py = 717ul; typeof(0ul) clickedEntry = 0ul;
 
     i.proto->font(&i, i.serif);                                                      // Font
@@ -491,15 +491,17 @@ void test3()                                                                    
         const typeof(makeRectangleWH(x, y, a, H)) r = makeRectangleWH(x, y, a, H);
         if (drawTable.proto->contains(&drawTable, r))
          {i.proto->text(&i, x, y, k);
-          lastVisibleEntry = word.offset;
+          if (!firstEntry) firstEntry = word.offset;
+          lastEntry = word.offset;
           if (r.proto->containsPoint(&r, px, py)) clickedEntry = word.offset;
          }
         x += a;
        }
      }
 
-    const typeof(list.proto->offset(&list, lastVisibleEntry)) v = list.proto->offset(&list, lastVisibleEntry); assert( v.proto->equalsString(&v, "hh"));
-    const typeof(list.proto->offset(&list, clickedEntry)) c = list.proto->offset(&list, clickedEntry);     assert( c.proto->equalsString(&c, "ee"));
+    const typeof(list.proto->offset(&list, firstEntry)) f = list.proto->offset(&list, firstEntry);   assert( f.proto->equalsString(&f, "bbbb"));
+    const typeof(list.proto->offset(&list, lastEntry)) l = list.proto->offset(&list, lastEntry);    assert( l.proto->equalsString(&l, "hh"));
+    const typeof(list.proto->offset(&list, clickedEntry)) c = list.proto->offset(&list, clickedEntry); assert( c.proto->equalsString(&c, "ee"));
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a");
