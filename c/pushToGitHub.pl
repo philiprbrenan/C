@@ -130,11 +130,8 @@ jobs:
     - name: Check
       run: |
         tree
+        perl -v
         gcc -v
-
-    - name: Test
-      run: |
-        tree
 
 $tests
 END
