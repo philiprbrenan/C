@@ -130,7 +130,7 @@ jobs:
     - name: Check
       run: |
         perl -v
-        gcc -v
+        gcc-10 -v
 
     - name: Tree
       run: |
