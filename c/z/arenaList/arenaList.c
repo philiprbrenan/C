@@ -24,8 +24,8 @@
 #define $_included
 
 exports structs $ $Node $Arena $Description
-exports arena    pointer__$_size content__$Node key_pointer__$Node length_size__$Node allocate_$Node__$_size used_size__$ make$ make$WithWidth node_$Node__$_string_size nodeFromOffset__$_size equals_int__$Node_$Node equalsString_int__$Node_string width_size__$ width_size__$Node
-exports nodeData key_pointer__$Node data_pointer__$Node length_size__$Node dump__$Node
+exports arena    pointer__$_size content__$Node key_pointer__$Node length_size__$Node allocate_$Node__$_size used_size__$ make$ make$WithWidth node_$Node__$_string_size offset__$_size equals_int__$Node_$Node equalsString_int__$Node_string width_size__$ width_size__$Node
+exports nodeData key_pointer__$Node data_pointer__$Node length_size__$Node dumpNode__$Node
 
 typedef struct $                                                                // $
  {const struct ProtoTypes_$ *proto;                                             // Methods associated with an $
@@ -216,7 +216,7 @@ static size_t   maxLength_size__$Node                                           
  }
 #endif
 
-static  $Node  nodeFromOffset__$_size                                           //P Create a node to locate an allocation within the arena of a $.
+static  $Node  offset__$_size                                                   //P Create a node to locate an allocation within the arena of a $.
  (const $    * list,                                                            // $
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
  {return new $Node(list: *list, offset: delta);
@@ -263,12 +263,12 @@ static  $Node  allocate_$Node__$_size                                           
   if (f)                                                                        // Free chain has an element
    {$Content * c = list ▶ pointer(f);                                           // Content of first free node
     list->arena->freeSpace[e] = c->next;                                        // Remove node from free chain
-    return list ▶ nodeFromOffset(f);                                            // Return node - it was cleared when it was freed
+    return list ▶ offset(f);                                            // Return node - it was cleared when it was freed
    }
 #endif
 
  if (list->arena->used + size < list->arena->size)                              // Allocate within existing arena
-   {n ◁ list ▶ nodeFromOffset(list->arena->used);                               // Current offset to open memory
+   {n ◁ list ▶ offset(list->arena->used);                               // Current offset to open memory
     list->arena->used += size;                                                  // Allocate
 #ifdef $Editable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
     n ▷ content->size = exponentOfNextPowerOfTwo(size);                         // Node size
@@ -493,12 +493,12 @@ static int valid_int__$Node                                                     
 static  $Node parent_$Node__$Node                                               // Get the parent of a child
  (const $Node * child)                                                          // Child
  {if (child ▶ isRoot) return *child;
-  return child->list ▷ nodeFromOffset(child ▶ content->parent);
+  return child->list ▷ offset(child ▶ content->parent);
  }
 
 static  $Node first_$Node__$Node                                                // Get the first child under a parent.
  (const $Node * parent)                                                         // Parent
- {return  parent->list ▷ nodeFromOffset(parent ▶ content->first);
+ {return  parent->list ▷ offset(parent ▶ content->first);
  }
 duplicate s/first/last/g s/first/next/g s/first/prev/g
 
@@ -900,7 +900,7 @@ static void dumpWithBrackets__$                                                 
  }
 
 static void dump__$                                                             //P Dump a $ on stderr
- (const $ list)                                                                 // $
+ (const $ * list)                                                               // $
  {size_t n = 0;
   void print(const $Node parent, int depth)                                     // Print the children of the specified parent
    {makeLocalCopyOf$Key(k, l, parent);                                          // Local copy of key
@@ -910,14 +910,15 @@ static void dump__$                                                             
     if (!parent ▷ isEmpty) $fe(child, parent) print(child, depth+1);            // Each child
    }
 
-  root ◁ list ▷ root;                                                           // Root
+  root ◁ list ▶ root;                                                           // Root
   print(root, 0);
  }
 
-static void dump__$Node                                                         //P Dump a $Node on stderr
- (const $Node node)                                                             // $Node
- {makeLocalCopyOf$Key(k, l, node);                                              // Local copy of key
-  say("%d %s\n", l, k);                                                        // Print key number
+static void dumpNode__$Node                                                     //P Dump a $Node on stderr
+ (const $Node * Node)                                                           // $Node
+ {node ◁ *Node;
+  makeLocalCopyOf$Key(k, l, node);                                              // Local copy of key
+  say("%d %s\n", l, k);                                                         // Print key number
  }
 
 static void print__$Node_function                                               // Apply a function to the print of a $Node and the tree below it.
