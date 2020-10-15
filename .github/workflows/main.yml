@@ -38,11 +38,8 @@ jobs:
     - name: Check
       run: |
         tree
+        perl -v
         gcc -v
-
-    - name: Test
-      run: |
-        tree
 
     - name: Run arenaList
       if: always()
