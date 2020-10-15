@@ -469,6 +469,7 @@ void test3()                                                                    
 
     list ◁ makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn");
     startAtEntry ◁ 2ul; lastVisibleEntry ◀ 0ul;
+    px ◀ 717ul; py ◀ 717ul; clickedEntry ◀ 0ul;
 
     i ▷ font    (i.serif);                                                      // Font
     i ▷ fontSize(100);                                                          // Size of text
@@ -490,12 +491,14 @@ void test3()                                                                    
         if (drawTable ▷ contains(r))
          {i ▷ text(x, y, k);
           lastVisibleEntry = word.offset;
+          if (r ▷ containsPoint(px, py)) clickedEntry = word.offset;
          }
         x += a;
        }
      }
 
-    n ◁ list ▷ offset(lastVisibleEntry); ✓ n ▷ equalsString("hh");
+    v ◁ list ▷ offset(lastVisibleEntry); ✓ v ▷ equalsString("hh");
+    c ◁ list ▷ offset(clickedEntry);     ✓ c ▷ equalsString("ee");
    }
 
   i ◀ make$Image(draw, 2000, 2000, "$3.png", "a");
