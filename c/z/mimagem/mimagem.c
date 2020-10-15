@@ -369,7 +369,7 @@ void test1()                                                                    
     ww ◁ page ▷ right(0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
     we ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a);
     wr ◀ we ▷ drawEditBuffer;
-         i  ▷ save("$1_wide.png", "a"); i ▷ clearWhite;
+         i  ▷ saveAsPng("$1_wide.png", "a"); i ▷ clearWhite;
 
     wn ◁ X.tree ▷ nodeFromOffset(wr.pointer.tag);                               // Pointer location in wide version
     ✓ wn ▷ equalsString("GGG");
@@ -380,7 +380,7 @@ void test1()                                                                    
     nw ◁ page ▷ left(i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
     ne ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: wr.pointer, zone: nw.a);
     nr ◀ ne ▷ drawEditBuffer;
-    i  ▷ save("$1_narrow.png", "a"); i ▷ clearWhite;
+    i  ▷ saveAsPng("$1_narrow.png", "a"); i ▷ clearWhite;
 
     nn ◁ X.tree ▷ nodeFromOffset(nr.cursor.tag);                                // Cursor location in narrow mode
     ✓ nn ▷ equalsString("GGG");
