@@ -29,6 +29,12 @@ jobs:
       run: |
         sudo apt -y install valgrind
 
+    - name: GCC10
+      run: |
+         sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+         sudo apt-get update
+         sudo apt install gcc-10
+
     - name: Check
       run: |
         tree
