@@ -371,7 +371,7 @@ void test1()                                                                    
     wr ◀ we ▷ drawEditBuffer;
          i  ▷ saveAsPng("$1_wide.png", "a"); i ▷ clearWhite;
 
-    wn ◁ X.tree ▷ nodeFromOffset(wr.pointer.tag);                               // Pointer location in wide version
+    wn ◁ X.tree ▷ offset(wr.pointer.tag);                                       // Pointer location in wide version
     ✓ wn ▷ equalsString("GGG");
     ✓ wr.pointer.positionInTag ==  2;
     ✓ wr.pointer.character     == 81;
@@ -382,7 +382,7 @@ void test1()                                                                    
     nr ◀ ne ▷ drawEditBuffer;
     i  ▷ saveAsPng("$1_narrow.png", "a"); i ▷ clearWhite;
 
-    nn ◁ X.tree ▷ nodeFromOffset(nr.cursor.tag);                                // Cursor location in narrow mode
+    nn ◁ X.tree ▷ offset(nr.cursor.tag);                                        // Cursor location in narrow mode
     ✓ nn ▷ equalsString("GGG");
     ✓ nr.cursor.positionInTag == wr.pointer.positionInTag;
     ✓ nr.cursor.character     == wr.pointer.character;
@@ -395,14 +395,14 @@ void test1()                                                                    
     nR ◁ nr ▷ drawEditBuffer;                                                   // Draw scrolled edit buffer
 //  i  ▷ save("$1_narrowScrolled.png", "8d73");
 
-    nN ◁ X.tree ▷ nodeFromOffset(nR.cursor.tag);                                // Cursor location in narrow mode
+    nN ◁ X.tree ▷ offset(nR.cursor.tag);                                        // Cursor location in narrow mode
     ✓ nN ▷ equalsString("GGG");
     ✓ nR.cursor.positionInTag == wr.pointer.positionInTag;
     ✓ nR.cursor.character     == wr.pointer.character;
     ✓ nR.cursor.editLine      == nr.cursor.editLine;
    }
 
-  i ◀ makeCairoTextImage(draw, 2000, 2000, "$1.png", "a");                   // Create image containing some text and check its digest
+  i ◀ makeCairoTextImage(draw, 2000, 2000, "$1.png", "a");                      // Create image containing some text and check its digest
   i ▷ free;
  }
 
