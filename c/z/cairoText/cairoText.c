@@ -457,14 +457,14 @@ void test3()                                                                    
  {void draw($Image i)
    {black ◁ makeColour(0,0,0,1);
 
-    list ◁ makeArenaListFromWords("aaaa bbbb cc d\n A Bb Ccc Dddd\n e f g h");
-    startAtEntry ◁ 2ul;
+    list ◁ makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn");
+    startAtEntry ◁ 2ul; lastVisibleEntry ◀ 0ul;
 
     i ▷ font    (i.serif);                                                      // Font
     i ▷ fontSize(100);                                                          // Size of text
     i ▷ colour  (black);                                                        // Colour of text
 
-    drawTable ◁ makeRectangleWH(500, 500, 500, 800);                            // Drawing area
+    drawTable ◁ makeRectangleWH(500, 500, 500, 500);                            // Drawing area
     i ▷ clip(drawTable);
 
     double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
@@ -476,10 +476,16 @@ void test3()                                                                    
         H ◁ i.fontHeight;
         x = H * ceil(x / H);                                                    // Next tab stop
         if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     //
-        i ▷ text(x, y, k);
+        r ◁ makeRectangleWH(x, y, a, H);
+        if (drawTable ▷ contains(r))
+         {i ▷ text(x, y, k);
+          lastVisibleEntry = word.offset;
+         }
         x += a;
        }
      }
+
+    n ◁ list ▷ offset(lastVisibleEntry); ✓ n ▷ equalsString("hh");
    }
 
   i ◀ make$Image(draw, 2000, 2000, "$3.png", "a");
