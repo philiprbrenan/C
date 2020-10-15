@@ -54,6 +54,7 @@ my $compile;                                                                    
 my $coverage;                                                                   # Get coverage of code
 my $cpp;                                                                        # C++
 my $doc;                                                                        # Documentation
+my $gccVersion;                                                                 # Alternate version of gcc is set.  Example: --gccVersion gcc-10
 my $html;                                                                       # Html
 my $java;                                                                       # Java
 my $javascript;                                                                 # Javascript
@@ -76,6 +77,7 @@ GetOptions(
   'coverage'    =>\$coverage,
   'cpp'         =>\$cpp,
   'doc'         =>\$doc,
+  'gccVersion'  =>\$gccVersion,
   'html'        =>\$html,
   'java'        =>\$java,
   'javascript'  =>\$javascript,
@@ -243,7 +245,7 @@ END
 
   Preprocess::Ops::c($file, $cFile, $hFile);                                    # Preprocess
 
-  my $gcc = 'gcc';                                                              # Gcc version 10
+  my $gcc = $gccVersion  // 'gcc';                                               # Gcc version 10
   if ($compile)
    {my $cmd = qq($gcc $cp -c "$cFile" -o /dev/null);                            # Syntax check
     say STDERR $cmd;
