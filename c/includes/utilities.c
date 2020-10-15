@@ -20,7 +20,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#define say(format...) fprintf(stderr, format)                                  // Say something using the specifed format
+#define say(format...) ({fprintf(stdout, format); fprintf(stdout, "\n"); fflush(stdout);}) // Say something on stdout using the specified format
+#define err(format...) ({fprintf(stderr, format); fprintf(stderr, "\n"); fflush(stderr);}) // Say something on stderr using the specified format
 
 // Create a local string with the specified name from the specified format assuming that most of the time it will have less than the specified number of characters (N).
 #define lsprintf(a,N,format...) char a##c[N+1]; const size_t a##l = snprintf(a##c, N, format); char a[a##l+1]; if (a##l > N) sprintf(a, format); else memcpy(a, a##c, a##l+1);
@@ -196,13 +197,13 @@ int run_tests                                                                   
    {n = 0;
     say("\n");
     for(int i = 0; tests[i]; ++i, ++n)                                          // Tests
-     {say("Test: %2d ", i);
+     {printf("Test: %2d ", i);
       tests[i]();
-      say(" - done\n");
+      say(" - done");
      }
    }
 
-  say("SUCCESS: All %d %s tests passed successfully in %lu microseconds\n",     // Run time
+  say("SUCCESS: All %d %s tests passed successfully in %lu microseconds",       // Run time
       n, title, microSecondsSince(start));
 
   return n;
