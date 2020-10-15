@@ -125,7 +125,7 @@ static void free_CairoTextImage                                                 
   for(CairoTextFont **f = fonts; *f; ++f) {CairoTextFont *F = *f; F->proto->free(F);}                    // Free any fonts that were loaded
 
 
-  FT_Done_FreeType(i->freeTypeLibrary);                                          // Finished with FreeType library
+  FT_Done_FreeType(i->freeTypeLibrary);                                         // Finished with FreeType library
  }
 
 static void free_CairoTextFont                                                          // Free a font if it has been loaded
@@ -153,30 +153,30 @@ static void font_CairoText                                                      
     font.cairoFontFace = cairo_ft_font_face_create_for_ft_face(font.freeTypeFontFace, 0);
    }
 
-  cairo_set_font_face (i->cr, font.cairoFontFace);                               // Set the font as the currently active one
+  cairo_set_font_face (i->cr, font.cairoFontFace);                              // Set the font as the currently active one
 
   i->proto->fontMetrics(i);
  }
 
 static void fontMetrics_CairoText                                                       // Load the metrics of the current font
- (CairoTextImage * i)                                                                     // CairoTextImage
+ (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_font_extents_t fontExtents;
   cairo_font_extents (i->cr, &fontExtents);
 
-  i->fontAscent  = fontExtents.ascent;                                           // Ascent from base line
-  i->fontDescent = fontExtents.descent;                                          // Descent from base line
-  i->fontHeight  = i->fontAscent + i->fontDescent;                                 // Interline height
+  i->fontAscent  = fontExtents.ascent;                                          // Ascent from base line
+  i->fontDescent = fontExtents.descent;                                         // Descent from base line
+  i->fontHeight  = i->fontAscent + i->fontDescent;                              // Interline height
  }
 
 static void fontSize_CairoText                                                          // Set the size of a font
- (CairoTextImage * i,                                                                     // CairoTextImage
+ (CairoTextImage * i,                                                                   // CairoTextImage
   int    size)                                                                  // Size
- {cairo_set_font_size (i->cr, size);                                             // Set font size
+ {cairo_set_font_size(i->cr, size);                                             // Set font size
   i->proto->fontMetrics(i);
  }
 
 static double textAdvance_CairoText                                                     // Get the width of the specified text
- (CairoTextImage * i,                                                                     // CairoTextImage
+ (CairoTextImage * i,                                                                   // CairoTextImage
   char * s)                                                                     // String
  {const typeof(i->cr) cr = i->cr;
   cairo_text_extents_t textExtents;
@@ -185,7 +185,7 @@ static double textAdvance_CairoText                                             
  }
 
 static void text_CairoText                                                              // Draw text at the specified position using the current font, fonet size and colour
- (CairoTextImage * i,                                                                     // CairoTextImage
+ (CairoTextImage * i,                                                                   // CairoTextImage
   double x,                                                                     // X position of text
   double y,                                                                     // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
   const char * t)                                                               // The text to draw
@@ -196,21 +196,21 @@ static void text_CairoText                                                      
 //D1 Colours                                                                    // Colours
 
 static void clearWhite_CairoText                                                        // Clear the drawing surface to white
- (CairoTextImage * i)                                                         // CairoTextImage
+ (CairoTextImage * i)                                                                   // CairoTextImage
  {const typeof(i->cr) cr = i->cr;
   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
   cairo_paint         (cr);
  }
 
 static void colour_CairoText                                                            // Set the current colour
- (CairoTextImage * i,                                                                     // CairoTextImage
+ (CairoTextImage * i,                                                                   // CairoTextImage
   Colour c)                                                                     // Colour
  {const typeof(i->cr) cr = i->cr;
   cairo_set_source_rgba(cr, c.r, c.g, c.b, c.a);
  }
 
 static void rgb_CairoText                                                               // Set the current colour
- (CairoTextImage * i,                                                                     // CairoTextImage
+ (CairoTextImage * i,                                                                   // CairoTextImage
   double r,                                                                     // Red
   double g,                                                                     // Green
   double b)                                                                     // Blue
@@ -218,7 +218,7 @@ static void rgb_CairoText                                                       
  }
 
 static void rgba_CairoText                                                              // Set the current colour
- (CairoTextImage * i,                                                                     // CairoTextImage
+ (CairoTextImage * i,                                                                   // CairoTextImage
   double r,                                                                     // Red
   double g,                                                                     // Green
   double b,                                                                     // Blue
@@ -226,10 +226,51 @@ static void rgba_CairoText                                                      
  {cairo_set_source_rgba(i->cr, r, g, b, a);
  }
 
+//D1 Drawing                                                                    // Draw objects
+
+static void save_CairoText                                                              // Save the drawing context
+ (CairoTextImage * i)                                                                   // CairoTextImage
+ {cairo_save(i->cr);
+ }
+
+static void restore_CairoText                                                           // Restore the drawing context
+ (CairoTextImage * i)                                                                   // CairoTextImage
+ {cairo_restore(i->cr);
+ }
+
+static void move_CairoText                                                              // Move to a position without drawing
+ (CairoTextImage * i,                                                                   // CairoTextImage
+  double   x,                                                                   // X coordinate to move to
+  double   y)                                                                   // Y coordinate to move to
+ {cairo_move_to(i->cr, x, y);
+ }
+
+static void line_CairoText                                                              // Draw a line to the specified position from the current position
+ (CairoTextImage * i,                                                                   // CairoTextImage
+  double   x,                                                                   // X coordinate to move to
+  double   y)                                                                   // Y coordinate to move to
+ {cairo_line_to(i->cr, x, y);
+ }
+
+static void close_CairoText                                                             // Close the current path
+ (CairoTextImage * i)                                                                   // CairoTextImage
+ {cairo_close_path(i->cr);
+ }
+
+static void fill_CairoText                                                              // Fill the current path
+ (CairoTextImage * i)                                                                   // CairoTextImage
+ {cairo_fill(i->cr);
+ }
+
+static void stroke_CairoText                                                            // Stroke the current path
+ (CairoTextImage * i)                                                                   // CairoTextImage
+ {cairo_stroke(i->cr);
+ }
+
 //D1 Clipping                                                                   // Set the clip area
 
 static void clip_CairoText                                                              // Set the clip area
- (CairoTextImage   *  i,                                                                  // CairoTextImage
+ (CairoTextImage  * i,                                                                  // CairoTextImage
   Rectangle r)                                                                  // Rectangle
  {const typeof(i->cr) cr = i->cr;
   cairo_rectangle(cr, r.x, r.y, r.proto->width(&r), r.proto->height(&r));
@@ -239,78 +280,78 @@ static void clip_CairoText                                                      
 //D1 Shapes                                                                     // Draw shapes
 
 static void leftArrow                                                           // Draw a left pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
- (CairoTextImage   * i,                                                                  // Image
+ (CairoTextImage  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
  {typeof(i->cr) cr = i->cr;
 
-  cairo_save(cr);
+  i->proto->save(i);
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
   cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
   cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
 
-  cairo_move_to    (cr, r.x, r.y + r.proto->height(&r) / 2);
-  cairo_line_to    (cr, r.X, r.y);
-  cairo_line_to    (cr, r.X, r.Y);
-  cairo_close_path (cr);
+  i->proto->move(i, r.x, r.y + r.proto->height(&r) / 2);
+  i->proto->line(i, r.X, r.y);
+  i->proto->line(i, r.X, r.Y);
+  i->proto->close(i);
 
   cairo_set_source (cr, lg);
-  cairo_fill       (cr);
+  i->proto->fill(i);
   cairo_pattern_destroy(lg);
-  cairo_restore(cr);
+  i->proto->restore(i);
  }
 
 static void leftArrowWithCircle                                                 // Draw a left pointing arrow with a central circle cut out
- (CairoTextImage   *  i,                                                                  // Image
+ (CairoTextImage  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
  {typeof(i->cr) cr = i->cr;
 
-  cairo_save(cr);
+  i->proto->save(i);
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
   cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
   cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
 
-  cairo_move_to        (cr, r.x, r.y + r.proto->height(&r) / 2);
-  cairo_line_to        (cr, r.X, r.y);
-  cairo_line_to        (cr, r.X, r.Y);
-  cairo_close_path     (cr);
+  i->proto->move(i, r.x, r.y + r.proto->height(&r) / 2);
+  i->proto->line(i, r.X, r.y);
+  i->proto->line(i, r.X, r.Y);
+  i->proto->close(i);
 
   const typeof(r.proto->width(&r)) w = r.proto->width(&r); const typeof(r.proto->height(&r)) h = r.proto->height(&r);
-  cairo_new_sub_path   (cr);
-  cairo_arc            (cr, r.x + w * 7 / 12, r.y + h / 2, w / 3, 0,  2 * M_PI);
-  cairo_close_path     (cr);
+  cairo_new_sub_path(cr);
+  cairo_arc         (cr, r.x + w * 7 / 12, r.y + h / 2, w / 3, 0,  2 * M_PI);
+  i->proto->close(i);
 
   cairo_set_source     (cr, lg);
   cairo_set_fill_rule  (cr, CAIRO_FILL_RULE_EVEN_ODD);
-  cairo_fill           (cr);
+  i->proto->fill(i);
   cairo_pattern_destroy(lg);
-  cairo_restore(cr);
+  i->proto->restore(i);
  }
 
 static void rightArrow                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
- (CairoTextImage   *  i,                                                                  // Image
+ (CairoTextImage   *  i,                                                                // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
   Colour    f)                                                                  // Finish colour
  {typeof(i->cr) cr = i->cr;
 
-  cairo_save(cr);
+  i->proto->save(i);
   cairo_pattern_t *lg = cairo_pattern_create_linear(r.x, r.y, r.X, r.y);
   cairo_pattern_add_color_stop_rgba(lg, 0, s.r, s.g, s.b, s.a);
   cairo_pattern_add_color_stop_rgba(lg, 1, f.r, f.g, f.b, f.a);
 
-  cairo_move_to    (cr, r.X, r.y + r.proto->height(&r) / 2);
-  cairo_line_to    (cr, r.x, r.y);
-  cairo_line_to    (cr, r.x, r.Y);
-  cairo_close_path (cr);
+  i->proto->move(i, r.X, r.y + r.proto->height(&r) / 2);
+  i->proto->line(i, r.x, r.y);
+  i->proto->line(i, r.x, r.Y);
+  i->proto->close(i);
 
   cairo_set_source (cr, lg);
-  cairo_fill       (cr);
+  i->proto->fill(i);
   cairo_pattern_destroy(lg);
-  cairo_restore(cr);
+  i->proto->restore(i);
  }
 
 //D1 Output                                                                     // Write the image and check the results
@@ -333,14 +374,14 @@ static void assertCairoTextImageFile                                            
  }
 
 static void assertCairoTextResult                                                       // Check the image via a digest
- (CairoTextImage * i,                                                                     // CairoTextImage
+ (CairoTextImage * i,                                                                   // CairoTextImage
   const char * const digest)                                                    // Expected digest
  {makeLocalCopyOfStringBuffer(s, l, i->out);
   assertCairoTextImageFile(s, digest);
  }
 
-static void save_CairoText_string                                                       // Save a copy of the drawing surface to the specified file
- (CairoTextImage   *  i,                                                                  // CairoTextImage
+static void saveAsPng_CairoText_string                                                  // Save a copy of the drawing surface to the specified file
+ (CairoTextImage   *  i,                                                                // CairoTextImage
   char *    imageFile,                                                          // Image file name
   const char * const digest)                                                    // Expected digest
  {cairo_surface_write_to_png(i->surface, imageFile);
@@ -387,18 +428,18 @@ void test2()                                                                    
 
     const typeof(makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d")) table = makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d");
 
-    i.proto->font(&i, i.serif);                                                          // Font
+    i.proto->font(&i, i.serif);                                                      // Font
     i.proto->fontSize(&i, 100);                                                          // Size of text
     i.proto->colour(&i, black);                                                        // Colour of text
 
-    const typeof(makeRectangleWH(500, 500, 500, 800)) drawTable = makeRectangleWH(500, 500, 500, 800);
+    const typeof(makeRectangleWH(500, 500, 500, 800)) drawTable = makeRectangleWH(500, 500, 500, 800);                            // Drawing area
     i.proto->clip(&i, drawTable);
 
     size_t x = drawTable.x, y = drawTable.y;
-    ArenaListFe(col, table)
+    ArenaListFe(col, table)                                                     // Each column
      {typeof(0ul) max = 0ul;
       y = drawTable.y;
-      ArenaListfe(row, col)
+      ArenaListfe(row, col)                                                     // Each row
        {makeLocalCopyOfArenaListKey(k, l, row);
         i.proto->text(&i, x, y, k);
         y += i.fontHeight;
