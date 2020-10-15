@@ -468,7 +468,7 @@ void test3()                                                                    
    {black ◁ makeColour(0,0,0,1);
 
     list ◁ makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn");
-    startAtEntry ◁ 2ul; lastVisibleEntry ◀ 0ul;
+    startAtEntry ◁ 2ul;     firstEntry ◀ 0ul; lastEntry ◀ 0ul;
     px ◀ 717ul; py ◀ 717ul; clickedEntry ◀ 0ul;
 
     i ▷ font    (i.serif);                                                      // Font
@@ -490,15 +490,17 @@ void test3()                                                                    
         r ◁ makeRectangleWH(x, y, a, H);
         if (drawTable ▷ contains(r))
          {i ▷ text(x, y, k);
-          lastVisibleEntry = word.offset;
+          if (!firstEntry) firstEntry = word.offset;
+          lastEntry = word.offset;
           if (r ▷ containsPoint(px, py)) clickedEntry = word.offset;
          }
         x += a;
        }
      }
 
-    v ◁ list ▷ offset(lastVisibleEntry); ✓ v ▷ equalsString("hh");
-    c ◁ list ▷ offset(clickedEntry);     ✓ c ▷ equalsString("ee");
+    f ◁ list ▷ offset(firstEntry);   ✓ f ▷ equalsString("bbbb");
+    l ◁ list ▷ offset(lastEntry);    ✓ l ▷ equalsString("hh");
+    c ◁ list ▷ offset(clickedEntry); ✓ c ▷ equalsString("ee");
    }
 
   i ◀ make$Image(draw, 2000, 2000, "$3.png", "a");
