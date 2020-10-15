@@ -417,7 +417,7 @@ void test1()                                                                    
     i ▷ rightArrow         (s, red, blue);
    }
 
-  i ◀ make$Image(draw, 1000, 2000, "$1.png", "a");
+  i ◀ make$Image(draw, 1000, 2000, "$1.png", "55d2");
   i ▷ free;
  }
 
@@ -449,7 +449,7 @@ void test2()                                                                    
      }
    }
 
-  i ◀ make$Image(draw, 2000, 2000, "$2.png", "a");
+  i ◀ make$Image(draw, 2000, 2000, "$2.png", "ba23");
   i ▷ free;
  }
 
@@ -458,8 +458,8 @@ void test3()                                                                    
    {black ◁ makeColour(0,0,0,1);
 
     list ◁ makeArenaListFromWords("aaaa bbbb cc d\n A Bb Ccc Dddd\n e f g h");
-    startAtEntry ◁ 2;
-int nᵢ = 0;                                                                     //
+    startAtEntry ◁ 2ul;
+
     i ▷ font    (i.serif);                                                      // Font
     i ▷ fontSize(100);                                                          // Size of text
     i ▷ colour  (black);                                                        // Colour of text
@@ -469,14 +469,16 @@ int nᵢ = 0;                                                                   
 
     double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
 
-    ArenaListFec(word, list)                                                    // Each word
-     {makeLocalCopyOfArenaListKey(k, l, word);
-      a ◁ i ▷ textAdvance(k);
-      H ◁ i.fontHeight;
-      x = H * ceil(x / H);                                                      // Next tab stop
-      if (x + a > drawTable.X) {x = drawTable.x; y += H;}                       //
-      i ▷ text(x, y, k);
-      x += a;
+    ArenaListfec(word, list)                                                    // Each word
+     {if (wordⁱ >= startAtEntry)
+       {makeLocalCopyOfArenaListKey(k, l, word);
+        a ◁ i ▷ textAdvance(k);
+        H ◁ i.fontHeight;
+        x = H * ceil(x / H);                                                    // Next tab stop
+        if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     //
+        i ▷ text(x, y, k);
+        x += a;
+       }
      }
    }
 
