@@ -470,6 +470,7 @@ void test3()                                                                    
 
     const typeof(makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn")) list = makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn");
     const typeof(2ul) startAtEntry = 2ul; typeof(0ul) lastVisibleEntry = 0ul;
+    typeof(717ul) px = 717ul; typeof(717ul) py = 717ul; typeof(0ul) clickedEntry = 0ul;
 
     i.proto->font(&i, i.serif);                                                      // Font
     i.proto->fontSize(&i, 100);                                                          // Size of text
@@ -491,12 +492,14 @@ void test3()                                                                    
         if (drawTable.proto->contains(&drawTable, r))
          {i.proto->text(&i, x, y, k);
           lastVisibleEntry = word.offset;
+          if (r.proto->containsPoint(&r, px, py)) clickedEntry = word.offset;
          }
         x += a;
        }
      }
 
-    const typeof(list.proto->offset(&list, lastVisibleEntry)) n = list.proto->offset(&list, lastVisibleEntry); assert( n.proto->equalsString(&n, "hh"));
+    const typeof(list.proto->offset(&list, lastVisibleEntry)) v = list.proto->offset(&list, lastVisibleEntry); assert( v.proto->equalsString(&v, "hh"));
+    const typeof(list.proto->offset(&list, clickedEntry)) c = list.proto->offset(&list, clickedEntry);     assert( c.proto->equalsString(&c, "ee"));
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a");
