@@ -372,7 +372,7 @@ void test1()                                                                    
     typeof(we.proto->drawEditBuffer(&we)) wr = we.proto->drawEditBuffer(&we);
          i.proto->saveAsPng(&i, "Mimagem1_wide.png", "a"); i.proto->clearWhite(&i);
 
-    const typeof(X.tree.proto->nodeFromOffset(&X.tree, wr.pointer.tag)) wn = X.tree.proto->nodeFromOffset(&X.tree, wr.pointer.tag);                               // Pointer location in wide version
+    const typeof(X.tree.proto->offset(&X.tree, wr.pointer.tag)) wn = X.tree.proto->offset(&X.tree, wr.pointer.tag);                                       // Pointer location in wide version
     assert( wn.proto->equalsString(&wn, "GGG"));
     assert( wr.pointer.positionInTag ==  2);
     assert( wr.pointer.character     == 81);
@@ -383,7 +383,7 @@ void test1()                                                                    
     typeof(ne.proto->drawEditBuffer(&ne)) nr = ne.proto->drawEditBuffer(&ne);
     i.proto->saveAsPng(&i, "Mimagem1_narrow.png", "a"); i.proto->clearWhite(&i);
 
-    const typeof(X.tree.proto->nodeFromOffset(&X.tree, nr.cursor.tag)) nn = X.tree.proto->nodeFromOffset(&X.tree, nr.cursor.tag);                                // Cursor location in narrow mode
+    const typeof(X.tree.proto->offset(&X.tree, nr.cursor.tag)) nn = X.tree.proto->offset(&X.tree, nr.cursor.tag);                                        // Cursor location in narrow mode
     assert( nn.proto->equalsString(&nn, "GGG"));
     assert( nr.cursor.positionInTag == wr.pointer.positionInTag);
     assert( nr.cursor.character     == wr.pointer.character);
@@ -396,14 +396,14 @@ void test1()                                                                    
     const typeof(nr.proto->drawEditBuffer(&nr)) nR = nr.proto->drawEditBuffer(&nr);                                                   // Draw scrolled edit buffer
 //  i.proto->save(&i, "Mimagem1_narrowScrolled.png", "8d73");
 
-    const typeof(X.tree.proto->nodeFromOffset(&X.tree, nR.cursor.tag)) nN = X.tree.proto->nodeFromOffset(&X.tree, nR.cursor.tag);                                // Cursor location in narrow mode
+    const typeof(X.tree.proto->offset(&X.tree, nR.cursor.tag)) nN = X.tree.proto->offset(&X.tree, nR.cursor.tag);                                        // Cursor location in narrow mode
     assert( nN.proto->equalsString(&nN, "GGG"));
     assert( nR.cursor.positionInTag == wr.pointer.positionInTag);
     assert( nR.cursor.character     == wr.pointer.character);
     assert( nR.cursor.editLine      == nr.cursor.editLine);
    }
 
-  typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "a");                   // Create image containing some text and check its digest
+  typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "a");                      // Create image containing some text and check its digest
   i.proto->free(&i);
  }
 
