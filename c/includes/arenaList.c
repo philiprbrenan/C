@@ -217,7 +217,7 @@ static size_t   maxLength_size__ArenaListNode                                   
  }
 #endif
 
-static  ArenaListNode  nodeFromOffset__ArenaList_size                                           //P Create a node to locate an allocation within the arena of a ArenaList.
+static  ArenaListNode  offset__ArenaList_size                                                   //P Create a node to locate an allocation within the arena of a ArenaList.
  (const ArenaList    * list,                                                            // ArenaList
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
  {return newArenaListNode(({struct ArenaListNode t = {list: *list, offset: delta, proto: &ProtoTypes_ArenaListNode}; t;}));
@@ -264,12 +264,12 @@ static  ArenaListNode  allocate_ArenaListNode__ArenaList_size                   
   if (f)                                                                        // Free chain has an element
    {ArenaListContent * c = list->proto->pointer(list, f);                                           // Content of first free node
     list->arena->freeSpace[e] = c->next;                                        // Remove node from free chain
-    return list->proto->nodeFromOffset(list, f);                                            // Return node - it was cleared when it was freed
+    return list->proto->offset(list, f);                                            // Return node - it was cleared when it was freed
    }
 #endif
 
  if (list->arena->used + size < list->arena->size)                              // Allocate within existing arena
-   {const typeof(list->proto->nodeFromOffset(list, list->arena->used)) n = list->proto->nodeFromOffset(list, list->arena->used);                               // Current offset to open memory
+   {const typeof(list->proto->offset(list, list->arena->used)) n = list->proto->offset(list, list->arena->used);                               // Current offset to open memory
     list->arena->used += size;                                                  // Allocate
 #ifdef ArenaListEditable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
     n.proto->content(&n)->size = exponentOfNextPowerOfTwo(size);                         // Node size
@@ -494,26 +494,26 @@ static int valid_int__ArenaListNode                                             
 static  ArenaListNode parent_ArenaListNode__ArenaListNode                                               // Get the parent of a child
  (const ArenaListNode * child)                                                          // Child
  {if (child->proto->isRoot(child)) return *child;
-  return child->list.proto->nodeFromOffset(&child->list, child->proto->content(child)->parent);
+  return child->list.proto->offset(&child->list, child->proto->content(child)->parent);
  }
 
 static  ArenaListNode first_ArenaListNode__ArenaListNode                                                // Get the first child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
- {return  parent->list.proto->nodeFromOffset(&parent->list, parent->proto->content(parent)->first);
+ {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->first);
  }
 static  ArenaListNode last_ArenaListNode__ArenaListNode                                                // Get the last child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
- {return  parent->list.proto->nodeFromOffset(&parent->list, parent->proto->content(parent)->last);
+ {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->last);
  }
 #line 503 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaListNode                                                // Get the next child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
- {return  parent->list.proto->nodeFromOffset(&parent->list, parent->proto->content(parent)->next);
+ {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->next);
  }
 #line 503 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaListNode                                                // Get the prev child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
- {return  parent->list.proto->nodeFromOffset(&parent->list, parent->proto->content(parent)->prev);
+ {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->prev);
  }
 #line 503 "/home/phil/c/z/arenaList/arenaList.c"
 
@@ -953,7 +953,7 @@ static void dumpWithBrackets__ArenaList                                         
  }
 
 static void dump__ArenaList                                                             //P Dump a ArenaList on stderr
- (const ArenaList list)                                                                 // ArenaList
+ (const ArenaList * list)                                                               // ArenaList
  {size_t n = 0;
   void print(const ArenaListNode parent, int depth)                                     // Print the children of the specified parent
    {makeLocalCopyOfArenaListKey(k, l, parent);                                          // Local copy of key
@@ -963,14 +963,15 @@ static void dump__ArenaList                                                     
     if (!parent.proto->isEmpty(&parent)) ArenaListfe(child, parent) print(child, depth+1);            // Each child
    }
 
-  const typeof(list.proto->root(&list)) root = list.proto->root(&list);                                                           // Root
+  const typeof(list->proto->root(list)) root = list->proto->root(list);                                                           // Root
   print(root, 0);
  }
 
-static void dump__ArenaListNode                                                         //P Dump a ArenaListNode on stderr
- (const ArenaListNode node)                                                             // ArenaListNode
- {makeLocalCopyOfArenaListKey(k, l, node);                                              // Local copy of key
-  say("%d %s\n", l, k);                                                        // Print key number
+static void dumpNode__ArenaListNode                                                     //P Dump a ArenaListNode on stderr
+ (const ArenaListNode * Node)                                                           // ArenaListNode
+ {const typeof(*Node) node = *Node;
+  makeLocalCopyOfArenaListKey(k, l, node);                                              // Local copy of key
+  say("%d %s\n", l, k);                                                         // Print key number
  }
 
 static void print__ArenaListNode_function                                               // Apply a function to the print of a ArenaListNode and the tree below it.
