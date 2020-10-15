@@ -194,6 +194,7 @@ int run_tests                                                                   
   int n = 0;
   for(int j = 0; j < repetitions; ++j)                                          // Test a few times
    {n = 0;
+    say("\n");
     for(int i = 0; tests[i]; ++i, ++n)                                          // Tests
      {say("Test: %2d ", i);
       tests[i]();
