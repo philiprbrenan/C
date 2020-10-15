@@ -257,14 +257,24 @@ static void close_CairoText                                                     
  {cairo_close_path(i->cr);
  }
 
-static void fill_CairoText                                                              // Fill the current path
+static void fill_CairoText                                                              // Fill the current path and delete the path.
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_fill(i->cr);
  }
 
-static void stroke_CairoText                                                            // Stroke the current path
+static void fillPreserve_CairoText                                                      // Fill the current path and keep the path.
+ (CairoTextImage * i)                                                                   // CairoTextImage
+ {cairo_fill_preserve(i->cr);
+ }
+
+static void stroke_CairoText                                                            // Stroke the current path and delete the path.
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_stroke(i->cr);
+ }
+
+static void strokePreserve_CairoText                                                    // Stroke the current path and keep the path.
+ (CairoTextImage * i)                                                                   // CairoTextImage
+ {cairo_stroke_preserve(i->cr);
  }
 
 //D1 Clipping                                                                   // Set the clip area
