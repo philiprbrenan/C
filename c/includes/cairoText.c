@@ -486,7 +486,7 @@ void test3()                                                                    
        }
      }
 
-    const typeof(list.proto->offset(&list, lastVisibleEntry)) n = list.proto->offset(&list, lastVisibleEntry); n.proto->dumpNode(&n); assert( n.proto->equalsString(&n, "hh"));
+    const typeof(list.proto->offset(&list, lastVisibleEntry)) n = list.proto->offset(&list, lastVisibleEntry); assert( n.proto->equalsString(&n, "hh"));
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a");
