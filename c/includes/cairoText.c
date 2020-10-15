@@ -458,14 +458,14 @@ void test3()                                                                    
  {void draw(CairoTextImage i)
    {const typeof(makeColour(0,0,0,1)) black = makeColour(0,0,0,1);
 
-    const typeof(makeArenaListFromWords("aaaa bbbb cc d\n A Bb Ccc Dddd\n e f g h")) list = makeArenaListFromWords("aaaa bbbb cc d\n A Bb Ccc Dddd\n e f g h");
-    const typeof(2ul) startAtEntry = 2ul;
+    const typeof(makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn")) list = makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn");
+    const typeof(2ul) startAtEntry = 2ul; typeof(0ul) lastVisibleEntry = 0ul;
 
     i.proto->font(&i, i.serif);                                                      // Font
     i.proto->fontSize(&i, 100);                                                          // Size of text
     i.proto->colour(&i, black);                                                        // Colour of text
 
-    const typeof(makeRectangleWH(500, 500, 500, 800)) drawTable = makeRectangleWH(500, 500, 500, 800);                            // Drawing area
+    const typeof(makeRectangleWH(500, 500, 500, 500)) drawTable = makeRectangleWH(500, 500, 500, 500);                            // Drawing area
     i.proto->clip(&i, drawTable);
 
     double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
@@ -477,10 +477,16 @@ void test3()                                                                    
         const typeof(i.fontHeight) H = i.fontHeight;
         x = H * ceil(x / H);                                                    // Next tab stop
         if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     //
-        i.proto->text(&i, x, y, k);
+        const typeof(makeRectangleWH(x, y, a, H)) r = makeRectangleWH(x, y, a, H);
+        if (drawTable.proto->contains(&drawTable, r))
+         {i.proto->text(&i, x, y, k);
+          lastVisibleEntry = word.offset;
+         }
         x += a;
        }
      }
+
+    const typeof(list.proto->offset(&list, lastVisibleEntry)) n = list.proto->offset(&list, lastVisibleEntry); n.proto->dumpNode(&n); assert( n.proto->equalsString(&n, "hh"));
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a");
