@@ -358,8 +358,6 @@ void test0()                                                                    
 
     const typeof("Hello World How is it whirling?") text = "Hello World How is it whirling?";
 
-    i.proto->text(&i, 1000, 100 * i.fontHeight, text);
-
     for(size_t j = 0; j < 100; ++j) i.proto->text(&i, 0, j * i.fontHeight, text);
    }
 
@@ -393,30 +391,21 @@ void test2()                                                                    
     i.proto->fontSize(&i, 100);                                                          // Size of text
     i.proto->colour(&i, black);                                                        // Colour of text
 
-    const typeof(i.cr) cr = i.cr;
-    cairo_font_extents_t fontExtents;
-    cairo_font_extents (cr, &fontExtents);
-
-    const typeof(fontExtents.ascent) A = fontExtents.ascent;                                                     // Descent from base line
-    const typeof(fontExtents.descent) D = fontExtents.descent;                                                    // Descent from base line
-    const typeof(A + D) H = A + D;                                                                  // Interline height
-
     const typeof(makeRectangleWH(500, 500, 500, 800)) drawTable = makeRectangleWH(500, 500, 500, 800);
     i.proto->clip(&i, drawTable);
 
     size_t x = drawTable.x, y = drawTable.y;
     ArenaListFe(col, table)
      {typeof(0ul) max = 0ul;
-      cairo_move_to(cr, x, y = drawTable.y);
+      y = drawTable.y;
       ArenaListfe(row, col)
        {makeLocalCopyOfArenaListKey(k, l, row);
-        cairo_move_to  (cr, x, y + A);
-        cairo_show_text(cr, k);
-        y += H;
+        i.proto->text(&i, x, y, k);
+        y += i.fontHeight;
         const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);
         if (max < a) max = a;
        }
-      x += max + fontExtents.descent;
+      x += max + i.fontDescent;
      }
    }
 
