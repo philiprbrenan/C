@@ -357,8 +357,6 @@ void test0()                                                                    
 
     text ◁ "Hello World How is it whirling?";
 
-    i ▷ text(1000, 100 * i.fontHeight, text);
-
     for(size_t j = 0; j < 100; ++j) i ▷ text(0, j * i.fontHeight, text);
    }
 
@@ -392,30 +390,21 @@ void test2()                                                                    
     i ▷ fontSize(100);                                                          // Size of text
     i ▷ colour  (black);                                                        // Colour of text
 
-    cr ◁ i.cr;
-    cairo_font_extents_t fontExtents;
-    cairo_font_extents (cr, &fontExtents);
-
-    A ◁ fontExtents.ascent;                                                     // Descent from base line
-    D ◁ fontExtents.descent;                                                    // Descent from base line
-    H ◁ A + D;                                                                  // Interline height
-
     drawTable ◁ makeRectangleWH(500, 500, 500, 800);
     i ▷ clip(drawTable);
 
     size_t x = drawTable.x, y = drawTable.y;
     ArenaListFe(col, table)
      {max ◀ 0ul;
-      cairo_move_to(cr, x, y = drawTable.y);
+      y = drawTable.y;
       ArenaListfe(row, col)
        {makeLocalCopyOfArenaListKey(k, l, row);
-        cairo_move_to  (cr, x, y + A);
-        cairo_show_text(cr, k);
-        y += H;
+        i ▷ text(x, y, k);
+        y += i.fontHeight;
         a ◁ i ▷ textAdvance(k);
         if (max < a) max = a;
        }
-      x += max + fontExtents.descent;
+      x += max + i.fontDescent;
      }
    }
 
