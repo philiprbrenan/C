@@ -363,6 +363,18 @@ static void rightArrow                                                          
   i ▶ restore;
  }
 
+static void rectangle                                                           // Draw a rectangle
+ ($Image  * i,                                                                  // Image
+  Rectangle r,                                                                  // Rectangle
+  Colour    c)                                                                  // Colour
+ {cr ◀ i->cr;
+  i ▶ save;
+  i ▶ colour(c);
+  cairo_rectangle(cr, r.x, r.y, r ▷ width, r ▷ height);
+  i ▶ fill;
+  i ▶ restore;
+ }
+
 //D1 Output                                                                     // Write the image and check the results
 
 static void assert$ImageFile                                                    //P Check that the digest of an image file contains the specified string
@@ -465,15 +477,16 @@ void test2()                                                                    
 
 void test3()                                                                    // Text table using tab stops
  {void draw($Image i)
-   {black ◁ makeColour(0,0,0,1);
+   {   textColour ◁ makeColour(0,0,0,1);
+    pointedColour ◁ makeColour(0,1,0,1);
 
     list ◁ makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn");
-    startAtEntry ◁ 2ul;     firstEntry ◀ 0ul; lastEntry ◀ 0ul;
+    startAtEntry ◁ 2ul;     firstEntry   ◀ 0ul; lastEntry ◀ 0ul;
     px ◀ 717ul; py ◀ 717ul; clickedEntry ◀ 0ul;
 
     i ▷ font    (i.serif);                                                      // Font
     i ▷ fontSize(100);                                                          // Size of text
-    i ▷ colour  (black);                                                        // Colour of text
+    i ▷ colour  (textColour);                                                   // Colour of text
 
     drawTable ◁ makeRectangleWH(500, 500, 500, 500);                            // Drawing area
     i ▷ clip(drawTable);
@@ -487,12 +500,15 @@ void test3()                                                                    
         H ◁ i.fontHeight;
         x = H * ceil(x / H);                                                    // Next tab stop
         if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     //
-        r ◁ makeRectangleWH(x, y, a, H);
+        r ◁ makeRectangleWH(x, y, a, H);                                        // Rectangle containing text to be drawn
         if (drawTable ▷ contains(r))
-         {i ▷ text(x, y, k);
+         {if (r ▷ containsPoint(px, py))
+           {clickedEntry = word.offset;
+            i ▷ rectangle(r, pointedColour);
+           }
+          i ▷ text(x, y, k);
           if (!firstEntry) firstEntry = word.offset;
           lastEntry = word.offset;
-          if (r ▷ containsPoint(px, py)) clickedEntry = word.offset;
          }
         x += a;
        }
