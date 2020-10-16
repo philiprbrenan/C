@@ -76,6 +76,10 @@ static void rightArrow
   Rectangle r,
   Colour    s,
   Colour    f);
+static void rectangle
+ (CairoTextImage  * i,
+  Rectangle r,
+  Colour    c);
 static void assertCairoTextImageFile
  (char       *       imageFile,
   const char * const digest);
@@ -139,6 +143,10 @@ struct ProtoTypes_CairoTextImage {
     CairoTextImage * i,                                                         // CairoTextImage
     double x,                                                                   // X coordinate to move to
     double y);                                                                  // Y coordinate to move to
+  void  (*rectangle)(                                                           // Draw a rectangle
+    CairoTextImage  * i,                                                        // Image
+    Rectangle r,                                                                // Rectangle
+    Colour c);                                                                  // Colour
   void  (*restore)(                                                             // Restore the drawing context
     CairoTextImage * i);                                                        // CairoTextImage
   void  (*rgb)(                                                                 // Set the current colour
@@ -176,6 +184,6 @@ struct ProtoTypes_CairoTextImage {
     double y,                                                                   // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
     const char * t);                                                            // The text to draw
  } const ProtoTypes_CairoTextImage =
-{assertCairoTextResult, clearWhite_CairoText, clip_CairoText, close_CairoText, colour_CairoText, fillPreserve_CairoText, fill_CairoText, fontMetrics_CairoText, fontSize_CairoText, font_CairoText, free_CairoTextImage, leftArrow, leftArrowWithCircle, line_CairoText, move_CairoText, restore_CairoText, rgb_CairoText, rgba_CairoText, rightArrow, saveAsPng_CairoText_string, save_CairoText, strokePreserve_CairoText, stroke_CairoText, textAdvance_CairoText, text_CairoText};
+{assertCairoTextResult, clearWhite_CairoText, clip_CairoText, close_CairoText, colour_CairoText, fillPreserve_CairoText, fill_CairoText, fontMetrics_CairoText, fontSize_CairoText, font_CairoText, free_CairoTextImage, leftArrow, leftArrowWithCircle, line_CairoText, move_CairoText, rectangle, restore_CairoText, rgb_CairoText, rgba_CairoText, rightArrow, saveAsPng_CairoText_string, save_CairoText, strokePreserve_CairoText, stroke_CairoText, textAdvance_CairoText, text_CairoText};
 CairoTextImage newCairoTextImage(CairoTextImage allocator) {return allocator;}
 
