@@ -364,6 +364,18 @@ static void rightArrow                                                          
   i->proto->restore(i);
  }
 
+static void rectangle                                                           // Draw a rectangle
+ (CairoTextImage  * i,                                                                  // Image
+  Rectangle r,                                                                  // Rectangle
+  Colour    c)                                                                  // Colour
+ {typeof(i->cr) cr = i->cr;
+  i->proto->save(i);
+  i->proto->colour(i, c);
+  cairo_rectangle(cr, r.x, r.y, r.proto->width(&r), r.proto->height(&r));
+  i->proto->fill(i);
+  i->proto->restore(i);
+ }
+
 //D1 Output                                                                     // Write the image and check the results
 
 static void assertCairoTextImageFile                                                    //P Check that the digest of an image file contains the specified string
@@ -466,7 +478,8 @@ void test2()                                                                    
 
 void test3()                                                                    // Text table using tab stops
  {void draw(CairoTextImage i)
-   {const typeof(makeColour(0,0,0,1)) black = makeColour(0,0,0,1);
+   {   const typeof(makeColour(0,0,0,1)) textColour = makeColour(0,0,0,1);
+    const typeof(makeColour(0,1,0,1)) pointedColour = makeColour(0,1,0,1);
 
     const typeof(makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn")) list = makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn");
     const typeof(2ul) startAtEntry = 2ul;     typeof(0ul) firstEntry = 0ul; typeof(0ul) lastEntry = 0ul;
@@ -474,7 +487,7 @@ void test3()                                                                    
 
     i.proto->font(&i, i.serif);                                                      // Font
     i.proto->fontSize(&i, 100);                                                          // Size of text
-    i.proto->colour(&i, black);                                                        // Colour of text
+    i.proto->colour(&i, textColour);                                                   // Colour of text
 
     const typeof(makeRectangleWH(500, 500, 500, 500)) drawTable = makeRectangleWH(500, 500, 500, 500);                            // Drawing area
     i.proto->clip(&i, drawTable);
@@ -488,12 +501,15 @@ void test3()                                                                    
         const typeof(i.fontHeight) H = i.fontHeight;
         x = H * ceil(x / H);                                                    // Next tab stop
         if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     //
-        const typeof(makeRectangleWH(x, y, a, H)) r = makeRectangleWH(x, y, a, H);
+        const typeof(makeRectangleWH(x, y, a, H)) r = makeRectangleWH(x, y, a, H);                                        // Rectangle containing text to be drawn
         if (drawTable.proto->contains(&drawTable, r))
-         {i.proto->text(&i, x, y, k);
+         {if (r.proto->containsPoint(&r, px, py))
+           {clickedEntry = word.offset;
+            i.proto->rectangle(&i, r, pointedColour);
+           }
+          i.proto->text(&i, x, y, k);
           if (!firstEntry) firstEntry = word.offset;
           lastEntry = word.offset;
-          if (r.proto->containsPoint(&r, px, py)) clickedEntry = word.offset;
          }
         x += a;
        }
