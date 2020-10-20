@@ -89,6 +89,8 @@ $Image make$Image                                                               
 
   i ▷ font(i.sansMono);                                                         // Default font
   i ▷ clearWhite;                                                               // Clear display
+  i ▷ rgb(0,0,0);                                                               // Default drawing colour
+  i ▷ lineWidth(2);                                                             // Default stroke width
 
   draw(i);                                                                      // Draw
 
@@ -192,6 +194,50 @@ static void text_$                                                              
   cairo_show_text(i->cr, t);
  }
 
+static void textLine_$                                                          // Outline text at the specified position using the current font, fonet size and colour
+ ($Image * i,                                                                   // $Image
+  double x,                                                                     // X position of text
+  double y,                                                                     // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
+  const char * t)                                                               // The text to draw
+ {cr ◁ i->cr;
+  cairo_move_to  (cr, x, y + i->fontAscent);
+  cairo_text_path(cr, t);
+  cairo_stroke   (cr);
+ }
+
+static void textFit_$                                                           // Draw text so that it fills a rectangle in one dimension and is justified as specified in the other dimension.
+ ($Image     * i,                                                               // $Image
+  Rectangle    rc,                                                              // Rectangle in which to draw text
+  int          jX,                                                              // < 0 justify left, > 0 justify right,  0 : center
+  int          jY,                                                              // < 0 justify top,  > 0 justify bottom, 0 : center
+  int          line,                                                            // 0 : fill, 1 - outline
+  const char * text)                                                            // The text to draw
+ {cr ◁ i->cr;
+  base ◁ 1000.0;                                                                // Size to scale from
+  i ▶ save;
+  i ▶ move(0, 0);
+  i ▶ fontSize(base);                                                           // Set font size
+  cairo_text_extents_t textExtents;
+  cairo_text_extents (cr, text, &textExtents);
+  rx ◁ textExtents.width  / rc ▷ width;
+  ry ◁ textExtents.height / rc ▷ height;
+  r  ◁ rx > ry ? rx : ry;
+  tw ◁ textExtents.width  / r;                                                  // Scaled width of text
+  th ◁ textExtents.height / r;                                                  // Scaled height of text
+  i ▶ fontSize(base / r);                                                       // Set font size
+  dx ◁ rc ▷ width  - tw;                                                        // Left over in x
+  dy ◁ rc ▷ height - th;                                                        // Left over in y
+  jx ◁ jX < 0 ? 0 : jX > 0 ? dx : dx / 2;
+  jy ◁ jY < 0 ? 0 : jY > 0 ? dy : dy / 2;
+  xb ◁ textExtents.x_bearing / r;
+  yb ◁ textExtents.y_bearing / r;
+  x ◁ rc.x + jx - xb;
+  y ◁ rc.y + jy - yb;
+  if (line) i ▶ textLine (x, y - i->fontAscent, text);                           // Outline or fill the text
+  else      i ▶ text     (x, y - i->fontAscent, text);
+  i ▶ restore;
+ }
+
 //D1 Colours                                                                    // Colours
 
 static void clearWhite_$                                                        // Clear the drawing surface to white
@@ -274,6 +320,12 @@ static void stroke_$                                                            
 static void strokePreserve_$                                                    // Stroke the current path and keep the path.
  ($Image * i)                                                                   // $Image
  {cairo_stroke_preserve(i->cr);
+ }
+
+static void lineWidth_$                                                         // Set the stroke width
+ ($Image * i,                                                                   // $Image
+  double width)                                                                 // Width of lines
+ {cairo_set_line_width (i->cr, width);
  }
 
 //D1 Clipping                                                                   // Set the clip area
@@ -375,6 +427,16 @@ static void rectangle                                                           
   i ▶ restore;
  }
 
+static void rectangleLine                                                       // Draw a rectangle in outline
+ ($Image  * i,                                                                  // Image
+  Rectangle r)                                                                  // Rectangle
+ {cr ◀ i->cr;
+  i ▶ save;
+  cairo_rectangle(cr, r.x, r.y, r ▷ width, r ▷ height);
+  i ▶ stroke;
+  i ▶ restore;
+ }
+
 //D1 Output                                                                     // Write the image and check the results
 
 static void assert$ImageFile                                                    //P Check that the digest of an image file contains the specified string
@@ -428,11 +490,10 @@ void test0()                                                                    
  }
 
 void test1()                                                                    // Linear gradient
- {void draw($Image i)
-   {red  ◁ makeColour(1,0,0,1);
-    blue ◁ makeColour(0,0,1,1);
-
-    w ◁ i.width; h ◁ i.height;
+ {red  ◁ makeColour(1,0,0,1);
+  blue ◁ makeColour(0,0,1,1);
+  void draw($Image i)
+   {w ◁ i.width; h ◁ i.height;
     r ◀ makeRectangleWH    (w/4, 0, w/4, h/2);
     s ◁ r ▷ translate      (w/2, 0);
     i ▷ leftArrowWithCircle(r, red, blue);
@@ -443,7 +504,30 @@ void test1()                                                                    
   i ▷ free;
  }
 
-void test2()                                                                    // Text table
+void test2()                                                                    // Linear gradient
+ {void draw($Image i)
+   {w ◁ i.width; h ◁ i.height;
+    r ◁ makeRectangleWH(w/4, h/4, w/2, h/2);
+    i ▷ rgb(1,0,0);
+    i ▷ textFit(r, -1, 0, 0, "1");
+    i ▷ rgb(0,1,0);
+    i ▷ textFit(r,  0, 0, 0, "2");
+    i ▷ rgb(0,0,1);
+    i ▷ textFit(r, +1, 0, 0, "3");
+    i ▷ rgb(1,1,0);
+    i ▷ textFit(r, 0, -1, 0, "Hello");
+    i ▷ rgb(1,0,1);
+    i ▷ textFit(r, 0,  0, 0, "Hello");
+    i ▷ rgb(0,1,1);
+    i ▷ textFit(r, 0, +1, 0, "Hello");
+    i ▷ rectangleLine(r);
+   }
+
+  i ◀ make$Image(draw, 2000, 2000, "$2.png", "64fe");
+  i ▷ free;
+ }
+
+void test3()                                                                    // Text table
  {void draw($Image i)
    {black ◁ makeColour(0,0,0,1);
 
@@ -471,11 +555,11 @@ void test2()                                                                    
      }
    }
 
-  i ◀ make$Image(draw, 2000, 2000, "$2.png", "ba23");
+  i ◀ make$Image(draw, 2000, 2000, "$3.png", "ba23");
   i ▷ free;
  }
 
-void test3()                                                                    // Text table using tab stops
+void test4()                                                                    // Text table using tab stops
  {void draw($Image i)
    {   textColour ◁ makeColour(0,0,0,1);
     pointedColour ◁ makeColour(0,1,0,1);
@@ -519,12 +603,12 @@ void test3()                                                                    
     c ◁ list ▷ offset(clickedEntry); ✓ c ▷ equalsString("ee");
    }
 
-  i ◀ make$Image(draw, 2000, 2000, "$3.png", "a");
+  i ◀ make$Image(draw, 2000, 2000, "$4.png", "a");
   i ▷ free;
  }
 
 int main (void)
- {void (*tests[])(void) = {test0, test1, test2, test3,  0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0};
   run_tests("$", 1, tests);
   return 0;
 }
