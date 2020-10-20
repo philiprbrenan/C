@@ -28,9 +28,9 @@ static void textLine_CairoText
 static void textFit_CairoText
  (CairoTextImage     * i,
   Rectangle    rc,
-  int          jX,
-  int          jY,
-  int          line,
+  const int    jX,
+  const int    jY,
+  const int    line,
   const char * text);
 static void clearWhite_CairoText
  (CairoTextImage * i);
@@ -97,7 +97,8 @@ static void rectangle
   Colour    c);
 static void rectangleLine
  (CairoTextImage  * i,
-  Rectangle r);
+  Rectangle r,
+  Colour    c);
 static void assertCairoTextImageFile
  (char       *       imageFile,
   const char * const digest);
@@ -170,7 +171,8 @@ struct ProtoTypes_CairoTextImage {
     Colour c);                                                                  // Colour
   void  (*rectangleLine)(                                                       // Draw a rectangle in outline
     CairoTextImage  * i,                                                        // Image
-    Rectangle r);                                                               // Rectangle
+    Rectangle r,                                                                // Rectangle
+    Colour c);                                                                  // Colour
   void  (*restore)(                                                             // Restore the drawing context
     CairoTextImage * i);                                                        // CairoTextImage
   void  (*rgb)(                                                                 // Set the current colour
@@ -205,9 +207,9 @@ struct ProtoTypes_CairoTextImage {
   void  (*textFit)(                                                             // Draw text so that it fills a rectangle in one dimension and is justified as specified in the other dimension.
     CairoTextImage     * i,                                                     // CairoTextImage
     Rectangle rc,                                                               // Rectangle in which to draw text
-    int jX,                                                                     // < 0 justify left, > 0 justify right,  0 : center
-    int jY,                                                                     // < 0 justify top,  > 0 justify bottom, 0 : center
-    int line,                                                                   // 0 : fill, 1 - outline
+    const int jX,                                                               // < 0 justify left, > 0 justify right,  0 : center
+    const int jY,                                                               // < 0 justify top,  > 0 justify bottom, 0 : center
+    const int line,                                                             // 0 : fill, 1 - outline
     const char * text);                                                         // The text to draw
   void  (*textLine)(                                                            // Outline text at the specified position using the current font, fonet size and colour
     CairoTextImage * i,                                                         // CairoTextImage
