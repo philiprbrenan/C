@@ -90,6 +90,8 @@ CairoTextImage makeCairoTextImage                                               
 
   i.proto->font(&i, i.sansMono);                                                         // Default font
   i.proto->clearWhite(&i);                                                               // Clear display
+  i.proto->rgb(&i, 0,0,0);                                                               // Default drawing colour
+  i.proto->lineWidth(&i, 2);                                                             // Default stroke width
 
   draw(i);                                                                      // Draw
 
@@ -193,6 +195,50 @@ static void text_CairoText                                                      
   cairo_show_text(i->cr, t);
  }
 
+static void textLine_CairoText                                                          // Outline text at the specified position using the current font, fonet size and colour
+ (CairoTextImage * i,                                                                   // CairoTextImage
+  double x,                                                                     // X position of text
+  double y,                                                                     // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
+  const char * t)                                                               // The text to draw
+ {const typeof(i->cr) cr = i->cr;
+  cairo_move_to  (cr, x, y + i->fontAscent);
+  cairo_text_path(cr, t);
+  cairo_stroke   (cr);
+ }
+
+static void textFit_CairoText                                                           // Draw text so that it fills a rectangle in one dimension and is justified as specified in the other dimension.
+ (CairoTextImage     * i,                                                               // CairoTextImage
+  Rectangle    rc,                                                              // Rectangle in which to draw text
+  int          jX,                                                              // < 0 justify left, > 0 justify right,  0 : center
+  int          jY,                                                              // < 0 justify top,  > 0 justify bottom, 0 : center
+  int          line,                                                            // 0 : fill, 1 - outline
+  const char * text)                                                            // The text to draw
+ {const typeof(i->cr) cr = i->cr;
+  const typeof(1000.0) base = 1000.0;                                                                // Size to scale from
+  i->proto->save(i);
+  i->proto->move(i, 0, 0);
+  i->proto->fontSize(i, base);                                                           // Set font size
+  cairo_text_extents_t textExtents;
+  cairo_text_extents (cr, text, &textExtents);
+  const typeof(textExtents.width  / rc.proto->width(&rc)) rx = textExtents.width  / rc.proto->width(&rc);
+  const typeof(textExtents.height / rc.proto->height(&rc)) ry = textExtents.height / rc.proto->height(&rc);
+  const typeof(rx > ry ? rx : ry) r = rx > ry ? rx : ry;
+  const typeof(textExtents.width  / r) tw = textExtents.width  / r;                                                  // Scaled width of text
+  const typeof(textExtents.height / r) th = textExtents.height / r;                                                  // Scaled height of text
+  i->proto->fontSize(i, base / r);                                                       // Set font size
+  const typeof(rc.proto->width(&rc)  - tw) dx = rc.proto->width(&rc)  - tw;                                                        // Left over in x
+  const typeof(rc.proto->height(&rc) - th) dy = rc.proto->height(&rc) - th;                                                        // Left over in y
+  const typeof(jX < 0 ? 0 : jX > 0 ? dx : dx / 2) jx = jX < 0 ? 0 : jX > 0 ? dx : dx / 2;
+  const typeof(jY < 0 ? 0 : jY > 0 ? dy : dy / 2) jy = jY < 0 ? 0 : jY > 0 ? dy : dy / 2;
+  const typeof(textExtents.x_bearing / r) xb = textExtents.x_bearing / r;
+  const typeof(textExtents.y_bearing / r) yb = textExtents.y_bearing / r;
+  const typeof(rc.x + jx - xb) x = rc.x + jx - xb;
+  const typeof(rc.y + jy - yb) y = rc.y + jy - yb;
+  if (line) i->proto->textLine(i, x, y - i->fontAscent, text);                           // Outline or fill the text
+  else      i->proto->text(i, x, y - i->fontAscent, text);
+  i->proto->restore(i);
+ }
+
 //D1 Colours                                                                    // Colours
 
 static void clearWhite_CairoText                                                        // Clear the drawing surface to white
@@ -275,6 +321,12 @@ static void stroke_CairoText                                                    
 static void strokePreserve_CairoText                                                    // Stroke the current path and keep the path.
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_stroke_preserve(i->cr);
+ }
+
+static void lineWidth_CairoText                                                         // Set the stroke width
+ (CairoTextImage * i,                                                                   // CairoTextImage
+  double width)                                                                 // Width of lines
+ {cairo_set_line_width (i->cr, width);
  }
 
 //D1 Clipping                                                                   // Set the clip area
@@ -376,6 +428,16 @@ static void rectangle                                                           
   i->proto->restore(i);
  }
 
+static void rectangleLine                                                       // Draw a rectangle in outline
+ (CairoTextImage  * i,                                                                  // Image
+  Rectangle r)                                                                  // Rectangle
+ {typeof(i->cr) cr = i->cr;
+  i->proto->save(i);
+  cairo_rectangle(cr, r.x, r.y, r.proto->width(&r), r.proto->height(&r));
+  i->proto->stroke(i);
+  i->proto->restore(i);
+ }
+
 //D1 Output                                                                     // Write the image and check the results
 
 static void assertCairoTextImageFile                                                    //P Check that the digest of an image file contains the specified string
@@ -429,11 +491,10 @@ void test0()                                                                    
  }
 
 void test1()                                                                    // Linear gradient
- {void draw(CairoTextImage i)
-   {const typeof(makeColour(1,0,0,1)) red = makeColour(1,0,0,1);
-    const typeof(makeColour(0,0,1,1)) blue = makeColour(0,0,1,1);
-
-    const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
+ {const typeof(makeColour(1,0,0,1)) red = makeColour(1,0,0,1);
+  const typeof(makeColour(0,0,1,1)) blue = makeColour(0,0,1,1);
+  void draw(CairoTextImage i)
+   {const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
     typeof(makeRectangleWH    (w/4, 0, w/4, h/2)) r = makeRectangleWH    (w/4, 0, w/4, h/2);
     const typeof(r.proto->translate(&r, w/2, 0)) s = r.proto->translate(&r, w/2, 0);
     i.proto->leftArrowWithCircle(&i, r, red, blue);
@@ -444,7 +505,30 @@ void test1()                                                                    
   i.proto->free(&i);
  }
 
-void test2()                                                                    // Text table
+void test2()                                                                    // Linear gradient
+ {void draw(CairoTextImage i)
+   {const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
+    const typeof(makeRectangleWH(w/4, h/4, w/2, h/2)) r = makeRectangleWH(w/4, h/4, w/2, h/2);
+    i.proto->rgb(&i, 1,0,0);
+    i.proto->textFit(&i, r, -1, 0, 0, "1");
+    i.proto->rgb(&i, 0,1,0);
+    i.proto->textFit(&i, r,  0, 0, 0, "2");
+    i.proto->rgb(&i, 0,0,1);
+    i.proto->textFit(&i, r, +1, 0, 0, "3");
+    i.proto->rgb(&i, 1,1,0);
+    i.proto->textFit(&i, r, 0, -1, 0, "Hello");
+    i.proto->rgb(&i, 1,0,1);
+    i.proto->textFit(&i, r, 0,  0, 0, "Hello");
+    i.proto->rgb(&i, 0,1,1);
+    i.proto->textFit(&i, r, 0, +1, 0, "Hello");
+    i.proto->rectangleLine(&i, r);
+   }
+
+  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "64fe")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "64fe");
+  i.proto->free(&i);
+ }
+
+void test3()                                                                    // Text table
  {void draw(CairoTextImage i)
    {const typeof(makeColour(0,0,0,1)) black = makeColour(0,0,0,1);
 
@@ -472,11 +556,11 @@ void test2()                                                                    
      }
    }
 
-  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "ba23")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "ba23");
+  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "ba23")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "ba23");
   i.proto->free(&i);
  }
 
-void test3()                                                                    // Text table using tab stops
+void test4()                                                                    // Text table using tab stops
  {void draw(CairoTextImage i)
    {   const typeof(makeColour(0,0,0,1)) textColour = makeColour(0,0,0,1);
     const typeof(makeColour(0,1,0,1)) pointedColour = makeColour(0,1,0,1);
@@ -520,12 +604,12 @@ void test3()                                                                    
     const typeof(list.proto->offset(&list, clickedEntry)) c = list.proto->offset(&list, clickedEntry); assert( c.proto->equalsString(&c, "ee"));
    }
 
-  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText3.png", "a");
+  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText4.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText4.png", "a");
   i.proto->free(&i);
  }
 
 int main (void)
- {void (*tests[])(void) = {test0, test1, test2, test3,  0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0};
   run_tests("CairoText", 1, tests);
   return 0;
 }
