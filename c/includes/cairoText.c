@@ -209,9 +209,9 @@ static void textLine_CairoText                                                  
 static void textFit_CairoText                                                           // Draw text so that it fills a rectangle in one dimension and is justified as specified in the other dimension.
  (CairoTextImage     * i,                                                               // CairoTextImage
   Rectangle    rc,                                                              // Rectangle in which to draw text
-  int          jX,                                                              // < 0 justify left, > 0 justify right,  0 : center
-  int          jY,                                                              // < 0 justify top,  > 0 justify bottom, 0 : center
-  int          line,                                                            // 0 : fill, 1 - outline
+  const int    jX,                                                              // < 0 justify left, > 0 justify right,  0 : center
+  const int    jY,                                                              // < 0 justify top,  > 0 justify bottom, 0 : center
+  const int    line,                                                            // 0 : fill, 1 - outline
   const char * text)                                                            // The text to draw
  {const typeof(i->cr) cr = i->cr;
   const typeof(1000.0) base = 1000.0;                                                                // Size to scale from
@@ -430,9 +430,11 @@ static void rectangle                                                           
 
 static void rectangleLine                                                       // Draw a rectangle in outline
  (CairoTextImage  * i,                                                                  // Image
-  Rectangle r)                                                                  // Rectangle
+  Rectangle r,                                                                  // Rectangle
+  Colour    c)                                                                  // Colour
  {typeof(i->cr) cr = i->cr;
   i->proto->save(i);
+  i->proto->colour(i, c);
   cairo_rectangle(cr, r.x, r.y, r.proto->width(&r), r.proto->height(&r));
   i->proto->stroke(i);
   i->proto->restore(i);
@@ -505,8 +507,9 @@ void test1()                                                                    
   i.proto->free(&i);
  }
 
-void test2()                                                                    // Linear gradient
- {void draw(CairoTextImage i)
+void test2()                                                                    // Text filling rectangles
+ {const typeof(makeColour(0,0,0,1)) black = makeColour(0,0,0,1);
+  void draw(CairoTextImage i)
    {const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
     const typeof(makeRectangleWH(w/4, h/4, w/2, h/2)) r = makeRectangleWH(w/4, h/4, w/2, h/2);
     i.proto->rgb(&i, 1,0,0);
@@ -521,10 +524,10 @@ void test2()                                                                    
     i.proto->textFit(&i, r, 0,  0, 0, "Hello");
     i.proto->rgb(&i, 0,1,1);
     i.proto->textFit(&i, r, 0, +1, 0, "Hello");
-    i.proto->rectangleLine(&i, r);
+    i.proto->rectangleLine(&i, r, black);
    }
 
-  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "64fe")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "64fe");
+  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "8185")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "8185");
   i.proto->free(&i);
  }
 
@@ -562,46 +565,91 @@ void test3()                                                                    
 
 void test4()                                                                    // Text table using tab stops
  {void draw(CairoTextImage i)
-   {   const typeof(makeColour(0,0,0,1)) textColour = makeColour(0,0,0,1);
-    const typeof(makeColour(0,1,0,1)) pointedColour = makeColour(0,1,0,1);
+   {  const typeof(makeColour(0,0,0,1)) frameColour = makeColour(0,0,0,1);
+       const typeof(makeColour(0,0,0,1)) textColour = makeColour(0,0,0,1);
+    const typeof(makeColour(0,0,1,0.3)) pointedColour = makeColour(0,0,1,0.3);
+    const typeof(makeColour(0,1,0,1)) textEnteredSoFarColour = makeColour(0,1,0,1);
 
-    const typeof(makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn")) list = makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn");
-    const typeof(2ul) startAtEntry = 2ul;     typeof(0ul) firstEntry = 0ul; typeof(0ul) lastEntry = 0ul;
-    typeof(717ul) px = 717ul; typeof(717ul) py = 717ul; typeof(0ul) clickedEntry = 0ul;
-
-    i.proto->font(&i, i.serif);                                                      // Font
-    i.proto->fontSize(&i, 100);                                                          // Size of text
-    i.proto->colour(&i, textColour);                                                   // Colour of text
+    const typeof(makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz")) list = makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
+    const typeof("qqx") textEnteredSoFar = "qqx";                                                   // Assume the user has entered some text to narrow the possibilities displayed
+    const typeof(2ul) textEnteredSoFarLength = 2ul;                                                 // length of text entered so far
+    typeof(717ul) px = 717ul; typeof(717ul) py = 717ul;                                                     // Current pointer coordinates
+    const typeof(2ul) startAtEntry = 2ul;                                                    // Start drawing at this entry
+    typeof(0ul) firstEntry = 0ul;                                                    // First visible entry
+    typeof(0ul) lastEntry = 0ul;                                                    // Last visible entry
+    typeof(0ul) clickedEntry = 0ul;                                                    // Entry containing pointer coordinates
+    typeof(0ul) clickedEntryIndex = 0ul;                                                    // Index of entry containing pointer
+    typeof(0ul) clickedPrevEntry = 0ul;                                                    // Offset of entry preceding entry containing pointer
+    typeof(0ul) clickedNextEntry = 0ul;                                                    // Offset of entry following entry containing pointer
+    typeof(0ul) clickedUpEntry = 0ul;                                                    // Offset of entry above entry containing pointer
+    typeof(0ul) clickedDownEntry = 0ul;                                                    // Offset of entry below entry containing pointer
 
     const typeof(makeRectangleWH(500, 500, 500, 500)) drawTable = makeRectangleWH(500, 500, 500, 500);                            // Drawing area
     i.proto->clip(&i, drawTable);
 
-    double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
+    if (1)                                                                      // Show text entered so far
+     {i.proto->colour(&i, textEnteredSoFarColour);
+      i.proto->font(&i, i.sansItalic);
+      const typeof(textEnteredSoFarLength) l = textEnteredSoFarLength;
+      char t[l+1]; strncpy(t, textEnteredSoFar, l); t[l] = 0;
+      i.proto->textFit(&i, drawTable, 0, 0, 0, t);
+     }
+
+    i.proto->font(&i, i.serif);                                                      // Font
+    i.proto->fontSize(&i, 100);                                                          // Size of text
+    i.proto->colour(&i, textColour);                                                   // Colour of text
+    const typeof(i.fontHeight) H = i.fontHeight;                                                           // Font height - we should use heoght not ascent but height is actually too much
+
+    double x = drawTable.X, y = drawTable.y - H;                                // At the end of the previous line
 
     ArenaListfec(word, list)                                                    // Each word
-     {if (wordⁱ >= startAtEntry)
-       {makeLocalCopyOfArenaListKey(k, l, word);
-        const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);
-        const typeof(i.fontHeight) H = i.fontHeight;
-        x = H * ceil(x / H);                                                    // Next tab stop
-        if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     //
-        const typeof(makeRectangleWH(x, y, a, H)) r = makeRectangleWH(x, y, a, H);                                        // Rectangle containing text to be drawn
+     {if (wordⁱ >= startAtEntry)                                                // Words in the scrolled to area
+       {makeLocalCopyOfArenaListKey(K, L, word);
+        if (L <= textEnteredSoFarLength) continue;                              // Word shorter than prefix entered so far
+        const typeof(&K[textEnteredSoFarLength]) k = &K[textEnteredSoFarLength];                                         // Allow for text entered so far
+        const typeof(word.offset) offset = word.offset;                                                   // Offset of current entry
+        const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);                                                 // Width of text
+say("AAAA %f %f %f %f %s\n", x, y, a, H, k);
+        if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     // Move to next line if necessary
+
+        const typeof(makeRectangleWH(x, y, a, H)) r = makeRectangleWH(x, y, a, H);                                        // Rectangle in which to draw the text
+
         if (drawTable.proto->contains(&drawTable, r))
          {if (r.proto->containsPoint(&r, px, py))
-           {clickedEntry = word.offset;
+           {clickedEntry      = offset;
+            clickedEntryIndex = wordⁱ;
             i.proto->rectangle(&i, r, pointedColour);
            }
+
+          if (!clickedEntry)                       clickedPrevEntry = offset;
+          else if (wordⁱ == clickedEntryIndex + 1) clickedNextEntry = offset;
+
           i.proto->text(&i, x, y, k);
-          if (!firstEntry) firstEntry = word.offset;
-          lastEntry = word.offset;
+          if (!firstEntry) firstEntry = offset;
+          lastEntry = offset;
          }
-        x += a;
+
+        const typeof(H * ceil(a / H)) w = H * ceil(a / H);                                                    // Width of entry including move to next tab stop
+        if (1)                                                                  // Entries above and below
+         {const typeof(makeRectangleWH(x, y, w, H)) r = makeRectangleWH(x, y, w, H);                                      // Rectangle in which to draw the entry
+          if (r.proto->containsPoint(&r, px, py - H)) clickedUpEntry   = offset;
+          if (r.proto->containsPoint(&r, px, py + H)) clickedDownEntry = offset;
+         }
+        x += w;                                                                 // Move to next entry
        }
      }
 
-    const typeof(list.proto->offset(&list, firstEntry)) f = list.proto->offset(&list, firstEntry);   assert( f.proto->equalsString(&f, "bbbb"));
-    const typeof(list.proto->offset(&list, lastEntry)) l = list.proto->offset(&list, lastEntry);    assert( l.proto->equalsString(&l, "hh"));
-    const typeof(list.proto->offset(&list, clickedEntry)) c = list.proto->offset(&list, clickedEntry); assert( c.proto->equalsString(&c, "ee"));
+    i.proto->rectangleLine(&i, drawTable, frameColour);                                  // Frame the drawn area
+
+    if (0)                                                                      // Check results
+     {const typeof(list.proto->offset(&list, firstEntry)) f = list.proto->offset(&list, firstEntry);       assert( f.proto->equalsString(&f, "qqbbbb"));
+      const typeof(list.proto->offset(&list, lastEntry)) l = list.proto->offset(&list, lastEntry);        assert( l.proto->equalsString(&l, "qqhh"));
+      const typeof(list.proto->offset(&list, clickedEntry)) c = list.proto->offset(&list, clickedEntry);     assert( c.proto->equalsString(&c, "qqee"));
+      const typeof(list.proto->offset(&list, clickedPrevEntry)) p = list.proto->offset(&list, clickedPrevEntry); assert( p.proto->equalsString(&p, "qqdd"));
+      const typeof(list.proto->offset(&list, clickedNextEntry)) n = list.proto->offset(&list, clickedNextEntry); assert( n.proto->equalsString(&n, "qqff"));
+      const typeof(list.proto->offset(&list, clickedDownEntry)) d = list.proto->offset(&list, clickedDownEntry); assert( d.proto->equalsString(&d, "qqgggg"));
+      const typeof(list.proto->offset(&list, clickedUpEntry)) u = list.proto->offset(&list, clickedUpEntry);   assert( u.proto->equalsString(&u, "qqbbbb"));
+     }
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText4.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText4.png", "a");
