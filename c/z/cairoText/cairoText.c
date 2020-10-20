@@ -208,9 +208,9 @@ static void textLine_$                                                          
 static void textFit_$                                                           // Draw text so that it fills a rectangle in one dimension and is justified as specified in the other dimension.
  ($Image     * i,                                                               // $Image
   Rectangle    rc,                                                              // Rectangle in which to draw text
-  int          jX,                                                              // < 0 justify left, > 0 justify right,  0 : center
-  int          jY,                                                              // < 0 justify top,  > 0 justify bottom, 0 : center
-  int          line,                                                            // 0 : fill, 1 - outline
+  const int    jX,                                                              // < 0 justify left, > 0 justify right,  0 : center
+  const int    jY,                                                              // < 0 justify top,  > 0 justify bottom, 0 : center
+  const int    line,                                                            // 0 : fill, 1 - outline
   const char * text)                                                            // The text to draw
  {cr ◁ i->cr;
   base ◁ 1000.0;                                                                // Size to scale from
@@ -429,9 +429,11 @@ static void rectangle                                                           
 
 static void rectangleLine                                                       // Draw a rectangle in outline
  ($Image  * i,                                                                  // Image
-  Rectangle r)                                                                  // Rectangle
+  Rectangle r,                                                                  // Rectangle
+  Colour    c)                                                                  // Colour
  {cr ◀ i->cr;
   i ▶ save;
+  i ▶ colour(c);
   cairo_rectangle(cr, r.x, r.y, r ▷ width, r ▷ height);
   i ▶ stroke;
   i ▶ restore;
@@ -504,8 +506,9 @@ void test1()                                                                    
   i ▷ free;
  }
 
-void test2()                                                                    // Linear gradient
- {void draw($Image i)
+void test2()                                                                    // Text filling rectangles
+ {black ◁ makeColour(0,0,0,1);
+  void draw($Image i)
    {w ◁ i.width; h ◁ i.height;
     r ◁ makeRectangleWH(w/4, h/4, w/2, h/2);
     i ▷ rgb(1,0,0);
@@ -520,10 +523,10 @@ void test2()                                                                    
     i ▷ textFit(r, 0,  0, 0, "Hello");
     i ▷ rgb(0,1,1);
     i ▷ textFit(r, 0, +1, 0, "Hello");
-    i ▷ rectangleLine(r);
+    i ▷ rectangleLine(r, black);
    }
 
-  i ◀ make$Image(draw, 2000, 2000, "$2.png", "64fe");
+  i ◀ make$Image(draw, 2000, 2000, "$2.png", "8185");
   i ▷ free;
  }
 
@@ -561,46 +564,91 @@ void test3()                                                                    
 
 void test4()                                                                    // Text table using tab stops
  {void draw($Image i)
-   {   textColour ◁ makeColour(0,0,0,1);
-    pointedColour ◁ makeColour(0,1,0,1);
+   {  frameColour ◁ makeColour(0,0,0,1);
+       textColour ◁ makeColour(0,0,0,1);
+    pointedColour ◁ makeColour(0,0,1,0.3);
+    textEnteredSoFarColour ◁ makeColour(0,1,0,1);
 
-    list ◁ makeArenaListFromWords("aaaa bbbb cc dd ee ff gggg hh iii jj kkk l mmmm nn");
-    startAtEntry ◁ 2ul;     firstEntry   ◀ 0ul; lastEntry ◀ 0ul;
-    px ◀ 717ul; py ◀ 717ul; clickedEntry ◀ 0ul;
-
-    i ▷ font    (i.serif);                                                      // Font
-    i ▷ fontSize(100);                                                          // Size of text
-    i ▷ colour  (textColour);                                                   // Colour of text
+    list ◁ makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
+    textEnteredSoFar ◁ "qqx";                                                   // Assume the user has entered some text to narrow the possibilities displayed
+    textEnteredSoFarLength ◁ 2ul;                                                 // length of text entered so far
+    px ◀ 717ul; py ◀ 717ul;                                                     // Current pointer coordinates
+    startAtEntry      ◁ 2ul;                                                    // Start drawing at this entry
+    firstEntry        ◀ 0ul;                                                    // First visible entry
+    lastEntry         ◀ 0ul;                                                    // Last visible entry
+    clickedEntry      ◀ 0ul;                                                    // Entry containing pointer coordinates
+    clickedEntryIndex ◀ 0ul;                                                    // Index of entry containing pointer
+    clickedPrevEntry  ◀ 0ul;                                                    // Offset of entry preceding entry containing pointer
+    clickedNextEntry  ◀ 0ul;                                                    // Offset of entry following entry containing pointer
+    clickedUpEntry    ◀ 0ul;                                                    // Offset of entry above entry containing pointer
+    clickedDownEntry  ◀ 0ul;                                                    // Offset of entry below entry containing pointer
 
     drawTable ◁ makeRectangleWH(500, 500, 500, 500);                            // Drawing area
     i ▷ clip(drawTable);
 
-    double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
+    if (1)                                                                      // Show text entered so far
+     {i ▷ colour (textEnteredSoFarColour);
+      i ▷ font   (i.sansItalic);
+      l ◁ textEnteredSoFarLength;
+      char t[l+1]; strncpy(t, textEnteredSoFar, l); t[l] = 0;
+      i ▷ textFit(drawTable, 0, 0, 0, t);
+     }
+
+    i ▷ font    (i.serif);                                                      // Font
+    i ▷ fontSize(100);                                                          // Size of text
+    i ▷ colour  (textColour);                                                   // Colour of text
+    H ◁ i.fontHeight;                                                           // Font height - we should use heoght not ascent but height is actually too much
+
+    double x = drawTable.X, y = drawTable.y - H;                                // At the end of the previous line
 
     ArenaListfec(word, list)                                                    // Each word
-     {if (wordⁱ >= startAtEntry)
-       {makeLocalCopyOfArenaListKey(k, l, word);
-        a ◁ i ▷ textAdvance(k);
-        H ◁ i.fontHeight;
-        x = H * ceil(x / H);                                                    // Next tab stop
-        if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     //
-        r ◁ makeRectangleWH(x, y, a, H);                                        // Rectangle containing text to be drawn
+     {if (wordⁱ >= startAtEntry)                                                // Words in the scrolled to area
+       {makeLocalCopyOfArenaListKey(K, L, word);
+        if (L <= textEnteredSoFarLength) continue;                              // Word shorter than prefix entered so far
+        k ◁ &K[textEnteredSoFarLength];                                         // Allow for text entered so far
+        offset ◁ word.offset;                                                   // Offset of current entry
+        a ◁ i ▷ textAdvance(k);                                                 // Width of text
+say("AAAA %f %f %f %f %s\n", x, y, a, H, k);
+        if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     // Move to next line if necessary
+
+        r ◁ makeRectangleWH(x, y, a, H);                                        // Rectangle in which to draw the text
+
         if (drawTable ▷ contains(r))
          {if (r ▷ containsPoint(px, py))
-           {clickedEntry = word.offset;
+           {clickedEntry      = offset;
+            clickedEntryIndex = wordⁱ;
             i ▷ rectangle(r, pointedColour);
            }
+
+          if (!clickedEntry)                       clickedPrevEntry = offset;
+          else if (wordⁱ == clickedEntryIndex + 1) clickedNextEntry = offset;
+
           i ▷ text(x, y, k);
-          if (!firstEntry) firstEntry = word.offset;
-          lastEntry = word.offset;
+          if (!firstEntry) firstEntry = offset;
+          lastEntry = offset;
          }
-        x += a;
+
+        w ◁ H * ceil(a / H);                                                    // Width of entry including move to next tab stop
+        if (1)                                                                  // Entries above and below
+         {r ◁ makeRectangleWH(x, y, w, H);                                      // Rectangle in which to draw the entry
+          if (r ▷ containsPoint(px, py - H)) clickedUpEntry   = offset;
+          if (r ▷ containsPoint(px, py + H)) clickedDownEntry = offset;
+         }
+        x += w;                                                                 // Move to next entry
        }
      }
 
-    f ◁ list ▷ offset(firstEntry);   ✓ f ▷ equalsString("bbbb");
-    l ◁ list ▷ offset(lastEntry);    ✓ l ▷ equalsString("hh");
-    c ◁ list ▷ offset(clickedEntry); ✓ c ▷ equalsString("ee");
+    i ▷ rectangleLine(drawTable, frameColour);                                  // Frame the drawn area
+
+    if (0)                                                                      // Check results
+     {f ◁ list ▷ offset(firstEntry);       ✓ f ▷ equalsString("qqbbbb");
+      l ◁ list ▷ offset(lastEntry);        ✓ l ▷ equalsString("qqhh");
+      c ◁ list ▷ offset(clickedEntry);     ✓ c ▷ equalsString("qqee");
+      p ◁ list ▷ offset(clickedPrevEntry); ✓ p ▷ equalsString("qqdd");
+      n ◁ list ▷ offset(clickedNextEntry); ✓ n ▷ equalsString("qqff");
+      d ◁ list ▷ offset(clickedDownEntry); ✓ d ▷ equalsString("qqgggg");
+      u ◁ list ▷ offset(clickedUpEntry);   ✓ u ▷ equalsString("qqbbbb");
+     }
    }
 
   i ◀ make$Image(draw, 2000, 2000, "$4.png", "a");
