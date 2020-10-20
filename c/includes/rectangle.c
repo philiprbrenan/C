@@ -21,8 +21,8 @@ typedef enum typeRectangle                                                      
 
 typedef struct Rectangle                                                                // Rectangle
  {const struct ProtoTypes_Rectangle *proto;                                             // Prototypes for methods
-  const double x, y, X, Y;                                                      // Coordinates of two opposing corners with lower x and y first
-  const typeRectangle  t;                                                               //Type of rectangle
+  double x, y, X, Y;                                                            // Coordinates of two opposing corners with lower x and y first
+  typeRectangle  t;                                                                     //Type of rectangle
  } Rectangle;
 
 typedef struct RectanglePair                                                            // A pair of smaller rectangles resulting from fission of a larger rectangle
