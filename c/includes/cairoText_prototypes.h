@@ -225,3 +225,8 @@ struct ProtoTypes_CairoTextImage {
 {assertCairoTextResult, clearWhite_CairoText, clip_CairoText, close_CairoText, colour_CairoText, fillPreserve_CairoText, fill_CairoText, fontMetrics_CairoText, fontSize_CairoText, font_CairoText, free_CairoTextImage, leftArrow, leftArrowWithCircle, lineWidth_CairoText, line_CairoText, move_CairoText, rectangle, rectangleLine, restore_CairoText, rgb_CairoText, rgba_CairoText, rightArrow, saveAsPng_CairoText_string, save_CairoText, strokePreserve_CairoText, stroke_CairoText, textAdvance_CairoText, textFit_CairoText, textLine_CairoText, text_CairoText};
 CairoTextImage newCairoTextImage(CairoTextImage allocator) {return allocator;}
 
+struct ProtoTypes_CairoTextTabList {
+ } const ProtoTypes_CairoTextTabList =
+{};
+CairoTextTabList newCairoTextTabList(CairoTextTabList allocator) {return allocator;}
+
