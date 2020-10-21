@@ -49,6 +49,10 @@ typedef struct CairoTextImage                                                   
   double fontAscent, fontDescent, fontHeight;                                   // Metrics for the current font
  } CairoTextImage;
 
+typedef struct CairoTextTabList                                                         // A tabbed list
+ {const struct ProtoTypes_CairoTextTabList *proto;                                        // Methods associated with an arena tree
+ } CairoTextTabList;
+
 #include <cairoText_prototypes.h>
 
 //D1 Constructors                                                               // Construct text in an image
@@ -609,7 +613,6 @@ void test4()                                                                    
         const typeof(&K[textEnteredSoFarLength]) k = &K[textEnteredSoFarLength];                                         // Allow for text entered so far
         const typeof(word.offset) offset = word.offset;                                                   // Offset of current entry
         const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);                                                 // Width of text
-say("AAAA %f %f %f %f %s\n", x, y, a, H, k);
         if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     // Move to next line if necessary
 
         const typeof(makeRectangleWH(x, y, a, H)) r = makeRectangleWH(x, y, a, H);                                        // Rectangle in which to draw the text
@@ -652,7 +655,7 @@ say("AAAA %f %f %f %f %s\n", x, y, a, H, k);
      }
    }
 
-  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText4.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText4.png", "a");
+  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText4.png", "9449")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText4.png", "9449");
   i.proto->free(&i);
  }
 
