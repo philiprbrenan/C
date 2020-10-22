@@ -967,7 +967,7 @@ static void dump__ArenaList                                                     
   print(root, 0);
  }
 
-static void dumpNode__ArenaListNode                                                     //P Dump a ArenaListNode on stderr
+static void dump__ArenaListNode                                                         //P Dump a ArenaListNode on stderr
  (const ArenaListNode * Node)                                                           // ArenaListNode
  {const typeof(*Node) node = *Node;
   makeLocalCopyOfArenaListKey(k, l, node);                                              // Local copy of key
