@@ -948,7 +948,7 @@ static int printsWithBracketsAs_int__ArenaList_string                           
 
 static void dumpWithBrackets__ArenaList                                                 //P Dump a ArenaList printed with brackets to stderr
  (const ArenaList * list)                                                               // ArenaList
- {void printer(char * s, size_t l) {say("\n%s\n", s); l=l;}
+ {void printer(char * s, size_t l) {say("\n%s", s); l=l;}
   list->proto->printWithBrackets(list, printer);
  }
 
@@ -957,13 +957,14 @@ static void dump__ArenaList                                                     
  {size_t n = 0;
   void print(const ArenaListNode parent, int depth)                                     // Print the children of the specified parent
    {makeLocalCopyOfArenaListKey(k, l, parent);                                          // Local copy of key
-    say("%lu ", ++n);                                                           // Print key number
-    for(int i = 0; i < depth; ++i) say("  ");                                   // Spacer
-    say("%s\n", k);                                                             // Print key
+    printf("%lu ", ++n);                                                        // Print key number
+    for(int i = 0; i < depth; ++i) printf("  ");                                // Spacer
+    say("%s", k);                                                               // Print key
     if (!parent.proto->isEmpty(&parent)) ArenaListfe(child, parent) print(child, depth+1);            // Each child
    }
 
   const typeof(list->proto->root(list)) root = list->proto->root(list);                                                           // Root
+  say("Dump:");
   print(root, 0);
  }
 
@@ -971,7 +972,7 @@ static void dump__ArenaListNode                                                 
  (const ArenaListNode * Node)                                                           // ArenaListNode
  {const typeof(*Node) node = *Node;
   makeLocalCopyOfArenaListKey(k, l, node);                                              // Local copy of key
-  say("%d %s\n", l, k);                                                         // Print key number
+  say("%d %s", l, k);                                                           // Print key number
  }
 
 static void print__ArenaListNode_function                                               // Apply a function to the print of a ArenaListNode and the tree below it.
@@ -1039,6 +1040,62 @@ static int printContains_int__ArenaList                                         
   const typeof(list->proto->root(list)) root = list->proto->root(list);                                                           // Print from root of ArenaList
   root.proto->print(&root, printer);
   return r;
+ }
+
+//D1 Sort                                                                       // Sort a ArenaList by its keys
+
+static int cmp_int__ArenaList_ArenaList                                                         //P Compare two keys
+ (ArenaListNode * First,                                                                // First node
+  ArenaListNode   second)                                                               // Second node
+ {const typeof(*First) first = *First;
+  makeLocalCopyOfArenaListKey(K, L, first);                                             // Key of first node
+  makeLocalCopyOfArenaListKey(k, l, second);                                            // Key of second node
+  if (l < L)                                                                    // First key longer than second key
+   {const int i = strncmp(K, k, l);
+    return i ? i : +1;
+   }
+  if (L < l)                                                                    // First key shorter then second key
+   {const int i = strncmp(K, k, L);
+    return i ? i : -1;
+   }
+  return strncmp(K, k, L);                                                      // Equal length keys
+ }
+
+static void sort__ArenaListNode                                                         // Quick sort the children of a node in the ArenaList in situ
+ (const ArenaListNode * parent)                                                         // ArenaListNode
+ {void sort(ArenaListNode first, ArenaListNode last)                                            // Start and end of range to be sorted which must already be in their correct position
+   {const typeof(first.proto->next(&first)) next = first.proto->next(&first);                                                        // Parent key
+    if (next.offset != last.offset)                                             // Range has more than two nodes
+     {for(typeof(next.proto->next(&next)) p = next.proto->next(&next); p.offset != last.offset; p = p.proto->next(&p))
+       {if (p.proto->cmp(&p, next) < 0) next.proto->putPrev(&next, p.proto->cut(&p));                         // Partition around next
+       }
+      sort(first, next);
+      sort(next,  last);
+     }
+   }
+//     {if (first.proto->cmp(&first, last) > 0) last.proto->putNext(&last, first.proto->cut(&first));                   // Swap nodes if out of order
+//     }
+//    else                                                                        // Partition multi node range
+
+  if (parent->proto->countChildren(parent) < 2) return;                                       // Already sorted
+
+  for(typeof(parent->proto->first(parent)) child = parent->proto->first(parent); child.proto->valid(&child);)                                   // Place largest child last
+   {typeof(child) p = child; child = child.proto->next(&child);
+    if (p.proto->cmp(&p, parent->proto->last(parent)) > 0) parent->proto->putLast(parent, p.proto->cut(&p));
+   }
+
+  for(typeof(parent->proto->first(parent)) child = parent->proto->first(parent); child.proto->valid(&child);)                                   // Place largest child last
+   {typeof(child) p = child; child = child.proto->next(&child);
+    if (p.proto->cmp(&p, parent->proto->first(parent)) < 0) parent->proto->putFirst(parent, p.proto->cut(&p));
+   }
+
+  sort(parent->proto->first(parent), parent->proto->last(parent));
+ }
+
+static void sort__ArenaList                                                             // Sort the children of the root of a ArenaList in situ
+ (const ArenaList * list)                                                               // ArenaList
+ {const typeof(list->proto->root(list)) node = list->proto->root(list);                                                           // Root
+  node.proto->sort(&node);
  }
 
 //D1 Edit                                                                       // Edit a ArenaList in situ.
@@ -1585,12 +1642,26 @@ void test16()                                                                   
   x.proto->free(&x);
  }
 
+void test17()                                                                   //Tsort
+ {const typeof(makeArenaListFromWords(" 9 8 7 6 5 0 2 3 4 1")) w = makeArenaListFromWords(" 9 8 7 6 5 0 2 3 4 1");
+  w.proto->sort(&w);
+  assert( w.proto->countChildren(&w) == 10);
+  assert( w.proto->printsWithBracketsAs(&w, "(0123456789)"));
+  w.proto->free(&w);
+
+  const typeof(makeArenaListFromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14")) a = makeArenaListFromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14");
+  a.proto->sort(&a);
+  assert( a.proto->countChildren(&a) == 15);
+  assert( a.proto->printsWithBracketsAs(&a, "(14a3aa2aaa1aaaa0acc4b13bb12bbaa6bbb11bbbb10c9cc8ccc7cccc5)"));
+  a.proto->free(&a);
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
-                           test15, test16, 0};
+                           test15, test16, test17, 0};
   run_tests("ArenaList", repetitions, tests);
 
   return 0;
