@@ -1073,9 +1073,6 @@ static void sort__ArenaListNode                                                 
       sort(next,  last);
      }
    }
-//     {if (first.proto->cmp(&first, last) > 0) last.proto->putNext(&last, first.proto->cut(&first));                   // Swap nodes if out of order
-//     }
-//    else                                                                        // Partition multi node range
 
   if (parent->proto->countChildren(parent) < 2) return;                                       // Already sorted
 
@@ -1089,7 +1086,10 @@ static void sort__ArenaListNode                                                 
     if (p.proto->cmp(&p, parent->proto->first(parent)) < 0) parent->proto->putFirst(parent, p.proto->cut(&p));
    }
 
-  sort(parent->proto->first(parent), parent->proto->last(parent));
+  typeof(parent->proto->first(parent)) p = parent->proto->first(parent);
+  for(typeof(p.proto->next(&p)) q = p.proto->next(&p); q.proto->valid(&q); p = q, q = q.proto->next(&q))                             // Sort if out of order
+   {if (q.proto->cmp(&q, p) < 0) {sort(parent->proto->first(parent), parent->proto->last(parent)); return;}
+   }
  }
 
 static void sort__ArenaList                                                             // Sort the children of the root of a ArenaList in situ
