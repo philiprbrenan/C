@@ -212,12 +212,6 @@ static int equalsString_int__ArenaTreeNode_string                               
   const char * const key)                                                       // Key
  {return node->proto->keyEquals(node, key, strlen(key));
  }
-#line 918 "/home/phil/c/z/arenaList/arenaList.c"
-static void dumpNode__ArenaTreeNode                                                     //IP Dump a ArenaTreeNode on stderr
- (const ArenaTreeNode node)                                                             // ArenaTreeNode
- {makeLocalCopyOfArenaTreeKey(k, l, node);                                              // Local copy of key
-  say("%d %s\n", l, k);                                                         // Print key number
- }
 #line 49 "/home/phil/c/z/arenaTree/arenaTree.c"
 
 static void free_ArenaTree                                                              // Free a ArenaTree in its entirety
