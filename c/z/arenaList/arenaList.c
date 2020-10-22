@@ -895,7 +895,7 @@ static int printsWithBracketsAs_int__$_string                                   
 
 static void dumpWithBrackets__$                                                 //P Dump a $ printed with brackets to stderr
  (const $ * list)                                                               // $
- {void printer(char * s, size_t l) {say("\n%s\n", s); l=l;}
+ {void printer(char * s, size_t l) {say("\n%s", s); l=l;}
   list ▶ printWithBrackets(printer);
  }
 
@@ -904,13 +904,14 @@ static void dump__$                                                             
  {size_t n = 0;
   void print(const $Node parent, int depth)                                     // Print the children of the specified parent
    {makeLocalCopyOf$Key(k, l, parent);                                          // Local copy of key
-    say("%lu ", ++n);                                                           // Print key number
-    for(int i = 0; i < depth; ++i) say("  ");                                   // Spacer
-    say("%s\n", k);                                                             // Print key
+    printf("%lu ", ++n);                                                        // Print key number
+    for(int i = 0; i < depth; ++i) printf("  ");                                // Spacer
+    say("%s", k);                                                               // Print key
     if (!parent ▷ isEmpty) $fe(child, parent) print(child, depth+1);            // Each child
    }
 
   root ◁ list ▶ root;                                                           // Root
+  say("Dump:");
   print(root, 0);
  }
 
@@ -918,7 +919,7 @@ static void dump__$Node                                                         
  (const $Node * Node)                                                           // $Node
  {node ◁ *Node;
   makeLocalCopyOf$Key(k, l, node);                                              // Local copy of key
-  say("%d %s\n", l, k);                                                         // Print key number
+  say("%d %s", l, k);                                                           // Print key number
  }
 
 static void print__$Node_function                                               // Apply a function to the print of a $Node and the tree below it.
@@ -986,6 +987,62 @@ static int printContains_int__$                                                 
   root ◁ list ▶ root;                                                           // Print from root of $
   root ▷ print(printer);
   return r;
+ }
+
+//D1 Sort                                                                       // Sort a $ by its keys
+
+static int cmp_int__$_$                                                         //P Compare two keys
+ ($Node * First,                                                                // First node
+  $Node   second)                                                               // Second node
+ {first ◁ *First;
+  makeLocalCopyOf$Key(K, L, first);                                             // Key of first node
+  makeLocalCopyOf$Key(k, l, second);                                            // Key of second node
+  if (l < L)                                                                    // First key longer than second key
+   {const int i = strncmp(K, k, l);
+    return i ? i : +1;
+   }
+  if (L < l)                                                                    // First key shorter then second key
+   {const int i = strncmp(K, k, L);
+    return i ? i : -1;
+   }
+  return strncmp(K, k, L);                                                      // Equal length keys
+ }
+
+static void sort__$Node                                                         // Quick sort the children of a node in the $ in situ
+ (const $Node * parent)                                                         // $Node
+ {void sort($Node first, $Node last)                                            // Start and end of range to be sorted which must already be in their correct position
+   {next ◁ first ▷ next;                                                        // Parent key
+    if (next.offset != last.offset)                                             // Range has more than two nodes
+     {for(p ◀ next ▷ next; p.offset != last.offset; p = p ▷ next)
+       {if (p ▷ cmp(next) < 0) next ▷ putPrev(p ▷ cut);                         // Partition around next
+       }
+      sort(first, next);
+      sort(next,  last);
+     }
+   }
+//     {if (first ▷ cmp(last) > 0) last ▷ putNext(first ▷ cut);                   // Swap nodes if out of order
+//     }
+//    else                                                                        // Partition multi node range
+
+  if (parent ▶ countChildren < 2) return;                                       // Already sorted
+
+  for(child ◀ parent ▶ first; child ▷ valid;)                                   // Place largest child last
+   {p ◀ child; child = child ▷ next;
+    if (p ▷ cmp(parent ▶ last) > 0) parent ▶ putLast(p ▷ cut);
+   }
+
+  for(child ◀ parent ▶ first; child ▷ valid;)                                   // Place largest child last
+   {p ◀ child; child = child ▷ next;
+    if (p ▷ cmp(parent ▶ first) < 0) parent ▶ putFirst(p ▷ cut);
+   }
+
+  sort(parent ▶ first, parent ▶ last);
+ }
+
+static void sort__$                                                             // Sort the children of the root of a $ in situ
+ (const $ * list)                                                               // $
+ {node ◁ list ▶ root;                                                           // Root
+  node ▷ sort;
  }
 
 //D1 Edit                                                                       // Edit a $ in situ.
@@ -1532,12 +1589,26 @@ void test16()                                                                   
   x ▷ free;
  }
 
+void test17()                                                                   //Tsort
+ {w ◁ make$FromWords(" 9 8 7 6 5 0 2 3 4 1");
+  w ▷ sort;
+  ✓ w ▷ countChildren == 10;
+  ✓ w ▷ printsWithBracketsAs("(0123456789)");
+  w ▷ free;
+
+  a ◁ make$FromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14");
+  a ▷ sort;
+  ✓ a ▷ countChildren == 15;
+  ✓ a ▷ printsWithBracketsAs("(14a3aa2aaa1aaaa0acc4b13bb12bbaa6bbb11bbbb10c9cc8ccc7cccc5)");
+  a ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
-                           test15, test16, 0};
+                           test15, test16, test17, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
