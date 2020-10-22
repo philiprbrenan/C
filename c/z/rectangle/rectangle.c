@@ -191,24 +191,39 @@ static int point_int_$                                                          
  {return r->t == type$_point;
  }
 
+static double area_double__$                                                    // Area of a $ - return 0 for an invalid $
+ (const  $ * r)                                                                 // $
+ {if (!r ▶ valid) return 0.0;                                                   // Invalid rectangle has no area
+  w ◁ r ▶ width;                                                                // Dimensions
+  h ◁ r ▶ height;
+  return w * h;                                                                 // Area
+ }
+
 //D1 Union and Intersection                                                     // Form $ from the union and  intersection of other $
 
-static  $ unionWith_$_$_$                                                       // Form union of two rectangles: the smallest rectangle that contains both of them
+static  $ unionWith_$_$_$                                                       // Form union of two $: the smallest $ that contains both of them
  (const $ * r,                                                                  // Containing $
   const $   p)                                                                  // Other $
  {return make$(r->x < p.x ? r->x : p.x, r->y < p.y ? r->y : p.y,
                r->X > p.X ? r->X : p.X, r->Y > p.Y ? r->Y : p.Y);
  }
 
-static $ intersection_$_$_$                                                     // Return a valid rectangle from the intersection of the specified rectangles else return an invalid rectangle
+static $ intersection_$_$_$                                                     // Return a valid $ from the intersection of the specified $ else return an invalid $
  (const  $ * r,                                                                 // Containing $
   const  $   p)                                                                 // Other $
  {if (p ▷ containsPoint(r->x, r->y) || p ▷ containsPoint(r->X, r->Y) ||         // Check that one rectangle overlaps the other
       r ▶ containsPoint(p.x, p.y) || r ▶ containsPoint(p.X, p.Y))
-   {return make$(r->x > p.x ? r->x : p.x, r->y > p.y ? r->y : p.y,              // Area of overlap
+   {return make$(r->x > p.x ? r->x : p.x, r->y > p.y ? r->y : p.y,              // Overlap
                  r->X < p.X ? r->X : p.X, r->Y < p.Y ? r->Y : p.Y);
    }
   else return makeInvalid$();                                                   // No intersection
+ }
+
+static double intersectionArea_double__$_$                                      // Area of the intersection between two $
+ (const  $ * r,                                                                 // Containing $
+  const  $   p)                                                                 // Other $
+ {o ◁ r ▶ intersection(p);                                                      // Overlap
+  return o ▷ area;
  }
 
 //D1 Fission                                                                    // Split a $ into two smaller $
@@ -377,8 +392,17 @@ void test5()                                                                    
   ✓  a ▷ containsACorner(b);
  }
 
+void test6()                                                                    //Tarea //TintersectionArea
+ {   a ◁ make$WH (10, 10,  10, 10);
+     b ◁ make$WH (15, 15,  20, 10);
+  ✓  100 == a ▷ area;
+  ✓  200 == b ▷ area;
+  ✓   25 == a ▷ intersectionArea(b);
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
+                           test6, 0};
   run_tests("$", 1, tests);
   return 0;
  }
