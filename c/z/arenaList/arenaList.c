@@ -1020,9 +1020,6 @@ static void sort__$Node                                                         
       sort(next,  last);
      }
    }
-//     {if (first ▷ cmp(last) > 0) last ▷ putNext(first ▷ cut);                   // Swap nodes if out of order
-//     }
-//    else                                                                        // Partition multi node range
 
   if (parent ▶ countChildren < 2) return;                                       // Already sorted
 
@@ -1036,7 +1033,10 @@ static void sort__$Node                                                         
     if (p ▷ cmp(parent ▶ first) < 0) parent ▶ putFirst(p ▷ cut);
    }
 
-  sort(parent ▶ first, parent ▶ last);
+  p ◀ parent ▶ first;
+  for(q ◀ p ▷ next; q ▷ valid; p = q, q = q ▷ next)                             // Sort if out of order
+   {if (q ▷ cmp(p) < 0) {sort(parent ▶ first, parent ▶ last); return;}
+   }
  }
 
 static void sort__$                                                             // Sort the children of the root of a $ in situ
