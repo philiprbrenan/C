@@ -569,44 +569,47 @@ void test3()                                                                    
 
 void test4()                                                                    // Text table using tab stops
  {void draw(CairoTextImage i)
-   {  const typeof(makeColour(0,0,0,1)) frameColour = makeColour(0,0,0,1);
-       const typeof(makeColour(0,0,0,1)) textColour = makeColour(0,0,0,1);
-    const typeof(makeColour(0,0,1,0.3)) pointedColour = makeColour(0,0,1,0.3);
+   {const typeof(1) drawing = 1;                                                                // Drawing if true else doing a trial layout
+    const typeof(717ul) pointerˣ = 717ul; const typeof(717ul) pointerʸ = 717ul;                                         // Current pointer coordinates
+               const typeof(makeColour(0,0,0,1)) frameColour = makeColour(0,0,0,1);                               // Colours
+         const typeof(makeColour(0,0,0,1)) possibilityColour = makeColour(0,0,0,1);
+             const typeof(makeColour(0,0,1,0.3)) pointedColour = makeColour(0,0,1,0.3);
     const typeof(makeColour(0,1,0,1)) textEnteredSoFarColour = makeColour(0,1,0,1);
 
     const typeof(makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz")) list = makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
-    const typeof("qqx") textEnteredSoFar = "qqx";                                                   // Assume the user has entered some text to narrow the possibilities displayed
-    const typeof(2ul) textEnteredSoFarLength = 2ul;                                               // length of text entered so far
-    typeof(717ul) px = 717ul; typeof(717ul) py = 717ul;                                                     // Current pointer coordinates
-    const typeof(2ul) startAtOffset = 2ul;                                                   // Start drawing at this entry
-    typeof(0ul) firstOffset = 0ul;                                                   // First visible entry
-    typeof(0ul) lastOffset = 0ul;                                                   // Last visible entry
-    const typeof(list.proto->findFirst(&list, "qqee")) cursorEntry = list.proto->findFirst(&list, "qqee");                              // Cursor entry
-    const typeof(cursorEntry.offset) cursorOffset = cursorEntry.offset;                                    // Offset of entry containing cursor
-    typeof(0ul) cursorPrevOffset = 0ul;                                                   // Offset of entry preceding entry containing cursor
-    typeof(0ul) cursorNextOffset = 0ul;                                                   // Offset of entry following entry containing cursor
-    typeof(0ul) cursorUpOffset = 0ul;                                                   // Offset of entry above entry containing cursor
-    typeof(0ul) cursorDownOffset = 0ul;                                                   // Offset of entry below entry containing cursor
-    typeof(0ul) pointerOffset = 0ul;                                                   // Offset of entry containing cursor
+    const typeof(list.proto->findFirst(&list, "qqee")) cursorEntry = list.proto->findFirst(&list, "qqee");                          // Cursor entry
+    const typeof(cursorEntry.offset) cursorOffset = cursorEntry.offset;                                // Offset of entry containing cursor
+    const typeof("qqx") textEnteredSoFar = "qqx";                                             // Assume the user has entered some text to narrow the possibilities displayed
+    const typeof(2ul) textEnteredSoFarLength = 2ul;                                               // Length of text entered so far
+    const typeof(i.sansItalic) textEnteredSoFarFont = i.sansItalic;                                      // Font for text entered so far
+    const typeof(i.serif) possibilityFont = i.serif;                                           // Font for remaining possibilities
+    const typeof(100ul) possibilityFontSize = 100ul;                                             // Font size for entries
+    const typeof(2ul) startAtOffset = 2ul;                                               // Start drawing at this entry
+    typeof(0ul) firstOffset = 0ul;                                               // First visible entry
+    typeof(0ul) lastOffset = 0ul;                                               // Last visible entry
+    typeof(0ul) cursorPrevOffset = 0ul;                                               // Offset of entry preceding entry containing cursor
+    typeof(0ul) cursorNextOffset = 0ul;                                               // Offset of entry following entry containing cursor
+    typeof(0ul) cursorUpOffset = 0ul;                                               // Offset of entry above entry containing cursor
+    typeof(0ul) cursorDownOffset = 0ul;                                               // Offset of entry below entry containing cursor
+    typeof(0ul) pointerOffset = 0ul;                                               // Offset of entry containing cursor
+    const typeof(makeRectangleWH(500, 500, 500, 500)) drawTable = makeRectangleWH(500, 500, 500, 500);               // Drawing area
 
-    const typeof(makeRectangleWH(500, 500, 500, 500)) drawTable = makeRectangleWH(500, 500, 500, 500);                            // Drawing area
-    i.proto->clip(&i, drawTable);
+    if (drawing) i.proto->clip(&i, drawTable);                                           // Clip the drawing area to prevent text appearing outside it
 
-    if (1)                                                                      // Show text entered so far
+    if (drawing)                                                                // Show text entered so far
      {i.proto->colour(&i, textEnteredSoFarColour);
-      i.proto->font(&i, i.sansItalic);
+      i.proto->font(&i, textEnteredSoFarFont);
       const typeof(textEnteredSoFarLength) l = textEnteredSoFarLength;
       char t[l+1]; strncpy(t, textEnteredSoFar, l); t[l] = 0;
       i.proto->textFit(&i, drawTable, 0, 0, 0, t);
      }
 
-    i.proto->font(&i, i.serif);                                                      // Font for remaining possibilities
-    i.proto->fontSize(&i, 100);                                                          // Size of text
-    i.proto->colour(&i, textColour);                                                   // Colour of text
-    const typeof(i.fontHeight) H = i.fontHeight;                                                           // Font height - we should use heoght not ascent but height is actually too much
+    i.proto->font(&i, possibilityFont);                                              // Font for remaining possibilities
+    i.proto->fontSize(&i, possibilityFontSize);                                          // Size of text for possibilities
+    i.proto->colour(&i, possibilityColour);                                            // Colour of text showing possibility
 
-    double x = drawTable.X, y = drawTable.y - H;                                // At the end of the previous line
-    typeof(0ul) cursorEntryIndex = 0ul;                                                       // Whether we have drawn the cursor entry yet.
+    double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
+    typeof(0ul) cursorEntryIndex = 0ul;                                                     // Whether we have drawn the cursor entry yet.
     const typeof(list.proto->countChildren(&list)) N = list.proto->countChildren(&list);                                                   // Maximum number of entries
     size_t    entryOffset    [N+1]; memset(entryOffset, 0, sizeof(entryOffset));// Offset for each entry
     Rectangle entryRectangles[N+1];                                             // Rectangle for each entry up to next tab stop
@@ -615,39 +618,39 @@ void test4()                                                                    
      {if (wordⁱ >= startAtOffset)                                               // Words in the scrolled to area
        {makeLocalCopyOfArenaListKey(K, L, word);
         if (L <= textEnteredSoFarLength) continue;                              // Word shorter than prefix entered so far
-        if (strncmp(K, textEnteredSoFar, textEnteredSoFarLength)) continue;    // Word does not match prefix entered so far
+        if (strncmp(K, textEnteredSoFar, textEnteredSoFarLength)) continue;     // Word does not match prefix entered so far
         const typeof(&K[textEnteredSoFarLength]) k = &K[textEnteredSoFarLength];                                         // Skip text entered so far
         const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);                                                 // Width of text
-        if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     // Move to next line if necessary
+        if (x + a > drawTable.X) {x = drawTable.x; y += i.fontHeight;}          // Move to next line if necessary
         const typeof(word.offset) offset = word.offset;                                                   // Offset of current entry
 
-        const typeof(makeRectangleWH(x, y, a, H)) r = makeRectangleWH(x, y, a, H);                                        // Rectangle in which to draw the text
+        const typeof(makeRectangleWH(x, y, a, i.fontHeight)) r = makeRectangleWH(x, y, a, i.fontHeight);                             // Rectangle in which to draw the text
 
         if (drawTable.proto->contains(&drawTable, r))                                            // Draw visible elements
          {if (offset == cursorOffset)                                           // Reached entry under cursor
            {i.proto->rectangle(&i, r, pointedColour);                                    // Background colour of entry containing the cursor
             cursorEntryIndex = wordⁱ;                                           // Show that the cursor entry has now been drawn
            }
-          if (r.proto->containsPoint(&r, px, py)) pointerOffset = offset;                // Offset of item containing pointer
+          if (r.proto->containsPoint(&r, pointerˣ, pointerʸ)) pointerOffset = offset;    // Offset of item containing pointer
           i.proto->text(&i, x, y, k);                                                    // Draw the remaining text of the entry
           if (!firstOffset) firstOffset = offset;                               // First offset visible in drawing area
           lastOffset = offset;                                                  // Last offset visible in drawing area
          }
 
-        const typeof(H * ceil(a / H)) w = H * ceil(a / H);                                                    // Width of current entry including move to next tab stop
+        const typeof(i.fontHeight * ceil(a / i.fontHeight)) w = i.fontHeight * ceil(a / i.fontHeight);                              // Width of current entry including move to next tab stop
         if      (!cursorEntryIndex)              cursorPrevOffset = offset;     // Entry just before cursor
         else if  (cursorEntryIndex + 1 == wordⁱ) cursorNextOffset = offset;     // Entry just after cursor
-        const typeof(makeRectangleWH(x, y, w, H)) R = makeRectangleWH(x, y, w, H);
+        const typeof(makeRectangleWH(x, y, w, i.fontHeight)) R = makeRectangleWH(x, y, w, i.fontHeight);                             // Rectangle containing entry
         memcpy(&entryRectangles[wordⁱ], &R, sizeof(R));                         // Rectangle containing this entry up to the next tab stop
-        entryOffset    [wordⁱ] = offset;                                        // Offset for this entry
+        entryOffset            [wordⁱ] = offset;                                // Offset for this entry
         x += w;                                                                 // Move to next entry position
        }
      }
 
     typeof(0.0) bestAreaUp = 0.0; typeof(0.0) bestAreaDown = 0.0;                                       // Locate the rectangles that match the best for up and down arrows
     typeof(entryRectangles[cursorEntryIndex]) cer = entryRectangles[cursorEntryIndex];
-    const typeof(cer.proto->translate(&cer, 0, +H)) cerd = cer.proto->translate(&cer, 0, +H);
-    const typeof(cer.proto->translate(&cer, 0, -H)) ceru = cer.proto->translate(&cer, 0, -H);
+    const typeof(cer.proto->translate(&cer, 0, +i.fontHeight)) cerd = cer.proto->translate(&cer, 0, +i.fontHeight);
+    const typeof(cer.proto->translate(&cer, 0, -i.fontHeight)) ceru = cer.proto->translate(&cer, 0, -i.fontHeight);
 
     for(size_t i = 1; i <= N; ++i)                                              // Each entry
      {const typeof(entryOffset[i]) o = entryOffset[i];                                                       // Offset of this entry
