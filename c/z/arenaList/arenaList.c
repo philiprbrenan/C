@@ -25,7 +25,7 @@
 
 exports structs $ $Node $Arena $Description
 exports arena    pointer__$_size content__$Node key_pointer__$Node length_size__$Node allocate_$Node__$_size used_size__$ make$ make$WithWidth node_$Node__$_string_size offset__$_size equals_int__$Node_$Node equalsString_int__$Node_string width_size__$ width_size__$Node
-exports nodeData key_pointer__$Node data_pointer__$Node length_size__$Node dumpNode__$Node
+exports nodeData key_pointer__$Node data_pointer__$Node length_size__$Node
 
 typedef struct $                                                                // $
  {const struct ProtoTypes_$ *proto;                                             // Methods associated with an $
@@ -914,7 +914,7 @@ static void dump__$                                                             
   print(root, 0);
  }
 
-static void dumpNode__$Node                                                     //P Dump a $Node on stderr
+static void dump__$Node                                                         //P Dump a $Node on stderr
  (const $Node * Node)                                                           // $Node
  {node ◁ *Node;
   makeLocalCopyOf$Key(k, l, node);                                              // Local copy of key
