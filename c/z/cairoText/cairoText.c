@@ -575,17 +575,18 @@ void test4()                                                                    
 
     list ◁ makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
     textEnteredSoFar ◁ "qqx";                                                   // Assume the user has entered some text to narrow the possibilities displayed
-    textEnteredSoFarLength ◁ 2ul;                                                 // length of text entered so far
+    textEnteredSoFarLength ◁ 2ul;                                               // length of text entered so far
     px ◀ 717ul; py ◀ 717ul;                                                     // Current pointer coordinates
-    startAtEntry      ◁ 2ul;                                                    // Start drawing at this entry
-    firstEntry        ◀ 0ul;                                                    // First visible entry
-    lastEntry         ◀ 0ul;                                                    // Last visible entry
-    clickedEntry      ◀ 0ul;                                                    // Entry containing pointer coordinates
-    clickedEntryIndex ◀ 0ul;                                                    // Index of entry containing pointer
-    clickedPrevEntry  ◀ 0ul;                                                    // Offset of entry preceding entry containing pointer
-    clickedNextEntry  ◀ 0ul;                                                    // Offset of entry following entry containing pointer
-    clickedUpEntry    ◀ 0ul;                                                    // Offset of entry above entry containing pointer
-    clickedDownEntry  ◀ 0ul;                                                    // Offset of entry below entry containing pointer
+    startAtOffset      ◁ 2ul;                                                   // Start drawing at this entry
+    firstOffset        ◀ 0ul;                                                   // First visible entry
+    lastOffset         ◀ 0ul;                                                   // Last visible entry
+    cursorEntry        ◁ list ▷ findFirst("qqee");                              // Cursor entry
+    cursorOffset       ◁ cursorEntry.offset;                                    // Offset of entry containing cursor
+    cursorPrevOffset   ◀ 0ul;                                                   // Offset of entry preceding entry containing cursor
+    cursorNextOffset   ◀ 0ul;                                                   // Offset of entry following entry containing cursor
+    cursorUpOffset     ◀ 0ul;                                                   // Offset of entry above entry containing cursor
+    cursorDownOffset   ◀ 0ul;                                                   // Offset of entry below entry containing cursor
+    pointerOffset      ◀ 0ul;                                                   // Offset of entry containing cursor
 
     drawTable ◁ makeRectangleWH(500, 500, 500, 500);                            // Drawing area
     i ▷ clip(drawTable);
@@ -598,59 +599,77 @@ void test4()                                                                    
       i ▷ textFit(drawTable, 0, 0, 0, t);
      }
 
-    i ▷ font    (i.serif);                                                      // Font
+    i ▷ font    (i.serif);                                                      // Font for remaining possibilities
     i ▷ fontSize(100);                                                          // Size of text
     i ▷ colour  (textColour);                                                   // Colour of text
     H ◁ i.fontHeight;                                                           // Font height - we should use heoght not ascent but height is actually too much
 
     double x = drawTable.X, y = drawTable.y - H;                                // At the end of the previous line
+    cursorEntryIndex ◀ 0ul;                                                       // Whether we have drawn the cursor entry yet.
+    N ◁ list ▷ countChildren;                                                   // Maximum number of entries
+    size_t    entryOffset    [N+1]; memset(entryOffset, 0, sizeof(entryOffset));// Offset for each entry
+    Rectangle entryRectangles[N+1];                                             // Rectangle for each entry up to next tab stop
 
     ArenaListfec(word, list)                                                    // Each word
-     {if (wordⁱ >= startAtEntry)                                                // Words in the scrolled to area
+     {if (wordⁱ >= startAtOffset)                                               // Words in the scrolled to area
        {makeLocalCopyOfArenaListKey(K, L, word);
         if (L <= textEnteredSoFarLength) continue;                              // Word shorter than prefix entered so far
-        k ◁ &K[textEnteredSoFarLength];                                         // Allow for text entered so far
-        offset ◁ word.offset;                                                   // Offset of current entry
+        if (strncmp(K, textEnteredSoFar, textEnteredSoFarLength)) continue;    // Word does not match prefix entered so far
+        k ◁ &K[textEnteredSoFarLength];                                         // Skip text entered so far
         a ◁ i ▷ textAdvance(k);                                                 // Width of text
         if (x + a > drawTable.X) {x = drawTable.x; y += H;}                     // Move to next line if necessary
+        offset ◁ word.offset;                                                   // Offset of current entry
 
         r ◁ makeRectangleWH(x, y, a, H);                                        // Rectangle in which to draw the text
 
-        if (drawTable ▷ contains(r))
-         {if (r ▷ containsPoint(px, py))
-           {clickedEntry      = offset;
-            clickedEntryIndex = wordⁱ;
-            i ▷ rectangle(r, pointedColour);
+        if (drawTable ▷ contains(r))                                            // Draw visible elements
+         {if (offset == cursorOffset)                                           // Reached entry under cursor
+           {i ▷ rectangle(r, pointedColour);                                    // Background colour of entry containing the cursor
+            cursorEntryIndex = wordⁱ;                                           // Show that the cursor entry has now been drawn
            }
-
-          if (!clickedEntry)                       clickedPrevEntry = offset;
-          else if (wordⁱ == clickedEntryIndex + 1) clickedNextEntry = offset;
-
-          i ▷ text(x, y, k);
-          if (!firstEntry) firstEntry = offset;
-          lastEntry = offset;
+          if (r ▷ containsPoint(px, py)) pointerOffset = offset;                // Offset of item containing pointer
+          i ▷ text(x, y, k);                                                    // Draw the remaining text of the entry
+          if (!firstOffset) firstOffset = offset;                               // First offset visible in drawing area
+          lastOffset = offset;                                                  // Last offset visible in drawing area
          }
 
-        w ◁ H * ceil(a / H);                                                    // Width of entry including move to next tab stop
-        if (1)                                                                  // Entries above and below
-         {r ◁ makeRectangleWH(x, y, w, H);                                      // Rectangle in which to draw the entry
-          if (r ▷ containsPoint(px, py - H)) clickedUpEntry   = offset;
-          if (r ▷ containsPoint(px, py + H)) clickedDownEntry = offset;
-         }
-        x += w;                                                                 // Move to next entry
+        w ◁ H * ceil(a / H);                                                    // Width of current entry including move to next tab stop
+        if      (!cursorEntryIndex)              cursorPrevOffset = offset;     // Entry just before cursor
+        else if  (cursorEntryIndex + 1 == wordⁱ) cursorNextOffset = offset;     // Entry just after cursor
+        R ◁ makeRectangleWH(x, y, w, H);
+        memcpy(&entryRectangles[wordⁱ], &R, sizeof(R));                         // Rectangle containing this entry up to the next tab stop
+        entryOffset    [wordⁱ] = offset;                                        // Offset for this entry
+        x += w;                                                                 // Move to next entry position
+       }
+     }
+
+    bestAreaUp ◀ 0.0; bestAreaDown ◀ 0.0;                                       // Locate the rectangles that match the best for up and down arrows
+    cer  ◀ entryRectangles[cursorEntryIndex];
+    cerd ◁ cer ▷ translate(0, +H);
+    ceru ◁ cer ▷ translate(0, -H);
+
+    for(size_t i = 1; i <= N; ++i)                                              // Each entry
+     {o ◁ entryOffset[i];                                                       // Offset of this entry
+      if (o)
+       {    r ◁ entryRectangles[i];                                             // Rectangle for entry
+        d ◁ r ▷ intersectionArea(cerd);                                         // Area of overlap with down rectangle
+        u ◁ r ▷ intersectionArea(ceru);                                         // Area of overlap with up rectangle
+        if (d > bestAreaDown) {bestAreaDown = d; cursorDownOffset = o;}         // Better down
+        if (u > bestAreaUp)   {bestAreaUp   = u; cursorUpOffset   = o;}         // Better up
        }
      }
 
     i ▷ rectangleLine(drawTable, frameColour);                                  // Frame the drawn area
 
-    if (0)                                                                      // Check results
-     {f ◁ list ▷ offset(firstEntry);       ✓ f ▷ equalsString("qqbbbb");
-      l ◁ list ▷ offset(lastEntry);        ✓ l ▷ equalsString("qqhh");
-      c ◁ list ▷ offset(clickedEntry);     ✓ c ▷ equalsString("qqee");
-      p ◁ list ▷ offset(clickedPrevEntry); ✓ p ▷ equalsString("qqdd");
-      n ◁ list ▷ offset(clickedNextEntry); ✓ n ▷ equalsString("qqff");
-      d ◁ list ▷ offset(clickedDownEntry); ✓ d ▷ equalsString("qqgggg");
-      u ◁ list ▷ offset(clickedUpEntry);   ✓ u ▷ equalsString("qqbbbb");
+    if (1)                                                                      // Check results
+     {f ◁ list ▷ offset(firstOffset);      ✓ f ▷ equalsString("qqbbbb");
+      l ◁ list ▷ offset(lastOffset);       ✓ l ▷ equalsString("qqhh");
+      c ◁ list ▷ offset(cursorOffset);     ✓ c ▷ equalsString("qqee");
+      p ◁ list ▷ offset(cursorPrevOffset); ✓ p ▷ equalsString("qqdd");
+      n ◁ list ▷ offset(cursorNextOffset); ✓ n ▷ equalsString("qqff");
+      d ◁ list ▷ offset(cursorDownOffset); ✓ d ▷ equalsString("qqgggg");
+      u ◁ list ▷ offset(cursorUpOffset);   ✓ u ▷ equalsString("qqbbbb");
+      P ◁ list ▷ offset(pointerOffset);    ✓ P ▷ equalsString("qqee");
      }
    }
 
