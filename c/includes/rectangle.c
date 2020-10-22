@@ -21,8 +21,8 @@ typedef enum typeRectangle                                                      
 
 typedef struct Rectangle                                                                // Rectangle
  {const struct ProtoTypes_Rectangle *proto;                                             // Prototypes for methods
-  double x, y, X, Y;                                                            // Coordinates of two opposing corners with lower x and y first
-  typeRectangle  t;                                                                     //Type of rectangle
+  const double x, y, X, Y;                                                      // Coordinates of two opposing corners with lower x and y first
+  const typeRectangle  t;                                                               //Type of rectangle
  } Rectangle;
 
 typedef struct RectanglePair                                                            // A pair of smaller rectangles resulting from fission of a larger rectangle
@@ -192,24 +192,39 @@ static int point_int_Rectangle                                                  
  {return r->t == typeRectangle_point;
  }
 
+static double area_double__Rectangle                                                    // Area of a Rectangle - return 0 for an invalid Rectangle
+ (const  Rectangle * r)                                                                 // Rectangle
+ {if (!r->proto->valid(r)) return 0.0;                                                   // Invalid rectangle has no area
+  const typeof(r->proto->width(r)) w = r->proto->width(r);                                                                // Dimensions
+  const typeof(r->proto->height(r)) h = r->proto->height(r);
+  return w * h;                                                                 // Area
+ }
+
 //D1 Union and Intersection                                                     // Form Rectangle from the union and  intersection of other Rectangle
 
-static  Rectangle unionWith_Rectangle_Rectangle_Rectangle                                                       // Form union of two rectangles: the smallest rectangle that contains both of them
+static  Rectangle unionWith_Rectangle_Rectangle_Rectangle                                                       // Form union of two Rectangle: the smallest Rectangle that contains both of them
  (const Rectangle * r,                                                                  // Containing Rectangle
   const Rectangle   p)                                                                  // Other Rectangle
  {return makeRectangle(r->x < p.x ? r->x : p.x, r->y < p.y ? r->y : p.y,
                r->X > p.X ? r->X : p.X, r->Y > p.Y ? r->Y : p.Y);
  }
 
-static Rectangle intersection_Rectangle_Rectangle_Rectangle                                                     // Return a valid rectangle from the intersection of the specified rectangles else return an invalid rectangle
+static Rectangle intersection_Rectangle_Rectangle_Rectangle                                                     // Return a valid Rectangle from the intersection of the specified Rectangle else return an invalid Rectangle
  (const  Rectangle * r,                                                                 // Containing Rectangle
   const  Rectangle   p)                                                                 // Other Rectangle
  {if (p.proto->containsPoint(&p, r->x, r->y) || p.proto->containsPoint(&p, r->X, r->Y) ||         // Check that one rectangle overlaps the other
       r->proto->containsPoint(r, p.x, p.y) || r->proto->containsPoint(r, p.X, p.Y))
-   {return makeRectangle(r->x > p.x ? r->x : p.x, r->y > p.y ? r->y : p.y,              // Area of overlap
+   {return makeRectangle(r->x > p.x ? r->x : p.x, r->y > p.y ? r->y : p.y,              // Overlap
                  r->X < p.X ? r->X : p.X, r->Y < p.Y ? r->Y : p.Y);
    }
   else return makeInvalidRectangle();                                                   // No intersection
+ }
+
+static double intersectionArea_double__Rectangle_Rectangle                                      // Area of the intersection between two Rectangle
+ (const  Rectangle * r,                                                                 // Containing Rectangle
+  const  Rectangle   p)                                                                 // Other Rectangle
+ {const typeof(r->proto->intersection(r, p)) o = r->proto->intersection(r, p);                                                      // Overlap
+  return o.proto->area(&o);
  }
 
 //D1 Fission                                                                    // Split a Rectangle into two smaller Rectangle
@@ -378,8 +393,17 @@ void test5()                                                                    
   assert(  a.proto->containsACorner(&a, b));
  }
 
+void test6()                                                                    //Tarea //TintersectionArea
+ {   const typeof(makeRectangleWH (10, 10,  10, 10)) a = makeRectangleWH (10, 10,  10, 10);
+     const typeof(makeRectangleWH (15, 15,  20, 10)) b = makeRectangleWH (15, 15,  20, 10);
+  assert(  100 == a.proto->area(&a));
+  assert(  200 == b.proto->area(&b));
+  assert(   25 == a.proto->intersectionArea(&a, b));
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4, test5,
+                           test6, 0};
   run_tests("Rectangle", 1, tests);
   return 0;
  }
