@@ -548,7 +548,7 @@ void test3()                                                                    
     i ▷ clip(drawTable);
 
     size_t x = drawTable.x, y = drawTable.y;
-    ArenaListFe(col, table)                                                     // Each column
+    ArenaListfe(col, table)                                                     // Each column
      {max ◀ 0ul;
       y = drawTable.y;
       ArenaListfe(row, col)                                                     // Each row
