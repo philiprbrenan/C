@@ -33,10 +33,10 @@ typedef struct $Pale                                                            
 //D1 Colours                                                                    // Make a colour
 
 static $ make$                                                                  // Make a $
-  (const double r,                                                              // Red
-   const double g,                                                              // Green
-   const double b,                                                              // Blue
-   const double a)                                                              // Alpha
+ (const double r,                                                               // Red
+  const double g,                                                               // Green
+  const double b,                                                               // Blue
+  const double a)                                                               // Alpha
  {return new $(r: r, g: g, b: b, a: a);
  }
 
@@ -65,6 +65,10 @@ void test0()                                                                    
  {c ◁ make$(0, 1, 0, 1);
 
   ✓  c.r == 0;
+
+  C ◁ make$(1, 0, 0, 1);
+  c ≞ C;
+  ✓  c.r == 1;
  }
 
 int main(void)                                                                  // Run tests
