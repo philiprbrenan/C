@@ -113,9 +113,15 @@ static void saveAsPng_CairoText_string
  (CairoTextImage     *       i,
   char       *       imageFile,
   const char * const digest);
+static void draw__CairoTextCompactList
+ (CairoTextCompactList * compactList,
+  int            drawing);
 struct ProtoTypes_CairoTextCompactList {
+  void  (*draw)(                                                                // Draw a compact list
+    CairoTextCompactList * compactList,                                         // Compact list
+    int drawing);                                                               // Drawing if true - else trial layout
  } const ProtoTypes_CairoTextCompactList =
-{};
+{draw__CairoTextCompactList};
 CairoTextCompactList newCairoTextCompactList(CairoTextCompactList allocator) {return allocator;}
 
 struct ProtoTypes_CairoTextFont {
