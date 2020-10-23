@@ -1013,7 +1013,7 @@ static void sort__$Node                                                         
  {void sort($Node first, $Node last)                                            // Start and end of range to be sorted which must already be in their correct position
    {next ◁ first ▷ next;                                                        // Parent key
     if (next.offset != last.offset)                                             // Range has more than two nodes
-     {for(p ◀ next ▷ next; p.offset != last.offset; p = p ▷ next)
+     {for(p ◀ next ▷ next; p.offset != last.offset; p = p ▷ next)               // Partition interior
        {if (p ▷ cmp(next) < 0) next ▷ putPrev(p ▷ cut);                         // Partition around next
        }
       sort(first, next);
@@ -1021,17 +1021,22 @@ static void sort__$Node                                                         
      }
    }
 
-  if (parent ▶ countChildren < 2) return;                                       // Already sorted
+  N ◀ 0ul;                                                                      // Check for special cases
+  for(c ◀ parent ▶ first; c ▷ valid; c = c ▷ next) {++N; if (N > 3) break;}     // Count first four children
+
+  if (N < 2) return;                                                            // Already sorted if no children or just one child
 
   for(child ◀ parent ▶ first; child ▷ valid;)                                   // Place largest child last
    {p ◀ child; child = child ▷ next;
     if (p ▷ cmp(parent ▶ last) > 0) parent ▶ putLast(p ▷ cut);
    }
 
-  for(child ◀ parent ▶ first; child ▷ valid;)                                   // Place largest child last
+  for(child ◀ parent ▶ first; child ▷ valid;)                                   // Place smallest child first
    {p ◀ child; child = child ▷ next;
     if (p ▷ cmp(parent ▶ first) < 0) parent ▶ putFirst(p ▷ cut);
    }
+
+  if (N < 4) return;                                                            // Already sorted if two or three children
 
   p ◀ parent ▶ first;
   for(q ◀ p ▷ next; q ▷ valid; p = q, q = q ▷ next)                             // Sort if out of order
@@ -1590,7 +1595,43 @@ void test16()                                                                   
  }
 
 void test17()                                                                   //Tsort
- {w ◁ make$FromWords(" 9 8 7 6 5 0 2 3 4 1");
+ {z ◁ make$();
+  z ▷ sort;
+  ✓ z ▷ countChildren == 0;
+  ✓ z ▷ printsWithBracketsAs("()");
+  z ▷ free;
+
+  o ◁ make$FromWords("1");
+  o ▷ sort;
+  ✓ o ▷ countChildren == 1;
+  ✓ o ▷ printsWithBracketsAs("(1)");
+  o ▷ free;
+
+  t ◁ make$FromWords("1 2");
+  t ▷ sort;
+  ✓ t ▷ countChildren == 2;
+  ✓ t ▷ printsWithBracketsAs("(12)");
+  t ▷ free;
+
+  r ◁ make$FromWords("3 1 2");
+  r ▷ sort;
+  ✓ r ▷ countChildren == 3;
+  ✓ r ▷ printsWithBracketsAs("(123)");
+  r ▷ free;
+
+  f ◁ make$FromWords("1 2 3 4");
+  f ▷ sort;
+  ✓ f ▷ countChildren == 4;
+  ✓ f ▷ printsWithBracketsAs("(1234)");
+  f ▷ free;
+
+  F ◁ make$FromWords("4 3 2 1");
+  F ▷ sort;
+  ✓ F ▷ countChildren == 4;
+  ✓ F ▷ printsWithBracketsAs("(1234)");
+  F ▷ free;
+
+  w ◁ make$FromWords(" 9 8 7 6 5 0 2 3 4 1");
   w ▷ sort;
   ✓ w ▷ countChildren == 10;
   ✓ w ▷ printsWithBracketsAs("(0123456789)");
