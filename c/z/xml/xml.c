@@ -1036,7 +1036,7 @@ void test6()                                                                    
   x ▷ free; s ▷ free;
  }
 
-void test7()                                                                    //Tlength //TinsertChar //TdeleteChar //TreplaceChar
+void test7()                                                                    //Tlength //TinsertChar //TdeleteChar //TreplaceChar //TswapChars
  {xml  ◁ "<a><abcd>1234</abcd></a>";
      x ◁ parse$FromString(xml, 0);
   ✓ !x ▷ errors;
