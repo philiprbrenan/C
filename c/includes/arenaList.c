@@ -1066,7 +1066,7 @@ static void sort__ArenaListNode                                                 
  {void sort(ArenaListNode first, ArenaListNode last)                                            // Start and end of range to be sorted which must already be in their correct position
    {const typeof(first.proto->next(&first)) next = first.proto->next(&first);                                                        // Parent key
     if (next.offset != last.offset)                                             // Range has more than two nodes
-     {for(typeof(next.proto->next(&next)) p = next.proto->next(&next); p.offset != last.offset; p = p.proto->next(&p))
+     {for(typeof(next.proto->next(&next)) p = next.proto->next(&next); p.offset != last.offset; p = p.proto->next(&p))               // Partition interior
        {if (p.proto->cmp(&p, next) < 0) next.proto->putPrev(&next, p.proto->cut(&p));                         // Partition around next
        }
       sort(first, next);
@@ -1074,17 +1074,22 @@ static void sort__ArenaListNode                                                 
      }
    }
 
-  if (parent->proto->countChildren(parent) < 2) return;                                       // Already sorted
+  typeof(0ul) N = 0ul;                                                                      // Check for special cases
+  for(typeof(parent->proto->first(parent)) c = parent->proto->first(parent); c.proto->valid(&c); c = c.proto->next(&c)) {++N; if (N > 3) break;}     // Count first four children
+
+  if (N < 2) return;                                                            // Already sorted if no children or just one child
 
   for(typeof(parent->proto->first(parent)) child = parent->proto->first(parent); child.proto->valid(&child);)                                   // Place largest child last
    {typeof(child) p = child; child = child.proto->next(&child);
     if (p.proto->cmp(&p, parent->proto->last(parent)) > 0) parent->proto->putLast(parent, p.proto->cut(&p));
    }
 
-  for(typeof(parent->proto->first(parent)) child = parent->proto->first(parent); child.proto->valid(&child);)                                   // Place largest child last
+  for(typeof(parent->proto->first(parent)) child = parent->proto->first(parent); child.proto->valid(&child);)                                   // Place smallest child first
    {typeof(child) p = child; child = child.proto->next(&child);
     if (p.proto->cmp(&p, parent->proto->first(parent)) < 0) parent->proto->putFirst(parent, p.proto->cut(&p));
    }
+
+  if (N < 4) return;                                                            // Already sorted if two or three children
 
   typeof(parent->proto->first(parent)) p = parent->proto->first(parent);
   for(typeof(p.proto->next(&p)) q = p.proto->next(&p); q.proto->valid(&q); p = q, q = q.proto->next(&q))                             // Sort if out of order
@@ -1643,7 +1648,43 @@ void test16()                                                                   
  }
 
 void test17()                                                                   //Tsort
- {const typeof(makeArenaListFromWords(" 9 8 7 6 5 0 2 3 4 1")) w = makeArenaListFromWords(" 9 8 7 6 5 0 2 3 4 1");
+ {const typeof(makeArenaList()) z = makeArenaList();
+  z.proto->sort(&z);
+  assert( z.proto->countChildren(&z) == 0);
+  assert( z.proto->printsWithBracketsAs(&z, "()"));
+  z.proto->free(&z);
+
+  const typeof(makeArenaListFromWords("1")) o = makeArenaListFromWords("1");
+  o.proto->sort(&o);
+  assert( o.proto->countChildren(&o) == 1);
+  assert( o.proto->printsWithBracketsAs(&o, "(1)"));
+  o.proto->free(&o);
+
+  const typeof(makeArenaListFromWords("1 2")) t = makeArenaListFromWords("1 2");
+  t.proto->sort(&t);
+  assert( t.proto->countChildren(&t) == 2);
+  assert( t.proto->printsWithBracketsAs(&t, "(12)"));
+  t.proto->free(&t);
+
+  const typeof(makeArenaListFromWords("3 1 2")) r = makeArenaListFromWords("3 1 2");
+  r.proto->sort(&r);
+  assert( r.proto->countChildren(&r) == 3);
+  assert( r.proto->printsWithBracketsAs(&r, "(123)"));
+  r.proto->free(&r);
+
+  const typeof(makeArenaListFromWords("1 2 3 4")) f = makeArenaListFromWords("1 2 3 4");
+  f.proto->sort(&f);
+  assert( f.proto->countChildren(&f) == 4);
+  assert( f.proto->printsWithBracketsAs(&f, "(1234)"));
+  f.proto->free(&f);
+
+  const typeof(makeArenaListFromWords("4 3 2 1")) F = makeArenaListFromWords("4 3 2 1");
+  F.proto->sort(&F);
+  assert( F.proto->countChildren(&F) == 4);
+  assert( F.proto->printsWithBracketsAs(&F, "(1234)"));
+  F.proto->free(&F);
+
+  const typeof(makeArenaListFromWords(" 9 8 7 6 5 0 2 3 4 1")) w = makeArenaListFromWords(" 9 8 7 6 5 0 2 3 4 1");
   w.proto->sort(&w);
   assert( w.proto->countChildren(&w) == 10);
   assert( w.proto->printsWithBracketsAs(&w, "(0123456789)"));
