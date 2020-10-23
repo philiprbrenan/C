@@ -614,7 +614,7 @@ void test4()                                                                    
     size_t    entryOffset    [N+1]; memset(entryOffset, 0, sizeof(entryOffset));// Offset for each entry
     Rectangle entryRectangles[N+1];                                             // Rectangle for each entry up to next tab stop
 
-    ArenaListfec(word, list)                                                    // Each word
+    ArenaListfeⁱ(word, list)                                                    // Each word
      {if (wordⁱ >= startAtOffset)                                               // Words in the scrolled to area
        {makeLocalCopyOfArenaListKey(K, L, word);
         if (L <= textEnteredSoFarLength) continue;                              // Word shorter than prefix entered so far
