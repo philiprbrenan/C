@@ -69,11 +69,11 @@ typedef struct $Description                                                     
  } $Description;
 
 #include <$$_prototypes.h>                                                      // $ prototypes now that the relevant structures have been declared
-#define $Fe( child, list)   for(child ◀ list   ▷ first; child ▷ valid; child = child ▷ next) // Each child under the root node of a $ from first to last
-#define $Fer(child, list)   for(child ◀ list   ▷  last; child ▷ valid; child = child ▷ prev) // Each child under the root node of a $ from last to first
 #define $fe( child, parent) for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next) // Each child under a parent from first to last
-#define $fec(child, parent) size_t child##ⁱ = 1; for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next, ++child##ⁱ) // Each child under a parent from first to last with a counter
+//#define $Fe( child, list)   for(child ◀ list   ▷ first; child ▷ valid; child = child ▷ next) // Each child under the root node of a $ from first to last
 #define $fer(child, parent) for(child ◀ parent ▷ last ; child ▷ valid; child = child ▷ prev) // Each child under a parent from last to first
+//#define $Fer(child, list)   for(child ◀ list   ▷  last; child ▷ valid; child = child ▷ prev) // Each child under the root node of a $ from last to first
+#define $fec(child, parent) size_t child##ⁱ = 1; for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next, ++child##ⁱ) // Each child under a parent from first to last with a counter
 #define makeLocalCopyOfArenaListKey(string,stringLength,node) stringLength ◁ content__ArenaListNode(&node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(&node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 //D1 Constructors                                                               // Construct a new $.
@@ -142,7 +142,7 @@ static $ make$FromLinesOfWords                                                  
  (const char * str)                                                             // String of lines of words separated by spaces;
  {list ◁ make$FromLines(str);
 
-  $Fe(line, list)
+  $fe(line, list)
    {makeLocalCopyOf$Key(s, l, line);
 
     const char * p = s, *q = p;                                                 // Parse the string into new lines
@@ -998,49 +998,40 @@ static int cmp_int__$_$                                                         
   makeLocalCopyOf$Key(K, L, first);                                             // Key of first node
   makeLocalCopyOf$Key(k, l, second);                                            // Key of second node
   if (l < L)                                                                    // First key longer than second key
-   {const int i = strncmp(K, k, l);
+   {i ◁ strncmp(K, k, l);
     return i ? i : +1;
    }
   if (L < l)                                                                    // First key shorter then second key
-   {const int i = strncmp(K, k, L);
+   {i ◁ strncmp(K, k, L);
     return i ? i : -1;
    }
   return strncmp(K, k, L);                                                      // Equal length keys
  }
 
 static void sort__$Node                                                         // Quick sort the children of a node in the $ in situ
- (const $Node * parent)                                                         // $Node
- {void sort($Node first, $Node last)                                            // Start and end of range to be sorted which must already be in their correct position
+ (const           $Node * Parent)                                               // Parent node
+ {void sort(      $Node   first, $Node last)                                    // Start and end of range to be sorted which must already be in their correct position
    {next ◁ first ▷ next;                                                        // Parent key
     if (next.offset != last.offset)                                             // Range has more than two nodes
      {for(p ◀ next ▷ next; p.offset != last.offset; p = p ▷ next)               // Partition interior
-       {if (p ▷ cmp(next) < 0) next ▷ putPrev(p ▷ cut);                         // Partition around next
+       {if (p ▷ cmp (next) < 0) next ▷ putPrev(p ▷ cut);                         // Partition around next
        }
-      sort(first, next);
-      sort(next,  last);
+      sort(first, next); sort(next,  last);                                     // Sort each partition
      }
    }
 
-  N ◀ 0ul;                                                                      // Check for special cases
-  for(c ◀ parent ▶ first; c ▷ valid; c = c ▷ next) {++N; if (N > 3) break;}     // Count first four children
+  N ◀ 0; p ◁ *Parent; $fe(c, p) if (++N > 3) break;                             // Check for special cases
 
-  if (N < 2) return;                                                            // Already sorted if no children or just one child
+  if (N > 1)                                                                    // Already sorted if no children or just one child
+   {l ◀ p ▷ lowest;  if (!l ▷ isFirst) p ▷ putFirst(l ▷ cut);                   // Place child with  lowest key first
+    h ◁ p ▷ highest; if (!h ▷ isLast)  p ▷ putLast (h ▷ cut);                   // Place child with highest key last
 
-  for(child ◀ parent ▶ first; child ▷ valid;)                                   // Place largest child last
-   {p ◀ child; child = child ▷ next;
-    if (p ▷ cmp(parent ▶ last) > 0) parent ▶ putLast(p ▷ cut);
-   }
-
-  for(child ◀ parent ▶ first; child ▷ valid;)                                   // Place smallest child first
-   {p ◀ child; child = child ▷ next;
-    if (p ▷ cmp(parent ▶ first) < 0) parent ▶ putFirst(p ▷ cut);
-   }
-
-  if (N < 4) return;                                                            // Already sorted if two or three children
-
-  p ◀ parent ▶ first;
-  for(q ◀ p ▷ next; q ▷ valid; p = q, q = q ▷ next)                             // Sort if out of order
-   {if (q ▷ cmp(p) < 0) {sort(parent ▶ first, parent ▶ last); return;}
+    if (N > 3)                                                                  // Already sorted if two or three children
+     {p ◀ l;
+      for(q ◀ p ▷ next; q ▷ valid; p = q, q = q ▷ next)                         // Sort if still out of order
+       {if (q ▷ cmp(p) < 0) {sort(l, h); return;}                               // Lowest and highest are in position so we can use them to to delimit the interior range to be sorted
+       }
+     }
    }
  }
 
@@ -1048,6 +1039,34 @@ static void sort__$                                                             
  (const $ * list)                                                               // $
  {node ◁ list ▶ root;                                                           // Root
   node ▷ sort;
+ }
+
+static $Node lowest_$Node__$Node                                                // Find an example of the lowest key under a parent node
+ (const $Node * Parent)                                                         // $Node
+ {parent ◁ *Parent;
+  l ◀ parent ▷ first; $fe(c, parent) if (c ▷ cmp(l) < 0) l = c;
+  return l;
+ }
+
+static $Node highest_$Node__$Node                                               // Find an example of the highest key under a parent node
+ (const $Node * Parent)                                                         // $Node
+ {parent ◁ *Parent;
+  h ◀ parent ▷ first; $fe(c, parent) if (c ▷ cmp(h) > 0) h = c;
+  return h;
+ }
+
+static $Node lowest_$Node__$                                                    // Find an example of the lowest key under the root node of a $
+ (const  $ * Parent)                                                            // $Node
+ {parent ◁ * Parent;
+  root ◁ parent ▷ root;
+  return root ▷ lowest;
+ }
+
+static $Node highest_$Node__$                                                   // Find an example of the highest key under the root node of a $
+ (const $  * Parent)                                                            // $Node
+ {parent ◁ * Parent;
+  root ◁ parent ▷ root;
+  return root ▷ highest;
  }
 
 //D1 Edit                                                                       // Edit a $ in situ.
@@ -1542,7 +1561,7 @@ void test15()                                                                   
   t ▷ free;
  }
 
-void test16()                                                                   //Tmake$FromLines //Tmake$FromWords //Tmake$FromLinesOfWords //$Fe //$Fer $fec
+void test16()                                                                   //Tmake$FromLines //Tmake$FromWords //Tmake$FromLinesOfWords //T$fec
  {w ◁ make$FromWords("a   bb\n \nccc\n\n   \n dddd \n  \n \n");
 
   ✓ w ▷ countChildren == 4;
@@ -1573,7 +1592,7 @@ void test16()                                                                   
 
   if (1)
    {char s[1024], *p = s;
-    $Fe(y,x)
+    $fe(y,x)
      {makeLocalCopyOf$Key(k, l, y);
        p = stpcpy(p, k);
        p = stpcpy(p, " - ");
@@ -1583,7 +1602,7 @@ void test16()                                                                   
 
   if (1)
    {char s[1024], *p = s;
-    $Fer(y,x)
+    $fer(y,x)
      {makeLocalCopyOf$Key(k, l, y);
        p = stpcpy(p, k);
        p = stpcpy(p, " - ");
@@ -1594,7 +1613,7 @@ void test16()                                                                   
   x ▷ free;
  }
 
-void test17()                                                                   //Tsort
+void test17()                                                                   //Tsort //Thighest //Tlowest
  {z ◁ make$();
   z ▷ sort;
   ✓ z ▷ countChildren == 0;
@@ -1641,6 +1660,8 @@ void test17()                                                                   
   a ▷ sort;
   ✓ a ▷ countChildren == 15;
   ✓ a ▷ printsWithBracketsAs("(14a3aa2aaa1aaaa0acc4b13bb12bbaa6bbb11bbbb10c9cc8ccc7cccc5)");
+  l ◁ a ▷ lowest;              h ◁ a ▷ highest;
+  ✓ l ▷ equalsString("14");  ✓ h ▷ equalsString("cccc5");
   a ▷ free;
  }
 
