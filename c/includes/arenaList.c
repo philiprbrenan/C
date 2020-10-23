@@ -70,11 +70,11 @@ typedef struct ArenaListDescription                                             
  } ArenaListDescription;
 
 #include <arenaList_prototypes.h>                                                      // ArenaList prototypes now that the relevant structures have been declared
-#define ArenaListFe( child, list)   for(typeof(list.proto->first(&list)) child = list.proto->first(&list); child.proto->valid(&child); child = child.proto->next(&child)) // Each child under the root node of a ArenaList from first to last
-#define ArenaListFer(child, list)   for(typeof(list.proto->last(&list)) child = list.proto->last(&list); child.proto->valid(&child); child = child.proto->prev(&child)) // Each child under the root node of a ArenaList from last to first
 #define ArenaListfe( child, parent) for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child)) // Each child under a parent from first to last
-#define ArenaListfec(child, parent) size_t child##ⁱ = 1; for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child), ++child##ⁱ) // Each child under a parent from first to last with a counter
+//#define ArenaListFe( child, list)   for(typeof(list.proto->first(&list)) child = list.proto->first(&list); child.proto->valid(&child); child = child.proto->next(&child)) // Each child under the root node of a ArenaList from first to last
 #define ArenaListfer(child, parent) for(typeof(parent.proto->last(&parent) ) child = parent.proto->last(&parent) ; child.proto->valid(&child); child = child.proto->prev(&child)) // Each child under a parent from last to first
+//#define ArenaListFer(child, list)   for(typeof(list.proto->last(&list)) child = list.proto->last(&list); child.proto->valid(&child); child = child.proto->prev(&child)) // Each child under the root node of a ArenaList from last to first
+#define ArenaListfec(child, parent) size_t child##ⁱ = 1; for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child), ++child##ⁱ) // Each child under a parent from first to last with a counter
 #define makeLocalCopyOfArenaListKey(string,stringLength,node) const typeof(content__ArenaListNode(&node)->length) stringLength = content__ArenaListNode(&node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(&node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 //D1 Constructors                                                               // Construct a new ArenaList.
@@ -143,7 +143,7 @@ static ArenaList makeArenaListFromLinesOfWords                                  
  (const char * str)                                                             // String of lines of words separated by spaces;
  {const typeof(makeArenaListFromLines(str)) list = makeArenaListFromLines(str);
 
-  ArenaListFe(line, list)
+  ArenaListfe(line, list)
    {makeLocalCopyOfArenaListKey(s, l, line);
 
     const char * p = s, *q = p;                                                 // Parse the string into new lines
@@ -1051,49 +1051,40 @@ static int cmp_int__ArenaList_ArenaList                                         
   makeLocalCopyOfArenaListKey(K, L, first);                                             // Key of first node
   makeLocalCopyOfArenaListKey(k, l, second);                                            // Key of second node
   if (l < L)                                                                    // First key longer than second key
-   {const int i = strncmp(K, k, l);
+   {const typeof(strncmp(K, k, l)) i = strncmp(K, k, l);
     return i ? i : +1;
    }
   if (L < l)                                                                    // First key shorter then second key
-   {const int i = strncmp(K, k, L);
+   {const typeof(strncmp(K, k, L)) i = strncmp(K, k, L);
     return i ? i : -1;
    }
   return strncmp(K, k, L);                                                      // Equal length keys
  }
 
 static void sort__ArenaListNode                                                         // Quick sort the children of a node in the ArenaList in situ
- (const ArenaListNode * parent)                                                         // ArenaListNode
- {void sort(ArenaListNode first, ArenaListNode last)                                            // Start and end of range to be sorted which must already be in their correct position
+ (const           ArenaListNode * Parent)                                               // Parent node
+ {void sort(      ArenaListNode   first, ArenaListNode last)                                    // Start and end of range to be sorted which must already be in their correct position
    {const typeof(first.proto->next(&first)) next = first.proto->next(&first);                                                        // Parent key
     if (next.offset != last.offset)                                             // Range has more than two nodes
      {for(typeof(next.proto->next(&next)) p = next.proto->next(&next); p.offset != last.offset; p = p.proto->next(&p))               // Partition interior
        {if (p.proto->cmp(&p, next) < 0) next.proto->putPrev(&next, p.proto->cut(&p));                         // Partition around next
        }
-      sort(first, next);
-      sort(next,  last);
+      sort(first, next); sort(next,  last);                                     // Sort each partition
      }
    }
 
-  typeof(0ul) N = 0ul;                                                                      // Check for special cases
-  for(typeof(parent->proto->first(parent)) c = parent->proto->first(parent); c.proto->valid(&c); c = c.proto->next(&c)) {++N; if (N > 3) break;}     // Count first four children
+  typeof(0) N = 0; const typeof(*Parent) p = *Parent; ArenaListfe(c, p) if (++N > 3) break;                             // Check for special cases
 
-  if (N < 2) return;                                                            // Already sorted if no children or just one child
+  if (N > 1)                                                                    // Already sorted if no children or just one child
+   {typeof(p.proto->lowest(&p)) l = p.proto->lowest(&p);  if (!l.proto->isFirst(&l)) p.proto->putFirst(&p, l.proto->cut(&l));                   // Place child with  lowest key first
+    const typeof(p.proto->highest(&p)) h = p.proto->highest(&p); if (!h.proto->isLast(&h))  p.proto->putLast(&p, h.proto->cut(&h));                   // Place child with highest key last
 
-  for(typeof(parent->proto->first(parent)) child = parent->proto->first(parent); child.proto->valid(&child);)                                   // Place largest child last
-   {typeof(child) p = child; child = child.proto->next(&child);
-    if (p.proto->cmp(&p, parent->proto->last(parent)) > 0) parent->proto->putLast(parent, p.proto->cut(&p));
-   }
-
-  for(typeof(parent->proto->first(parent)) child = parent->proto->first(parent); child.proto->valid(&child);)                                   // Place smallest child first
-   {typeof(child) p = child; child = child.proto->next(&child);
-    if (p.proto->cmp(&p, parent->proto->first(parent)) < 0) parent->proto->putFirst(parent, p.proto->cut(&p));
-   }
-
-  if (N < 4) return;                                                            // Already sorted if two or three children
-
-  typeof(parent->proto->first(parent)) p = parent->proto->first(parent);
-  for(typeof(p.proto->next(&p)) q = p.proto->next(&p); q.proto->valid(&q); p = q, q = q.proto->next(&q))                             // Sort if out of order
-   {if (q.proto->cmp(&q, p) < 0) {sort(parent->proto->first(parent), parent->proto->last(parent)); return;}
+    if (N > 3)                                                                  // Already sorted if two or three children
+     {typeof(l) p = l;
+      for(typeof(p.proto->next(&p)) q = p.proto->next(&p); q.proto->valid(&q); p = q, q = q.proto->next(&q))                         // Sort if still out of order
+       {if (q.proto->cmp(&q, p) < 0) {sort(l, h); return;}                               // Lowest and highest are in position so we can use them to to delimit the interior range to be sorted
+       }
+     }
    }
  }
 
@@ -1101,6 +1092,34 @@ static void sort__ArenaList                                                     
  (const ArenaList * list)                                                               // ArenaList
  {const typeof(list->proto->root(list)) node = list->proto->root(list);                                                           // Root
   node.proto->sort(&node);
+ }
+
+static ArenaListNode lowest_ArenaListNode__ArenaListNode                                                // Find an example of the lowest key under a parent node
+ (const ArenaListNode * Parent)                                                         // ArenaListNode
+ {const typeof(*Parent) parent = *Parent;
+  typeof(parent.proto->first(&parent)) l = parent.proto->first(&parent); ArenaListfe(c, parent) if (c.proto->cmp(&c, l) < 0) l = c;
+  return l;
+ }
+
+static ArenaListNode highest_ArenaListNode__ArenaListNode                                               // Find an example of the highest key under a parent node
+ (const ArenaListNode * Parent)                                                         // ArenaListNode
+ {const typeof(*Parent) parent = *Parent;
+  typeof(parent.proto->first(&parent)) h = parent.proto->first(&parent); ArenaListfe(c, parent) if (c.proto->cmp(&c, h) > 0) h = c;
+  return h;
+ }
+
+static ArenaListNode lowest_ArenaListNode__ArenaList                                                    // Find an example of the lowest key under the root node of a ArenaList
+ (const  ArenaList * Parent)                                                            // ArenaListNode
+ {const typeof(* Parent) parent = * Parent;
+  const typeof(parent.proto->root(&parent)) root = parent.proto->root(&parent);
+  return root.proto->lowest(&root);
+ }
+
+static ArenaListNode highest_ArenaListNode__ArenaList                                                   // Find an example of the highest key under the root node of a ArenaList
+ (const ArenaList  * Parent)                                                            // ArenaListNode
+ {const typeof(* Parent) parent = * Parent;
+  const typeof(parent.proto->root(&parent)) root = parent.proto->root(&parent);
+  return root.proto->highest(&root);
  }
 
 //D1 Edit                                                                       // Edit a ArenaList in situ.
@@ -1595,7 +1614,7 @@ void test15()                                                                   
   t.proto->free(&t);
  }
 
-void test16()                                                                   //TmakeArenaListFromLines //TmakeArenaListFromWords //TmakeArenaListFromLinesOfWords //ArenaListFe //ArenaListFer ArenaListfec
+void test16()                                                                   //TmakeArenaListFromLines //TmakeArenaListFromWords //TmakeArenaListFromLinesOfWords //TArenaListfec
  {const typeof(makeArenaListFromWords("a   bb\n \nccc\n\n   \n dddd \n  \n \n")) w = makeArenaListFromWords("a   bb\n \nccc\n\n   \n dddd \n  \n \n");
 
   assert( w.proto->countChildren(&w) == 4);
@@ -1626,7 +1645,7 @@ void test16()                                                                   
 
   if (1)
    {char s[1024], *p = s;
-    ArenaListFe(y,x)
+    ArenaListfe(y,x)
      {makeLocalCopyOfArenaListKey(k, l, y);
        p = stpcpy(p, k);
        p = stpcpy(p, " - ");
@@ -1636,7 +1655,7 @@ void test16()                                                                   
 
   if (1)
    {char s[1024], *p = s;
-    ArenaListFer(y,x)
+    ArenaListfer(y,x)
      {makeLocalCopyOfArenaListKey(k, l, y);
        p = stpcpy(p, k);
        p = stpcpy(p, " - ");
@@ -1647,7 +1666,7 @@ void test16()                                                                   
   x.proto->free(&x);
  }
 
-void test17()                                                                   //Tsort
+void test17()                                                                   //Tsort //Thighest //Tlowest
  {const typeof(makeArenaList()) z = makeArenaList();
   z.proto->sort(&z);
   assert( z.proto->countChildren(&z) == 0);
@@ -1694,6 +1713,8 @@ void test17()                                                                   
   a.proto->sort(&a);
   assert( a.proto->countChildren(&a) == 15);
   assert( a.proto->printsWithBracketsAs(&a, "(14a3aa2aaa1aaaa0acc4b13bb12bbaa6bbb11bbbb10c9cc8ccc7cccc5)"));
+  const typeof(a.proto->lowest(&a)) l = a.proto->lowest(&a);              const typeof(a.proto->highest(&a)) h = a.proto->highest(&a);
+  assert( l.proto->equalsString(&l, "14"));  assert( h.proto->equalsString(&h, "cccc5"));
   a.proto->free(&a);
  }
 
