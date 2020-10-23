@@ -549,7 +549,7 @@ void test3()                                                                    
     i.proto->clip(&i, drawTable);
 
     size_t x = drawTable.x, y = drawTable.y;
-    ArenaListFe(col, table)                                                     // Each column
+    ArenaListfe(col, table)                                                     // Each column
      {typeof(0ul) max = 0ul;
       y = drawTable.y;
       ArenaListfe(row, col)                                                     // Each row
@@ -632,7 +632,7 @@ void test4()                                                                    
             cursorEntryIndex = wordⁱ;                                           // Show that the cursor entry has now been drawn
            }
           if (r.proto->containsPoint(&r, pointerˣ, pointerʸ)) pointerOffset = offset;    // Offset of item containing pointer
-          i.proto->text(&i, x, y, k);                                                    // Draw the remaining text of the entry
+          if (drawing) i.proto->text(&i, x, y, k);                                       // Draw the remaining text of the entry
           if (!firstOffset) firstOffset = offset;                               // First offset visible in drawing area
           lastOffset = offset;                                                  // Last offset visible in drawing area
          }
