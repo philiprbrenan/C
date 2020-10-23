@@ -1,8 +1,8 @@
 static Colour makeColour
-  (const double r,
-   const double g,
-   const double b,
-   const double a);
+ (const double r,
+  const double g,
+  const double b,
+  const double a);
 static void dump_Colour
   (Colour colour);
 struct ProtoTypes_Colour {
