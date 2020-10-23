@@ -73,7 +73,7 @@ typedef struct $Description                                                     
 //#define $Fe( child, list)   for(child ◀ list   ▷ first; child ▷ valid; child = child ▷ next) // Each child under the root node of a $ from first to last
 #define $fer(child, parent) for(child ◀ parent ▷ last ; child ▷ valid; child = child ▷ prev) // Each child under a parent from last to first
 //#define $Fer(child, list)   for(child ◀ list   ▷  last; child ▷ valid; child = child ▷ prev) // Each child under the root node of a $ from last to first
-#define $fec(child, parent) size_t child##ⁱ = 1; for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next, ++child##ⁱ) // Each child under a parent from first to last with a counter
+#define $feⁱ(child, parent) size_t child##ⁱ = 1; for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next, ++child##ⁱ) // Each child under a parent from first to last with a counter
 #define makeLocalCopyOfArenaListKey(string,stringLength,node) stringLength ◁ content__ArenaListNode(&node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(&node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 //D1 Constructors                                                               // Construct a new $.
@@ -1014,7 +1014,7 @@ static void sort__$Node                                                         
    {next ◁ first ▷ next;                                                        // Parent key
     if (next.offset != last.offset)                                             // Range has more than two nodes
      {for(p ◀ next ▷ next; p.offset != last.offset; p = p ▷ next)               // Partition interior
-       {if (p ▷ cmp (next) < 0) next ▷ putPrev(p ▷ cut);                         // Partition around next
+       {if (p ▷ cmp (next) < 0) next ▷ putPrev(p ▷ cut);                        // Partition around next
        }
       sort(first, next); sort(next,  last);                                     // Sort each partition
      }
@@ -1561,13 +1561,13 @@ void test15()                                                                   
   t ▷ free;
  }
 
-void test16()                                                                   //Tmake$FromLines //Tmake$FromWords //Tmake$FromLinesOfWords //T$fec
+void test16()                                                                   //Tmake$FromLines //Tmake$FromWords //Tmake$FromLinesOfWords //T$feⁱ
  {w ◁ make$FromWords("a   bb\n \nccc\n\n   \n dddd \n  \n \n");
 
   ✓ w ▷ countChildren == 4;
   ✓ w ▷ printsWithBracketsAs("(abbcccdddd)");
 
-   {c ◀ 0ul; $fec(x, w) c += xⁱ; ✓ c == 10;}
+   {c ◀ 0ul; $feⁱ(x, w) c += xⁱ; ✓ c == 10;}
 
   w ▷ free;
 
