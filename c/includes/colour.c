@@ -34,10 +34,10 @@ typedef struct ColourPale                                                       
 //D1 Colours                                                                    // Make a colour
 
 static Colour makeColour                                                                  // Make a Colour
-  (const double r,                                                              // Red
-   const double g,                                                              // Green
-   const double b,                                                              // Blue
-   const double a)                                                              // Alpha
+ (const double r,                                                               // Red
+  const double g,                                                               // Green
+  const double b,                                                               // Blue
+  const double a)                                                               // Alpha
  {return newColour(({struct Colour t = {r: r, g: g, b: b, a: a, proto: &ProtoTypes_Colour}; t;}));
  }
 
@@ -66,6 +66,10 @@ void test0()                                                                    
  {const typeof(makeColour(0, 1, 0, 1)) c = makeColour(0, 1, 0, 1);
 
   assert(  c.r == 0);
+
+  const typeof(makeColour(1, 0, 0, 1)) C = makeColour(1, 0, 0, 1);
+memcpy((void *)&(  c ), (void *)&( C), sizeof( C));
+  assert(  c.r == 1);
  }
 
 int main(void)                                                                  // Run tests
