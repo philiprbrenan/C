@@ -1068,7 +1068,7 @@ void test6()                                                                    
   x.proto->free(&x); s.proto->free(&s);
  }
 
-void test7()                                                                    //Tlength //TinsertChar //TdeleteChar //TreplaceChar
+void test7()                                                                    //Tlength //TinsertChar //TdeleteChar //TreplaceChar //TswapChars
  {const typeof("<a><abcd>1234</abcd></a>") xml = "<a><abcd>1234</abcd></a>";
      const typeof(parseXmlFromString(xml, 0)) x = parseXmlFromString(xml, 0);
   assert( !x.proto->errors(&x));
