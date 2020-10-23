@@ -48,9 +48,30 @@ typedef struct $Image                                                           
   double fontAscent, fontDescent, fontHeight;                                   // Metrics for the current font
  } $Image;
 
-typedef struct $TabList                                                         // A tabbed list
- {const struct ProtoTypes_$TabList *proto;                                        // Methods associated with an arena tree
- } $TabList;
+typedef struct $CompactList                                                     // A compact list of options that the user can cursor to, point to, scroll to choose an option.
+ {const struct ProtoTypes_$CompactList *proto;                                  // Methods associated with an arena tree
+  int pointerˣ, pointerʸ;                                                       //I Coordinates of the pointer in window pixels
+  Colour frameColour;                                                           //I Colour of frame
+  Colour possibilityColour;                                                     //I Colour of text used to show a possibility
+  Colour pointedColour;                                                         //I Colour of back ground of current possibility
+  Colour textEnteredSoFarColour;                                                //I Colour of the text entered so far
+  ArenaList list;                                                               //I The possibilities to display
+  ArenaListNode cursorEntry;                                                    //I The current possibility under the cursor
+  char textEnteredSoFar[17];                                                    // Prefix text entered so far to narrow the possibilities
+  int textEnteredSoFarLength;                                                   // Length of text entered so far
+  $Font textEnteredSoFarFont;                                                   //I Font for text entered so far
+  $Font possibilityFont;                                                        //I Font for remaining possibilities
+  int possibilityFontSize;                                                      //I Font size for entries
+  int startAtOffset;                                                            //I Start drawing at this entry
+  int firstOffset;                                                              //O First visible entry
+  int lastOffset;                                                               //O Last visible entry
+  int cursorPrevOffset;                                                         //O Offset of entry preceding entry containing cursor
+  int cursorNextOffset;                                                         //O Offset of entry following entry containing cursor
+  int cursorUpOffset;                                                           //O Offset of entry above entry containing cursor
+  int cursorDownOffset;                                                         //O Offset of entry below entry containing cursor
+  int pointerOffset;                                                            //O Offset of entry containing cursor
+  Rectangle drawTable;                                                          //I Drawing area
+ } $CompactList;
 
 #include <$$_prototypes.h>
 
@@ -114,6 +135,26 @@ static $Font make$Font                                                          
   f ▷ add(fontFile);
   f ▷ join;
   return new $Font(file: f);
+ }
+
+static $CompactList make$CompactList                                            // Define a compact list
+ ($Image    image,                                                              // Image in which to draw the compact list
+  ArenaList list,                                                               // Arena list of possibilities
+  Rectangle drawTable)                                                          // Rectangle defining drawing area for the list
+ {CairoTextCompactList l = newCairoTextCompactList();
+  l.frameColour            ≞ makeColour(0,0,0,1);
+  l.possibilityColour      ≞ makeColour(0,0,0,1);
+  l.pointedColour          ≞ makeColour(0,0,1,0.3);
+  l.textEnteredSoFarColour ≞ makeColour(0,1,0,1);
+  l.textEnteredSoFarColour ≞ makeColour(0,1,0,1);
+  l.list                   ≞ list;
+  l.cursorEntry            ≞ list ▷ first;
+  l.textEnteredSoFarLength = 0;
+  l.textEnteredSoFarFont   ≞ image.sansItalic;
+  l.possibilityFont        ≞ image.serif;
+  l.possibilityFontSize    = 100;
+  l.drawTable              ≞ drawTable;
+  return l;
  }
 
 //D1 Free                                                                       // Free cairo and free type resources associated with the image
@@ -577,7 +618,6 @@ void test4()                                                                    
 
     list ◁ makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
     cursorEntry            ◁ list ▷ findFirst("qqee");                          // Cursor entry
-    cursorOffset           ◁ cursorEntry.offset;                                // Offset of entry containing cursor
     textEnteredSoFar       ◁ "qqx";                                             // Assume the user has entered some text to narrow the possibilities displayed
     textEnteredSoFarLength ◁ 2ul;                                               // Length of text entered so far
     textEnteredSoFarFont   ◁ i.sansItalic;                                      // Font for text entered so far
@@ -626,7 +666,7 @@ void test4()                                                                    
         r ◁ makeRectangleWH(x, y, a, i.fontHeight);                             // Rectangle in which to draw the text
 
         if (drawTable ▷ contains(r))                                            // Draw visible elements
-         {if (offset == cursorOffset)                                           // Reached entry under cursor
+         {if (offset == cursorEntry.offset)                                     // Reached entry under cursor
            {i ▷ rectangle(r, pointedColour);                                    // Background colour of entry containing the cursor
             cursorEntryIndex = wordⁱ;                                           // Show that the cursor entry has now been drawn
            }
@@ -665,14 +705,14 @@ void test4()                                                                    
     i ▷ rectangleLine(drawTable, frameColour);                                  // Frame the drawn area
 
     if (1)                                                                      // Check results
-     {f ◁ list ▷ offset(firstOffset);      ✓ f ▷ equalsString("qqbbbb");
-      l ◁ list ▷ offset(lastOffset);       ✓ l ▷ equalsString("qqhh");
-      c ◁ list ▷ offset(cursorOffset);     ✓ c ▷ equalsString("qqee");
-      p ◁ list ▷ offset(cursorPrevOffset); ✓ p ▷ equalsString("qqdd");
-      n ◁ list ▷ offset(cursorNextOffset); ✓ n ▷ equalsString("qqff");
-      d ◁ list ▷ offset(cursorDownOffset); ✓ d ▷ equalsString("qqgggg");
-      u ◁ list ▷ offset(cursorUpOffset);   ✓ u ▷ equalsString("qqbbbb");
-      P ◁ list ▷ offset(pointerOffset);    ✓ P ▷ equalsString("qqee");
+     {f ◁ list ▷ offset(firstOffset);        ✓ f ▷ equalsString("qqbbbb");
+      l ◁ list ▷ offset(lastOffset);         ✓ l ▷ equalsString("qqhh");
+      c ◁ list ▷ offset(cursorEntry.offset); ✓ c ▷ equalsString("qqee");
+      p ◁ list ▷ offset(cursorPrevOffset);   ✓ p ▷ equalsString("qqdd");
+      n ◁ list ▷ offset(cursorNextOffset);   ✓ n ▷ equalsString("qqff");
+      d ◁ list ▷ offset(cursorDownOffset);   ✓ d ▷ equalsString("qqgggg");
+      u ◁ list ▷ offset(cursorUpOffset);     ✓ u ▷ equalsString("qqbbbb");
+      P ◁ list ▷ offset(pointerOffset);      ✓ P ▷ equalsString("qqee");
      }
    }
 
