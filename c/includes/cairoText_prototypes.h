@@ -1,5 +1,9 @@
 static CairoTextFont makeCairoTextFont
  (char * fontFile);
+static CairoTextCompactList makeCairoTextCompactList
+ (CairoTextImage    image,
+  ArenaList list,
+  Rectangle drawTable);
 static void free_CairoTextImage
  (CairoTextImage * i);
 static void free_CairoTextFont
@@ -109,6 +113,11 @@ static void saveAsPng_CairoText_string
  (CairoTextImage     *       i,
   char       *       imageFile,
   const char * const digest);
+struct ProtoTypes_CairoTextCompactList {
+ } const ProtoTypes_CairoTextCompactList =
+{};
+CairoTextCompactList newCairoTextCompactList(CairoTextCompactList allocator) {return allocator;}
+
 struct ProtoTypes_CairoTextFont {
   void  (*free)(                                                                // Free a font if it has been loaded
     CairoTextFont * font);                                                      // CairoTextFont
@@ -161,6 +170,10 @@ struct ProtoTypes_CairoTextImage {
     CairoTextImage * i,                                                         // CairoTextImage
     double x,                                                                   // X coordinate to move to
     double y);                                                                  // Y coordinate to move to
+  CairoTextCompactList  (*makeCairoTextCompactList)(                            // Define a compact list
+    CairoTextImage image,                                                       // Image in which to draw the compact list
+    ArenaList list,                                                             // Arena list of possibilities
+    Rectangle drawTable);                                                       // Rectangle defining drawing area for the list
   void  (*move)(                                                                // Move to a position without drawing
     CairoTextImage * i,                                                         // CairoTextImage
     double x,                                                                   // X coordinate to move to
@@ -222,11 +235,6 @@ struct ProtoTypes_CairoTextImage {
     double y,                                                                   // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
     const char * t);                                                            // The text to draw
  } const ProtoTypes_CairoTextImage =
-{assertCairoTextResult, clearWhite_CairoText, clip_CairoText, close_CairoText, colour_CairoText, fillPreserve_CairoText, fill_CairoText, fontMetrics_CairoText, fontSize_CairoText, font_CairoText, free_CairoTextImage, leftArrow, leftArrowWithCircle, lineWidth_CairoText, line_CairoText, move_CairoText, rectangle, rectangleLine, restore_CairoText, rgb_CairoText, rgba_CairoText, rightArrow, saveAsPng_CairoText_string, save_CairoText, strokePreserve_CairoText, stroke_CairoText, textAdvance_CairoText, textFit_CairoText, textLine_CairoText, text_CairoText};
+{assertCairoTextResult, clearWhite_CairoText, clip_CairoText, close_CairoText, colour_CairoText, fillPreserve_CairoText, fill_CairoText, fontMetrics_CairoText, fontSize_CairoText, font_CairoText, free_CairoTextImage, leftArrow, leftArrowWithCircle, lineWidth_CairoText, line_CairoText, makeCairoTextCompactList, move_CairoText, rectangle, rectangleLine, restore_CairoText, rgb_CairoText, rgba_CairoText, rightArrow, saveAsPng_CairoText_string, save_CairoText, strokePreserve_CairoText, stroke_CairoText, textAdvance_CairoText, textFit_CairoText, textLine_CairoText, text_CairoText};
 CairoTextImage newCairoTextImage(CairoTextImage allocator) {return allocator;}
-
-struct ProtoTypes_CairoTextTabList {
- } const ProtoTypes_CairoTextTabList =
-{};
-CairoTextTabList newCairoTextTabList(CairoTextTabList allocator) {return allocator;}
 
