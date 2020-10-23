@@ -61,6 +61,11 @@ void __attribute__ ((noreturn,unused)) printStackBackTraceAndExit               
   exit(code);
  }
 
+size_t __attribute__ ((unused)) topOfStack()                                    // Return the address of the current top of the stack
+ {char a;
+  return (size_t)(&a-0);
+ }
+
 //D1 Numbers                                                                    // Numerical methods
 
 size_t __attribute__ ((const,unused)) nextPowerOfTwo                            // The next power of two greater than or equal to the specified number
@@ -262,8 +267,20 @@ void test3()                                                                    
   free(file);
  }
 
+void test4()                                                                    //TtopOfStack
+ {size_t a, b, c;
+
+  void function(size_t * p, int depth)
+   {char a[100]; memset(a, 0, sizeof(a));
+    if (!depth) *p = topOfStack(); else function(p, depth-1);
+   }
+
+  function(&a,1); function(&b, 5); function(&c, 9);
+  ✓ a > b; ✓ b > c;                                                             // The stack grows downward
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test1, test2, test3, 0};
+ {void (*tests[])(void) = {test1, test2, test3, test4, 0};
   run_tests("$", 1, tests);
   return 0;
  }
