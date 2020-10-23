@@ -49,9 +49,30 @@ typedef struct CairoTextImage                                                   
   double fontAscent, fontDescent, fontHeight;                                   // Metrics for the current font
  } CairoTextImage;
 
-typedef struct CairoTextTabList                                                         // A tabbed list
- {const struct ProtoTypes_CairoTextTabList *proto;                                        // Methods associated with an arena tree
- } CairoTextTabList;
+typedef struct CairoTextCompactList                                                     // A compact list of options that the user can cursor to, point to, scroll to choose an option.
+ {const struct ProtoTypes_CairoTextCompactList *proto;                                  // Methods associated with an arena tree
+  int pointerˣ, pointerʸ;                                                       //I Coordinates of the pointer in window pixels
+  Colour frameColour;                                                           //I Colour of frame
+  Colour possibilityColour;                                                     //I Colour of text used to show a possibility
+  Colour pointedColour;                                                         //I Colour of back ground of current possibility
+  Colour textEnteredSoFarColour;                                                //I Colour of the text entered so far
+  ArenaList list;                                                               //I The possibilities to display
+  ArenaListNode cursorEntry;                                                    //I The current possibility under the cursor
+  char textEnteredSoFar[17];                                                    // Prefix text entered so far to narrow the possibilities
+  int textEnteredSoFarLength;                                                   // Length of text entered so far
+  CairoTextFont textEnteredSoFarFont;                                                   //I Font for text entered so far
+  CairoTextFont possibilityFont;                                                        //I Font for remaining possibilities
+  int possibilityFontSize;                                                      //I Font size for entries
+  int startAtOffset;                                                            //I Start drawing at this entry
+  int firstOffset;                                                              //O First visible entry
+  int lastOffset;                                                               //O Last visible entry
+  int cursorPrevOffset;                                                         //O Offset of entry preceding entry containing cursor
+  int cursorNextOffset;                                                         //O Offset of entry following entry containing cursor
+  int cursorUpOffset;                                                           //O Offset of entry above entry containing cursor
+  int cursorDownOffset;                                                         //O Offset of entry below entry containing cursor
+  int pointerOffset;                                                            //O Offset of entry containing cursor
+  Rectangle drawTable;                                                          //I Drawing area
+ } CairoTextCompactList;
 
 #include <cairoText_prototypes.h>
 
@@ -115,6 +136,26 @@ static CairoTextFont makeCairoTextFont                                          
   f.proto->add(&f, fontFile);
   f.proto->join(&f);
   return newCairoTextFont(({struct CairoTextFont t = {file: f, proto: &ProtoTypes_CairoTextFont}; t;}));
+ }
+
+static CairoTextCompactList makeCairoTextCompactList                                            // Define a compact list
+ (CairoTextImage    image,                                                              // Image in which to draw the compact list
+  ArenaList list,                                                               // Arena list of possibilities
+  Rectangle drawTable)                                                          // Rectangle defining drawing area for the list
+ {CairoTextCompactList l = newCairoTextCompactList(({struct CairoTextCompactList t = {proto: &ProtoTypes_CairoTextCompactList};   t;}));
+memcpy(({typeof(  l.frameColour            ) t =   l.frameColour            ; (void *)&t;}), ({typeof( makeColour(0,0,0,1)) s =  makeColour(0,0,0,1); (void *)&s;}), sizeof(  l.frameColour            ));
+memcpy(({typeof(  l.possibilityColour      ) t =   l.possibilityColour      ; (void *)&t;}), ({typeof( makeColour(0,0,0,1)) s =  makeColour(0,0,0,1); (void *)&s;}), sizeof(  l.possibilityColour      ));
+memcpy(({typeof(  l.pointedColour          ) t =   l.pointedColour          ; (void *)&t;}), ({typeof( makeColour(0,0,1,0.3)) s =  makeColour(0,0,1,0.3); (void *)&s;}), sizeof(  l.pointedColour          ));
+memcpy(({typeof(  l.textEnteredSoFarColour ) t =   l.textEnteredSoFarColour ; (void *)&t;}), ({typeof( makeColour(0,1,0,1)) s =  makeColour(0,1,0,1); (void *)&s;}), sizeof(  l.textEnteredSoFarColour ));
+memcpy(({typeof(  l.textEnteredSoFarColour ) t =   l.textEnteredSoFarColour ; (void *)&t;}), ({typeof( makeColour(0,1,0,1)) s =  makeColour(0,1,0,1); (void *)&s;}), sizeof(  l.textEnteredSoFarColour ));
+memcpy(({typeof(  l.list                   ) t =   l.list                   ; (void *)&t;}), ({typeof( list) s =  list; (void *)&s;}), sizeof(  l.list                   ));
+memcpy(({typeof(  l.cursorEntry            ) t =   l.cursorEntry            ; (void *)&t;}), ({typeof( list.proto->first(&list)) s =  list.proto->first(&list); (void *)&s;}), sizeof(  l.cursorEntry            ));
+  l.textEnteredSoFarLength = 0;
+memcpy(({typeof(  l.textEnteredSoFarFont   ) t =   l.textEnteredSoFarFont   ; (void *)&t;}), ({typeof( image.sansItalic) s =  image.sansItalic; (void *)&s;}), sizeof(  l.textEnteredSoFarFont   ));
+memcpy(({typeof(  l.possibilityFont        ) t =   l.possibilityFont        ; (void *)&t;}), ({typeof( image.serif) s =  image.serif; (void *)&s;}), sizeof(  l.possibilityFont        ));
+  l.possibilityFontSize    = 100;
+memcpy(({typeof(  l.drawTable              ) t =   l.drawTable              ; (void *)&t;}), ({typeof( drawTable) s =  drawTable; (void *)&s;}), sizeof(  l.drawTable              ));
+  return l;
  }
 
 //D1 Free                                                                       // Free cairo and free type resources associated with the image
@@ -578,7 +619,6 @@ void test4()                                                                    
 
     const typeof(makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz")) list = makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
     const typeof(list.proto->findFirst(&list, "qqee")) cursorEntry = list.proto->findFirst(&list, "qqee");                          // Cursor entry
-    const typeof(cursorEntry.offset) cursorOffset = cursorEntry.offset;                                // Offset of entry containing cursor
     const typeof("qqx") textEnteredSoFar = "qqx";                                             // Assume the user has entered some text to narrow the possibilities displayed
     const typeof(2ul) textEnteredSoFarLength = 2ul;                                               // Length of text entered so far
     const typeof(i.sansItalic) textEnteredSoFarFont = i.sansItalic;                                      // Font for text entered so far
@@ -627,7 +667,7 @@ void test4()                                                                    
         const typeof(makeRectangleWH(x, y, a, i.fontHeight)) r = makeRectangleWH(x, y, a, i.fontHeight);                             // Rectangle in which to draw the text
 
         if (drawTable.proto->contains(&drawTable, r))                                            // Draw visible elements
-         {if (offset == cursorOffset)                                           // Reached entry under cursor
+         {if (offset == cursorEntry.offset)                                     // Reached entry under cursor
            {i.proto->rectangle(&i, r, pointedColour);                                    // Background colour of entry containing the cursor
             cursorEntryIndex = wordⁱ;                                           // Show that the cursor entry has now been drawn
            }
@@ -666,14 +706,14 @@ void test4()                                                                    
     i.proto->rectangleLine(&i, drawTable, frameColour);                                  // Frame the drawn area
 
     if (1)                                                                      // Check results
-     {const typeof(list.proto->offset(&list, firstOffset)) f = list.proto->offset(&list, firstOffset);      assert( f.proto->equalsString(&f, "qqbbbb"));
-      const typeof(list.proto->offset(&list, lastOffset)) l = list.proto->offset(&list, lastOffset);       assert( l.proto->equalsString(&l, "qqhh"));
-      const typeof(list.proto->offset(&list, cursorOffset)) c = list.proto->offset(&list, cursorOffset);     assert( c.proto->equalsString(&c, "qqee"));
-      const typeof(list.proto->offset(&list, cursorPrevOffset)) p = list.proto->offset(&list, cursorPrevOffset); assert( p.proto->equalsString(&p, "qqdd"));
-      const typeof(list.proto->offset(&list, cursorNextOffset)) n = list.proto->offset(&list, cursorNextOffset); assert( n.proto->equalsString(&n, "qqff"));
-      const typeof(list.proto->offset(&list, cursorDownOffset)) d = list.proto->offset(&list, cursorDownOffset); assert( d.proto->equalsString(&d, "qqgggg"));
-      const typeof(list.proto->offset(&list, cursorUpOffset)) u = list.proto->offset(&list, cursorUpOffset);   assert( u.proto->equalsString(&u, "qqbbbb"));
-      const typeof(list.proto->offset(&list, pointerOffset)) P = list.proto->offset(&list, pointerOffset);    assert( P.proto->equalsString(&P, "qqee"));
+     {const typeof(list.proto->offset(&list, firstOffset)) f = list.proto->offset(&list, firstOffset);        assert( f.proto->equalsString(&f, "qqbbbb"));
+      const typeof(list.proto->offset(&list, lastOffset)) l = list.proto->offset(&list, lastOffset);         assert( l.proto->equalsString(&l, "qqhh"));
+      const typeof(list.proto->offset(&list, cursorEntry.offset)) c = list.proto->offset(&list, cursorEntry.offset); assert( c.proto->equalsString(&c, "qqee"));
+      const typeof(list.proto->offset(&list, cursorPrevOffset)) p = list.proto->offset(&list, cursorPrevOffset);   assert( p.proto->equalsString(&p, "qqdd"));
+      const typeof(list.proto->offset(&list, cursorNextOffset)) n = list.proto->offset(&list, cursorNextOffset);   assert( n.proto->equalsString(&n, "qqff"));
+      const typeof(list.proto->offset(&list, cursorDownOffset)) d = list.proto->offset(&list, cursorDownOffset);   assert( d.proto->equalsString(&d, "qqgggg"));
+      const typeof(list.proto->offset(&list, cursorUpOffset)) u = list.proto->offset(&list, cursorUpOffset);     assert( u.proto->equalsString(&u, "qqbbbb"));
+      const typeof(list.proto->offset(&list, pointerOffset)) P = list.proto->offset(&list, pointerOffset);      assert( P.proto->equalsString(&P, "qqee"));
      }
    }
 
