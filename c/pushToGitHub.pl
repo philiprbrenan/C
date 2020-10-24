@@ -3,13 +3,11 @@
 # Push C, perl/cpan and perl/makeWithPerl to GitHub C
 # Philip R Brenan at gmail dot com, Appa Apps Ltd Inc., 2020
 #-------------------------------------------------------------------------------
-
 =pod
 
 Does not work under Geany - use from the command line only.
 
 =cut
-
 use warnings FATAL => qw(all);
 use strict;
 use Carp;
@@ -19,16 +17,19 @@ use GitHub::Crud;
 use YAML::Loader;
 use feature qw(say current_sub);
 
-my $home    = q(/home/phil/);                                                   # Local files
-my $git     = q(/home/runner/work/C/C);                                         # Corresponding location on Github
-my $user    = q(philiprbrenan);                                                 # User
-my $repo    = q(C);                                                             # Repo
-my $wf      = q(.github/workflows/main.yml);                                    # Work flow
-my $compile = q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);                  # Compile
-my $licence = q(/home/phil/c/LICENSE.md);                                       # License
-my $dir     = fpd($home, q(c/));                                                # Directories to upload
+my $home     = q(/home/phil/);                                                  # Local files
+my $git      = q(/home/runner/work/C/C);                                        # Corresponding location on Github
+my $user     = q(philiprbrenan);                                                # User
+my $repo     = q(C);                                                            # Repo
+my $wf       = q(.github/workflows/main.yml);                                   # Work flow
+my $compile  = q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);                 # Compile
+my $licence  = q(/home/phil/c/LICENSE.md);                                      # License
+my $dir      = fpd($home, q(c/));                                               # Directories to upload
 
-my @cz      =  grep {!/\A#/} split /\s+/, <<END;                                # z files to run
+my $cpan     = q(/home/phil/perl/cpan/PreprocessOps/);                          # Associated CPAN module
+my $cpanRepo = containingFolderName(fpf($cpan, q(aaa)));                        # GitHub repo is the last component of the folder containing the CPAN module
+
+my @cz       =  grep {!/\A#/} split /\s+/, <<END;                               # C files in /z/ to upload and run
 arenaList
 arenaTree
 cairoText
@@ -41,16 +42,13 @@ vector2d
 xml
 END
 
-my @cg      =  grep {!/\A#/} split /\s+/, <<END;                                # g files to run
-END
+# C files
 
-if (1)                                                                          # Upload files
+if (1)                                                                          # Upload C files
  {my @files = ($compile, $licence);
 
-  if (1)                                                                        # Select files ignoring backups and tests
-   {push @files, grep {-T $_ and !m(/backup/|/z/z/)}
-      searchDirectoryTreesForMatchingFiles($dir, qw(.h .c .pl .md));
-   }
+  push @files, grep {-T $_ and !m(/backup/|/z/z/)}                              # Select files ignoring backups and tests
+    searchDirectoryTreesForMatchingFiles($dir, qw(.h .c .pl .md));
 
   my %files = map {$_=>1} grep {1 or /makeWithPerl/} @files;                    # Filter files
 
@@ -64,7 +62,7 @@ if (1)                                                                          
    }
  }
 
-sub test($$)                                                                    # Write one test
+sub test($$)                                                                    # Write one C test
  {my ($d, $c) = @_;                                                             # Folder, Program to be tested
   my $file = fpe($dir, $d, $c, $c, q(c));
   -e $file or confess "No such file: $file";
@@ -79,17 +77,12 @@ sub test($$)                                                                    
         (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes $valg --gccVersion gcc-10)
 END
     join '', @r;
-   }
+ }
 
+my $tests = join "\n", map{test q(z), $_} @cz;                                  # Commands to run tests for C
 
-my $tests = sub                                                                 # Commands to run tests
- {my @t;
-  push @t, test q(z), $_ for @cz;
-  push @t, test q(g), $_ for @cg;
-  join "\n", @t;
- }->();
-
-my $y = <<END;                                                                  # Workflow
+if (1)
+ {my $y = <<END;                                                                # Workflow for C
 # Test various C programs written with the help of: https://metacpan.org/pod/Preprocess::Ops
 
 name: Test
@@ -138,7 +131,53 @@ jobs:
 
 $tests
 END
-#        sudo apt -y install build-essential libgtk-3-dev gdb tree
 
-lll "Work flow to $wf ",
-  GitHub::Crud::writeFileUsingSavedToken($user, $repo, $wf, $y);                # Upload workflow
+  lll "C Work flow to $repo ",
+    GitHub::Crud::writeFileUsingSavedToken($user, $repo, $wf, $y);
+ }
+
+# Cpan module
+
+if (1)                                                                          # Upload Cpan module
+ {my %files = map {$_=>1} searchDirectoryTreesForMatchingFiles($cpan);          # Possible files
+
+  for my $f(sort keys %files)                                                   # Upload each file
+   {my $t = swapFilePrefix($f, $cpan);
+    next if     $t =~ m(backup|zzz);
+    next unless $t =~ m(\A(Build.PL|CHANGES|CONTRIBUTING|MANIFEST|README.*|test\.pl|lib/.*)\Z);
+    lll "$f to $t ",
+      GitHub::Crud::writeFileUsingSavedToken($user, $cpanRepo, $t, readFile($f));
+   }
+ }
+
+if (1)
+ {my $y = <<END;                                                                # Workflow for Perl
+# Build and text CPAN module: Preprocess::Ops
+
+name: Test
+
+on:
+  push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout\@v2
+
+    - name: Install
+      run: |
+        sudo apt update
+        sudo apt -y install build-essential tree
+        sudo cpan install Data::Table::Text
+
+    - name: Test
+      run: |
+        tree
+        perl Build.PL
+        perl Build test
+END
+  lll "Perl Work flow to $cpanRepo ",
+    GitHub::Crud::writeFileUsingSavedToken($user, $cpanRepo, $wf, $y);
+ }
