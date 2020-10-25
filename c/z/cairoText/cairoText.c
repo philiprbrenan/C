@@ -32,7 +32,7 @@ typedef struct $Image                                                           
   FT_Library          freeTypeLibrary;                                          // Free Type library
   int width, height;                                                            // Dimensions of the surface
   const StringBuffer  out;                                                      // The output image file
-
+  $Font fonts[0];                                                               // Fonts
   $Font sansMonoBold;                                                           // Mono fonts
   $Font sansMono;
 
@@ -48,9 +48,22 @@ typedef struct $Image                                                           
   double fontAscent, fontDescent, fontHeight;                                   // Metrics for the current font
  } $Image;
 
+enum $Fonts {$Font_sansMonoBold    = 0,
+             $Font_sansMono        = 1,
+             $Font_sansBold        = 2,
+             $Font_sansBoldItalic  = 3,
+             $Font_sansItalic      = 4,
+             $Font_sans            = 5,
+             $Font_serifBold       = 6,
+             $Font_serifBoldItalic = 7,
+             $Font_serifItalic     = 8,
+             $Font_serif           = 9,
+             $Font_end             =10};
+
+
 typedef struct $CompactList                                                     // A compact list of options that the user can cursor to, point to, scroll to choose an option.
  {const struct ProtoTypes_$CompactList *proto;                                  // Methods associated with an arena tree
-  $Image image;                                                                 //I Image to draw in
+  $Image * image;                                                               //I Image to draw in
   int pointerˣ, pointerʸ;                                                       //I Coordinates of the pointer in window pixels
   Colour frameColour;                                                           //I Colour of frame
   Colour possibilityColour;                                                     //I Colour of text used to show a possibility
@@ -59,18 +72,18 @@ typedef struct $CompactList                                                     
   ArenaList list;                                                               //I The possibilities to display
   ArenaListNode cursorEntry;                                                    //I The current possibility under the cursor
   char textEnteredSoFar[17];                                                    // Prefix text entered so far to narrow the possibilities
-  size_t textEnteredSoFarLength;                                                   // Length of text entered so far
-  $Font textEnteredSoFarFont;                                                   //I Font for text entered so far
-  $Font possibilityFont;                                                        //I Font for remaining possibilities
-  size_t possibilityFontSize;                                                      //I Font size for entries
-  size_t startAtOffset;                                                            //I Start drawing at this entry
-  size_t firstOffset;                                                              //O First visible entry
-  size_t lastOffset;                                                               //O Last visible entry
-  size_t cursorPrevOffset;                                                         //O Offset of entry preceding entry containing cursor
-  size_t cursorNextOffset;                                                         //O Offset of entry following entry containing cursor
-  size_t cursorUpOffset;                                                           //O Offset of entry above entry containing cursor
-  size_t cursorDownOffset;                                                         //O Offset of entry below entry containing cursor
-  size_t pointerOffset;                                                            //O Offset of entry containing cursor
+  size_t textEnteredSoFarLength;                                                // Length of text entered so far
+  enum $Fonts textEnteredSoFarFont;                                             //I Font for text entered so far
+  enum $Fonts possibilityFont;                                                  //I Font for remaining possibilities
+  size_t possibilityFontSize;                                                   //I Font size for entries
+  size_t startAtOffset;                                                         //I Start drawing at this entry
+  size_t firstOffset;                                                           //O First visible entry
+  size_t lastOffset;                                                            //O Last visible entry
+  size_t cursorPrevOffset;                                                      //O Offset of entry preceding entry containing cursor
+  size_t cursorNextOffset;                                                      //O Offset of entry following entry containing cursor
+  size_t cursorUpOffset;                                                        //O Offset of entry above entry containing cursor
+  size_t cursorDownOffset;                                                      //O Offset of entry below entry containing cursor
+  size_t pointerOffset;                                                         //O Offset of entry containing cursor
   Rectangle drawTable;                                                          //I Drawing area
  } $CompactList;
 
@@ -113,7 +126,7 @@ $Image make$Image                                                               
   e1 ◁ FT_Init_FreeType(&i.freeTypeLibrary);                                    // Initialize FreeType library
   if (e1) printStackBackTraceAndExit(1, "Error %d in free type\n", e1);
 
-  i ▷ font(i.sansMono);                                                         // Default font
+  i ▷ font($Font_sansMono);                                                     // Default font
   i ▷ clearWhite;                                                               // Clear display
   i ▷ rgb(0,0,0);                                                               // Default drawing colour
   i ▷ lineWidth(2);                                                             // Default stroke width
@@ -139,11 +152,11 @@ static $Font make$Font                                                          
  }
 
 static $CompactList make$CompactList                                            // Define a compact list
- ($Image    image,                                                              // Image in which to draw the compact list
+ ($Image  * image,                                                              // Image in which to draw the compact list
   ArenaList list,                                                               // Arena list of possibilities
   Rectangle drawTable)                                                          // Rectangle defining drawing area for the list
  {CairoTextCompactList l = newCairoTextCompactList();
-  l.image                  ≞ image;
+  l.image                  = image;
   l.frameColour            ≞ makeColour(0,0,0,1);
   l.possibilityColour      ≞ makeColour(0,0,0,1);
   l.pointedColour          ≞ makeColour(0,0,1,0.3);
@@ -152,8 +165,8 @@ static $CompactList make$CompactList                                            
   l.list                   ≞ list;
   l.cursorEntry            ≞ list ▷ first;
   l.textEnteredSoFarLength = 0;
-  l.textEnteredSoFarFont   ≞ image.sansItalic;
-  l.possibilityFont        ≞ image.serif;
+  l.textEnteredSoFarFont   ≞ $Font_sansItalic;
+  l.possibilityFont        ≞ $Font_serif;
   l.possibilityFontSize    = 100;
   l.drawTable              ≞ drawTable;
   return l;
@@ -188,20 +201,26 @@ static void free_$Font                                                          
 //D1 Text                                                                       // Work with text
 
 static void font_$                                                              // Start using a font
- ($Image * i,                                                                   // $Image
-  $Font font)                                                                   // Font to use
- {if (!font.cairoFontFace)                                                      // Load the font if this font has not yet been loaded.
-   {makeLocalCopyOfStringBuffer(ff, l, font.file);
-    e2 ◁ FT_New_Face(i->freeTypeLibrary, ff, 0, &font.freeTypeFontFace);
+ ($Image    * i,                                                                // $Image
+  enum $Fonts fontNumber)                                                       // Font to use
+ {font ◀ &i->fonts[fontNumber];
+  if (!font->cairoFontFace)                                                     // Load the font if this font has not yet been loaded.
+   {makeLocalCopyOfStringBuffer(ff, l, font->file);
+    e2 ◁ FT_New_Face(i->freeTypeLibrary, ff, 0, &font->freeTypeFontFace);
     if (e2 == FT_Err_Unknown_File_Format) printStackBackTraceAndExit
      (1, "FontFace not supported: %s\n", ff);
     else if (e2) printStackBackTraceAndExit
      (1, "FontFace failed: %d %s\n", e2, ff);
 
-    font.cairoFontFace = cairo_ft_font_face_create_for_ft_face(font.freeTypeFontFace, 0);
+    font->cairoFontFace =
+      cairo_ft_font_face_create_for_ft_face(font->freeTypeFontFace, 0);
    }
 
-  cairo_set_font_face (i->cr, font.cairoFontFace);                              // Set the font as the currently active one
+if (i->fonts[fontNumber].cairoFontFace == 0)
+ {printStackBackTrace("BBBB Bad font face\n");
+ }
+
+  cairo_set_font_face (i->cr, font->cairoFontFace);                              // Set the font as the currently active one
 
   i ▶ fontMetrics;
  }
@@ -525,59 +544,59 @@ static void saveAsPng_$_string                                                  
 static void draw__$CompactList                                                  // Draw a compact list
  ($CompactList * compactList,                                                   // Compact list
   int            drawing)                                                       // Drawing if true - else trial layout
- {cl ◀ *compactList;
-  i  ◀ cl.image;
+ {cl ◁ compactList;
+  i  ◀ cl->image;
 
-  if (drawing) i ▷ clip(cl.drawTable);                                          // Clip the drawing area to prevent text appearing outside it
+  if (drawing) i ▶ clip(cl->drawTable);                                         // Clip the drawing area to prevent text appearing outside it
 
   if (drawing)                                                                  // Show text entered so far
-   {i ▷ colour(cl.textEnteredSoFarColour);
-    i ▷ font  (cl.textEnteredSoFarFont);
-    l ◁ cl.textEnteredSoFarLength;
-    char t[l+1]; strncpy(t, cl.textEnteredSoFar, l); t[l] = 0;
-    i ▷ textFit(cl.drawTable, 0, 0, 0, t);
+   {i ▶ colour(cl->textEnteredSoFarColour);
+    i ▶ font  (cl->textEnteredSoFarFont);
+    l ◁ cl->textEnteredSoFarLength;
+    char t[l+1]; strncpy(t, cl->textEnteredSoFar, l); t[l] = 0;
+    i ▶ textFit(cl->drawTable, 0, 0, 0, t);
    }
 
-  i ▷ font    (cl.possibilityFont);                                             // Font for remaining possibilities
-  i ▷ fontSize(cl.possibilityFontSize);                                         // Size of text for possibilities
-  i ▷ colour  (cl.possibilityColour);                                           // Colour of text showing possibility
+  i ▶ font    (cl->possibilityFont);                                            // Font for remaining possibilities
+  i ▶ fontSize(cl->possibilityFontSize);                                        // Size of text for possibilities
+  i ▶ colour  (cl->possibilityColour);                                          // Colour of text showing possibility
 
-  double x = cl.drawTable.X, y = cl.drawTable.y - i.fontHeight;                 // At the end of the previous line
-  cursorEntryIndex ◀ 0ul;                                                    // Whether we have drawn the cursor entry yet.
-  N ◁ cl.list ▷ countChildren;                                                  // Maximum number of entries
+  double x = cl->drawTable.X, y = cl->drawTable.y - i->fontHeight;              // At the end of the previous line
+  cursorEntryIndex ◀ 0ul;                                                       // Whether we have drawn the cursor entry yet.
+  N ◁ cl->list ▷ countChildren;                                                 // Maximum number of entries
   size_t    entryOffset    [N+1]; memset(entryOffset, 0, sizeof(entryOffset));  // Offset for each entry
   Rectangle entryRectangles[N+1];                                               // Rectangle for each entry up to next tab stop
   firstOffset ◀ 0ul;
 
-  ArenaListfeⁱ(word, cl.list)                                                   // Each word
-   {if (wordⁱ >= cl.startAtOffset)                                                 // Words in the scrolled to area
+  ArenaListfeⁱ(word, cl->list)                                                  // Each word
+   {if (wordⁱ >= cl->startAtOffset)                                             // Words in the scrolled to area
      {makeLocalCopyOfArenaListKey(K, L, word);
-      if (L <= cl.textEnteredSoFarLength) continue;                             // Word shorter than prefix entered so far
-      if (strncmp(K, cl.textEnteredSoFar, cl.textEnteredSoFarLength)) continue; // Word does not match prefix entered so far
-      k ◁ &K[cl.textEnteredSoFarLength];                                        // Skip text entered so far
-      a ◁ i ▷ textAdvance(k);                                                   // Width of text
-      if (x + a > cl.drawTable.X) {x = cl.drawTable.x; y += i.fontHeight;}      // Move to next line if necessary
+      if (L <= cl->textEnteredSoFarLength) continue;                            // Word shorter than prefix entered so far
+      if (strncmp(K, cl->textEnteredSoFar, cl->textEnteredSoFarLength))continue;// Word does not match prefix entered so far
+      k ◁ &K[cl->textEnteredSoFarLength];                                       // Skip text entered so far
+      a ◁ i ▶ textAdvance(k);                                                   // Width of text
+      if (x + a > cl->drawTable.X) {x = cl->drawTable.x; y += i->fontHeight;}   // Move to next line if necessary
       offset ◁ word.offset;                                                     // Offset of current entry
 
-      r ◁ makeRectangleWH(x, y, a, i.fontHeight);                               // Rectangle in which to draw the text
+      r ◁ makeRectangleWH(x, y, a, i->fontHeight);                              // Rectangle in which to draw the text
 
-      if (cl.drawTable ▷ contains(r))                                           // Draw visible elements
-       {if (offset == cl.cursorEntry.offset)                                    // Reached entry under cursor
-         {i ▷ rectangle(r, cl.pointedColour);                                   // Background colour of entry containing the cursor
+      if (cl->drawTable ▷ contains(r))                                          // Draw visible elements
+       {if (offset == cl->cursorEntry.offset)                                   // Reached entry under cursor
+         {i ▶ rectangle(r, cl->pointedColour);                                  // Background colour of entry containing the cursor
           cursorEntryIndex = wordⁱ;                                             // Show that the cursor entry has now been drawn
          }
-        if (r ▷ containsPoint(cl.pointerˣ, cl.pointerʸ))
-         {cl.pointerOffset = offset;      // Offset of item containing pointer
+        if (r ▷ containsPoint(cl->pointerˣ, cl->pointerʸ))                      // Offset of item containing pointer
+         {cl->pointerOffset = offset;
          }
-        if (drawing) i ▷ text(x, y, k);                                         // Draw the remaining text of the entry
-        if (!firstOffset) cl.firstOffset = firstOffset = offset;                              // First offset visible in drawing area
-        cl.lastOffset = offset;                                                 // Last offset visible in drawing area
+        if (drawing) i ▶ text(x, y, k);                                         // Draw the remaining text of the entry
+        if (!firstOffset) cl->firstOffset = firstOffset = offset;               // First offset visible in drawing area
+        cl->lastOffset = offset;                                                // Last offset visible in drawing area
        }
 
-      w ◁ i.fontHeight * ceil(a / i.fontHeight);                                // Width of current entry including move to next tab stop
-      if      (!cursorEntryIndex)              cl.cursorPrevOffset = offset;    // Entry just before cursor
-      else if  (cursorEntryIndex + 1 == wordⁱ) cl.cursorNextOffset = offset;    // Entry just after cursor
-      R ◁ makeRectangleWH(x, y, w, i.fontHeight);                               // Rectangle containing entry
+      w ◁ i->fontHeight * ceil(a / i->fontHeight);                              // Width of current entry including move to next tab stop
+      if      (!cursorEntryIndex)              cl->cursorPrevOffset = offset;   // Entry just before cursor
+      else if  (cursorEntryIndex + 1 == wordⁱ) cl->cursorNextOffset = offset;   // Entry just after cursor
+      R ◁ makeRectangleWH(x, y, w, i->fontHeight);                              // Rectangle containing entry
       entryRectangles[wordⁱ] ≞ R;                                               // Rectangle containing this entry up to the next tab stop
       entryOffset            [wordⁱ] = offset;                                  // Offset for this entry
       x += w;                                                                   // Move to next entry position
@@ -586,8 +605,8 @@ static void draw__$CompactList                                                  
 
   bestAreaUp ◀ 0.0; bestAreaDown ◀ 0.0;                                         // Locate the rectangles that match the best for up and down arrows
   cer  ◀ entryRectangles[cursorEntryIndex];
-  cerd ◁ cer ▷ translate(0, +i.fontHeight);
-  ceru ◁ cer ▷ translate(0, -i.fontHeight);
+  cerd ◁ cer ▷ translate(0, +i->fontHeight);
+  ceru ◁ cer ▷ translate(0, -i->fontHeight);
 
   for(size_t i = 1; i <= N; ++i)                                                // Each entry
    {o ◁ entryOffset[i];                                                         // Offset of this entry
@@ -595,12 +614,12 @@ static void draw__$CompactList                                                  
      {    r ◁ entryRectangles[i];                                               // Rectangle for entry
       d ◁ r ▷ intersectionArea(cerd);                                           // Area of overlap with down rectangle
       u ◁ r ▷ intersectionArea(ceru);                                           // Area of overlap with up rectangle
-      if (d > bestAreaDown) {bestAreaDown = d; cl.cursorDownOffset = o;}        // Better down
-      if (u > bestAreaUp)   {bestAreaUp   = u; cl.cursorUpOffset   = o;}        // Better up
+      if (d > bestAreaDown) {bestAreaDown = d; cl->cursorDownOffset = o;}       // Better down
+      if (u > bestAreaUp)   {bestAreaUp   = u; cl->cursorUpOffset   = o;}       // Better up
      }
    }
 
-  i ▷ rectangleLine(cl.drawTable, cl.frameColour);                                    // Frame the drawn area
+  i ▶ rectangleLine(cl->drawTable, cl->frameColour);                            // Frame the drawn area
  } // draw
 
 #endif
@@ -667,7 +686,7 @@ void test3()                                                                    
 
     table ◁ makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d");
 
-    i ▷ font    (i.serif);                                                      // Font
+    i ▷ font    ($Font_serif);                                                  // Font
     i ▷ fontSize(100);                                                          // Size of text
     i ▷ colour  (black);                                                        // Colour of text
 
@@ -706,8 +725,8 @@ void test4()                                                                    
     cursorEntry            ◁ list ▷ findFirst("qqee");                          // Cursor entry
     textEnteredSoFar       ◁ "qqx";                                             // Assume the user has entered some text to narrow the possibilities displayed
     textEnteredSoFarLength ◁ 2ul;                                               // Length of text entered so far
-    textEnteredSoFarFont   ◁ i.sansItalic;                                      // Font for text entered so far
-    possibilityFont        ◁ i.serif;                                           // Font for remaining possibilities
+    textEnteredSoFarFont   ◁ $Font_sansItalic;                                  // Font for text entered so far
+    possibilityFont        ◁ $Font_serif;                                       // Font for remaining possibilities
     possibilityFontSize    ◁ 100ul;                                             // Font size for entries
     startAtOffset          ◁ 2ul;                                               // Start drawing at this entry
     firstOffset            ◀ 0ul;                                               // First visible entry
@@ -810,10 +829,11 @@ void test5()                                                                    
  {void draw($Image i)
    {list ◁ makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
     drawTable ◁ makeRectangleWH(500, 500, 500, 500);                            // Drawing area
-    cl ◀ make$CompactList(i, list, drawTable);                                  // Create compact list
+    cl ◀ make$CompactList(&i, list, drawTable);                                 // Create compact list
     cl.cursorEntry ≞ list ▷ findFirst("qqee");                                  // Cursor entry
     cl.pointerˣ = 717; cl.pointerʸ = 717;                                       // Current pointer coordinates
     strcpy(cl.textEnteredSoFar, "qqx");                                         // Assume the user has entered some text to narrow the possibilities displayed
+    cl.textEnteredSoFarLength = 2;                                              // Assume the user has entered some text to narrow the possibilities displayed
     cl.possibilityFontSize = 100;                                               // Font size for entries
 
     cl ▷ draw(1);
@@ -835,7 +855,7 @@ void test5()                                                                    
  }
 
 int main (void)
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0,
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4,
                            test5, 0};
   run_tests("$", 1, tests);
   return 0;
