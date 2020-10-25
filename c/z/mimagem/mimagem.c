@@ -106,10 +106,10 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
     backgroundColour  ◁ paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
     backgroundColour1 ◁ paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN];        // Background colour for previous layer
 
-    void         openFont() {i ▷ font(i.sansBold);    openTagFillColor();}      // Font  for opening tag
-    void        closeFont() {i ▷ font(i.sans);       closeTagFillColor();}      // Font  for closing tag
-    void         textFont() {i ▷ font(i.serif);          textFillColor();}      // Font  for text
-    void   lineNumberFont() {i ▷ font(i.sansMono); lineNumberFillColor();}      // Font  for line numbers
+    void       openFont() {i ▷ font(CairoTextFont_sansBold);    openTagFillColor();} // Font  for opening tag
+    void      closeFont() {i ▷ font(CairoTextFont_sans);       closeTagFillColor();} // Font  for closing tag
+    void       textFont() {i ▷ font(CairoTextFont_serif);          textFillColor();} // Font  for text
+    void lineNumberFont() {i ▷ font(CairoTextFont_sansMono); lineNumberFillColor();} // Font  for line numbers
 
     void startNewLine(int indent)                                               // Move to next line and indent if requested
      {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
