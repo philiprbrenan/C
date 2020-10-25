@@ -5,15 +5,14 @@
 #-------------------------------------------------------------------------------
 =pod
 
-Does not work under Geany - use from the command line only.
-
+  Does not work under Geany - use from the command line only.
 =cut
 use warnings FATAL => qw(all);
 use strict;
 use Carp;
 use Data::Dump qw(dump);
 use Data::Table::Text qw(:all);
-use GitHub::Crud;
+use GitHub::Crud qw(writeFileUsingSavedToken);
 use YAML::Loader;
 use feature qw(say current_sub);
 
@@ -57,8 +56,7 @@ if (1)                                                                          
     if (($t =~ m(readme)i and $t !~ m(samples)) or $t =~ m(license)i)
      {$t = swapFilePrefix($t, q(c/));
      }
-    lll "$f to $t ",
-      GitHub::Crud::writeFileUsingSavedToken($user, $repo, $t, readFile($f));
+    lll "$f to $t ", writeFileUsingSavedToken($user, $repo, $t, readFile($f));
    }
  }
 
@@ -132,21 +130,19 @@ jobs:
 $tests
 END
 
-  lll "C Work flow to $repo ",
-    GitHub::Crud::writeFileUsingSavedToken($user, $repo, $wf, $y);
+  lll "Work flow to $repo ", writeFileUsingSavedToken($user, $repo, $wf, $y);
  }
 
 # Cpan module
 
 if (1)                                                                          # Upload Cpan module
- {my %files = map {$_=>1} searchDirectoryTreesForMatchingFiles($cpan);          # Possible files
-
-  for my $f(sort keys %files)                                                   # Upload each file
-   {my $t = swapFilePrefix($f, $cpan);
-    next if     $t =~ m(backup|zzz);
-    next unless $t =~ m(\A(Build.PL|CHANGES|CONTRIBUTING|MANIFEST|README.*|test\.pl|lib/.*)\Z);
-    lll "$f to $t ",
-      GitHub::Crud::writeFileUsingSavedToken($user, $cpanRepo, $t, readFile($f));
+ {for my $f(searchDirectoryTreesForMatchingFiles($cpan))                        # Upload each file in module
+   {my $t = swapFilePrefix($f, $cpan);                                          # Target on GitHub
+    next if $t =~ m(backup|zzz);                                                # Ignore work files
+    if ($t =~ m(\A(.gitignore|Build.PL|CHANGES|CONTRIBUTING|MANIFEST|README.*|test\.pl|lib/.*)\Z))
+     {my $s = readFile($f);
+      lll "$f to $t ", writeFileUsingSavedToken($user, $cpanRepo, $t, $s);
+     }
    }
  }
 
@@ -178,6 +174,5 @@ jobs:
         perl Build.PL
         perl Build test
 END
-  lll "Perl Work flow to $cpanRepo ",
-    GitHub::Crud::writeFileUsingSavedToken($user, $cpanRepo, $wf, $y);
+  lll "Work flow to $cpanRepo ", writeFileUsingSavedToken($user, $cpanRepo, $wf, $y);
  }
