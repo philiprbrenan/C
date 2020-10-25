@@ -1,7 +1,7 @@
 static CairoTextFont makeCairoTextFont
  (char * fontFile);
 static CairoTextCompactList makeCairoTextCompactList
- (CairoTextImage    image,
+ (CairoTextImage  * image,
   ArenaList list,
   Rectangle drawTable);
 static void free_CairoTextImage
@@ -9,8 +9,8 @@ static void free_CairoTextImage
 static void free_CairoTextFont
  (CairoTextFont * font);
 static void font_CairoText
- (CairoTextImage * i,
-  CairoTextFont font);
+ (CairoTextImage    * i,
+  enum CairoTextFonts fontNumber);
 static void fontMetrics_CairoText
  (CairoTextImage * i);
 static void fontSize_CairoText
@@ -155,8 +155,8 @@ struct ProtoTypes_CairoTextImage {
     CairoTextImage * i,                                                         // CairoTextImage
     int size);                                                                  // Size
   void  (*font)(                                                                // Start using a font
-    CairoTextImage * i,                                                         // CairoTextImage
-    CairoTextFont font);                                                        // Font to use
+    CairoTextImage    * i,                                                      // CairoTextImage
+    enum CairoTextFonts fontNumber);                                            // Font to use
   void  (*free)(                                                                // Free an image
     CairoTextImage * i);                                                        // CairoTextImage
   void  (*leftArrow)(                                                           // Draw a left pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
@@ -177,7 +177,7 @@ struct ProtoTypes_CairoTextImage {
     double x,                                                                   // X coordinate to move to
     double y);                                                                  // Y coordinate to move to
   CairoTextCompactList  (*makeCairoTextCompactList)(                            // Define a compact list
-    CairoTextImage image,                                                       // Image in which to draw the compact list
+    CairoTextImage  * image,                                                    // Image in which to draw the compact list
     ArenaList list,                                                             // Arena list of possibilities
     Rectangle drawTable);                                                       // Rectangle defining drawing area for the list
   void  (*move)(                                                                // Move to a position without drawing
