@@ -107,10 +107,10 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
     const typeof(paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN]) backgroundColour = paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
     const typeof(paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN]) backgroundColour1 = paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN];        // Background colour for previous layer
 
-    void         openFont() {i.proto->font(&i, i.sansBold);    openTagFillColor();}      // Font  for opening tag
-    void        closeFont() {i.proto->font(&i, i.sans);       closeTagFillColor();}      // Font  for closing tag
-    void         textFont() {i.proto->font(&i, i.serif);          textFillColor();}      // Font  for text
-    void   lineNumberFont() {i.proto->font(&i, i.sansMono); lineNumberFillColor();}      // Font  for line numbers
+    void       openFont() {i.proto->font(&i, CairoTextFont_sansBold);    openTagFillColor();} // Font  for opening tag
+    void      closeFont() {i.proto->font(&i, CairoTextFont_sans);       closeTagFillColor();} // Font  for closing tag
+    void       textFont() {i.proto->font(&i, CairoTextFont_serif);          textFillColor();} // Font  for text
+    void lineNumberFont() {i.proto->font(&i, CairoTextFont_sansMono); lineNumberFillColor();} // Font  for line numbers
 
     void startNewLine(int indent)                                               // Move to next line and indent if requested
      {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
