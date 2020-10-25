@@ -33,7 +33,7 @@ typedef struct CairoTextImage                                                   
   FT_Library          freeTypeLibrary;                                          // Free Type library
   int width, height;                                                            // Dimensions of the surface
   const StringBuffer  out;                                                      // The output image file
-
+  CairoTextFont fonts[0];                                                               // Fonts
   CairoTextFont sansMonoBold;                                                           // Mono fonts
   CairoTextFont sansMono;
 
@@ -49,9 +49,22 @@ typedef struct CairoTextImage                                                   
   double fontAscent, fontDescent, fontHeight;                                   // Metrics for the current font
  } CairoTextImage;
 
+enum CairoTextFonts {CairoTextFont_sansMonoBold    = 0,
+             CairoTextFont_sansMono        = 1,
+             CairoTextFont_sansBold        = 2,
+             CairoTextFont_sansBoldItalic  = 3,
+             CairoTextFont_sansItalic      = 4,
+             CairoTextFont_sans            = 5,
+             CairoTextFont_serifBold       = 6,
+             CairoTextFont_serifBoldItalic = 7,
+             CairoTextFont_serifItalic     = 8,
+             CairoTextFont_serif           = 9,
+             CairoTextFont_end             =10};
+
+
 typedef struct CairoTextCompactList                                                     // A compact list of options that the user can cursor to, point to, scroll to choose an option.
  {const struct ProtoTypes_CairoTextCompactList *proto;                                  // Methods associated with an arena tree
-  CairoTextImage image;                                                                 //I Image to draw in
+  CairoTextImage * image;                                                               //I Image to draw in
   int pointerˣ, pointerʸ;                                                       //I Coordinates of the pointer in window pixels
   Colour frameColour;                                                           //I Colour of frame
   Colour possibilityColour;                                                     //I Colour of text used to show a possibility
@@ -60,18 +73,18 @@ typedef struct CairoTextCompactList                                             
   ArenaList list;                                                               //I The possibilities to display
   ArenaListNode cursorEntry;                                                    //I The current possibility under the cursor
   char textEnteredSoFar[17];                                                    // Prefix text entered so far to narrow the possibilities
-  size_t textEnteredSoFarLength;                                                   // Length of text entered so far
-  CairoTextFont textEnteredSoFarFont;                                                   //I Font for text entered so far
-  CairoTextFont possibilityFont;                                                        //I Font for remaining possibilities
-  size_t possibilityFontSize;                                                      //I Font size for entries
-  size_t startAtOffset;                                                            //I Start drawing at this entry
-  size_t firstOffset;                                                              //O First visible entry
-  size_t lastOffset;                                                               //O Last visible entry
-  size_t cursorPrevOffset;                                                         //O Offset of entry preceding entry containing cursor
-  size_t cursorNextOffset;                                                         //O Offset of entry following entry containing cursor
-  size_t cursorUpOffset;                                                           //O Offset of entry above entry containing cursor
-  size_t cursorDownOffset;                                                         //O Offset of entry below entry containing cursor
-  size_t pointerOffset;                                                            //O Offset of entry containing cursor
+  size_t textEnteredSoFarLength;                                                // Length of text entered so far
+  enum CairoTextFonts textEnteredSoFarFont;                                             //I Font for text entered so far
+  enum CairoTextFonts possibilityFont;                                                  //I Font for remaining possibilities
+  size_t possibilityFontSize;                                                   //I Font size for entries
+  size_t startAtOffset;                                                         //I Start drawing at this entry
+  size_t firstOffset;                                                           //O First visible entry
+  size_t lastOffset;                                                            //O Last visible entry
+  size_t cursorPrevOffset;                                                      //O Offset of entry preceding entry containing cursor
+  size_t cursorNextOffset;                                                      //O Offset of entry following entry containing cursor
+  size_t cursorUpOffset;                                                        //O Offset of entry above entry containing cursor
+  size_t cursorDownOffset;                                                      //O Offset of entry below entry containing cursor
+  size_t pointerOffset;                                                         //O Offset of entry containing cursor
   Rectangle drawTable;                                                          //I Drawing area
  } CairoTextCompactList;
 
@@ -114,7 +127,7 @@ CairoTextImage makeCairoTextImage                                               
   const typeof(FT_Init_FreeType(&i.freeTypeLibrary)) e1 = FT_Init_FreeType(&i.freeTypeLibrary);                                    // Initialize FreeType library
   if (e1) printStackBackTraceAndExit(1, "Error %d in free type\n", e1);
 
-  i.proto->font(&i, i.sansMono);                                                         // Default font
+  i.proto->font(&i, CairoTextFont_sansMono);                                                     // Default font
   i.proto->clearWhite(&i);                                                               // Clear display
   i.proto->rgb(&i, 0,0,0);                                                               // Default drawing colour
   i.proto->lineWidth(&i, 2);                                                             // Default stroke width
@@ -140,11 +153,11 @@ static CairoTextFont makeCairoTextFont                                          
  }
 
 static CairoTextCompactList makeCairoTextCompactList                                            // Define a compact list
- (CairoTextImage    image,                                                              // Image in which to draw the compact list
+ (CairoTextImage  * image,                                                              // Image in which to draw the compact list
   ArenaList list,                                                               // Arena list of possibilities
   Rectangle drawTable)                                                          // Rectangle defining drawing area for the list
  {CairoTextCompactList l = newCairoTextCompactList(({struct CairoTextCompactList t = {proto: &ProtoTypes_CairoTextCompactList};   t;}));
-memcpy(&  l.image                  , ({typeof(  l.image                  ) s =  image; (void *)&s;}), sizeof(  l.image                  ));
+  l.image                  = image;
 memcpy(&  l.frameColour            , ({typeof(  l.frameColour            ) s =  makeColour(0,0,0,1); (void *)&s;}), sizeof(  l.frameColour            ));
 memcpy(&  l.possibilityColour      , ({typeof(  l.possibilityColour      ) s =  makeColour(0,0,0,1); (void *)&s;}), sizeof(  l.possibilityColour      ));
 memcpy(&  l.pointedColour          , ({typeof(  l.pointedColour          ) s =  makeColour(0,0,1,0.3); (void *)&s;}), sizeof(  l.pointedColour          ));
@@ -153,8 +166,8 @@ memcpy(&  l.textEnteredSoFarColour , ({typeof(  l.textEnteredSoFarColour ) s =  
 memcpy(&  l.list                   , ({typeof(  l.list                   ) s =  list; (void *)&s;}), sizeof(  l.list                   ));
 memcpy(&  l.cursorEntry            , ({typeof(  l.cursorEntry            ) s =  list.proto->first(&list); (void *)&s;}), sizeof(  l.cursorEntry            ));
   l.textEnteredSoFarLength = 0;
-memcpy(&  l.textEnteredSoFarFont   , ({typeof(  l.textEnteredSoFarFont   ) s =  image.sansItalic; (void *)&s;}), sizeof(  l.textEnteredSoFarFont   ));
-memcpy(&  l.possibilityFont        , ({typeof(  l.possibilityFont        ) s =  image.serif; (void *)&s;}), sizeof(  l.possibilityFont        ));
+memcpy(&  l.textEnteredSoFarFont   , ({typeof(  l.textEnteredSoFarFont   ) s =  CairoTextFont_sansItalic; (void *)&s;}), sizeof(  l.textEnteredSoFarFont   ));
+memcpy(&  l.possibilityFont        , ({typeof(  l.possibilityFont        ) s =  CairoTextFont_serif; (void *)&s;}), sizeof(  l.possibilityFont        ));
   l.possibilityFontSize    = 100;
 memcpy(&  l.drawTable              , ({typeof(  l.drawTable              ) s =  drawTable; (void *)&s;}), sizeof(  l.drawTable              ));
   return l;
@@ -189,20 +202,26 @@ static void free_CairoTextFont                                                  
 //D1 Text                                                                       // Work with text
 
 static void font_CairoText                                                              // Start using a font
- (CairoTextImage * i,                                                                   // CairoTextImage
-  CairoTextFont font)                                                                   // Font to use
- {if (!font.cairoFontFace)                                                      // Load the font if this font has not yet been loaded.
-   {makeLocalCopyOfStringBuffer(ff, l, font.file);
-    const typeof(FT_New_Face(i->freeTypeLibrary, ff, 0, &font.freeTypeFontFace)) e2 = FT_New_Face(i->freeTypeLibrary, ff, 0, &font.freeTypeFontFace);
+ (CairoTextImage    * i,                                                                // CairoTextImage
+  enum CairoTextFonts fontNumber)                                                       // Font to use
+ {typeof(&i->fonts[fontNumber]) font = &i->fonts[fontNumber];
+  if (!font->cairoFontFace)                                                     // Load the font if this font has not yet been loaded.
+   {makeLocalCopyOfStringBuffer(ff, l, font->file);
+    const typeof(FT_New_Face(i->freeTypeLibrary, ff, 0, &font->freeTypeFontFace)) e2 = FT_New_Face(i->freeTypeLibrary, ff, 0, &font->freeTypeFontFace);
     if (e2 == FT_Err_Unknown_File_Format) printStackBackTraceAndExit
      (1, "FontFace not supported: %s\n", ff);
     else if (e2) printStackBackTraceAndExit
      (1, "FontFace failed: %d %s\n", e2, ff);
 
-    font.cairoFontFace = cairo_ft_font_face_create_for_ft_face(font.freeTypeFontFace, 0);
+    font->cairoFontFace =
+      cairo_ft_font_face_create_for_ft_face(font->freeTypeFontFace, 0);
    }
 
-  cairo_set_font_face (i->cr, font.cairoFontFace);                              // Set the font as the currently active one
+if (i->fonts[fontNumber].cairoFontFace == 0)
+ {printStackBackTrace("BBBB Bad font face\n");
+ }
+
+  cairo_set_font_face (i->cr, font->cairoFontFace);                              // Set the font as the currently active one
 
   i->proto->fontMetrics(i);
  }
@@ -526,59 +545,59 @@ static void saveAsPng_CairoText_string                                          
 static void draw__CairoTextCompactList                                                  // Draw a compact list
  (CairoTextCompactList * compactList,                                                   // Compact list
   int            drawing)                                                       // Drawing if true - else trial layout
- {typeof(*compactList) cl = *compactList;
-  typeof(cl.image) i = cl.image;
+ {const typeof(compactList) cl = compactList;
+  typeof(cl->image) i = cl->image;
 
-  if (drawing) i.proto->clip(&i, cl.drawTable);                                          // Clip the drawing area to prevent text appearing outside it
+  if (drawing) i->proto->clip(i, cl->drawTable);                                         // Clip the drawing area to prevent text appearing outside it
 
   if (drawing)                                                                  // Show text entered so far
-   {i.proto->colour(&i, cl.textEnteredSoFarColour);
-    i.proto->font(&i, cl.textEnteredSoFarFont);
-    const typeof(cl.textEnteredSoFarLength) l = cl.textEnteredSoFarLength;
-    char t[l+1]; strncpy(t, cl.textEnteredSoFar, l); t[l] = 0;
-    i.proto->textFit(&i, cl.drawTable, 0, 0, 0, t);
+   {i->proto->colour(i, cl->textEnteredSoFarColour);
+    i->proto->font(i, cl->textEnteredSoFarFont);
+    const typeof(cl->textEnteredSoFarLength) l = cl->textEnteredSoFarLength;
+    char t[l+1]; strncpy(t, cl->textEnteredSoFar, l); t[l] = 0;
+    i->proto->textFit(i, cl->drawTable, 0, 0, 0, t);
    }
 
-  i.proto->font(&i, cl.possibilityFont);                                             // Font for remaining possibilities
-  i.proto->fontSize(&i, cl.possibilityFontSize);                                         // Size of text for possibilities
-  i.proto->colour(&i, cl.possibilityColour);                                           // Colour of text showing possibility
+  i->proto->font(i, cl->possibilityFont);                                            // Font for remaining possibilities
+  i->proto->fontSize(i, cl->possibilityFontSize);                                        // Size of text for possibilities
+  i->proto->colour(i, cl->possibilityColour);                                          // Colour of text showing possibility
 
-  double x = cl.drawTable.X, y = cl.drawTable.y - i.fontHeight;                 // At the end of the previous line
-  typeof(0ul) cursorEntryIndex = 0ul;                                                    // Whether we have drawn the cursor entry yet.
-  const typeof(cl.list.proto->countChildren(&cl.list)) N = cl.list.proto->countChildren(&cl.list);                                                  // Maximum number of entries
+  double x = cl->drawTable.X, y = cl->drawTable.y - i->fontHeight;              // At the end of the previous line
+  typeof(0ul) cursorEntryIndex = 0ul;                                                       // Whether we have drawn the cursor entry yet.
+  const typeof(cl->list.proto->countChildren(&cl->list)) N = cl->list.proto->countChildren(&cl->list);                                                 // Maximum number of entries
   size_t    entryOffset    [N+1]; memset(entryOffset, 0, sizeof(entryOffset));  // Offset for each entry
   Rectangle entryRectangles[N+1];                                               // Rectangle for each entry up to next tab stop
   typeof(0ul) firstOffset = 0ul;
 
-  ArenaListfeⁱ(word, cl.list)                                                   // Each word
-   {if (wordⁱ >= cl.startAtOffset)                                                 // Words in the scrolled to area
+  ArenaListfeⁱ(word, cl->list)                                                  // Each word
+   {if (wordⁱ >= cl->startAtOffset)                                             // Words in the scrolled to area
      {makeLocalCopyOfArenaListKey(K, L, word);
-      if (L <= cl.textEnteredSoFarLength) continue;                             // Word shorter than prefix entered so far
-      if (strncmp(K, cl.textEnteredSoFar, cl.textEnteredSoFarLength)) continue; // Word does not match prefix entered so far
-      const typeof(&K[cl.textEnteredSoFarLength]) k = &K[cl.textEnteredSoFarLength];                                        // Skip text entered so far
-      const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);                                                   // Width of text
-      if (x + a > cl.drawTable.X) {x = cl.drawTable.x; y += i.fontHeight;}      // Move to next line if necessary
+      if (L <= cl->textEnteredSoFarLength) continue;                            // Word shorter than prefix entered so far
+      if (strncmp(K, cl->textEnteredSoFar, cl->textEnteredSoFarLength))continue;// Word does not match prefix entered so far
+      const typeof(&K[cl->textEnteredSoFarLength]) k = &K[cl->textEnteredSoFarLength];                                       // Skip text entered so far
+      const typeof(i->proto->textAdvance(i, k)) a = i->proto->textAdvance(i, k);                                                   // Width of text
+      if (x + a > cl->drawTable.X) {x = cl->drawTable.x; y += i->fontHeight;}   // Move to next line if necessary
       const typeof(word.offset) offset = word.offset;                                                     // Offset of current entry
 
-      const typeof(makeRectangleWH(x, y, a, i.fontHeight)) r = makeRectangleWH(x, y, a, i.fontHeight);                               // Rectangle in which to draw the text
+      const typeof(makeRectangleWH(x, y, a, i->fontHeight)) r = makeRectangleWH(x, y, a, i->fontHeight);                              // Rectangle in which to draw the text
 
-      if (cl.drawTable.proto->contains(&cl.drawTable, r))                                           // Draw visible elements
-       {if (offset == cl.cursorEntry.offset)                                    // Reached entry under cursor
-         {i.proto->rectangle(&i, r, cl.pointedColour);                                   // Background colour of entry containing the cursor
+      if (cl->drawTable.proto->contains(&cl->drawTable, r))                                          // Draw visible elements
+       {if (offset == cl->cursorEntry.offset)                                   // Reached entry under cursor
+         {i->proto->rectangle(i, r, cl->pointedColour);                                  // Background colour of entry containing the cursor
           cursorEntryIndex = wordⁱ;                                             // Show that the cursor entry has now been drawn
          }
-        if (r.proto->containsPoint(&r, cl.pointerˣ, cl.pointerʸ))
-         {cl.pointerOffset = offset;      // Offset of item containing pointer
+        if (r.proto->containsPoint(&r, cl->pointerˣ, cl->pointerʸ))                      // Offset of item containing pointer
+         {cl->pointerOffset = offset;
          }
-        if (drawing) i.proto->text(&i, x, y, k);                                         // Draw the remaining text of the entry
-        if (!firstOffset) cl.firstOffset = firstOffset = offset;                              // First offset visible in drawing area
-        cl.lastOffset = offset;                                                 // Last offset visible in drawing area
+        if (drawing) i->proto->text(i, x, y, k);                                         // Draw the remaining text of the entry
+        if (!firstOffset) cl->firstOffset = firstOffset = offset;               // First offset visible in drawing area
+        cl->lastOffset = offset;                                                // Last offset visible in drawing area
        }
 
-      const typeof(i.fontHeight * ceil(a / i.fontHeight)) w = i.fontHeight * ceil(a / i.fontHeight);                                // Width of current entry including move to next tab stop
-      if      (!cursorEntryIndex)              cl.cursorPrevOffset = offset;    // Entry just before cursor
-      else if  (cursorEntryIndex + 1 == wordⁱ) cl.cursorNextOffset = offset;    // Entry just after cursor
-      const typeof(makeRectangleWH(x, y, w, i.fontHeight)) R = makeRectangleWH(x, y, w, i.fontHeight);                               // Rectangle containing entry
+      const typeof(i->fontHeight * ceil(a / i->fontHeight)) w = i->fontHeight * ceil(a / i->fontHeight);                              // Width of current entry including move to next tab stop
+      if      (!cursorEntryIndex)              cl->cursorPrevOffset = offset;   // Entry just before cursor
+      else if  (cursorEntryIndex + 1 == wordⁱ) cl->cursorNextOffset = offset;   // Entry just after cursor
+      const typeof(makeRectangleWH(x, y, w, i->fontHeight)) R = makeRectangleWH(x, y, w, i->fontHeight);                              // Rectangle containing entry
 memcpy(&      entryRectangles[wordⁱ] , ({typeof(      entryRectangles[wordⁱ] ) s =  R; (void *)&s;}), sizeof(      entryRectangles[wordⁱ] ));                                               // Rectangle containing this entry up to the next tab stop
       entryOffset            [wordⁱ] = offset;                                  // Offset for this entry
       x += w;                                                                   // Move to next entry position
@@ -587,8 +606,8 @@ memcpy(&      entryRectangles[wordⁱ] , ({typeof(      entryRectangles[wordⁱ]
 
   typeof(0.0) bestAreaUp = 0.0; typeof(0.0) bestAreaDown = 0.0;                                         // Locate the rectangles that match the best for up and down arrows
   typeof(entryRectangles[cursorEntryIndex]) cer = entryRectangles[cursorEntryIndex];
-  const typeof(cer.proto->translate(&cer, 0, +i.fontHeight)) cerd = cer.proto->translate(&cer, 0, +i.fontHeight);
-  const typeof(cer.proto->translate(&cer, 0, -i.fontHeight)) ceru = cer.proto->translate(&cer, 0, -i.fontHeight);
+  const typeof(cer.proto->translate(&cer, 0, +i->fontHeight)) cerd = cer.proto->translate(&cer, 0, +i->fontHeight);
+  const typeof(cer.proto->translate(&cer, 0, -i->fontHeight)) ceru = cer.proto->translate(&cer, 0, -i->fontHeight);
 
   for(size_t i = 1; i <= N; ++i)                                                // Each entry
    {const typeof(entryOffset[i]) o = entryOffset[i];                                                         // Offset of this entry
@@ -596,12 +615,12 @@ memcpy(&      entryRectangles[wordⁱ] , ({typeof(      entryRectangles[wordⁱ]
      {    const typeof(entryRectangles[i]) r = entryRectangles[i];                                               // Rectangle for entry
       const typeof(r.proto->intersectionArea(&r, cerd)) d = r.proto->intersectionArea(&r, cerd);                                           // Area of overlap with down rectangle
       const typeof(r.proto->intersectionArea(&r, ceru)) u = r.proto->intersectionArea(&r, ceru);                                           // Area of overlap with up rectangle
-      if (d > bestAreaDown) {bestAreaDown = d; cl.cursorDownOffset = o;}        // Better down
-      if (u > bestAreaUp)   {bestAreaUp   = u; cl.cursorUpOffset   = o;}        // Better up
+      if (d > bestAreaDown) {bestAreaDown = d; cl->cursorDownOffset = o;}       // Better down
+      if (u > bestAreaUp)   {bestAreaUp   = u; cl->cursorUpOffset   = o;}       // Better up
      }
    }
 
-  i.proto->rectangleLine(&i, cl.drawTable, cl.frameColour);                                    // Frame the drawn area
+  i->proto->rectangleLine(i, cl->drawTable, cl->frameColour);                            // Frame the drawn area
  } // draw
 
 #endif
@@ -668,7 +687,7 @@ void test3()                                                                    
 
     const typeof(makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d")) table = makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d");
 
-    i.proto->font(&i, i.serif);                                                      // Font
+    i.proto->font(&i, CairoTextFont_serif);                                                  // Font
     i.proto->fontSize(&i, 100);                                                          // Size of text
     i.proto->colour(&i, black);                                                        // Colour of text
 
@@ -707,8 +726,8 @@ void test4()                                                                    
     const typeof(list.proto->findFirst(&list, "qqee")) cursorEntry = list.proto->findFirst(&list, "qqee");                          // Cursor entry
     const typeof("qqx") textEnteredSoFar = "qqx";                                             // Assume the user has entered some text to narrow the possibilities displayed
     const typeof(2ul) textEnteredSoFarLength = 2ul;                                               // Length of text entered so far
-    const typeof(i.sansItalic) textEnteredSoFarFont = i.sansItalic;                                      // Font for text entered so far
-    const typeof(i.serif) possibilityFont = i.serif;                                           // Font for remaining possibilities
+    const typeof(CairoTextFont_sansItalic) textEnteredSoFarFont = CairoTextFont_sansItalic;                                  // Font for text entered so far
+    const typeof(CairoTextFont_serif) possibilityFont = CairoTextFont_serif;                                       // Font for remaining possibilities
     const typeof(100ul) possibilityFontSize = 100ul;                                             // Font size for entries
     const typeof(2ul) startAtOffset = 2ul;                                               // Start drawing at this entry
     typeof(0ul) firstOffset = 0ul;                                               // First visible entry
@@ -811,10 +830,11 @@ void test5()                                                                    
  {void draw(CairoTextImage i)
    {const typeof(makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz")) list = makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
     const typeof(makeRectangleWH(500, 500, 500, 500)) drawTable = makeRectangleWH(500, 500, 500, 500);                            // Drawing area
-    typeof(makeCairoTextCompactList(i, list, drawTable)) cl = makeCairoTextCompactList(i, list, drawTable);                                  // Create compact list
+    typeof(makeCairoTextCompactList(&i, list, drawTable)) cl = makeCairoTextCompactList(&i, list, drawTable);                                 // Create compact list
 memcpy(&    cl.cursorEntry , ({typeof(    cl.cursorEntry ) s =  list.proto->findFirst(&list, "qqee"); (void *)&s;}), sizeof(    cl.cursorEntry ));                                  // Cursor entry
     cl.pointerˣ = 717; cl.pointerʸ = 717;                                       // Current pointer coordinates
     strcpy(cl.textEnteredSoFar, "qqx");                                         // Assume the user has entered some text to narrow the possibilities displayed
+    cl.textEnteredSoFarLength = 2;                                              // Assume the user has entered some text to narrow the possibilities displayed
     cl.possibilityFontSize = 100;                                               // Font size for entries
 
     cl.proto->draw(&cl, 1);
@@ -836,7 +856,7 @@ memcpy(&    cl.cursorEntry , ({typeof(    cl.cursorEntry ) s =  list.proto->find
  }
 
 int main (void)
- {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0,
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4,
                            test5, 0};
   run_tests("CairoText", 1, tests);
   return 0;
