@@ -76,15 +76,15 @@ typedef struct CairoTextCompactList                                             
   size_t textEnteredSoFarLength;                                                // Length of text entered so far
   enum CairoTextFonts textEnteredSoFarFont;                                             //I Font for text entered so far
   enum CairoTextFonts possibilityFont;                                                  //I Font for remaining possibilities
-  size_t possibilityFontSize;                                                   //I Font size for entries
-  size_t startAtOffset;                                                         //I Start drawing at this entry
-  size_t firstOffset;                                                           //O First visible entry
-  size_t lastOffset;                                                            //O Last visible entry
-  size_t cursorPrevOffset;                                                      //O Offset of entry preceding entry containing cursor
-  size_t cursorNextOffset;                                                      //O Offset of entry following entry containing cursor
-  size_t cursorUpOffset;                                                        //O Offset of entry above entry containing cursor
-  size_t cursorDownOffset;                                                      //O Offset of entry below entry containing cursor
-  size_t pointerOffset;                                                         //O Offset of entry containing cursor
+  size_t      possibilityFontSize;                                              //I Font size for entries
+  ArenaListNode startAt;                                                        //I Start drawing at this entry
+  ArenaListNode first;                                                          //O First visible entry
+  ArenaListNode last;                                                           //O Last visible entry
+  ArenaListNode cursorPrev;                                                     //O Offset of entry preceding entry containing cursor
+  ArenaListNode cursorNext;                                                     //O Offset of entry following entry containing cursor
+  ArenaListNode cursorUp;                                                       //O Offset of entry above entry containing cursor
+  ArenaListNode cursorDown;                                                     //O Offset of entry below entry containing cursor
+  ArenaListNode pointer;                                                        //O Offset of entry containing cursor
   Rectangle drawTable;                                                          //I Drawing area
  } CairoTextCompactList;
 
@@ -543,30 +543,70 @@ static void saveAsPng_CairoText_string                                          
 //D1 Widgets                                                                    // Draw widgets
 
 static void scrollPageDown__CairoTextCompactList                                        // Scroll a compact list down one page
- (CairoTextCompactList * compactList)                                                   // Compact list
- {const typeof(compactList->startAtOffset = compactList->lastOffset) o = compactList->startAtOffset = compactList->lastOffset;
-  compactList->cursorEntry   = compactList->list.proto->offset(&compactList->list, o);
-  compactList->proto->draw(compactList);
+ (CairoTextCompactList * c)                                                             // Compact list
+ {c->cursorEntry = c->startAt = c->last;
+  c->proto->draw(c);
  }
 
 static void scrollPageUp__CairoTextCompactList                                          // Scroll a compact list up one page
- (CairoTextCompactList * compactList)                                                   // Compact list
- {const typeof(compactList->list) list = compactList->list;                                                     // List
-  typeof(list.proto->first(&list)) F = list.proto->first(&list);                              typeof(F.proto->index(&F)) f = F.proto->index(&F);                 // First element of list
-  typeof(list.proto->offset(&list, compactList->startAtOffset)) L = list.proto->offset(&list, compactList->startAtOffset); typeof(L.proto->index(&L)) l = L.proto->index(&L); const typeof(l) m = l;          // Current offset which causes the entry we want displayed last to be displayed first in the drawing area.
+ (CairoTextCompactList * c)                                                             // Compact list
+ {const typeof(c->list) list = c->list;                                                               // List
+  typeof(list.proto->first(&list)) F = list.proto->first(&list); typeof(F.proto->index(&F)) f = F.proto->index(&F);                                              // First element of list
+  typeof(c->startAt) L = c->startAt;   typeof(L.proto->index(&L)) l = L.proto->index(&L); const typeof(l) m = l;                                       // Current offset which causes the entry we want displayed last to be displayed first in the drawing area.
 
   for(size_t i = 0; i < 99; ++i)                                                // Binary search
    {if (f + 1 >= l) break;                                                      // No more splits possible
     const typeof((int)nearbyint((f + l) / 2)) n = (int)nearbyint((f + l) / 2);                                            // Try the middle
-    compactList->startAtOffset = list.proto->at(&list, n).offset;                           // New start position
-    compactList->proto->layout(compactList);                                                       // Layout
-    const typeof(list.proto->offset(&list, compactList->lastOffset)) T = list.proto->offset(&list, compactList->lastOffset);                                 // Latest last element
-    const typeof(T.proto->index(&T)) t = T.proto->index(&T);                                                              // Index of latest last entry
+    c->startAt = list.proto->at(&list, n);                                                  // New start position
+    c->proto->layout(c);                                                                 // Layout
+    const typeof(c->last.proto->index(&c->last)) t = c->last.proto->index(&c->last);                                                        // Index of latest last entry
     if (t < m) f = n; else if (t > m) l = n; else f = l = n;                    // Update range
    }
-  const typeof(compactList->cursorEntry   = list.proto->at(&list, l)) r = compactList->cursorEntry   = list.proto->at(&list, l);                                // Location of cursor is on first entry in drawn area
-      compactList->startAtOffset = r.offset;                                    // Draw from this entry
-  compactList->proto->draw(compactList);                                                           // Draw
+  c->startAt = c->cursorEntry = list.proto->at(&list, l);                                   // Location of cursor is on first entry in drawn area
+  c->proto->draw(c);                                                                     // Draw
+ }
+
+static void scrollToCursor__CairoTextCompactList                                        // Scroll to bring the entry under the cursor into view
+ (CairoTextCompactList * c)                                                             // Compact list
+ {const typeof(c->list) list = c->list;                                                               // List
+  typeof(0) f = 0;                                                                        // In drawing area if true
+  ArenaListfe(e, list)                                                          // Each entry
+   {if (e.offset == c->first.offset) f = 1;                                     // Entered drawn area
+    if (e.offset == c->cursorEntry.offset && !f) c->startAt = e;                // At entry under cursor but not in the drawing area
+    if (e.offset == c->last.offset)  f = 0;                                      // Leaving drawn area
+   }
+ }
+
+static void arrowLeft__CairoTextCompactList                                             // Move the entry under the cursor one click to the left
+ (CairoTextCompactList * c)                                                             // Compact list
+ {if (c->cursorEntry.offset == c->first.offset) c->proto->scrollPageUp(c);               // Scroll up one page if leaving the first item on page
+  if (c->cursorPrev .offset)   c->cursorEntry = c->cursorPrev;                  // Cursor entry
+  c->proto->draw(c);                                                                     // Draw
+ }
+
+static void arrowRight__CairoTextCompactList                                            // Move the entry under the cursor one click to the right
+ (CairoTextCompactList * c)                                                             // Compact list
+ {if (c->cursorEntry.offset == c->last.offset) c->proto->scrollPageDown(c);              // Scroll down one page if leaving the last item on page
+  if (c->cursorNext .offset)   c->cursorEntry = c->cursorNext;                  // Cursor entry
+  c->proto->draw(c);                                                                     // Draw
+ }
+
+static void arrowUp__CairoTextCompactList                                               // Move the entry under the cursor one click up
+ (CairoTextCompactList * c)                                                             // Compact list
+ {if (c->cursorUp.offset)
+   {c->cursorEntry = c->cursorUp;                                               // Cursor entry
+    c->proto->scrollToCursor(c);
+   }
+  c->proto->draw(c);                                                                     // Draw
+ }
+
+static void arrowDown__CairoTextCompactList                                             // Move the entry under the cursor one click down
+ (CairoTextCompactList * c)                                                             // Compact list
+ {if (c->cursorDown.offset)
+   {c->cursorEntry = c->cursorDown;                                             // Cursor entry
+    c->proto->scrollToCursor(c);
+   }
+  c->proto->draw(c);                                                                     // Draw
  }
 
 static void draw__CairoTextCompactList                                                  // Draw a compact list
@@ -602,42 +642,41 @@ static void drawOrLayout__CairoTextCompactList                                  
   double x = cl->drawTable.X, y = cl->drawTable.y - i->fontHeight;              // At the end of the previous line
   typeof(0ul) cursorEntryIndex = 0ul;                                                       // Whether we have drawn the cursor entry yet.
   const typeof(cl->list.proto->countChildren(&cl->list)) N = cl->list.proto->countChildren(&cl->list);                                                 // Maximum number of entries
-  size_t    entryOffset    [N+1]; memset(entryOffset, 0, sizeof(entryOffset));  // Offset for each entry
-  Rectangle entryRectangles[N+1];                                               // Rectangle for each entry up to next tab stop
+  ArenaListNode entry          [N+1]; memset(entry, 0, sizeof(entry));          // Offset for each entry
+  Rectangle     entryRectangles[N+1];                                           // Rectangle for each entry up to next tab stop
   typeof(0ul) firstOffset = 0ul;
 
   ArenaListfeⁱ(word, cl->list)                                                  // Each word
-   {if (word.offset >= cl->startAtOffset)                                       // Words in the scrolled to area
+   {if (word.offset >= cl->startAt.offset)                                      // Words in the scrolled to area
      {makeLocalCopyOfArenaListKey(K, L, word);
       if (L <= cl->textEnteredSoFarLength) continue;                            // Word shorter than prefix entered so far
       if (strncmp(K, cl->textEnteredSoFar, cl->textEnteredSoFarLength))continue;// Word does not match prefix entered so far
       const typeof(&K[cl->textEnteredSoFarLength]) k = &K[cl->textEnteredSoFarLength];                                       // Skip text entered so far
       const typeof(i->proto->textAdvance(i, k)) a = i->proto->textAdvance(i, k);                                                   // Width of text
       if (x + a > cl->drawTable.X) {x = cl->drawTable.x; y += i->fontHeight;}   // Move to next line if necessary
-      const typeof(word.offset) offset = word.offset;                                                     // Offset of current entry
 
       const typeof(makeRectangleWH(x, y, a, i->fontHeight)) r = makeRectangleWH(x, y, a, i->fontHeight);                              // Rectangle in which to draw the text
 
       if (cl->drawTable.proto->contains(&cl->drawTable, r))                                          // Draw visible elements
-       {if (offset == cl->cursorEntry.offset)                                   // Reached entry under cursor
+       {if (word.offset == cl->cursorEntry.offset)                              // Reached entry under cursor
          {i->proto->rectangle(i, r, cl->pointedColour);                                  // Background colour of entry containing the cursor
           cursorEntryIndex = wordⁱ;                                             // Show that the cursor entry has now been drawn
          }
         if (r.proto->containsPoint(&r, cl->pointerˣ, cl->pointerʸ))                      // Offset of item containing pointer
-         {cl->pointerOffset = offset;
+         {cl->pointer = word;
          }
         if (drawing) i->proto->text(i, x, y, k);                                         // Draw the remaining text of the entry
-        if (!firstOffset) cl->firstOffset = firstOffset = offset;               // First offset visible in drawing area
-        cl->lastOffset = offset;                                                // Last offset visible in drawing area
+        if (!firstOffset) {cl->first = word; firstOffset = word.offset;}        // First offset visible in drawing area
+        cl->last = word;                                                        // Last offset visible in drawing area
        }
 
       const typeof(i->fontHeight * ceil(a / i->fontHeight)) w = i->fontHeight * ceil(a / i->fontHeight);                              // Width of current entry including move to next tab stop
-      if      (!cursorEntryIndex)              cl->cursorPrevOffset = offset;   // Entry just before cursor
-      else if  (cursorEntryIndex + 1 == wordⁱ) cl->cursorNextOffset = offset;   // Entry just after cursor
+      if      (!cursorEntryIndex)              cl->cursorPrev = word;           // Entry just before cursor
+      else if  (cursorEntryIndex + 1 == wordⁱ) cl->cursorNext = word;           // Entry just after cursor
 
       const typeof(makeRectangleWH(x, y, w, i->fontHeight)) R = makeRectangleWH(x, y, w, i->fontHeight);                              // Rectangle containing entry
 memcpy(&      entryRectangles[wordⁱ] , ({typeof(      entryRectangles[wordⁱ] ) s =  R; (void *)&s;}), sizeof(      entryRectangles[wordⁱ] ));                                               // Rectangle containing this entry up to the next tab stop
-      entryOffset    [wordⁱ] = offset;                                          // Offset for this entry
+      entry          [wordⁱ] = word;                                            // Offset for this entry
       x += w;                                                                   // Move to next entry position
      }
    }
@@ -650,13 +689,13 @@ memcpy(&      entryRectangles[wordⁱ] , ({typeof(      entryRectangles[wordⁱ]
     const typeof(cer.proto->translate(&cer, 0, -i->fontHeight)) ceru = cer.proto->translate(&cer, 0, -i->fontHeight);
 
     for(size_t i = 1; i <= N; ++i)                                              // Each entry
-     {const typeof(entryOffset[i]) o = entryOffset[i];                                                       // Offset of this entry
-      if (o)
+     {const typeof(entry[i]) o = entry[i];                                                             // Offset of this entry
+      if (o.offset)
        {    const typeof(entryRectangles[i]) r = entryRectangles[i];                                             // Rectangle for entry
         const typeof(r.proto->intersectionArea(&r, cerd)) d = r.proto->intersectionArea(&r, cerd);                                         // Area of overlap with down rectangle
         const typeof(r.proto->intersectionArea(&r, ceru)) u = r.proto->intersectionArea(&r, ceru);                                         // Area of overlap with up rectangle
-        if (d > bestAreaDown) {bestAreaDown = d; cl->cursorDownOffset = o;}     // Better down
-        if (u > bestAreaUp)   {bestAreaUp   = u; cl->cursorUpOffset   = o;}     // Better up
+        if (d > bestAreaDown) {bestAreaDown = d; cl->cursorDown = o;}     // Better down
+        if (u > bestAreaUp)   {bestAreaUp   = u; cl->cursorUp   = o;}     // Better up
        }
      }
    }
@@ -755,119 +794,6 @@ void test3()                                                                    
  }
 
 void test4()                                                                    // Text table using tab stops
- {void draw(CairoTextImage i)
-   {const typeof(1) drawing = 1;                                                                // Drawing if true else doing a trial layout
-    const typeof(717ul) pointerˣ = 717ul; const typeof(717ul) pointerʸ = 717ul;                                         // Current pointer coordinates
-               const typeof(makeColour(0,0,0,1)) frameColour = makeColour(0,0,0,1);                               // Colours
-         const typeof(makeColour(0,0,0,1)) possibilityColour = makeColour(0,0,0,1);
-             const typeof(makeColour(0,0,1,0.3)) pointedColour = makeColour(0,0,1,0.3);
-    const typeof(makeColour(0,1,0,1)) textEnteredSoFarColour = makeColour(0,1,0,1);
-
-    const typeof(makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz")) list = makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
-    const typeof(list.proto->findFirst(&list, "qqee")) cursorEntry = list.proto->findFirst(&list, "qqee");                          // Cursor entry
-    const typeof("qqx") textEnteredSoFar = "qqx";                                             // Assume the user has entered some text to narrow the possibilities displayed
-    const typeof(2ul) textEnteredSoFarLength = 2ul;                                               // Length of text entered so far
-    const typeof(CairoTextFont_sansItalic) textEnteredSoFarFont = CairoTextFont_sansItalic;                                  // Font for text entered so far
-    const typeof(CairoTextFont_serif) possibilityFont = CairoTextFont_serif;                                       // Font for remaining possibilities
-    const typeof(100ul) possibilityFontSize = 100ul;                                             // Font size for entries
-    const typeof(2ul) startAtOffset = 2ul;                                               // Start drawing at this entry
-    typeof(0ul) firstOffset = 0ul;                                               // First visible entry
-    typeof(0ul) lastOffset = 0ul;                                               // Last visible entry
-    typeof(0ul) cursorPrevOffset = 0ul;                                               // Offset of entry preceding entry containing cursor
-    typeof(0ul) cursorNextOffset = 0ul;                                               // Offset of entry following entry containing cursor
-    typeof(0ul) cursorUpOffset = 0ul;                                               // Offset of entry above entry containing cursor
-    typeof(0ul) cursorDownOffset = 0ul;                                               // Offset of entry below entry containing cursor
-    typeof(0ul) pointerOffset = 0ul;                                               // Offset of entry containing cursor
-    const typeof(makeRectangleWH(500, 500, 500, 500)) drawTable = makeRectangleWH(500, 500, 500, 500);               // Drawing area
-
-    if (drawing) i.proto->clip(&i, drawTable);                                           // Clip the drawing area to prevent text appearing outside it
-
-    if (drawing)                                                                // Show text entered so far
-     {i.proto->colour(&i, textEnteredSoFarColour);
-      i.proto->font(&i, textEnteredSoFarFont);
-      const typeof(textEnteredSoFarLength) l = textEnteredSoFarLength;
-      char t[l+1]; strncpy(t, textEnteredSoFar, l); t[l] = 0;
-      i.proto->textFit(&i, drawTable, 0, 0, 0, t);
-     }
-
-    i.proto->font(&i, possibilityFont);                                              // Font for remaining possibilities
-    i.proto->fontSize(&i, possibilityFontSize);                                          // Size of text for possibilities
-    i.proto->colour(&i, possibilityColour);                                            // Colour of text showing possibility
-
-    double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
-    typeof(0ul) cursorEntryIndex = 0ul;                                                     // Whether we have drawn the cursor entry yet.
-    const typeof(list.proto->countChildren(&list)) N = list.proto->countChildren(&list);                                                   // Maximum number of entries
-    size_t    entryOffset    [N+1]; memset(entryOffset, 0, sizeof(entryOffset));// Offset for each entry
-    Rectangle entryRectangles[N+1];                                             // Rectangle for each entry up to next tab stop
-
-    ArenaListfeⁱ(word, list)                                                    // Each word
-     {if (wordⁱ >= startAtOffset)                                               // Words in the scrolled to area
-       {makeLocalCopyOfArenaListKey(K, L, word);
-        if (L <= textEnteredSoFarLength) continue;                              // Word shorter than prefix entered so far
-        if (strncmp(K, textEnteredSoFar, textEnteredSoFarLength)) continue;     // Word does not match prefix entered so far
-        const typeof(&K[textEnteredSoFarLength]) k = &K[textEnteredSoFarLength];                                         // Skip text entered so far
-        const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);                                                 // Width of text
-        if (x + a > drawTable.X) {x = drawTable.x; y += i.fontHeight;}          // Move to next line if necessary
-        const typeof(word.offset) offset = word.offset;                                                   // Offset of current entry
-
-        const typeof(makeRectangleWH(x, y, a, i.fontHeight)) r = makeRectangleWH(x, y, a, i.fontHeight);                             // Rectangle in which to draw the text
-
-        if (drawTable.proto->contains(&drawTable, r))                                            // Draw visible elements
-         {if (offset == cursorEntry.offset)                                     // Reached entry under cursor
-           {i.proto->rectangle(&i, r, pointedColour);                                    // Background colour of entry containing the cursor
-            cursorEntryIndex = wordⁱ;                                           // Show that the cursor entry has now been drawn
-           }
-          if (r.proto->containsPoint(&r, pointerˣ, pointerʸ)) pointerOffset = offset;    // Offset of item containing pointer
-          if (drawing) i.proto->text(&i, x, y, k);                                       // Draw the remaining text of the entry
-          if (!firstOffset) firstOffset = offset;                               // First offset visible in drawing area
-          lastOffset = offset;                                                  // Last offset visible in drawing area
-         }
-
-        const typeof(i.fontHeight * ceil(a / i.fontHeight)) w = i.fontHeight * ceil(a / i.fontHeight);                              // Width of current entry including move to next tab stop
-        if      (!cursorEntryIndex)              cursorPrevOffset = offset;     // Entry just before cursor
-        else if  (cursorEntryIndex + 1 == wordⁱ) cursorNextOffset = offset;     // Entry just after cursor
-        const typeof(makeRectangleWH(x, y, w, i.fontHeight)) R = makeRectangleWH(x, y, w, i.fontHeight);                             // Rectangle containing entry
-        memcpy(&entryRectangles[wordⁱ], &R, sizeof(R));                         // Rectangle containing this entry up to the next tab stop
-        entryOffset            [wordⁱ] = offset;                                // Offset for this entry
-        x += w;                                                                 // Move to next entry position
-       }
-     }
-
-    typeof(0.0) bestAreaUp = 0.0; typeof(0.0) bestAreaDown = 0.0;                                       // Locate the rectangles that match the best for up and down arrows
-    typeof(entryRectangles[cursorEntryIndex]) cer = entryRectangles[cursorEntryIndex];
-    const typeof(cer.proto->translate(&cer, 0, +i.fontHeight)) cerd = cer.proto->translate(&cer, 0, +i.fontHeight);
-    const typeof(cer.proto->translate(&cer, 0, -i.fontHeight)) ceru = cer.proto->translate(&cer, 0, -i.fontHeight);
-
-    for(size_t i = 1; i <= N; ++i)                                              // Each entry
-     {const typeof(entryOffset[i]) o = entryOffset[i];                                                       // Offset of this entry
-      if (o)
-       {    const typeof(entryRectangles[i]) r = entryRectangles[i];                                             // Rectangle for entry
-        const typeof(r.proto->intersectionArea(&r, cerd)) d = r.proto->intersectionArea(&r, cerd);                                         // Area of overlap with down rectangle
-        const typeof(r.proto->intersectionArea(&r, ceru)) u = r.proto->intersectionArea(&r, ceru);                                         // Area of overlap with up rectangle
-        if (d > bestAreaDown) {bestAreaDown = d; cursorDownOffset = o;}         // Better down
-        if (u > bestAreaUp)   {bestAreaUp   = u; cursorUpOffset   = o;}         // Better up
-       }
-     }
-
-    i.proto->rectangleLine(&i, drawTable, frameColour);                                  // Frame the drawn area
-
-    if (1)                                                                      // Check results
-     {const typeof(list.proto->offset(&list, firstOffset)) f = list.proto->offset(&list, firstOffset);        assert( f.proto->equalsString(&f, "qqbbbb"));
-      const typeof(list.proto->offset(&list, lastOffset)) l = list.proto->offset(&list, lastOffset);         assert( l.proto->equalsString(&l, "qqhh"));
-      const typeof(list.proto->offset(&list, cursorEntry.offset)) c = list.proto->offset(&list, cursorEntry.offset); assert( c.proto->equalsString(&c, "qqee"));
-      const typeof(list.proto->offset(&list, cursorPrevOffset)) p = list.proto->offset(&list, cursorPrevOffset);   assert( p.proto->equalsString(&p, "qqdd"));
-      const typeof(list.proto->offset(&list, cursorNextOffset)) n = list.proto->offset(&list, cursorNextOffset);   assert( n.proto->equalsString(&n, "qqff"));
-      const typeof(list.proto->offset(&list, cursorDownOffset)) d = list.proto->offset(&list, cursorDownOffset);   assert( d.proto->equalsString(&d, "qqgggg"));
-      const typeof(list.proto->offset(&list, cursorUpOffset)) u = list.proto->offset(&list, cursorUpOffset);     assert( u.proto->equalsString(&u, "qqbbbb"));
-      const typeof(list.proto->offset(&list, pointerOffset)) P = list.proto->offset(&list, pointerOffset);      assert( P.proto->equalsString(&P, "qqee"));
-     }
-   }
-
-  typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText4.png", "9449")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText4.png", "9449");
-  i.proto->free(&i);
- }
-
-void test5()                                                                    // Text table using tab stops
  {void draw(CairoTextImage image)
    {const typeof(makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo qqppppp qq qqrrrr s qqtttttt qquuuu v wwwwww xxx yy zz")) list = makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo qqppppp qq qqrrrr s qqtttttt qquuuu v wwwwww xxx yy zz");
     const typeof(makeRectangleWH(500, 500, 500, 500)) drawTable = makeRectangleWH(500, 500, 500, 500);                            // Drawing area
@@ -881,18 +807,20 @@ memcpy(&    cl.cursorEntry , ({typeof(    cl.cursorEntry ) s =  list.proto->find
     cl.proto->draw(&cl);
 
     if (1)                                                                      // Check results
-     {const typeof(list.proto->offset(&list, cl.firstOffset)) f = list.proto->offset(&list, cl.firstOffset);        assert( f.proto->equalsString(&f, "qqbbbb"));
-      const typeof(list.proto->offset(&list, cl.lastOffset)) l = list.proto->offset(&list, cl.lastOffset);         assert( l.proto->equalsString(&l, "qqhh"));
-      const typeof(list.proto->offset(&list, cl.cursorEntry.offset)) c = list.proto->offset(&list, cl.cursorEntry.offset); assert( c.proto->equalsString(&c, "qqee"));
-      const typeof(list.proto->offset(&list, cl.cursorPrevOffset)) p = list.proto->offset(&list, cl.cursorPrevOffset);   assert( p.proto->equalsString(&p, "qqdd"));
-      const typeof(list.proto->offset(&list, cl.cursorNextOffset)) n = list.proto->offset(&list, cl.cursorNextOffset);   assert( n.proto->equalsString(&n, "qqff"));
-      const typeof(list.proto->offset(&list, cl.cursorDownOffset)) d = list.proto->offset(&list, cl.cursorDownOffset);   assert( d.proto->equalsString(&d, "qqgggg"));
-      const typeof(list.proto->offset(&list, cl.cursorUpOffset)) u = list.proto->offset(&list, cl.cursorUpOffset);     assert( u.proto->equalsString(&u, "qqbbbb"));
-      const typeof(list.proto->offset(&list, cl.pointerOffset)) P = list.proto->offset(&list, cl.pointerOffset);      assert( P.proto->equalsString(&P, "qqee"));
+     {assert( cl.first.proto->keyEqualsString(&cl.first, "qqbbbb"));
+      assert( cl.last.proto->keyEqualsString(&cl.last, "qqhh"));
+      assert( cl.cursorEntry.proto->keyEqualsString(&cl.cursorEntry, "qqee"));
+      assert( cl.cursorPrev.proto->keyEqualsString(&cl.cursorPrev, "qqdd"));
+      assert( cl.cursorNext.proto->keyEqualsString(&cl.cursorNext, "qqff"));
+      assert( cl.cursorDown.proto->keyEqualsString(&cl.cursorDown, "qqgggg"));
+      assert( cl.cursorUp.proto->keyEqualsString(&cl.cursorUp, "qqbbbb"));
+      assert( cl.pointer.proto->keyEqualsString(&cl.pointer, "qqee"));
      }
                          image.proto->saveAsPng(&image, "CairoText5a.png", "9449");
     cl.proto->scrollPageDown(&cl); image.proto->saveAsPng(&image, "CairoText5b.png", "2259");                  // Scroll down one page
     cl.proto->scrollPageUp(&cl);   image.proto->saveAsPng(&image, "CairoText5c.png", "9ffc");                  // Scroll up   one page
+    cl.proto->arrowRight(&cl);     image.proto->saveAsPng(&image, "CairoText5d.png", "9570");                  // Arrow  right
+    cl.proto->arrowDown(&cl);      image.proto->saveAsPng(&image, "CairoText5e.png", "71b6");                  // Arrow  down
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText5.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText5.png", "a");
@@ -900,8 +828,7 @@ memcpy(&    cl.cursorEntry , ({typeof(    cl.cursorEntry ) s =  list.proto->find
  }
 
 int main (void)
- {void (*tests[])(void) = {test0, test1, test2, test3, test4,
-                           test5, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0};
   run_tests("CairoText", 1, tests);
   return 0;
 }
