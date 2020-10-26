@@ -541,10 +541,31 @@ static void saveAsPng_$_string                                                  
 
 //D1 Widgets                                                                    // Draw widgets
 
-static void scrollDownPage__$CompactList                                        // Scroll a compact list down one page
+static void scrollPageDown__$CompactList                                        // Scroll a compact list down one page
  ($CompactList * compactList)                                                   // Compact list
  {o ◁ compactList->startAtOffset = compactList->lastOffset;
   compactList->cursorEntry   = compactList->list ▷ offset(o);
+  compactList ▶ draw;
+ }
+
+static void scrollPageUp__$CompactList                                          // Scroll a compact list up one page
+ ($CompactList * compactList)                                                   // Compact list
+ {list ◁ compactList->list;                                                     // List
+  F ◀ list ▷ first;                              f ◀ F ▷ index;                 // First element of list
+  L ◀ list ▷ offset(compactList->startAtOffset); l ◀ L ▷ index; m ◁ l;          // Current offset which causes the entry we want displayed last to be displayed first in the drawing area.
+
+  for(size_t i = 0; i < 99; ++i)                                                // Binary search
+   {if (f + 1 >= l) break;                                                      // No more splits possible
+    n ◁ (int)nearbyint((f + l) / 2);                                            // Try the middle
+    compactList->startAtOffset = list ▷ at(n).offset;                           // New start position
+    compactList ▶ layout;                                                       // Layout
+    T ◁ list ▷ offset(compactList->lastOffset);                                 // Latest last element
+    t ◁ T ▷ index;                                                              // Index of latest last entry
+    if (t < m) f = n; else if (t > m) l = n; else f = l = n;                    // Update range
+   }
+  r ◁ compactList->cursorEntry   = list ▷ at(l);                                // Location of cursor is on first entry in drawn area
+      compactList->startAtOffset = r.offset;                                    // Draw from this entry
+  compactList ▶ draw;                                                           // Draw
  }
 
 static void draw__$CompactList                                                  // Draw a compact list
@@ -868,9 +889,9 @@ void test5()                                                                    
       u ◁ list ▷ offset(cl.cursorUpOffset);     ✓ u ▷ equalsString("qqbbbb");
       P ◁ list ▷ offset(cl.pointerOffset);      ✓ P ▷ equalsString("qqee");
      }
-    image ▷ saveAsPng("$5a.png", "9449");
-
-    cl ▷ scrollDownPage; cl ▷ draw; image ▷ saveAsPng("$5b.png", "2259");       // Scroll down one page
+                         image ▷ saveAsPng("$5a.png", "9449");
+    cl ▷ scrollPageDown; image ▷ saveAsPng("$5b.png", "2259");                  // Scroll down one page
+    cl ▷ scrollPageUp;   image ▷ saveAsPng("$5c.png", "9ffc");                  // Scroll up   one page
    }
 
   i ◀ make$Image(draw, 2000, 2000, "$5.png", "a");
@@ -878,7 +899,7 @@ void test5()                                                                    
  }
 
 int main (void)
- {void (*tests[])(void) = {test5, test0, test1, test2, test3, test4,
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4,
                            test5, 0};
   run_tests("$", 1, tests);
   return 0;
