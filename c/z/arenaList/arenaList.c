@@ -490,6 +490,11 @@ static int valid_int__$Node                                                     
  {return child->offset;                                                         // A node is valid unless it has a zero offset in which case it is not a valid node. Typically an invalid node is returned when a method applied to a valid node cannot be completed as in: get the next sibling following the last sibling.
  }
 
+static int invalid_int__$Node                                                   // Check that a node is not valid.
+ (const $Node * child)                                                          // $Node
+ {return !child->offset;                                                        // A node is valid unless it has a zero offset in which case it is not a valid node. Typically an invalid node is returned when a method applied to a valid node cannot be completed as in: get the next sibling following the last sibling.
+ }
+
 static  $Node parent_$Node__$Node                                               // Get the parent of a child
  (const $Node * child)                                                          // Child
  {if (child ▶ isRoot) return *child;
@@ -558,9 +563,7 @@ static  $Node findFirstChild_$Node__$Node_string                                
   const char  * const key)                                                      // Key to find immediately under parent
  {parent ◁ *Parent;
   $fe(child, parent) if (child ▷ equalsString(key)) return child;               // Found matching child
-
-  const $Node invalid = {};                                                     // An invalid node
-  return invalid;                                                               // Failed - return an invalid node
+  return new $Node();                                                           // An invalid node
  }
 
 static  $Node findFirstChild_$Node__$_string                                    // Find the first child immediately under the root with the specified key.
@@ -568,6 +571,32 @@ static  $Node findFirstChild_$Node__$_string                                    
   const char * const key)                                                       // Key to find
  {       r ◁ list ▶ root;                                                       // Root node of the $
   return r ▷ findFirstChild(key);                                               // Search the $
+ }
+
+static  $Node at_$Node__$Node_size                                              // The child at the specified index under its parent counting from one.  An invalid node is returned if the index is too large.
+ (const $Node * Parent,                                                         // Parent node
+  const size_t  index)                                                          // Index
+ {parent ◁ *Parent;
+  n ◀ 0ul;
+  $fe(child, parent) if (++n == index) return child;                            // Found matching child
+
+  return new $Node();                                                           // An invalid node
+ }
+
+static  $Node at_$Node__$_size                                                  // The child at the specified index under the root node of the $.
+ (const $    * list,                                                            // $
+  const size_t index)                                                           // Index
+ {       r ◁ list ▶ root;                                                       // Root node of the $
+  return r ▷ at(index);                                                         // Search the $
+ }
+
+static  size_t index__$Node                                                     // The index of the specified child under its parent counting from one.
+ (const $Node * child)                                                          // Child
+ {n ◀ 0ul;
+  parent ◁ child ▶ parent;
+  $fe(c, parent) {++n; if (c.offset == child->offset) return n;}                // Index
+  printStackBackTrace("Child not present under parent");                        // Failed
+  return 0;
  }
 
 //D1 Location                                                                   // Verify the current location.
@@ -1665,12 +1694,29 @@ void test17()                                                                   
   a ▷ free;
  }
 
+void test18()                                                                   //Tat //Tindex //Tinvalid
+ {s ◁ make$(); s ▷ fromLetters("ab(cde)fg");
+
+  a ◁ s ▷ findFirst("a"); ✓ a ▷ index == 1;  ✓ a ▷ equals(s ▷ at(1));
+  b ◁ s ▷ findFirst("b"); ✓ b ▷ index == 2;  ✓ b ▷ equals(s ▷ at(2));
+
+  c ◁ s ▷ findFirst("c"); ✓ c ▷ index == 1;  ✓ c ▷ equals(b ▷ at(1));
+  d ◁ s ▷ findFirst("d");
+  ✓ d ▷ index == 2;
+  ✓ d ▷ equals(b ▷ at(2));
+
+  z ◁ s ▷ at(20); ✓ z ▷ invalid;
+  y ◁ b ▷ at(20); ✓ y ▷ invalid;
+
+  s ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
-                           test15, test16, test17, 0};
+                           test15, test16, test17, test18, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
