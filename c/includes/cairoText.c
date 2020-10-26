@@ -69,12 +69,12 @@ typedef struct CairoTextCompactList                                             
   Colour frameColour;                                                           //I Colour of frame
   Colour possibilityColour;                                                     //I Colour of text used to show a possibility
   Colour pointedColour;                                                         //I Colour of back ground of current possibility
-  Colour textEnteredSoFarColour;                                                //I Colour of the text entered so far
+  Colour prefixColour;                                                //I Colour of the text entered so far
   ArenaList list;                                                               //I The possibilities to display
   ArenaListNode cursorEntry;                                                    //I The current possibility under the cursor
-  char textEnteredSoFar[17];                                                    // Prefix text entered so far to narrow the possibilities
-  size_t textEnteredSoFarLength;                                                // Length of text entered so far
-  enum CairoTextFonts textEnteredSoFarFont;                                             //I Font for text entered so far
+  char prefix[17];                                                    // Prefix text entered so far to narrow the possibilities
+  size_t prefixLength;                                                // Length of text entered so far
+  enum CairoTextFonts prefixFont;                                             //I Font for text entered so far
   enum CairoTextFonts possibilityFont;                                                  //I Font for remaining possibilities
   size_t      possibilityFontSize;                                              //I Font size for entries
   ArenaListNode startAt;                                                        //I Start drawing at this entry
@@ -161,12 +161,12 @@ static CairoTextCompactList makeCairoTextCompactList                            
 memcpy(&  l.frameColour            , ({typeof(  l.frameColour            ) s =  makeColour(0,0,0,1); (void *)&s;}), sizeof(  l.frameColour            ));
 memcpy(&  l.possibilityColour      , ({typeof(  l.possibilityColour      ) s =  makeColour(0,0,0,1); (void *)&s;}), sizeof(  l.possibilityColour      ));
 memcpy(&  l.pointedColour          , ({typeof(  l.pointedColour          ) s =  makeColour(0,0,1,0.3); (void *)&s;}), sizeof(  l.pointedColour          ));
-memcpy(&  l.textEnteredSoFarColour , ({typeof(  l.textEnteredSoFarColour ) s =  makeColour(0,1,0,1); (void *)&s;}), sizeof(  l.textEnteredSoFarColour ));
-memcpy(&  l.textEnteredSoFarColour , ({typeof(  l.textEnteredSoFarColour ) s =  makeColour(0,1,0,1); (void *)&s;}), sizeof(  l.textEnteredSoFarColour ));
+memcpy(&  l.prefixColour , ({typeof(  l.prefixColour ) s =  makeColour(0,1,0,1); (void *)&s;}), sizeof(  l.prefixColour ));
+memcpy(&  l.prefixColour , ({typeof(  l.prefixColour ) s =  makeColour(0,1,0,1); (void *)&s;}), sizeof(  l.prefixColour ));
 memcpy(&  l.list                   , ({typeof(  l.list                   ) s =  list; (void *)&s;}), sizeof(  l.list                   ));
 memcpy(&  l.cursorEntry            , ({typeof(  l.cursorEntry            ) s =  list.proto->first(&list); (void *)&s;}), sizeof(  l.cursorEntry            ));
-  l.textEnteredSoFarLength = 0;
-memcpy(&  l.textEnteredSoFarFont   , ({typeof(  l.textEnteredSoFarFont   ) s =  CairoTextFont_sansItalic; (void *)&s;}), sizeof(  l.textEnteredSoFarFont   ));
+  l.prefixLength = 0;
+memcpy(&  l.prefixFont   , ({typeof(  l.prefixFont   ) s =  CairoTextFont_sansItalic; (void *)&s;}), sizeof(  l.prefixFont   ));
 memcpy(&  l.possibilityFont        , ({typeof(  l.possibilityFont        ) s =  CairoTextFont_serif; (void *)&s;}), sizeof(  l.possibilityFont        ));
   l.possibilityFontSize    = 100;
 memcpy(&  l.drawTable              , ({typeof(  l.drawTable              ) s =  drawTable; (void *)&s;}), sizeof(  l.drawTable              ));
@@ -542,6 +542,22 @@ static void saveAsPng_CairoText_string                                          
 
 //D1 Widgets                                                                    // Draw widgets
 
+//D2 Compact List                                                               // A compact list of options the user can cursor and scroll through or click on to make a selection.
+
+static void addChar__CairoTextCompactList                                               // Add a character to the selection prefix
+ (CairoTextCompactList * c,                                                             // Compact list
+  char           a)                                                             // Character to add
+ {if (        c->prefixLength + 1 < sizeof(c->prefix))
+   {c->prefix[c->prefixLength++] = a;
+    c->proto->draw(c);
+   }
+ }
+
+static void removeChar__CairoTextCompactList                                            // Remove the latest character from the selection prefix
+ (CairoTextCompactList * c)                                                             // Compact list
+ {if (c->prefixLength > 0) {c->prefixLength--; c->proto->draw(c);}
+ }
+
 static void scrollPageDown__CairoTextCompactList                                        // Scroll a compact list down one page
  (CairoTextCompactList * c)                                                             // Compact list
  {c->cursorEntry = c->startAt = c->last;
@@ -628,10 +644,10 @@ static void drawOrLayout__CairoTextCompactList                                  
   if (drawing) {i->proto->clip(i, cl->drawTable); i->proto->clearWhite(i);}                       // Clip the drawing area to prevent text appearing outside it
 
   if (drawing)                                                                  // Show text entered so far
-   {i->proto->colour(i, cl->textEnteredSoFarColour);
-    i->proto->font(i, cl->textEnteredSoFarFont);
-    const typeof(cl->textEnteredSoFarLength) l = cl->textEnteredSoFarLength;
-    char t[l+1]; strncpy(t, cl->textEnteredSoFar, l); t[l] = 0;
+   {i->proto->colour(i, cl->prefixColour);
+    i->proto->font(i, cl->prefixFont);
+    const typeof(cl->prefixLength) l = cl->prefixLength;
+    char t[l+1]; strncpy(t, cl->prefix, l); t[l] = 0;
     i->proto->textFit(i, cl->drawTable, 0, 0, 0, t);
    }
 
@@ -649,9 +665,9 @@ static void drawOrLayout__CairoTextCompactList                                  
   ArenaListfeⁱ(word, cl->list)                                                  // Each word
    {if (word.offset >= cl->startAt.offset)                                      // Words in the scrolled to area
      {makeLocalCopyOfArenaListKey(K, L, word);
-      if (L <= cl->textEnteredSoFarLength) continue;                            // Word shorter than prefix entered so far
-      if (strncmp(K, cl->textEnteredSoFar, cl->textEnteredSoFarLength))continue;// Word does not match prefix entered so far
-      const typeof(&K[cl->textEnteredSoFarLength]) k = &K[cl->textEnteredSoFarLength];                                       // Skip text entered so far
+      if (L <= cl->prefixLength) continue;                                      // Word shorter than prefix entered so far
+      if (strncmp(K, cl->prefix, cl->prefixLength))continue;                    // Word does not match prefix entered so far
+      const typeof(&K[cl->prefixLength]) k = &K[cl->prefixLength];                                                 // Skip text entered so far
       const typeof(i->proto->textAdvance(i, k)) a = i->proto->textAdvance(i, k);                                                   // Width of text
       if (x + a > cl->drawTable.X) {x = cl->drawTable.x; y += i->fontHeight;}   // Move to next line if necessary
 
@@ -800,8 +816,8 @@ void test4()                                                                    
     typeof(makeCairoTextCompactList(&image, list, drawTable)) cl = makeCairoTextCompactList(&image, list, drawTable);                             // Create compact list
 memcpy(&    cl.cursorEntry , ({typeof(    cl.cursorEntry ) s =  list.proto->findFirst(&list, "qqee"); (void *)&s;}), sizeof(    cl.cursorEntry ));                                  // Cursor entry
     cl.pointerˣ = 717; cl.pointerʸ = 717;                                       // Current pointer coordinates
-    strcpy(cl.textEnteredSoFar, "qqx");                                         // Assume the user has entered some text to narrow the possibilities displayed
-    cl.textEnteredSoFarLength = 2;                                              // Assume the user has entered some text to narrow the possibilities displayed
+    strcpy(cl.prefix, "qqx");                                                   // Assume the user has entered a prefix to narrow the possibilities displayed
+    cl.prefixLength = 2;                                                        // Prefix length
     cl.possibilityFontSize = 100;                                               // Font size for entries
 
     cl.proto->draw(&cl);
