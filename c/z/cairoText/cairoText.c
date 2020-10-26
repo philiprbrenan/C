@@ -75,15 +75,15 @@ typedef struct $CompactList                                                     
   size_t textEnteredSoFarLength;                                                // Length of text entered so far
   enum $Fonts textEnteredSoFarFont;                                             //I Font for text entered so far
   enum $Fonts possibilityFont;                                                  //I Font for remaining possibilities
-  size_t possibilityFontSize;                                                   //I Font size for entries
-  size_t startAtOffset;                                                         //I Start drawing at this entry
-  size_t firstOffset;                                                           //O First visible entry
-  size_t lastOffset;                                                            //O Last visible entry
-  size_t cursorPrevOffset;                                                      //O Offset of entry preceding entry containing cursor
-  size_t cursorNextOffset;                                                      //O Offset of entry following entry containing cursor
-  size_t cursorUpOffset;                                                        //O Offset of entry above entry containing cursor
-  size_t cursorDownOffset;                                                      //O Offset of entry below entry containing cursor
-  size_t pointerOffset;                                                         //O Offset of entry containing cursor
+  size_t      possibilityFontSize;                                              //I Font size for entries
+  ArenaListNode startAt;                                                        //I Start drawing at this entry
+  ArenaListNode first;                                                          //O First visible entry
+  ArenaListNode last;                                                           //O Last visible entry
+  ArenaListNode cursorPrev;                                                     //O Offset of entry preceding entry containing cursor
+  ArenaListNode cursorNext;                                                     //O Offset of entry following entry containing cursor
+  ArenaListNode cursorUp;                                                       //O Offset of entry above entry containing cursor
+  ArenaListNode cursorDown;                                                     //O Offset of entry below entry containing cursor
+  ArenaListNode pointer;                                                        //O Offset of entry containing cursor
   Rectangle drawTable;                                                          //I Drawing area
  } $CompactList;
 
@@ -542,30 +542,70 @@ static void saveAsPng_$_string                                                  
 //D1 Widgets                                                                    // Draw widgets
 
 static void scrollPageDown__$CompactList                                        // Scroll a compact list down one page
- ($CompactList * compactList)                                                   // Compact list
- {o ◁ compactList->startAtOffset = compactList->lastOffset;
-  compactList->cursorEntry   = compactList->list ▷ offset(o);
-  compactList ▶ draw;
+ ($CompactList * c)                                                             // Compact list
+ {c->cursorEntry = c->startAt = c->last;
+  c ▶ draw;
  }
 
 static void scrollPageUp__$CompactList                                          // Scroll a compact list up one page
- ($CompactList * compactList)                                                   // Compact list
- {list ◁ compactList->list;                                                     // List
-  F ◀ list ▷ first;                              f ◀ F ▷ index;                 // First element of list
-  L ◀ list ▷ offset(compactList->startAtOffset); l ◀ L ▷ index; m ◁ l;          // Current offset which causes the entry we want displayed last to be displayed first in the drawing area.
+ ($CompactList * c)                                                             // Compact list
+ {list ◁ c->list;                                                               // List
+  F ◀ list ▷ first; f ◀ F ▷ index;                                              // First element of list
+  L ◀ c->startAt;   l ◀ L ▷ index; m ◁ l;                                       // Current offset which causes the entry we want displayed last to be displayed first in the drawing area.
 
   for(size_t i = 0; i < 99; ++i)                                                // Binary search
    {if (f + 1 >= l) break;                                                      // No more splits possible
     n ◁ (int)nearbyint((f + l) / 2);                                            // Try the middle
-    compactList->startAtOffset = list ▷ at(n).offset;                           // New start position
-    compactList ▶ layout;                                                       // Layout
-    T ◁ list ▷ offset(compactList->lastOffset);                                 // Latest last element
-    t ◁ T ▷ index;                                                              // Index of latest last entry
+    c->startAt = list ▷ at(n);                                                  // New start position
+    c ▶ layout;                                                                 // Layout
+    t ◁ c->last ▷ index;                                                        // Index of latest last entry
     if (t < m) f = n; else if (t > m) l = n; else f = l = n;                    // Update range
    }
-  r ◁ compactList->cursorEntry   = list ▷ at(l);                                // Location of cursor is on first entry in drawn area
-      compactList->startAtOffset = r.offset;                                    // Draw from this entry
-  compactList ▶ draw;                                                           // Draw
+  c->startAt = c->cursorEntry = list ▷ at(l);                                   // Location of cursor is on first entry in drawn area
+  c ▶ draw;                                                                     // Draw
+ }
+
+static void scrollToCursor__$CompactList                                        // Scroll to bring the entry under the cursor into view
+ ($CompactList * c)                                                             // Compact list
+ {list ◁ c->list;                                                               // List
+  f ◀ 0;                                                                        // In drawing area if true
+  ArenaListfe(e, list)                                                          // Each entry
+   {if (e.offset == c->first.offset) f = 1;                                     // Entered drawn area
+    if (e.offset == c->cursorEntry.offset && !f) c->startAt = e;                // At entry under cursor but not in the drawing area
+    if (e.offset == c->last.offset)  f = 0;                                      // Leaving drawn area
+   }
+ }
+
+static void arrowLeft__$CompactList                                             // Move the entry under the cursor one click to the left
+ ($CompactList * c)                                                             // Compact list
+ {if (c->cursorEntry.offset == c->first.offset) c ▶ scrollPageUp;               // Scroll up one page if leaving the first item on page
+  if (c->cursorPrev .offset)   c->cursorEntry = c->cursorPrev;                  // Cursor entry
+  c ▶ draw;                                                                     // Draw
+ }
+
+static void arrowRight__$CompactList                                            // Move the entry under the cursor one click to the right
+ ($CompactList * c)                                                             // Compact list
+ {if (c->cursorEntry.offset == c->last.offset) c ▶ scrollPageDown;              // Scroll down one page if leaving the last item on page
+  if (c->cursorNext .offset)   c->cursorEntry = c->cursorNext;                  // Cursor entry
+  c ▶ draw;                                                                     // Draw
+ }
+
+static void arrowUp__$CompactList                                               // Move the entry under the cursor one click up
+ ($CompactList * c)                                                             // Compact list
+ {if (c->cursorUp.offset)
+   {c->cursorEntry = c->cursorUp;                                               // Cursor entry
+    c ▶ scrollToCursor;
+   }
+  c ▶ draw;                                                                     // Draw
+ }
+
+static void arrowDown__$CompactList                                             // Move the entry under the cursor one click down
+ ($CompactList * c)                                                             // Compact list
+ {if (c->cursorDown.offset)
+   {c->cursorEntry = c->cursorDown;                                             // Cursor entry
+    c ▶ scrollToCursor;
+   }
+  c ▶ draw;                                                                     // Draw
  }
 
 static void draw__$CompactList                                                  // Draw a compact list
@@ -601,42 +641,41 @@ static void drawOrLayout__$CompactList                                          
   double x = cl->drawTable.X, y = cl->drawTable.y - i->fontHeight;              // At the end of the previous line
   cursorEntryIndex ◀ 0ul;                                                       // Whether we have drawn the cursor entry yet.
   N ◁ cl->list ▷ countChildren;                                                 // Maximum number of entries
-  size_t    entryOffset    [N+1]; memset(entryOffset, 0, sizeof(entryOffset));  // Offset for each entry
-  Rectangle entryRectangles[N+1];                                               // Rectangle for each entry up to next tab stop
+  ArenaListNode entry          [N+1]; memset(entry, 0, sizeof(entry));          // Offset for each entry
+  Rectangle     entryRectangles[N+1];                                           // Rectangle for each entry up to next tab stop
   firstOffset ◀ 0ul;
 
   ArenaListfeⁱ(word, cl->list)                                                  // Each word
-   {if (word.offset >= cl->startAtOffset)                                       // Words in the scrolled to area
+   {if (word.offset >= cl->startAt.offset)                                      // Words in the scrolled to area
      {makeLocalCopyOfArenaListKey(K, L, word);
       if (L <= cl->textEnteredSoFarLength) continue;                            // Word shorter than prefix entered so far
       if (strncmp(K, cl->textEnteredSoFar, cl->textEnteredSoFarLength))continue;// Word does not match prefix entered so far
       k ◁ &K[cl->textEnteredSoFarLength];                                       // Skip text entered so far
       a ◁ i ▶ textAdvance(k);                                                   // Width of text
       if (x + a > cl->drawTable.X) {x = cl->drawTable.x; y += i->fontHeight;}   // Move to next line if necessary
-      offset ◁ word.offset;                                                     // Offset of current entry
 
       r ◁ makeRectangleWH(x, y, a, i->fontHeight);                              // Rectangle in which to draw the text
 
       if (cl->drawTable ▷ contains(r))                                          // Draw visible elements
-       {if (offset == cl->cursorEntry.offset)                                   // Reached entry under cursor
+       {if (word.offset == cl->cursorEntry.offset)                              // Reached entry under cursor
          {i ▶ rectangle(r, cl->pointedColour);                                  // Background colour of entry containing the cursor
           cursorEntryIndex = wordⁱ;                                             // Show that the cursor entry has now been drawn
          }
         if (r ▷ containsPoint(cl->pointerˣ, cl->pointerʸ))                      // Offset of item containing pointer
-         {cl->pointerOffset = offset;
+         {cl->pointer = word;
          }
         if (drawing) i ▶ text(x, y, k);                                         // Draw the remaining text of the entry
-        if (!firstOffset) cl->firstOffset = firstOffset = offset;               // First offset visible in drawing area
-        cl->lastOffset = offset;                                                // Last offset visible in drawing area
+        if (!firstOffset) {cl->first = word; firstOffset = word.offset;}        // First offset visible in drawing area
+        cl->last = word;                                                        // Last offset visible in drawing area
        }
 
       w ◁ i->fontHeight * ceil(a / i->fontHeight);                              // Width of current entry including move to next tab stop
-      if      (!cursorEntryIndex)              cl->cursorPrevOffset = offset;   // Entry just before cursor
-      else if  (cursorEntryIndex + 1 == wordⁱ) cl->cursorNextOffset = offset;   // Entry just after cursor
+      if      (!cursorEntryIndex)              cl->cursorPrev = word;           // Entry just before cursor
+      else if  (cursorEntryIndex + 1 == wordⁱ) cl->cursorNext = word;           // Entry just after cursor
 
       R ◁ makeRectangleWH(x, y, w, i->fontHeight);                              // Rectangle containing entry
       entryRectangles[wordⁱ] ≞ R;                                               // Rectangle containing this entry up to the next tab stop
-      entryOffset    [wordⁱ] = offset;                                          // Offset for this entry
+      entry          [wordⁱ] = word;                                            // Offset for this entry
       x += w;                                                                   // Move to next entry position
      }
    }
@@ -649,13 +688,13 @@ static void drawOrLayout__$CompactList                                          
     ceru ◁ cer ▷ translate(0, -i->fontHeight);
 
     for(size_t i = 1; i <= N; ++i)                                              // Each entry
-     {o ◁ entryOffset[i];                                                       // Offset of this entry
-      if (o)
+     {o ◁ entry[i];                                                             // Offset of this entry
+      if (o.offset)
        {    r ◁ entryRectangles[i];                                             // Rectangle for entry
         d ◁ r ▷ intersectionArea(cerd);                                         // Area of overlap with down rectangle
         u ◁ r ▷ intersectionArea(ceru);                                         // Area of overlap with up rectangle
-        if (d > bestAreaDown) {bestAreaDown = d; cl->cursorDownOffset = o;}     // Better down
-        if (u > bestAreaUp)   {bestAreaUp   = u; cl->cursorUpOffset   = o;}     // Better up
+        if (d > bestAreaDown) {bestAreaDown = d; cl->cursorDown = o;}     // Better down
+        if (u > bestAreaUp)   {bestAreaUp   = u; cl->cursorUp   = o;}     // Better up
        }
      }
    }
@@ -754,119 +793,6 @@ void test3()                                                                    
  }
 
 void test4()                                                                    // Text table using tab stops
- {void draw($Image i)
-   {drawing ◁ 1;                                                                // Drawing if true else doing a trial layout
-    pointerˣ ◁ 717ul; pointerʸ ◁ 717ul;                                         // Current pointer coordinates
-               frameColour ◁ makeColour(0,0,0,1);                               // Colours
-         possibilityColour ◁ makeColour(0,0,0,1);
-             pointedColour ◁ makeColour(0,0,1,0.3);
-    textEnteredSoFarColour ◁ makeColour(0,1,0,1);
-
-    list ◁ makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
-    cursorEntry            ◁ list ▷ findFirst("qqee");                          // Cursor entry
-    textEnteredSoFar       ◁ "qqx";                                             // Assume the user has entered some text to narrow the possibilities displayed
-    textEnteredSoFarLength ◁ 2ul;                                               // Length of text entered so far
-    textEnteredSoFarFont   ◁ $Font_sansItalic;                                  // Font for text entered so far
-    possibilityFont        ◁ $Font_serif;                                       // Font for remaining possibilities
-    possibilityFontSize    ◁ 100ul;                                             // Font size for entries
-    startAtOffset          ◁ 2ul;                                               // Start drawing at this entry
-    firstOffset            ◀ 0ul;                                               // First visible entry
-    lastOffset             ◀ 0ul;                                               // Last visible entry
-    cursorPrevOffset       ◀ 0ul;                                               // Offset of entry preceding entry containing cursor
-    cursorNextOffset       ◀ 0ul;                                               // Offset of entry following entry containing cursor
-    cursorUpOffset         ◀ 0ul;                                               // Offset of entry above entry containing cursor
-    cursorDownOffset       ◀ 0ul;                                               // Offset of entry below entry containing cursor
-    pointerOffset          ◀ 0ul;                                               // Offset of entry containing cursor
-    drawTable              ◁ makeRectangleWH(500, 500, 500, 500);               // Drawing area
-
-    if (drawing) i ▷ clip(drawTable);                                           // Clip the drawing area to prevent text appearing outside it
-
-    if (drawing)                                                                // Show text entered so far
-     {i ▷ colour(textEnteredSoFarColour);
-      i ▷ font  (textEnteredSoFarFont);
-      l ◁ textEnteredSoFarLength;
-      char t[l+1]; strncpy(t, textEnteredSoFar, l); t[l] = 0;
-      i ▷ textFit(drawTable, 0, 0, 0, t);
-     }
-
-    i ▷ font    (possibilityFont);                                              // Font for remaining possibilities
-    i ▷ fontSize(possibilityFontSize);                                          // Size of text for possibilities
-    i ▷ colour  (possibilityColour);                                            // Colour of text showing possibility
-
-    double x = drawTable.X, y = drawTable.y - i.fontHeight;                     // At the end of the previous line
-    cursorEntryIndex ◀ 0ul;                                                     // Whether we have drawn the cursor entry yet.
-    N ◁ list ▷ countChildren;                                                   // Maximum number of entries
-    size_t    entryOffset    [N+1]; memset(entryOffset, 0, sizeof(entryOffset));// Offset for each entry
-    Rectangle entryRectangles[N+1];                                             // Rectangle for each entry up to next tab stop
-
-    ArenaListfeⁱ(word, list)                                                    // Each word
-     {if (wordⁱ >= startAtOffset)                                               // Words in the scrolled to area
-       {makeLocalCopyOfArenaListKey(K, L, word);
-        if (L <= textEnteredSoFarLength) continue;                              // Word shorter than prefix entered so far
-        if (strncmp(K, textEnteredSoFar, textEnteredSoFarLength)) continue;     // Word does not match prefix entered so far
-        k ◁ &K[textEnteredSoFarLength];                                         // Skip text entered so far
-        a ◁ i ▷ textAdvance(k);                                                 // Width of text
-        if (x + a > drawTable.X) {x = drawTable.x; y += i.fontHeight;}          // Move to next line if necessary
-        offset ◁ word.offset;                                                   // Offset of current entry
-
-        r ◁ makeRectangleWH(x, y, a, i.fontHeight);                             // Rectangle in which to draw the text
-
-        if (drawTable ▷ contains(r))                                            // Draw visible elements
-         {if (offset == cursorEntry.offset)                                     // Reached entry under cursor
-           {i ▷ rectangle(r, pointedColour);                                    // Background colour of entry containing the cursor
-            cursorEntryIndex = wordⁱ;                                           // Show that the cursor entry has now been drawn
-           }
-          if (r ▷ containsPoint(pointerˣ, pointerʸ)) pointerOffset = offset;    // Offset of item containing pointer
-          if (drawing) i ▷ text(x, y, k);                                       // Draw the remaining text of the entry
-          if (!firstOffset) firstOffset = offset;                               // First offset visible in drawing area
-          lastOffset = offset;                                                  // Last offset visible in drawing area
-         }
-
-        w ◁ i.fontHeight * ceil(a / i.fontHeight);                              // Width of current entry including move to next tab stop
-        if      (!cursorEntryIndex)              cursorPrevOffset = offset;     // Entry just before cursor
-        else if  (cursorEntryIndex + 1 == wordⁱ) cursorNextOffset = offset;     // Entry just after cursor
-        R ◁ makeRectangleWH(x, y, w, i.fontHeight);                             // Rectangle containing entry
-        memcpy(&entryRectangles[wordⁱ], &R, sizeof(R));                         // Rectangle containing this entry up to the next tab stop
-        entryOffset            [wordⁱ] = offset;                                // Offset for this entry
-        x += w;                                                                 // Move to next entry position
-       }
-     }
-
-    bestAreaUp ◀ 0.0; bestAreaDown ◀ 0.0;                                       // Locate the rectangles that match the best for up and down arrows
-    cer  ◀ entryRectangles[cursorEntryIndex];
-    cerd ◁ cer ▷ translate(0, +i.fontHeight);
-    ceru ◁ cer ▷ translate(0, -i.fontHeight);
-
-    for(size_t i = 1; i <= N; ++i)                                              // Each entry
-     {o ◁ entryOffset[i];                                                       // Offset of this entry
-      if (o)
-       {    r ◁ entryRectangles[i];                                             // Rectangle for entry
-        d ◁ r ▷ intersectionArea(cerd);                                         // Area of overlap with down rectangle
-        u ◁ r ▷ intersectionArea(ceru);                                         // Area of overlap with up rectangle
-        if (d > bestAreaDown) {bestAreaDown = d; cursorDownOffset = o;}         // Better down
-        if (u > bestAreaUp)   {bestAreaUp   = u; cursorUpOffset   = o;}         // Better up
-       }
-     }
-
-    i ▷ rectangleLine(drawTable, frameColour);                                  // Frame the drawn area
-
-    if (1)                                                                      // Check results
-     {f ◁ list ▷ offset(firstOffset);        ✓ f ▷ equalsString("qqbbbb");
-      l ◁ list ▷ offset(lastOffset);         ✓ l ▷ equalsString("qqhh");
-      c ◁ list ▷ offset(cursorEntry.offset); ✓ c ▷ equalsString("qqee");
-      p ◁ list ▷ offset(cursorPrevOffset);   ✓ p ▷ equalsString("qqdd");
-      n ◁ list ▷ offset(cursorNextOffset);   ✓ n ▷ equalsString("qqff");
-      d ◁ list ▷ offset(cursorDownOffset);   ✓ d ▷ equalsString("qqgggg");
-      u ◁ list ▷ offset(cursorUpOffset);     ✓ u ▷ equalsString("qqbbbb");
-      P ◁ list ▷ offset(pointerOffset);      ✓ P ▷ equalsString("qqee");
-     }
-   }
-
-  i ◀ make$Image(draw, 2000, 2000, "$4.png", "9449");
-  i ▷ free;
- }
-
-void test5()                                                                    // Text table using tab stops
  {void draw($Image image)
    {list ◁ makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo qqppppp qq qqrrrr s qqtttttt qquuuu v wwwwww xxx yy zz");
     drawTable ◁ makeRectangleWH(500, 500, 500, 500);                            // Drawing area
@@ -880,18 +806,20 @@ void test5()                                                                    
     cl ▷ draw;
 
     if (1)                                                                      // Check results
-     {f ◁ list ▷ offset(cl.firstOffset);        ✓ f ▷ equalsString("qqbbbb");
-      l ◁ list ▷ offset(cl.lastOffset);         ✓ l ▷ equalsString("qqhh");
-      c ◁ list ▷ offset(cl.cursorEntry.offset); ✓ c ▷ equalsString("qqee");
-      p ◁ list ▷ offset(cl.cursorPrevOffset);   ✓ p ▷ equalsString("qqdd");
-      n ◁ list ▷ offset(cl.cursorNextOffset);   ✓ n ▷ equalsString("qqff");
-      d ◁ list ▷ offset(cl.cursorDownOffset);   ✓ d ▷ equalsString("qqgggg");
-      u ◁ list ▷ offset(cl.cursorUpOffset);     ✓ u ▷ equalsString("qqbbbb");
-      P ◁ list ▷ offset(cl.pointerOffset);      ✓ P ▷ equalsString("qqee");
+     {✓ cl.first       ▷ keyEqualsString("qqbbbb");
+      ✓ cl.last        ▷ keyEqualsString("qqhh");
+      ✓ cl.cursorEntry ▷ keyEqualsString("qqee");
+      ✓ cl.cursorPrev  ▷ keyEqualsString("qqdd");
+      ✓ cl.cursorNext  ▷ keyEqualsString("qqff");
+      ✓ cl.cursorDown  ▷ keyEqualsString("qqgggg");
+      ✓ cl.cursorUp    ▷ keyEqualsString("qqbbbb");
+      ✓ cl.pointer     ▷ keyEqualsString("qqee");
      }
                          image ▷ saveAsPng("$5a.png", "9449");
     cl ▷ scrollPageDown; image ▷ saveAsPng("$5b.png", "2259");                  // Scroll down one page
     cl ▷ scrollPageUp;   image ▷ saveAsPng("$5c.png", "9ffc");                  // Scroll up   one page
+    cl ▷ arrowRight;     image ▷ saveAsPng("$5d.png", "9570");                  // Arrow  right
+    cl ▷ arrowDown;      image ▷ saveAsPng("$5e.png", "71b6");                  // Arrow  down
    }
 
   i ◀ make$Image(draw, 2000, 2000, "$5.png", "a");
@@ -899,8 +827,7 @@ void test5()                                                                    
  }
 
 int main (void)
- {void (*tests[])(void) = {test0, test1, test2, test3, test4,
-                           test5, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4, 0};
   run_tests("$", 1, tests);
   return 0;
 }
