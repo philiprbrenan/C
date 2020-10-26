@@ -233,6 +233,12 @@ static int keyEquals_int__$Node_pointer_size                                    
   return !memcmp(node ▶ key, key, l);                                           // Compare memory
  }
 
+static int keyEqualsString_int__$Node_pointer                                   // Confirm that the key of a node is equal to the specified zero terminated string
+ (const $Node * node,                                                           // $Node whose key is to be checked
+  const char  * const key)                                                      // Expected key value
+ {return node ▶ keyEquals(key, strlen(key));                                    // Check key
+ }
+
 static int equals_int__$Node_$Node                                              // Confirm two nodes are equal
  (const $Node * a,                                                              // First offset
   const $Node   b)                                                              // Second offset
@@ -1694,7 +1700,7 @@ void test17()                                                                   
   a ▷ free;
  }
 
-void test18()                                                                   //Tat //Tindex //Tinvalid
+void test18()                                                                   //Tat //Tindex //Tinvalid //TkeyEqualsString
  {s ◁ make$(); s ▷ fromLetters("ab(cde)fg");
 
   a ◁ s ▷ findFirst("a"); ✓ a ▷ index == 1;  ✓ a ▷ equals(s ▷ at(1));
@@ -1704,6 +1710,7 @@ void test18()                                                                   
   d ◁ s ▷ findFirst("d");
   ✓ d ▷ index == 2;
   ✓ d ▷ equals(b ▷ at(2));
+  ✓ a ▷ keyEqualsString("a");
 
   z ◁ s ▷ at(20); ✓ z ▷ invalid;
   y ◁ b ▷ at(20); ✓ y ▷ invalid;
