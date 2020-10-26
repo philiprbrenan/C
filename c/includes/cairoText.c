@@ -542,10 +542,31 @@ static void saveAsPng_CairoText_string                                          
 
 //D1 Widgets                                                                    // Draw widgets
 
-static void scrollDownPage__CairoTextCompactList                                        // Scroll a compact list down one page
+static void scrollPageDown__CairoTextCompactList                                        // Scroll a compact list down one page
  (CairoTextCompactList * compactList)                                                   // Compact list
  {const typeof(compactList->startAtOffset = compactList->lastOffset) o = compactList->startAtOffset = compactList->lastOffset;
   compactList->cursorEntry   = compactList->list.proto->offset(&compactList->list, o);
+  compactList->proto->draw(compactList);
+ }
+
+static void scrollPageUp__CairoTextCompactList                                          // Scroll a compact list up one page
+ (CairoTextCompactList * compactList)                                                   // Compact list
+ {const typeof(compactList->list) list = compactList->list;                                                     // List
+  typeof(list.proto->first(&list)) F = list.proto->first(&list);                              typeof(F.proto->index(&F)) f = F.proto->index(&F);                 // First element of list
+  typeof(list.proto->offset(&list, compactList->startAtOffset)) L = list.proto->offset(&list, compactList->startAtOffset); typeof(L.proto->index(&L)) l = L.proto->index(&L); const typeof(l) m = l;          // Current offset which causes the entry we want displayed last to be displayed first in the drawing area.
+
+  for(size_t i = 0; i < 99; ++i)                                                // Binary search
+   {if (f + 1 >= l) break;                                                      // No more splits possible
+    const typeof((int)nearbyint((f + l) / 2)) n = (int)nearbyint((f + l) / 2);                                            // Try the middle
+    compactList->startAtOffset = list.proto->at(&list, n).offset;                           // New start position
+    compactList->proto->layout(compactList);                                                       // Layout
+    const typeof(list.proto->offset(&list, compactList->lastOffset)) T = list.proto->offset(&list, compactList->lastOffset);                                 // Latest last element
+    const typeof(T.proto->index(&T)) t = T.proto->index(&T);                                                              // Index of latest last entry
+    if (t < m) f = n; else if (t > m) l = n; else f = l = n;                    // Update range
+   }
+  const typeof(compactList->cursorEntry   = list.proto->at(&list, l)) r = compactList->cursorEntry   = list.proto->at(&list, l);                                // Location of cursor is on first entry in drawn area
+      compactList->startAtOffset = r.offset;                                    // Draw from this entry
+  compactList->proto->draw(compactList);                                                           // Draw
  }
 
 static void draw__CairoTextCompactList                                                  // Draw a compact list
@@ -869,9 +890,9 @@ memcpy(&    cl.cursorEntry , ({typeof(    cl.cursorEntry ) s =  list.proto->find
       const typeof(list.proto->offset(&list, cl.cursorUpOffset)) u = list.proto->offset(&list, cl.cursorUpOffset);     assert( u.proto->equalsString(&u, "qqbbbb"));
       const typeof(list.proto->offset(&list, cl.pointerOffset)) P = list.proto->offset(&list, cl.pointerOffset);      assert( P.proto->equalsString(&P, "qqee"));
      }
-    image.proto->saveAsPng(&image, "CairoText5a.png", "9449");
-
-    cl.proto->scrollDownPage(&cl); cl.proto->draw(&cl); image.proto->saveAsPng(&image, "CairoText5b.png", "2259");       // Scroll down one page
+                         image.proto->saveAsPng(&image, "CairoText5a.png", "9449");
+    cl.proto->scrollPageDown(&cl); image.proto->saveAsPng(&image, "CairoText5b.png", "2259");                  // Scroll down one page
+    cl.proto->scrollPageUp(&cl);   image.proto->saveAsPng(&image, "CairoText5c.png", "9ffc");                  // Scroll up   one page
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText5.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText5.png", "a");
@@ -879,7 +900,7 @@ memcpy(&    cl.cursorEntry , ({typeof(    cl.cursorEntry ) s =  list.proto->find
  }
 
 int main (void)
- {void (*tests[])(void) = {test5, test0, test1, test2, test3, test4,
+ {void (*tests[])(void) = {test0, test1, test2, test3, test4,
                            test5, 0};
   run_tests("CairoText", 1, tests);
   return 0;
