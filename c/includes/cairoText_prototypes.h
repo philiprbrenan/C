@@ -114,9 +114,19 @@ static void saveAsPng_CairoText_string
   char       *       imageFile,
   const char * const digest);
 static void scrollPageDown__CairoTextCompactList
- (CairoTextCompactList * compactList);
+ (CairoTextCompactList * c);
 static void scrollPageUp__CairoTextCompactList
- (CairoTextCompactList * compactList);
+ (CairoTextCompactList * c);
+static void scrollToCursor__CairoTextCompactList
+ (CairoTextCompactList * c);
+static void arrowLeft__CairoTextCompactList
+ (CairoTextCompactList * c);
+static void arrowRight__CairoTextCompactList
+ (CairoTextCompactList * c);
+static void arrowUp__CairoTextCompactList
+ (CairoTextCompactList * c);
+static void arrowDown__CairoTextCompactList
+ (CairoTextCompactList * c);
 static void draw__CairoTextCompactList
  (CairoTextCompactList * compactList);
 static void layout__CairoTextCompactList
@@ -125,6 +135,14 @@ static void drawOrLayout__CairoTextCompactList
  (CairoTextCompactList * compactList,
   int            drawing);
 struct ProtoTypes_CairoTextCompactList {
+  void  (*arrowDown)(                                                           // Move the entry under the cursor one click down
+    CairoTextCompactList * c);                                                  // Compact list
+  void  (*arrowLeft)(                                                           // Move the entry under the cursor one click to the left
+    CairoTextCompactList * c);                                                  // Compact list
+  void  (*arrowRight)(                                                          // Move the entry under the cursor one click to the right
+    CairoTextCompactList * c);                                                  // Compact list
+  void  (*arrowUp)(                                                             // Move the entry under the cursor one click up
+    CairoTextCompactList * c);                                                  // Compact list
   void  (*drawOrLayout)(                                                        // Draw or layout a compact list
     CairoTextCompactList * compactList,                                         // Compact list
     int drawing);                                                               // Drawing if true - else trial layout
@@ -133,11 +151,13 @@ struct ProtoTypes_CairoTextCompactList {
   void  (*layout)(                                                              // Layout a compact list
     CairoTextCompactList * compactList);                                        // Compact list
   void  (*scrollPageDown)(                                                      // Scroll a compact list down one page
-    CairoTextCompactList * compactList);                                        // Compact list
+    CairoTextCompactList * c);                                                  // Compact list
   void  (*scrollPageUp)(                                                        // Scroll a compact list up one page
-    CairoTextCompactList * compactList);                                        // Compact list
+    CairoTextCompactList * c);                                                  // Compact list
+  void  (*scrollToCursor)(                                                      // Scroll to bring the entry under the cursor into view
+    CairoTextCompactList * c);                                                  // Compact list
  } const ProtoTypes_CairoTextCompactList =
-{drawOrLayout__CairoTextCompactList, draw__CairoTextCompactList, layout__CairoTextCompactList, scrollPageDown__CairoTextCompactList, scrollPageUp__CairoTextCompactList};
+{arrowDown__CairoTextCompactList, arrowLeft__CairoTextCompactList, arrowRight__CairoTextCompactList, arrowUp__CairoTextCompactList, drawOrLayout__CairoTextCompactList, draw__CairoTextCompactList, layout__CairoTextCompactList, scrollPageDown__CairoTextCompactList, scrollPageUp__CairoTextCompactList, scrollToCursor__CairoTextCompactList};
 CairoTextCompactList newCairoTextCompactList(CairoTextCompactList allocator) {return allocator;}
 
 struct ProtoTypes_CairoTextFont {
