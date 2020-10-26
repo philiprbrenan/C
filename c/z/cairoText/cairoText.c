@@ -541,13 +541,29 @@ static void saveAsPng_$_string                                                  
 
 //D1 Widgets                                                                    // Draw widgets
 
+static void scrollDownPage__$CompactList                                        // Scroll a compact list down one page
+ ($CompactList * compactList)                                                   // Compact list
+ {o ◁ compactList->startAtOffset = compactList->lastOffset;
+  compactList->cursorEntry   = compactList->list ▷ offset(o);
+ }
+
 static void draw__$CompactList                                                  // Draw a compact list
+ ($CompactList * compactList)                                                   // Compact list
+ {compactList ▶ drawOrLayout(1);
+ }
+
+static void layout__$CompactList                                                // Layout a compact list
+ ($CompactList * compactList)                                                   // Compact list
+ {compactList ▶ drawOrLayout(0);
+ }
+
+static void drawOrLayout__$CompactList                                          // Draw or layout a compact list
  ($CompactList * compactList,                                                   // Compact list
   int            drawing)                                                       // Drawing if true - else trial layout
  {cl ◁ compactList;
   i  ◀ cl->image;
 
-  if (drawing) i ▶ clip(cl->drawTable);                                         // Clip the drawing area to prevent text appearing outside it
+  if (drawing) {i ▶ clip(cl->drawTable); i ▶ clearWhite;}                       // Clip the drawing area to prevent text appearing outside it
 
   if (drawing)                                                                  // Show text entered so far
    {i ▶ colour(cl->textEnteredSoFarColour);
@@ -569,7 +585,7 @@ static void draw__$CompactList                                                  
   firstOffset ◀ 0ul;
 
   ArenaListfeⁱ(word, cl->list)                                                  // Each word
-   {if (wordⁱ >= cl->startAtOffset)                                             // Words in the scrolled to area
+   {if (word.offset >= cl->startAtOffset)                                       // Words in the scrolled to area
      {makeLocalCopyOfArenaListKey(K, L, word);
       if (L <= cl->textEnteredSoFarLength) continue;                            // Word shorter than prefix entered so far
       if (strncmp(K, cl->textEnteredSoFar, cl->textEnteredSoFarLength))continue;// Word does not match prefix entered so far
@@ -596,26 +612,30 @@ static void draw__$CompactList                                                  
       w ◁ i->fontHeight * ceil(a / i->fontHeight);                              // Width of current entry including move to next tab stop
       if      (!cursorEntryIndex)              cl->cursorPrevOffset = offset;   // Entry just before cursor
       else if  (cursorEntryIndex + 1 == wordⁱ) cl->cursorNextOffset = offset;   // Entry just after cursor
+
       R ◁ makeRectangleWH(x, y, w, i->fontHeight);                              // Rectangle containing entry
       entryRectangles[wordⁱ] ≞ R;                                               // Rectangle containing this entry up to the next tab stop
-      entryOffset            [wordⁱ] = offset;                                  // Offset for this entry
+      entryOffset    [wordⁱ] = offset;                                          // Offset for this entry
       x += w;                                                                   // Move to next entry position
      }
    }
 
   bestAreaUp ◀ 0.0; bestAreaDown ◀ 0.0;                                         // Locate the rectangles that match the best for up and down arrows
-  cer  ◀ entryRectangles[cursorEntryIndex];
-  cerd ◁ cer ▷ translate(0, +i->fontHeight);
-  ceru ◁ cer ▷ translate(0, -i->fontHeight);
 
-  for(size_t i = 1; i <= N; ++i)                                                // Each entry
-   {o ◁ entryOffset[i];                                                         // Offset of this entry
-    if (o)
-     {    r ◁ entryRectangles[i];                                               // Rectangle for entry
-      d ◁ r ▷ intersectionArea(cerd);                                           // Area of overlap with down rectangle
-      u ◁ r ▷ intersectionArea(ceru);                                           // Area of overlap with up rectangle
-      if (d > bestAreaDown) {bestAreaDown = d; cl->cursorDownOffset = o;}       // Better down
-      if (u > bestAreaUp)   {bestAreaUp   = u; cl->cursorUpOffset   = o;}       // Better up
+  if (cursorEntryIndex)                                                         // Locate entries immediately above and below for up/down arrow access
+   {cer  ◀ entryRectangles[cursorEntryIndex];
+    cerd ◁ cer ▷ translate(0, +i->fontHeight);
+    ceru ◁ cer ▷ translate(0, -i->fontHeight);
+
+    for(size_t i = 1; i <= N; ++i)                                              // Each entry
+     {o ◁ entryOffset[i];                                                       // Offset of this entry
+      if (o)
+       {    r ◁ entryRectangles[i];                                             // Rectangle for entry
+        d ◁ r ▷ intersectionArea(cerd);                                         // Area of overlap with down rectangle
+        u ◁ r ▷ intersectionArea(ceru);                                         // Area of overlap with up rectangle
+        if (d > bestAreaDown) {bestAreaDown = d; cl->cursorDownOffset = o;}     // Better down
+        if (u > bestAreaUp)   {bestAreaUp   = u; cl->cursorUpOffset   = o;}     // Better up
+       }
      }
    }
 
@@ -826,17 +846,17 @@ void test4()                                                                    
  }
 
 void test5()                                                                    // Text table using tab stops
- {void draw($Image i)
-   {list ◁ makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo ppppp qq rrrr s tttttt uuuu v wwwwww xxx yy zz");
+ {void draw($Image image)
+   {list ◁ makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo qqppppp qq qqrrrr s qqtttttt qquuuu v wwwwww xxx yy zz");
     drawTable ◁ makeRectangleWH(500, 500, 500, 500);                            // Drawing area
-    cl ◀ make$CompactList(&i, list, drawTable);                                 // Create compact list
+    cl ◀ make$CompactList(&image, list, drawTable);                             // Create compact list
     cl.cursorEntry ≞ list ▷ findFirst("qqee");                                  // Cursor entry
     cl.pointerˣ = 717; cl.pointerʸ = 717;                                       // Current pointer coordinates
     strcpy(cl.textEnteredSoFar, "qqx");                                         // Assume the user has entered some text to narrow the possibilities displayed
     cl.textEnteredSoFarLength = 2;                                              // Assume the user has entered some text to narrow the possibilities displayed
     cl.possibilityFontSize = 100;                                               // Font size for entries
 
-    cl ▷ draw(1);
+    cl ▷ draw;
 
     if (1)                                                                      // Check results
      {f ◁ list ▷ offset(cl.firstOffset);        ✓ f ▷ equalsString("qqbbbb");
@@ -848,14 +868,17 @@ void test5()                                                                    
       u ◁ list ▷ offset(cl.cursorUpOffset);     ✓ u ▷ equalsString("qqbbbb");
       P ◁ list ▷ offset(cl.pointerOffset);      ✓ P ▷ equalsString("qqee");
      }
+    image ▷ saveAsPng("$5a.png", "9449");
+
+    cl ▷ scrollDownPage; cl ▷ draw; image ▷ saveAsPng("$5b.png", "2259");       // Scroll down one page
    }
 
-  i ◀ make$Image(draw, 2000, 2000, "$5.png", "9449");
+  i ◀ make$Image(draw, 2000, 2000, "$5.png", "a");
   i ▷ free;
  }
 
 int main (void)
- {void (*tests[])(void) = {test0, test1, test2, test3, test4,
+ {void (*tests[])(void) = {test5, test0, test1, test2, test3, test4,
                            test5, 0};
   run_tests("$", 1, tests);
   return 0;
