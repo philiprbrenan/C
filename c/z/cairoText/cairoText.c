@@ -68,12 +68,12 @@ typedef struct $CompactList                                                     
   Colour frameColour;                                                           //I Colour of frame
   Colour possibilityColour;                                                     //I Colour of text used to show a possibility
   Colour pointedColour;                                                         //I Colour of back ground of current possibility
-  Colour textEnteredSoFarColour;                                                //I Colour of the text entered so far
+  Colour prefixColour;                                                //I Colour of the text entered so far
   ArenaList list;                                                               //I The possibilities to display
   ArenaListNode cursorEntry;                                                    //I The current possibility under the cursor
-  char textEnteredSoFar[17];                                                    // Prefix text entered so far to narrow the possibilities
-  size_t textEnteredSoFarLength;                                                // Length of text entered so far
-  enum $Fonts textEnteredSoFarFont;                                             //I Font for text entered so far
+  char prefix[17];                                                    // Prefix text entered so far to narrow the possibilities
+  size_t prefixLength;                                                // Length of text entered so far
+  enum $Fonts prefixFont;                                             //I Font for text entered so far
   enum $Fonts possibilityFont;                                                  //I Font for remaining possibilities
   size_t      possibilityFontSize;                                              //I Font size for entries
   ArenaListNode startAt;                                                        //I Start drawing at this entry
@@ -160,12 +160,12 @@ static $CompactList make$CompactList                                            
   l.frameColour            ≞ makeColour(0,0,0,1);
   l.possibilityColour      ≞ makeColour(0,0,0,1);
   l.pointedColour          ≞ makeColour(0,0,1,0.3);
-  l.textEnteredSoFarColour ≞ makeColour(0,1,0,1);
-  l.textEnteredSoFarColour ≞ makeColour(0,1,0,1);
+  l.prefixColour ≞ makeColour(0,1,0,1);
+  l.prefixColour ≞ makeColour(0,1,0,1);
   l.list                   ≞ list;
   l.cursorEntry            ≞ list ▷ first;
-  l.textEnteredSoFarLength = 0;
-  l.textEnteredSoFarFont   ≞ $Font_sansItalic;
+  l.prefixLength = 0;
+  l.prefixFont   ≞ $Font_sansItalic;
   l.possibilityFont        ≞ $Font_serif;
   l.possibilityFontSize    = 100;
   l.drawTable              ≞ drawTable;
@@ -541,6 +541,22 @@ static void saveAsPng_$_string                                                  
 
 //D1 Widgets                                                                    // Draw widgets
 
+//D2 Compact List                                                               // A compact list of options the user can cursor and scroll through or click on to make a selection.
+
+static void addChar__$CompactList                                               // Add a character to the selection prefix
+ ($CompactList * c,                                                             // Compact list
+  char           a)                                                             // Character to add
+ {if (        c->prefixLength + 1 < sizeof(c->prefix))
+   {c->prefix[c->prefixLength++] = a;
+    c ▶ draw;
+   }
+ }
+
+static void removeChar__$CompactList                                            // Remove the latest character from the selection prefix
+ ($CompactList * c)                                                             // Compact list
+ {if (c->prefixLength > 0) {c->prefixLength--; c ▶ draw;}
+ }
+
 static void scrollPageDown__$CompactList                                        // Scroll a compact list down one page
  ($CompactList * c)                                                             // Compact list
  {c->cursorEntry = c->startAt = c->last;
@@ -627,10 +643,10 @@ static void drawOrLayout__$CompactList                                          
   if (drawing) {i ▶ clip(cl->drawTable); i ▶ clearWhite;}                       // Clip the drawing area to prevent text appearing outside it
 
   if (drawing)                                                                  // Show text entered so far
-   {i ▶ colour(cl->textEnteredSoFarColour);
-    i ▶ font  (cl->textEnteredSoFarFont);
-    l ◁ cl->textEnteredSoFarLength;
-    char t[l+1]; strncpy(t, cl->textEnteredSoFar, l); t[l] = 0;
+   {i ▶ colour(cl->prefixColour);
+    i ▶ font  (cl->prefixFont);
+    l ◁ cl->prefixLength;
+    char t[l+1]; strncpy(t, cl->prefix, l); t[l] = 0;
     i ▶ textFit(cl->drawTable, 0, 0, 0, t);
    }
 
@@ -648,9 +664,9 @@ static void drawOrLayout__$CompactList                                          
   ArenaListfeⁱ(word, cl->list)                                                  // Each word
    {if (word.offset >= cl->startAt.offset)                                      // Words in the scrolled to area
      {makeLocalCopyOfArenaListKey(K, L, word);
-      if (L <= cl->textEnteredSoFarLength) continue;                            // Word shorter than prefix entered so far
-      if (strncmp(K, cl->textEnteredSoFar, cl->textEnteredSoFarLength))continue;// Word does not match prefix entered so far
-      k ◁ &K[cl->textEnteredSoFarLength];                                       // Skip text entered so far
+      if (L <= cl->prefixLength) continue;                                      // Word shorter than prefix entered so far
+      if (strncmp(K, cl->prefix, cl->prefixLength))continue;                    // Word does not match prefix entered so far
+      k ◁ &K[cl->prefixLength];                                                 // Skip text entered so far
       a ◁ i ▶ textAdvance(k);                                                   // Width of text
       if (x + a > cl->drawTable.X) {x = cl->drawTable.x; y += i->fontHeight;}   // Move to next line if necessary
 
@@ -799,8 +815,8 @@ void test4()                                                                    
     cl ◀ make$CompactList(&image, list, drawTable);                             // Create compact list
     cl.cursorEntry ≞ list ▷ findFirst("qqee");                                  // Cursor entry
     cl.pointerˣ = 717; cl.pointerʸ = 717;                                       // Current pointer coordinates
-    strcpy(cl.textEnteredSoFar, "qqx");                                         // Assume the user has entered some text to narrow the possibilities displayed
-    cl.textEnteredSoFarLength = 2;                                              // Assume the user has entered some text to narrow the possibilities displayed
+    strcpy(cl.prefix, "qqx");                                                   // Assume the user has entered a prefix to narrow the possibilities displayed
+    cl.prefixLength = 2;                                                        // Prefix length
     cl.possibilityFontSize = 100;                                               // Font size for entries
 
     cl ▷ draw;
