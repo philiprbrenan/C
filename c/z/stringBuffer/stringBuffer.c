@@ -588,7 +588,7 @@ void test6()                                                                    
   ✓ f ▷ equalsString(c);
   ✓ f ▷ length == strlen(c);
 
-  char C[f ▷ length + 1]; f ▷ string(C); ✓ !strcmp(c, C);
+  n ◁ f ▷ length; char C[n + 1]; f ▷ string(C); ✓ !strcmp(c, C);
 
   a ▷ free; f ▷ free; unlink(F);
  }
