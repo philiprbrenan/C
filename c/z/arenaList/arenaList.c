@@ -1223,13 +1223,13 @@ void test0()                                                                    
    }
 
   if (1)                                                                        // For each
-   {char l[t ▷ count + 1]; *l = 0;
+   {n ◁ t ▷ count; char l[n + 1]; l ≞ 0;
     $fe (child, root) strncat(l, child ▷ key, child ▷ length);
     ✓ !strcmp(l, "JIHGFEDCBAabcdefghij");
    }
 
   if (1)                                                                        // For each in reverse
-   {char l[t ▷ count + 1]; *l = 0;
+   {n ◁ t ▷ count; char l[n + 1]; l ≞ 0;
     $fer(child, root) strncat(l, child ▷ key, child ▷ length);
     ✓strcmp(l, "jihgfedcbaABCDEFGHIJ") == 0;
    }
@@ -1238,8 +1238,8 @@ void test0()                                                                    
  }
 
 void test1()                                                                    //Troot //Tfirst //Tlast //Tnext //Tprev //Tparent //Tequals //Tprint //TprintWithBrackets //TfromLetters //TprintsAs
- {  t ◁ make$();    t ▷ fromLetters("b(c(de)f)g(hi)j");
-  ✓ t ▷ printsWithBracketsAs("(b(c(de)f)g(hi)j)");
+ {  t ◁ make$(); t ▷ fromLetters("b(c(de)f)g(hi)j");
+  ✓ t ▷ printsWithBracketsAs   ("(b(c(de)f)g(hi)j)");
   ✓ t ▷ printsAs("bcdefghij");
 
   a ◁ t ▷ root;
