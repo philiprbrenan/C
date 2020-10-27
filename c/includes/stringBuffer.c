@@ -589,7 +589,7 @@ void test6()                                                                    
   assert( f.proto->equalsString(&f, c));
   assert( f.proto->length(&f) == strlen(c));
 
-  char C[f.proto->length(&f) + 1]; f.proto->string(&f, C); assert( !strcmp(c, C));
+  const typeof(f.proto->length(&f)) n = f.proto->length(&f); char C[n + 1]; f.proto->string(&f, C); assert( !strcmp(c, C));
 
   a.proto->free(&a); f.proto->free(&f); unlink(F);
  }
