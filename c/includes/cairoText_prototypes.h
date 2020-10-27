@@ -15,19 +15,19 @@ static void fontMetrics_CairoText
  (CairoTextImage * i);
 static void fontSize_CairoText
  (CairoTextImage * i,
-  int    size);
+  int      size);
 static double textAdvance_CairoText
  (CairoTextImage * i,
-  char * s);
+  char   * s);
 static void text_CairoText
- (CairoTextImage * i,
-  double x,
-  double y,
+ (CairoTextImage     * i,
+  double       x,
+  double       y,
   const char * t);
 static void textLine_CairoText
- (CairoTextImage * i,
-  double x,
-  double y,
+ (CairoTextImage     * i,
+  double       x,
+  double       y,
   const char * t);
 static void textFit_CairoText
  (CairoTextImage     * i,
@@ -40,30 +40,30 @@ static void clearWhite_CairoText
  (CairoTextImage * i);
 static void colour_CairoText
  (CairoTextImage * i,
-  Colour c);
+  Colour   c);
 static void rgb_CairoText
  (CairoTextImage * i,
-  double r,
-  double g,
-  double b);
+  double   r,
+  double   g,
+  double   b);
 static void rgba_CairoText
  (CairoTextImage * i,
-  double r,
-  double g,
-  double b,
-  double a);
+  double   r,
+  double   g,
+  double   b,
+  double   a);
 static void save_CairoText
  (CairoTextImage * i);
 static void restore_CairoText
  (CairoTextImage * i);
 static void move_CairoText
  (CairoTextImage * i,
-  double x,
-  double y);
+  double   x,
+  double   y);
 static void line_CairoText
  (CairoTextImage * i,
-  double x,
-  double y);
+  double   x,
+  double   y);
 static void close_CairoText
  (CairoTextImage * i);
 static void fill_CairoText
@@ -268,7 +268,7 @@ struct ProtoTypes_CairoTextImage {
     CairoTextImage * i);                                                        // CairoTextImage
   double  (*textAdvance)(                                                       // Get the width of the specified text
     CairoTextImage * i,                                                         // CairoTextImage
-    char * s);                                                                  // String
+    char   * s);                                                                // String
   void  (*textFit)(                                                             // Draw text so that it fills a rectangle in one dimension and is justified as specified in the other dimension.
     CairoTextImage     * i,                                                     // CairoTextImage
     Rectangle rc,                                                               // Rectangle in which to draw text
@@ -277,12 +277,12 @@ struct ProtoTypes_CairoTextImage {
     const int line,                                                             // 0 : fill, 1 - outline
     const char * text);                                                         // The text to draw
   void  (*textLine)(                                                            // Outline text at the specified position using the current font, fonet size and colour
-    CairoTextImage * i,                                                         // CairoTextImage
+    CairoTextImage     * i,                                                     // CairoTextImage
     double x,                                                                   // X position of text
     double y,                                                                   // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
     const char * t);                                                            // The text to draw
   void  (*text)(                                                                // Draw text at the specified position using the current font, fonet size and colour
-    CairoTextImage * i,                                                         // CairoTextImage
+    CairoTextImage     * i,                                                     // CairoTextImage
     double x,                                                                   // X position of text
     double y,                                                                   // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
     const char * t);                                                            // The text to draw
