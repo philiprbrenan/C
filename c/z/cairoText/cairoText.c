@@ -19,14 +19,14 @@
 #define $_included
 
 typedef struct $Font                                                            // Details of a font
- {const struct ProtoTypes_$Font *proto;                                         // Methods associated with an arena tree
+ {const struct ProtoTypes_$Font *proto;                                         // Methods associated with a font
   StringBuffer        file;                                                     // Name of the file containing the font
   FT_Face             freeTypeFontFace;                                         // Free type description of font
   cairo_font_face_t * cairoFontFace;                                            // Cairo dscription of font
  } $Font;
 
 typedef struct $Image                                                           // Create an image
- {const struct ProtoTypes_$Image *proto;                                        // Methods associated with an arena tree
+ {const struct ProtoTypes_$Image *proto;                                        // Methods associated with an image
   cairo_t           * cr;                                                       // Cairo
   cairo_surface_t   * surface;                                                  // Surface on which we are drawing
   FT_Library          freeTypeLibrary;                                          // Free Type library
@@ -68,12 +68,12 @@ typedef struct $CompactList                                                     
   Colour frameColour;                                                           //I Colour of frame
   Colour possibilityColour;                                                     //I Colour of text used to show a possibility
   Colour pointedColour;                                                         //I Colour of back ground of current possibility
-  Colour prefixColour;                                                //I Colour of the text entered so far
+  Colour prefixColour;                                                          //I Colour of the text entered so far
   ArenaList list;                                                               //I The possibilities to display
   ArenaListNode cursorEntry;                                                    //I The current possibility under the cursor
-  char prefix[17];                                                    // Prefix text entered so far to narrow the possibilities
-  size_t prefixLength;                                                // Length of text entered so far
-  enum $Fonts prefixFont;                                             //I Font for text entered so far
+  char prefix[17];                                                              // Prefix text entered so far to narrow the possibilities
+  size_t prefixLength;                                                          // Length of text entered so far
+  enum $Fonts prefixFont;                                                       //I Font for text entered so far
   enum $Fonts possibilityFont;                                                  //I Font for remaining possibilities
   size_t      possibilityFontSize;                                              //I Font size for entries
   ArenaListNode startAt;                                                        //I Start drawing at this entry
@@ -97,11 +97,7 @@ $Image make$Image                                                               
   int y,                                                                        // Dimension of image in y
   const char * const imageFile,                                                 // Name of output file
   const char * const expected)                                                  // Part of the expected digest of the image produced
- {char fontFile[128]; strcpy(fontFile, developmentMode() ?                      // Font file
-  "/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf":
-     "/home/runner/work/C/C/fonts/NotoSansMono-Regular.ttf");
-
-  cairo_surface_t * surface = cairo_image_surface_create                        // Cairo
+ {cairo_surface_t * surface = cairo_image_surface_create                        // Cairo
    (CAIRO_FORMAT_ARGB32, x, y);
   cairo_t         *    cr   = cairo_create (surface);
   cairo_set_antialias (cr, CAIRO_ANTIALIAS_BEST);
@@ -156,19 +152,19 @@ static $CompactList make$CompactList                                            
   ArenaList list,                                                               // Arena list of possibilities
   Rectangle drawTable)                                                          // Rectangle defining drawing area for the list
  {CairoTextCompactList l = newCairoTextCompactList();
-  l.image                  = image;
-  l.frameColour            ≞ makeColour(0,0,0,1);
-  l.possibilityColour      ≞ makeColour(0,0,0,1);
-  l.pointedColour          ≞ makeColour(0,0,1,0.3);
-  l.prefixColour ≞ makeColour(0,1,0,1);
-  l.prefixColour ≞ makeColour(0,1,0,1);
-  l.list                   ≞ list;
-  l.cursorEntry            ≞ list ▷ first;
-  l.prefixLength = 0;
-  l.prefixFont   ≞ $Font_sansItalic;
-  l.possibilityFont        ≞ $Font_serif;
-  l.possibilityFontSize    = 100;
-  l.drawTable              ≞ drawTable;
+  l.image                = image;
+  l.frameColour          ≞ makeColour(0,0,0,1);
+  l.possibilityColour    ≞ makeColour(0,0,0,1);
+  l.pointedColour        ≞ makeColour(0,0,1,0.3);
+  l.prefixColour         ≞ makeColour(0,1,0,1);
+  l.prefixColour         ≞ makeColour(0,1,0,1);
+  l.list                 ≞ list;
+  l.cursorEntry          ≞ list ▷ first;
+  l.prefixLength         = 0;
+  l.prefixFont           ≞ $Font_sansItalic;
+  l.possibilityFont      ≞ $Font_serif;
+  l.possibilityFontSize  = 100;
+  l.drawTable            ≞ drawTable;
   return l;
  }
 
@@ -185,7 +181,6 @@ static void free_$Image                                                         
 
   for($Font **f = fonts; *f; ++f) {$Font *F = *f; F ▶ free;}                    // Free any fonts that were loaded
 
-
   FT_Done_FreeType(i->freeTypeLibrary);                                         // Finished with FreeType library
  }
 
@@ -198,7 +193,7 @@ static void free_$Font                                                          
    }
  }
 
-//D1 Text                                                                       // Work with text
+//D1 Text                                                                       // Draw text
 
 static void font_$                                                              // Start using a font
  ($Image    * i,                                                                // $Image
@@ -207,20 +202,16 @@ static void font_$                                                              
   if (!font->cairoFontFace)                                                     // Load the font if this font has not yet been loaded.
    {makeLocalCopyOfStringBuffer(ff, l, font->file);
     e2 ◁ FT_New_Face(i->freeTypeLibrary, ff, 0, &font->freeTypeFontFace);
-    if (e2 == FT_Err_Unknown_File_Format) printStackBackTraceAndExit
-     (1, "FontFace not supported: %s\n", ff);
-    else if (e2) printStackBackTraceAndExit
-     (1, "FontFace failed: %d %s\n", e2, ff);
+    if (e2 == FT_Err_Unknown_File_Format) printStackBackTrace
+     ("FontFace not supported: %s\n", ff);
+    else if (e2) printStackBackTrace
+     ("FontFace failed: %d %s\n", e2, ff);
 
     font->cairoFontFace =
       cairo_ft_font_face_create_for_ft_face(font->freeTypeFontFace, 0);
    }
 
-if (i->fonts[fontNumber].cairoFontFace == 0)
- {printStackBackTrace("BBBB Bad font face\n");
- }
-
-  cairo_set_font_face (i->cr, font->cairoFontFace);                              // Set the font as the currently active one
+  cairo_set_font_face (i->cr, font->cairoFontFace);                             // Set the font as the currently active one
 
   i ▶ fontMetrics;
  }
@@ -229,7 +220,6 @@ static void fontMetrics_$                                                       
  ($Image * i)                                                                   // $Image
  {cairo_font_extents_t fontExtents;
   cairo_font_extents (i->cr, &fontExtents);
-
   i->fontAscent  = fontExtents.ascent;                                          // Ascent from base line
   i->fontDescent = fontExtents.descent;                                         // Descent from base line
   i->fontHeight  = i->fontAscent + i->fontDescent;                              // Interline height
@@ -237,14 +227,14 @@ static void fontMetrics_$                                                       
 
 static void fontSize_$                                                          // Set the size of a font
  ($Image * i,                                                                   // $Image
-  int    size)                                                                  // Size
+  int      size)                                                                // Size
  {cairo_set_font_size(i->cr, size);                                             // Set font size
   i ▶ fontMetrics;
  }
 
 static double textAdvance_$                                                     // Get the width of the specified text
  ($Image * i,                                                                   // $Image
-  char * s)                                                                     // String
+  char   * s)                                                                   // String
  {cr ◁ i->cr;
   cairo_text_extents_t textExtents;
   cairo_text_extents (cr, s, &textExtents);
@@ -252,18 +242,18 @@ static double textAdvance_$                                                     
  }
 
 static void text_$                                                              // Draw text at the specified position using the current font, fonet size and colour
- ($Image * i,                                                                   // $Image
-  double x,                                                                     // X position of text
-  double y,                                                                     // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
+ ($Image     * i,                                                               // $Image
+  double       x,                                                               // X position of text
+  double       y,                                                               // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
   const char * t)                                                               // The text to draw
  {cairo_move_to  (i->cr, x, y + i->fontAscent);
   cairo_show_text(i->cr, t);
  }
 
 static void textLine_$                                                          // Outline text at the specified position using the current font, fonet size and colour
- ($Image * i,                                                                   // $Image
-  double x,                                                                     // X position of text
-  double y,                                                                     // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
+ ($Image     * i,                                                               // $Image
+  double       x,                                                               // X position of text
+  double       y,                                                               // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
   const char * t)                                                               // The text to draw
  {cr ◁ i->cr;
   cairo_move_to  (cr, x, y + i->fontAscent);
@@ -279,10 +269,10 @@ static void textFit_$                                                           
   const int    line,                                                            // 0 : fill, 1 - outline
   const char * text)                                                            // The text to draw
  {cr ◁ i->cr;
-  base ◁ 1000.0;                                                                // Size to scale from
+  base ◁ 1000.0;                                                                // Size to scale from - it could be anything as no drawing is performed at this size
   i ▶ save;
   i ▶ move(0, 0);
-  i ▶ fontSize(base);                                                           // Set font size
+  i ▶ fontSize(base);
   cairo_text_extents_t textExtents;
   cairo_text_extents (cr, text, &textExtents);
   rx ◁ textExtents.width  / rc ▷ width;
@@ -293,13 +283,13 @@ static void textFit_$                                                           
   i ▶ fontSize(base / r);                                                       // Set font size
   dx ◁ rc ▷ width  - tw;                                                        // Left over in x
   dy ◁ rc ▷ height - th;                                                        // Left over in y
-  jx ◁ jX < 0 ? 0 : jX > 0 ? dx : dx / 2;
+  jx ◁ jX < 0 ? 0 : jX > 0 ? dx : dx / 2;                                       // Justification
   jy ◁ jY < 0 ? 0 : jY > 0 ? dy : dy / 2;
   xb ◁ textExtents.x_bearing / r;
   yb ◁ textExtents.y_bearing / r;
   x ◁ rc.x + jx - xb;
   y ◁ rc.y + jy - yb;
-  if (line) i ▶ textLine (x, y - i->fontAscent, text);                           // Outline or fill the text
+  if (line) i ▶ textLine (x, y - i->fontAscent, text);                          // Outline or fill the text
   else      i ▶ text     (x, y - i->fontAscent, text);
   i ▶ restore;
  }
@@ -315,25 +305,25 @@ static void clearWhite_$                                                        
 
 static void colour_$                                                            // Set the current colour
  ($Image * i,                                                                   // $Image
-  Colour c)                                                                     // Colour
+  Colour   c)                                                                   // Colour
  {cr ◁ i->cr;
   cairo_set_source_rgba(cr, c.r, c.g, c.b, c.a);
  }
 
 static void rgb_$                                                               // Set the current colour
  ($Image * i,                                                                   // $Image
-  double r,                                                                     // Red
-  double g,                                                                     // Green
-  double b)                                                                     // Blue
+  double   r,                                                                   // Red
+  double   g,                                                                   // Green
+  double   b)                                                                   // Blue
  {cairo_set_source_rgb(i->cr, r, g, b);
  }
 
 static void rgba_$                                                              // Set the current colour
  ($Image * i,                                                                   // $Image
-  double r,                                                                     // Red
-  double g,                                                                     // Green
-  double b,                                                                     // Blue
-  double a)                                                                     // Alpha
+  double   r,                                                                   // Red
+  double   g,                                                                   // Green
+  double   b,                                                                   // Blue
+  double   a)                                                                   // Alpha
  {cairo_set_source_rgba(i->cr, r, g, b, a);
  }
 
@@ -351,15 +341,15 @@ static void restore_$                                                           
 
 static void move_$                                                              // Move to a position without drawing
  ($Image * i,                                                                   // $Image
-  double x,                                                                     // X coordinate to move to
-  double y)                                                                     // Y coordinate to move to
+  double   x,                                                                   // X coordinate to move to
+  double   y)                                                                   // Y coordinate to move to
  {cairo_move_to(i->cr, x, y);
  }
 
 static void line_$                                                              // Draw a line to the specified position from the current position
  ($Image * i,                                                                   // $Image
-  double x,                                                                     // X coordinate to move to
-  double y)                                                                     // Y coordinate to move to
+  double   x,                                                                   // X coordinate to move to
+  double   y)                                                                   // Y coordinate to move to
  {cairo_line_to(i->cr, x, y);
  }
 
@@ -588,7 +578,7 @@ static void scrollToCursor__$CompactList                                        
   ArenaListfe(e, list)                                                          // Each entry
    {if (e.offset == c->first.offset) f = 1;                                     // Entered drawn area
     if (e.offset == c->cursorEntry.offset && !f) c->startAt = e;                // At entry under cursor but not in the drawing area
-    if (e.offset == c->last.offset)  f = 0;                                      // Leaving drawn area
+    if (e.offset == c->last.offset)  f = 0;                                     // Leaving drawn area
    }
  }
 
@@ -601,7 +591,7 @@ static void arrowLeft__$CompactList                                             
 
 static void arrowRight__$CompactList                                            // Move the entry under the cursor one click to the right
  ($CompactList * c)                                                             // Compact list
- {if (c->cursorEntry.offset == c->last.offset) c ▶ scrollPageDown;              // Scroll down one page if leaving the last item on page
+ {if (c->cursorEntry.offset == c->last.offset)  c ▶ scrollPageDown;             // Scroll down one page if leaving the last item on page
   if (c->cursorNext .offset)   c->cursorEntry = c->cursorNext;                  // Cursor entry
   c ▶ draw;                                                                     // Draw
  }
@@ -626,12 +616,12 @@ static void arrowDown__$CompactList                                             
 
 static void draw__$CompactList                                                  // Draw a compact list
  ($CompactList * compactList)                                                   // Compact list
- {compactList ▶ drawOrLayout(1);
+ {compactList  ▶ drawOrLayout(1);
  }
 
 static void layout__$CompactList                                                // Layout a compact list
  ($CompactList * compactList)                                                   // Compact list
- {compactList ▶ drawOrLayout(0);
+ {compactList  ▶ drawOrLayout(0);
  }
 
 static void drawOrLayout__$CompactList                                          // Draw or layout a compact list
@@ -656,10 +646,11 @@ static void drawOrLayout__$CompactList                                          
 
   double x = cl->drawTable.X, y = cl->drawTable.y - i->fontHeight;              // At the end of the previous line
   cursorEntryIndex ◀ 0ul;                                                       // Whether we have drawn the cursor entry yet.
+  firstOffset      ◀ 0ul;                                                       // The offset of the first entry to be drawn
+
   N ◁ cl->list ▷ countChildren;                                                 // Maximum number of entries
-  ArenaListNode entry          [N+1]; memset(entry, 0, sizeof(entry));          // Offset for each entry
+  ArenaListNode entry          [N+1]; entry ≞ 0;                                // Offset for each entry
   Rectangle     entryRectangles[N+1];                                           // Rectangle for each entry up to next tab stop
-  firstOffset ◀ 0ul;
 
   ArenaListfeⁱ(word, cl->list)                                                  // Each word
    {if (word.offset >= cl->startAt.offset)                                      // Words in the scrolled to area
@@ -709,8 +700,8 @@ static void drawOrLayout__$CompactList                                          
        {    r ◁ entryRectangles[i];                                             // Rectangle for entry
         d ◁ r ▷ intersectionArea(cerd);                                         // Area of overlap with down rectangle
         u ◁ r ▷ intersectionArea(ceru);                                         // Area of overlap with up rectangle
-        if (d > bestAreaDown) {bestAreaDown = d; cl->cursorDown = o;}     // Better down
-        if (u > bestAreaUp)   {bestAreaUp   = u; cl->cursorUp   = o;}     // Better up
+        if (d > bestAreaDown) {bestAreaDown = d; cl->cursorDown = o;}           // Better down
+        if (u > bestAreaUp)   {bestAreaUp   = u; cl->cursorUp   = o;}           // Better up
        }
      }
    }
