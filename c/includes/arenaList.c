@@ -1276,13 +1276,13 @@ void test0()                                                                    
    }
 
   if (1)                                                                        // For each
-   {char l[t.proto->count(&t) + 1]; *l = 0;
+   {const typeof(t.proto->count(&t)) n = t.proto->count(&t); char l[n + 1]; memset(&l, 0,                                      sizeof(l));
     ArenaListfe (child, root) strncat(l, child.proto->key(&child), child.proto->length(&child));
     assert( !strcmp(l, "JIHGFEDCBAabcdefghij"));
    }
 
   if (1)                                                                        // For each in reverse
-   {char l[t.proto->count(&t) + 1]; *l = 0;
+   {const typeof(t.proto->count(&t)) n = t.proto->count(&t); char l[n + 1]; memset(&l, 0,                                      sizeof(l));
     ArenaListfer(child, root) strncat(l, child.proto->key(&child), child.proto->length(&child));
     assert(strcmp(l, "jihgfedcbaABCDEFGHIJ") == 0);
    }
@@ -1291,7 +1291,7 @@ void test0()                                                                    
  }
 
 void test1()                                                                    //Troot //Tfirst //Tlast //Tnext //Tprev //Tparent //Tequals //Tprint //TprintWithBrackets //TfromLetters //TprintsAs
- {  const typeof(makeArenaList()) t = makeArenaList();    t.proto->fromLetters(&t, "b(c(de)f)g(hi)j");
+ {  const typeof(makeArenaList()) t = makeArenaList(); t.proto->fromLetters(&t, "b(c(de)f)g(hi)j");
   assert( t.proto->printsWithBracketsAs(&t, "(b(c(de)f)g(hi)j)"));
   assert( t.proto->printsAs(&t, "bcdefghij"));
 
