@@ -93,7 +93,7 @@ typedef struct CairoTextCompactList                                             
 //D1 Constructors                                                               // Construct text in an image
 
 CairoTextImage makeCairoTextImage                                                               // Create an image by drawing on a surface
- (void (*draw)(CairoTextImage i),                                                       // Draw routine
+ (void (*draw)(CairoTextImage *i),                                                      // Draw routine
   int x,                                                                        // Dimension of image in x
   int y,                                                                        // Dimension of image in y
   const char * const imageFile,                                                 // Name of output file
@@ -128,7 +128,7 @@ CairoTextImage makeCairoTextImage                                               
   i.proto->rgb(&i, 0,0,0);                                                               // Default drawing colour
   i.proto->lineWidth(&i, 2);                                                             // Default stroke width
 
-  draw(i);                                                                      // Draw
+  draw(&i);                                                                     // Draw
 
   cairo_destroy(cr);                                                            // Save results
   cairo_surface_write_to_png(surface, imageFile);
@@ -171,7 +171,7 @@ static CairoTextCompactList makeCairoTextCompactList                            
 
 //D1 Free                                                                       // Free cairo and free type resources associated with the image
 
-static void free_CairoTextImage                                                         // Free an image
+static void free__CairoTextImage                                                        // Free an image
  (CairoTextImage * i)                                                                   // CairoTextImage
  {i->out.proto->free(&i->out);
 
@@ -185,7 +185,7 @@ static void free_CairoTextImage                                                 
   FT_Done_FreeType(i->freeTypeLibrary);                                         // Finished with FreeType library
  }
 
-static void free_CairoTextFont                                                          // Free a font if it has been loaded
+static void free__CairoTextFont                                                         // Free a font if it has been loaded
  (CairoTextFont * font)                                                                 // CairoTextFont
  {if (font->cairoFontFace)
    {cairo_font_face_destroy(font->cairoFontFace);
@@ -196,7 +196,7 @@ static void free_CairoTextFont                                                  
 
 //D1 Text                                                                       // Draw text
 
-static void font_CairoText                                                              // Start using a font
+static void font__CairoText_enum                                                        // Start using a font
  (CairoTextImage    * i,                                                                // CairoTextImage
   enum CairoTextFonts fontNumber)                                                       // Font to use
  {typeof(&i->fonts[fontNumber]) font = &i->fonts[fontNumber];
@@ -217,7 +217,7 @@ static void font_CairoText                                                      
   i->proto->fontMetrics(i);
  }
 
-static void fontMetrics_CairoText                                                       // Load the metrics of the current font
+static void fontMetrics__CairoText                                                      // Load the metrics of the current font
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_font_extents_t fontExtents;
   cairo_font_extents (i->cr, &fontExtents);
@@ -226,14 +226,14 @@ static void fontMetrics_CairoText                                               
   i->fontHeight  = i->fontAscent + i->fontDescent;                              // Interline height
  }
 
-static void fontSize_CairoText                                                          // Set the size of a font
+static void fontSize__CairoText_size                                                    // Set the size of a font
  (CairoTextImage * i,                                                                   // CairoTextImage
   int      size)                                                                // Size
  {cairo_set_font_size(i->cr, size);                                             // Set font size
   i->proto->fontMetrics(i);
  }
 
-static double textAdvance_CairoText                                                     // Get the width of the specified text
+static double textAdvance__CairoText_string                                             // Get the width of the specified text
  (CairoTextImage * i,                                                                   // CairoTextImage
   char   * s)                                                                   // String
  {const typeof(i->cr) cr = i->cr;
@@ -242,7 +242,7 @@ static double textAdvance_CairoText                                             
   return textExtents.x_advance;
  }
 
-static void text_CairoText                                                              // Draw text at the specified position using the current font, fonet size and colour
+static void text__CairoText_double_double_string                                        // Draw text at the specified position using the current font, fonet size and colour
  (CairoTextImage     * i,                                                               // CairoTextImage
   double       x,                                                               // X position of text
   double       y,                                                               // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
@@ -251,7 +251,7 @@ static void text_CairoText                                                      
   cairo_show_text(i->cr, t);
  }
 
-static void textLine_CairoText                                                          // Outline text at the specified position using the current font, fonet size and colour
+static void textLine__CairoText_double_double_string                                    // Outline text at the specified position using the current font, fonet size and colour
  (CairoTextImage     * i,                                                               // CairoTextImage
   double       x,                                                               // X position of text
   double       y,                                                               // Y position of the upper edge of the text - i.e. the text will be drawn below this value.
@@ -262,12 +262,12 @@ static void textLine_CairoText                                                  
   cairo_stroke   (cr);
  }
 
-static void textFit_CairoText                                                           // Draw text so that it fills a rectangle in one dimension and is justified as specified in the other dimension.
+static void textFit__CairoText_rectangle_int_int_int_string                             // Draw text so that it fills a rectangle in one dimension and is justified as specified in the other dimension.
  (CairoTextImage     * i,                                                               // CairoTextImage
   Rectangle    rc,                                                              // Rectangle in which to draw text
   const int    jX,                                                              // < 0 justify left, > 0 justify right,  0 : center
   const int    jY,                                                              // < 0 justify top,  > 0 justify bottom, 0 : center
-  const int    line,                                                            // 0 : fill, 1 - outline
+  const int    outline,                                                         // 0 : fill, 1 - outline
   const char * text)                                                            // The text to draw
  {const typeof(i->cr) cr = i->cr;
   const typeof(1000.0) base = 1000.0;                                                                // Size to scale from - it could be anything as no drawing is performed at this size
@@ -290,28 +290,28 @@ static void textFit_CairoText                                                   
   const typeof(textExtents.y_bearing / r) yb = textExtents.y_bearing / r;
   const typeof(rc.x + jx - xb) x = rc.x + jx - xb;
   const typeof(rc.y + jy - yb) y = rc.y + jy - yb;
-  if (line) i->proto->textLine(i, x, y - i->fontAscent, text);                          // Outline or fill the text
-  else      i->proto->text(i, x, y - i->fontAscent, text);
+  if (outline) i->proto->textLine(i, x, y - i->fontAscent, text);                       // Outline or fill the text
+  else         i->proto->text(i, x, y - i->fontAscent, text);
   i->proto->restore(i);
  }
 
 //D1 Colours                                                                    // Colours
 
-static void clearWhite_CairoText                                                        // Clear the drawing surface to white
+static void clearWhite__CairoText                                                       // Clear the drawing surface to white
  (CairoTextImage * i)                                                                   // CairoTextImage
  {const typeof(i->cr) cr = i->cr;
   cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
   cairo_paint         (cr);
  }
 
-static void colour_CairoText                                                            // Set the current colour
+static void colour__CairoText_colour                                                    // Set the current colour
  (CairoTextImage * i,                                                                   // CairoTextImage
   Colour   c)                                                                   // Colour
  {const typeof(i->cr) cr = i->cr;
   cairo_set_source_rgba(cr, c.r, c.g, c.b, c.a);
  }
 
-static void rgb_CairoText                                                               // Set the current colour
+static void rgb__CairoText_double_double_double                                         // Set the current colour
  (CairoTextImage * i,                                                                   // CairoTextImage
   double   r,                                                                   // Red
   double   g,                                                                   // Green
@@ -319,7 +319,7 @@ static void rgb_CairoText                                                       
  {cairo_set_source_rgb(i->cr, r, g, b);
  }
 
-static void rgba_CairoText                                                              // Set the current colour
+static void rgba__CairoText_double_double_double_double                                 // Set the current colour
  (CairoTextImage * i,                                                                   // CairoTextImage
   double   r,                                                                   // Red
   double   g,                                                                   // Green
@@ -330,56 +330,56 @@ static void rgba_CairoText                                                      
 
 //D1 Drawing                                                                    // Draw objects
 
-static void save_CairoText                                                              // Save the drawing context
+static void save__CairoText                                                             // Save the drawing context
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_save(i->cr);
  }
 
-static void restore_CairoText                                                           // Restore the drawing context
+static void restore__CairoText                                                          // Restore the drawing context
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_restore(i->cr);
  }
 
-static void move_CairoText                                                              // Move to a position without drawing
+static void move__CairoText_double_double                                               // Move to a position without drawing
  (CairoTextImage * i,                                                                   // CairoTextImage
   double   x,                                                                   // X coordinate to move to
   double   y)                                                                   // Y coordinate to move to
  {cairo_move_to(i->cr, x, y);
  }
 
-static void line_CairoText                                                              // Draw a line to the specified position from the current position
+static void line__CairoText_double_double                                               // Draw a line to the specified position from the current position
  (CairoTextImage * i,                                                                   // CairoTextImage
   double   x,                                                                   // X coordinate to move to
   double   y)                                                                   // Y coordinate to move to
  {cairo_line_to(i->cr, x, y);
  }
 
-static void close_CairoText                                                             // Close the current path
+static void close__CairoText                                                            // Close the current path
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_close_path(i->cr);
  }
 
-static void fill_CairoText                                                              // Fill the current path and delete the path.
+static void fill__CairoText                                                             // Fill the current path and delete the path.
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_fill(i->cr);
  }
 
-static void fillPreserve_CairoText                                                      // Fill the current path and keep the path.
+static void fillPreserve__CairoText                                                     // Fill the current path and keep the path.
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_fill_preserve(i->cr);
  }
 
-static void stroke_CairoText                                                            // Stroke the current path and delete the path.
+static void stroke__CairoText                                                           // Stroke the current path and delete the path.
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_stroke(i->cr);
  }
 
-static void strokePreserve_CairoText                                                    // Stroke the current path and keep the path.
+static void strokePreserve__CairoText                                                   // Stroke the current path and keep the path.
  (CairoTextImage * i)                                                                   // CairoTextImage
  {cairo_stroke_preserve(i->cr);
  }
 
-static void lineWidth_CairoText                                                         // Set the stroke width
+static void lineWidth__CairoText_double                                                 // Set the stroke width
  (CairoTextImage * i,                                                                   // CairoTextImage
   double width)                                                                 // Width of lines
  {cairo_set_line_width (i->cr, width);
@@ -387,7 +387,7 @@ static void lineWidth_CairoText                                                 
 
 //D1 Clipping                                                                   // Set the clip area
 
-static void clip_CairoText                                                              // Set the clip area
+static void clip__CairoText_rectangle                                                   // Set the clip area
  (CairoTextImage  * i,                                                                  // CairoTextImage
   Rectangle r)                                                                  // Rectangle
  {const typeof(i->cr) cr = i->cr;
@@ -397,7 +397,7 @@ static void clip_CairoText                                                      
 
 //D1 Shapes                                                                     // Draw shapes
 
-static void leftArrow                                                           // Draw a left pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
+static void leftArrow__CairoText_rectangle_colour_colour                                // Draw a left pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
  (CairoTextImage  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
@@ -420,7 +420,7 @@ static void leftArrow                                                           
   i->proto->restore(i);
  }
 
-static void leftArrowWithCircle                                                 // Draw a left pointing arrow with a central circle cut out
+static void leftArrowWithCircle__CairoText_rectangle_colour_colour                      // Draw a left pointing arrow with a central circle cut out
  (CairoTextImage  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
@@ -449,7 +449,7 @@ static void leftArrowWithCircle                                                 
   i->proto->restore(i);
  }
 
-static void rightArrow                                                          // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
+static void rightArrow__CairoText_rectangle_colour_colour                               // Draw a right pointing arrow in the specified rectangle with a linear gradient starting and ending with the specified colours
  (CairoTextImage  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle to draw arrow in
   Colour    s,                                                                  // Start colour
@@ -472,19 +472,30 @@ static void rightArrow                                                          
   i->proto->restore(i);
  }
 
-static void rectangle                                                           // Draw a rectangle
+static void rectangle__CairoText_rectangle_colour                                       // Draw a rectangle
  (CairoTextImage  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle
   Colour    c)                                                                  // Colour
- {typeof(i->cr) cr = i->cr;
-  i->proto->save(i);
+ {i->proto->save(i);
   i->proto->colour(i, c);
-  cairo_rectangle(cr, r.x, r.y, r.proto->width(&r), r.proto->height(&r));
+  cairo_rectangle(i->cr, r.x, r.y, r.proto->width(&r), r.proto->height(&r));
   i->proto->fill(i);
   i->proto->restore(i);
  }
 
-static void rectangleLine                                                       // Draw a rectangle in outline
+static void rectangleWH__CairoText_double_double_double_double                          // Draw a rectangle using the last colour set
+ (CairoTextImage * i,                                                                   // Image
+  double   x,                                                                   // Left x
+  double   y,                                                                   // Upper y
+  double   w,                                                                   // Width
+  double   h)                                                                   // Height
+ {i->proto->save(i);
+  cairo_rectangle(i->cr, x, y, w, h);
+  i->proto->fill(i);
+  i->proto->restore(i);
+ }
+
+static void rectangleLine__CairoText_rectangle_colour_colour                            // Draw a rectangle in outline
  (CairoTextImage  * i,                                                                  // Image
   Rectangle r,                                                                  // Rectangle
   Colour    c)                                                                  // Colour
@@ -716,13 +727,13 @@ static void drawOrLayout__CairoTextCompactList                                  
 #if __INCLUDE_LEVEL__ == 0
 
 void test0()                                                                    //TcreateImage
- {void draw(CairoTextImage i)                                                           // Draw some text
-   {i.proto->fontSize(&i, 20);
-    i.proto->rgb(&i, 1, 0, 0);
+ {void draw(CairoTextImage * i)                                                         // Draw some text
+   {i->proto->fontSize(i, 20);
+    i->proto->rgb(i, 1, 0, 0);
 
     const typeof("Hello World How is it whirling?") text = "Hello World How is it whirling?";
 
-    for(size_t j = 0; j < 100; ++j) i.proto->text(&i, 0, j * i.fontHeight, text);
+    for(size_t j = 0; j < 100; ++j) i->proto->text(i, 0, j * i->fontHeight, text);
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText0.png", "8915")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText0.png", "8915");                           // Create image containing some text and check its digest
@@ -732,12 +743,12 @@ void test0()                                                                    
 void test1()                                                                    // Linear gradient
  {const typeof(makeColour(1,0,0,1)) red = makeColour(1,0,0,1);
   const typeof(makeColour(0,0,1,1)) blue = makeColour(0,0,1,1);
-  void draw(CairoTextImage i)
-   {const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
+  void draw(CairoTextImage * i)
+   {const typeof(i->width) w = i->width; const typeof(i->height) h = i->height;
     typeof(makeRectangleWH    (w/4, 0, w/4, h/2)) r = makeRectangleWH    (w/4, 0, w/4, h/2);
     const typeof(r.proto->translate(&r, w/2, 0)) s = r.proto->translate(&r, w/2, 0);
-    i.proto->leftArrowWithCircle(&i, r, red, blue);
-    i.proto->rightArrow(&i, s, red, blue);
+    i->proto->leftArrowWithCircle(i, r, red, blue);
+    i->proto->rightArrow(i, s, red, blue);
    }
 
   typeof(makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "55d2")) i = makeCairoTextImage(draw, 1000, 2000, "CairoText1.png", "55d2");
@@ -746,22 +757,22 @@ void test1()                                                                    
 
 void test2()                                                                    // Text filling rectangles
  {const typeof(makeColour(0,0,0,1)) black = makeColour(0,0,0,1);
-  void draw(CairoTextImage i)
-   {const typeof(i.width) w = i.width; const typeof(i.height) h = i.height;
+  void draw(CairoTextImage * i)
+   {const typeof(i->width) w = i->width; const typeof(i->height) h = i->height;
     const typeof(makeRectangleWH(w/4, h/4, w/2, h/2)) r = makeRectangleWH(w/4, h/4, w/2, h/2);
-    i.proto->rgb(&i, 1,0,0);
-    i.proto->textFit(&i, r, -1, 0, 0, "1");
-    i.proto->rgb(&i, 0,1,0);
-    i.proto->textFit(&i, r,  0, 0, 0, "2");
-    i.proto->rgb(&i, 0,0,1);
-    i.proto->textFit(&i, r, +1, 0, 0, "3");
-    i.proto->rgb(&i, 1,1,0);
-    i.proto->textFit(&i, r, 0, -1, 0, "Hello");
-    i.proto->rgb(&i, 1,0,1);
-    i.proto->textFit(&i, r, 0,  0, 0, "Hello");
-    i.proto->rgb(&i, 0,1,1);
-    i.proto->textFit(&i, r, 0, +1, 0, "Hello");
-    i.proto->rectangleLine(&i, r, black);
+    i->proto->rgb(i, 1,0,0);
+    i->proto->textFit(i, r, -1, 0, 0, "1");
+    i->proto->rgb(i, 0,1,0);
+    i->proto->textFit(i, r,  0, 0, 0, "2");
+    i->proto->rgb(i, 0,0,1);
+    i->proto->textFit(i, r, +1, 0, 0, "3");
+    i->proto->rgb(i, 1,1,0);
+    i->proto->textFit(i, r, 0, -1, 0, "Hello");
+    i->proto->rgb(i, 1,0,1);
+    i->proto->textFit(i, r, 0,  0, 0, "Hello");
+    i->proto->rgb(i, 0,1,1);
+    i->proto->textFit(i, r, 0, +1, 0, "Hello");
+    i->proto->rectangleLine(i, r, black);
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "8185")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText2.png", "8185");
@@ -769,17 +780,17 @@ void test2()                                                                    
  }
 
 void test3()                                                                    // Text table
- {void draw(CairoTextImage i)
+ {void draw(CairoTextImage * i)
    {const typeof(makeColour(0,0,0,1)) black = makeColour(0,0,0,1);
 
     const typeof(makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d")) table = makeArenaListFromLinesOfWords("aaaa bbbb cc d\n a bb ccc dddd\n a b c d");
 
-    i.proto->font(&i, CairoTextFont_serif);                                                  // Font
-    i.proto->fontSize(&i, 100);                                                          // Size of text
-    i.proto->colour(&i, black);                                                        // Colour of text
+    i->proto->font(i, CairoTextFont_serif);                                                  // Font
+    i->proto->fontSize(i, 100);                                                          // Size of text
+    i->proto->colour(i, black);                                                        // Colour of text
 
     const typeof(makeRectangleWH(500, 500, 500, 800)) drawTable = makeRectangleWH(500, 500, 500, 800);                            // Drawing area
-    i.proto->clip(&i, drawTable);
+    i->proto->clip(i, drawTable);
 
     size_t x = drawTable.x, y = drawTable.y;
     ArenaListfe(col, table)                                                     // Each column
@@ -787,12 +798,12 @@ void test3()                                                                    
       y = drawTable.y;
       ArenaListfe(row, col)                                                     // Each row
        {makeLocalCopyOfArenaListKey(k, l, row);
-        i.proto->text(&i, x, y, k);
-        y += i.fontHeight;
-        const typeof(i.proto->textAdvance(&i, k)) a = i.proto->textAdvance(&i, k);
+        i->proto->text(i, x, y, k);
+        y += i->fontHeight;
+        const typeof(i->proto->textAdvance(i, k)) a = i->proto->textAdvance(i, k);
         if (max < a) max = a;
        }
-      x += max + i.fontDescent;
+      x += max + i->fontDescent;
      }
    }
 
@@ -801,10 +812,10 @@ void test3()                                                                    
  }
 
 void test4()                                                                    // Text table using tab stops
- {void draw(CairoTextImage image)
+ {void draw(CairoTextImage * image)
    {const typeof(makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo qqppppp qq qqrrrr s qqtttttt qquuuu v wwwwww xxx yy zz")) list = makeArenaListFromWords("aaaa qqbbbb qqcc qqdd qqee qqff qqgggg qqhh qqiii qqjj qqkkk qql mmmm nn oo qqppppp qq qqrrrr s qqtttttt qquuuu v wwwwww xxx yy zz");
     const typeof(makeRectangleWH(500, 500, 500, 500)) drawTable = makeRectangleWH(500, 500, 500, 500);                            // Drawing area
-    typeof(makeCairoTextCompactList(&image, list, drawTable)) cl = makeCairoTextCompactList(&image, list, drawTable);                             // Create compact list
+    typeof(makeCairoTextCompactList(image, list, drawTable)) cl = makeCairoTextCompactList(image, list, drawTable);                              // Create compact list
     ({typeof(cl.cursorEntry) sourcesourcesource = list.proto->findFirst(&list, "qqee"); memcpy(&cl.cursorEntry, &sourcesourcesource, sizeof(cl.cursorEntry));});                                  // Cursor entry
     cl.pointerˣ = 717; cl.pointerʸ = 717;                                       // Current pointer coordinates
     strcpy(cl.prefix, "qqx");                                                   // Assume the user has entered a prefix to narrow the possibilities displayed
@@ -823,11 +834,11 @@ void test4()                                                                    
       assert( cl.cursorUp.proto->keyEqualsString(&cl.cursorUp, "qqbbbb"));
       assert( cl.pointer.proto->keyEqualsString(&cl.pointer, "qqee"));
      }
-                         image.proto->saveAsPng(&image, "CairoText5a.png", "9449");
-    cl.proto->scrollPageDown(&cl); image.proto->saveAsPng(&image, "CairoText5b.png", "2259");                  // Scroll down one page
-    cl.proto->scrollPageUp(&cl);   image.proto->saveAsPng(&image, "CairoText5c.png", "9ffc");                  // Scroll up   one page
-    cl.proto->arrowRight(&cl);     image.proto->saveAsPng(&image, "CairoText5d.png", "9570");                  // Arrow  right
-    cl.proto->arrowDown(&cl);      image.proto->saveAsPng(&image, "CairoText5e.png", "71b6");                  // Arrow  down
+                         image->proto->saveAsPng(image, "CairoText5a.png", "9449");
+    cl.proto->scrollPageDown(&cl); image->proto->saveAsPng(image, "CairoText5b.png", "2259");                  // Scroll down one page
+    cl.proto->scrollPageUp(&cl);   image->proto->saveAsPng(image, "CairoText5c.png", "9ffc");                  // Scroll up   one page
+    cl.proto->arrowRight(&cl);     image->proto->saveAsPng(image, "CairoText5d.png", "9570");                  // Arrow  right
+    cl.proto->arrowDown(&cl);      image->proto->saveAsPng(image, "CairoText5e.png", "71b6");                  // Arrow  down
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "CairoText5.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "CairoText5.png", "a");
