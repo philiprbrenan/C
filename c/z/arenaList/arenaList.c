@@ -68,6 +68,13 @@ typedef struct $Description                                                     
   const time_t created;                                                         // Time in seconds since the epoch when this $ was created
  } $Description;
 
+typedef struct $Position                                                        // The position of a child in nodes and bytes in the $
+ {const size_t node;                                                            // Node count
+  const size_t byte;                                                            // Byte count
+  const size_t depth;                                                           // Depth of the node
+  const struct ProtoTypes_$Position *proto;                                     // Methods associated with a position
+ } $Position;
+
 #include <$$_prototypes.h>                                                      // $ prototypes now that the relevant structures have been declared
 #define $fe( child, parent) for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next) // Each child under a parent from first to last
 //#define $Fe( child, list)   for(child ◀ list   ▷ first; child ▷ valid; child = child ▷ next) // Each child under the root node of a $ from first to last
@@ -245,6 +252,15 @@ static int equals_int__$Node_$Node                                              
  {return a->list.arena == b.list.arena && a->offset == b.offset;
  }
 
+static int equalsPosition_int__$Position_$Position                              // Confirm two positions are equal
+ (const $Position * a,                                                          // First position
+  const $Position   b)                                                          // Second position
+ {if (a->byte != b.byte) return 0;
+  if (a->node != b.node) return 0;
+  if (a->depth != b.depth) return 0;
+  return 1;
+ }
+
 //D1 Root node                                                                  // The root node of an $ is at offset 0
 
 static  $Node root_$Node__$                                                     // Return the root node of a $.
@@ -317,6 +333,12 @@ static $Node node_$Node__$_string_size                                          
   c->length = length;                                                           // Save key length
   memcpy(n ▷ key, key, length);                                                 // Copy in key
   return n;                                                                     // Return node
+ }
+
+static $Node nodez_$Node__$_string                                              // Create a new $ node with a key specified by a zero terminated string.
+ (const $    *       list,                                                      // $ in which to create the node
+  const char * const key)                                                       // Zero terminated string representing the key for this node.
+ {return list ▶ node(key, strlen(key));
  }
 
 static void setKey__$Node_string_size                                           // Set the key of a node to a different value as long as there is enough room from the last setting.
@@ -848,7 +870,6 @@ static  size_t count_size__$Node                                                
   return l - 1;                                                                 // Return count without counting the root node
  }
 
-
 static  size_t count_size__$                                                    // Count the number of nodes in a $
  (const $ * list)                                                               // $
  {size_t l = 0;
@@ -856,6 +877,29 @@ static  size_t count_size__$                                                    
   root ◁ list ▶ root;                                                           // Root is always invalid
   $fe(child, root) l += 1 + child ▷ count;                                      // Child under root plus its children
   return l;                                                                     // Return count without counting the root node
+ }
+
+static $Position preOrderPosition__$Tag                                         // Position of a node in pre-order - nodes are counted from one in preorder, bytes are the number of preceding bytes.
+ (const $Node * node)                                                           // $Tag
+ {$Position p = new $Position();
+  n ◀ 0ul; b ◀ 0ul;
+  jmp_buf found;
+
+  void children($Node parent, int depth)                                        // Process the children of the specified parent
+   {if (parent ▷ invalid) return;                                               // Empty child
+    ++n;                                                                        // Node count
+    if (parent.offset == node->offset)                                          // Found current node
+     {$Position q = new $Position(byte: b, node: n, depth: depth);              // Record position
+      p ≞ q;                                                                    // Set read only structure in memory
+      longjmp(found, 1);                                                        // Finished
+     }
+    b += parent ▷ length;                                                       // Preceding byte count
+    $fe(child, parent) children(child, depth + 1);                              // Start at the root node
+   }
+
+  root ◁ node->list ▷ root;
+  if (!setjmp(found)) $fe(child, root) children(child, 1);                      // Start at the root node
+  return p;
  }
 
 static  $ copyAndCompact_$__$                                                   // Copy a $ compacting any free space.  This method assumes that there are no direct external references to the nodes in the list as this process might change the location of one or more nodes in the arena.
@@ -955,6 +999,12 @@ static void dump__$Node                                                         
  {node ◁ *Node;
   makeLocalCopyOf$Key(k, l, node);                                              // Local copy of key
   say("%d %s", l, k);                                                           // Print key number
+ }
+
+static void dumpPosition__$Position                                             //P Dump a $Position
+ (const $Position * position)                                                   // $Position
+ {p ◁ *position;
+  say("position(byte: %lu, node: %lu, depth: %lu)", p.byte, p.node, p.depth);                                                           // Print key number
  }
 
 static void print__$Node_function                                               // Apply a function to the print of a $Node and the tree below it.
@@ -1413,12 +1463,12 @@ void test7()                                                                    
   t ▷ free;
  }
 
-void test8()                                                                    //TputTreeFirst //TputTreeLast //TsetKey //Tkey //Tlength //Tused //TkeyEquals
+void test8()                                                                    //TputTreeFirst //TputTreeLast //TsetKey //Tkey //Tlength //Tused //TkeyEquals //Tnodez
  {t ◁ make$();
 
-  c ◁ t ▷ node("c", 1); c ▷ putTreeFirst;
-  d ◁ t ▷ node("d", 1); d ▷ putTreeLast;
-  b ◀ t ▷ node("b", 1); b ▷ putTreeFirst;
+  c ◁ t ▷ node ("c", 1); c ▷ putTreeFirst;
+  d ◁ t ▷ node ("d", 1); d ▷ putTreeLast;
+  b ◀ t ▷ nodez("b");    b ▷ putTreeFirst;
 
   b ▷ setKey("B", 1);
   ✓ b ▷ length == 1;
@@ -1718,12 +1768,34 @@ void test18()                                                                   
   s ▷ free;
  }
 
+void test19()                                                                   //TpreOrderPosition //TequalsPosition
+ {z ◁ make$();
+
+  a  ◁ z ▷ nodez("a");  a ▷ putTreeLast;
+  b  ◁ z ▷ nodez("b");  b ▷ putTreeLast;
+  aa ◁ z ▷ nodez("aa"); a ▷ putLast(aa);
+  ab ◁ z ▷ nodez("ab"); a ▷ putLast(ab);
+  ba ◁ z ▷ nodez("ba"); b ▷ putLast(ba);
+  bb ◁ z ▷ nodez("bb"); b ▷ putLast(bb);
+
+  ✓ z ▷ printsWithBracketsAs("(a(aaab)b(babb))");
+
+  {p ◁ a  ▷ preOrderPosition; q ◁ new $Position(byte: 0, node: 1, depth: 1); ✓ p ▷ equalsPosition(q);}
+  {p ◁ aa ▷ preOrderPosition; q ◁ new $Position(byte: 1, node: 2, depth: 2); ✓ p ▷ equalsPosition(q);}
+  {p ◁ ab ▷ preOrderPosition; q ◁ new $Position(byte: 3, node: 3, depth: 2); ✓ p ▷ equalsPosition(q);}
+  {p ◁ b  ▷ preOrderPosition; q ◁ new $Position(byte: 5, node: 4, depth: 1); ✓ p ▷ equalsPosition(q);}
+  {p ◁ ba ▷ preOrderPosition; q ◁ new $Position(byte: 6, node: 5, depth: 2); ✓ p ▷ equalsPosition(q);}
+  {p ◁ bb ▷ preOrderPosition; q ◁ new $Position(byte: 8, node: 6, depth: 2); ✓ p ▷ equalsPosition(q);}
+
+  z ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
-                           test15, test16, test17, test18, 0};
+                           test15, test16, test17, test18, test19, 0};
   run_tests("$", repetitions, tests);
 
   return 0;
