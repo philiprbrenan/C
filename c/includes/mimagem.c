@@ -21,16 +21,16 @@ typedef struct MimagemEditPosition                                              
  {const struct ProtoTypes_MimagemEditPosition *proto;                                 // Prototypes for methods
   size_t         character;                                                     // The number of the character at the position
   size_t         tag;                                                           // The tag containing at the position
-  size_t         positionInTag;                                                 // The character offset of the pointer in the tag at the position
+  size_t         positionInTag;                                                 // The character offset in the tag at the position
   size_t         editLine;                                                      // The edit line containing the position
-  size_t         x;                                                             // The x coordinate of the position
-  size_t         y;                                                             // The y coordinate of the position
+  size_t         x;                                                             // The x coordinate of the start of the position
+  size_t         y;                                                             // The y coordinate of the start of the position
  } MimagemEditPosition;
 
 typedef struct MimagemEditBuffer                                                      // Mimagem edit buffer
  {const struct ProtoTypes_MimagemEditBuffer *proto;                                   // Prototypes for methods
-  XmlParse       xml;                                                           // Xml parse tree being editted
-  CairoTextImage cti;                                                           // Cairo text image that we are drawing into
+  XmlParse       xml;                                                           // Xml parse tree being edited
+  CairoTextImage*cti;                                                           // Cairo text image that we are drawing into
   Rectangle      zone;                                                          // The rectangle in which the edit buffer will be drawn
   Rectangle      block;                                                         // A rectangle in the edit buffer that displays options in line with teh xml flowing around it so that bioth the options and the xmnl to b operated on are simultaneously visible.
   int            measureOnly;                                                   // Suppresses drawing if true.  All other operations are performed so that returned measurements of the pointer and cursor position are accurate.
@@ -48,37 +48,36 @@ typedef struct MimagemEditBuffer                                                
 
 static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                       // Draw the edit buffer and return the location of the pointer and cursor
  (MimagemEditBuffer * editBuffer)                                                     // Mimagem edit buffer
- {typeof(editBuffer->cti) i = editBuffer->cti;                                                        // Image description
-  const typeof(i.cr) cr = i.cr;                                                                  // Cairo context to draw in
-  const typeof(!editBuffer->measureOnly) draw = !editBuffer->measureOnly;                                               // Draw unless we only want to measure
+ {typeof(editBuffer->cti) i = editBuffer->cti;                                                       // Image description
+  const typeof(i->cr) cr = i->cr;                                                                 // Cairo context to draw in
+  const typeof(!editBuffer->measureOnly) draw = !editBuffer->measureOnly;                                              // Draw unless we only want to measure
   typeof(ULONG_MAX) closestSoFar = ULONG_MAX;                                                     // Shortest distance so far to pointer
-  const typeof(8) lineNumberGutterText = 8;                                                     //Pixels Gutter between line numbers and text
+  const typeof(8) lineNumberGutterText = 8;                                                     // Pixels Gutter between line numbers and text
 
   const typeof(makeColourPale()) paleColours = makeColourPale();                                               // Background colours for each tag by depth with text getting the same colour as its parent.
   const typeof(paleColours.p2) lastBackGroundColourDrawn = paleColours.p2;                                   // Keep track of the last character background colour used so that we can match the line numbers
 
-  void             openTagFillColor() {cairo_set_source_rgb(cr, 0,   0,   0.4);}// Color for opening tag
-  void            closeTagFillColor() {cairo_set_source_rgb(cr, 0,   0,   0.4);}// Color for closing tag
-  void                textFillColor() {cairo_set_source_rgb(cr, 0,   0,   0  );}// Color for text
-  void          lineNumberFillColor() {cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);}// Color for line numbers
-  void  lineNumberGutterTextFillColor  () {cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);} // Fill   color for the gutter between the line numbers and the text being editted.
-  void  lineNumberGutterTextStrokeColor() {cairo_set_source_rgb(cr, 1, 1, 1);}  // Stroke color for the gutter between the line numbers and the text being editted.
-  void    blockedOutAreaBackgroundColor() {cairo_set_source_rgb(cr, 1, 1, 1);}  // Fill color for the background of the blocked out area
+  void                openTagFillColor() {i->proto->rgb(i, 0,   0,   0.4);}              // Color for opening tag
+  void               closeTagFillColor() {i->proto->rgb(i, 0,   0,   0.4);}              // Color for closing tag
+  void                   textFillColor() {i->proto->rgb(i, 0,   0,   0  );}              // Color for text
+  void             lineNumberFillColor() {i->proto->rgb(i, 0.3, 0.3, 0.3);}              // Color for line numbers
+  void lineNumberGutterTextFillColor  () {i->proto->rgb(i, 0.3, 0.3, 0.3);}              // Fill   color for the gutter between the line numbers and the text being editted.
+  void lineNumberGutterTextStrokeColor() {i->proto->rgb(i, 1,   1,   1  );}              // Stroke color for the gutter between the line numbers and the text being editted.
+  void   blockedOutAreaBackgroundColor() {i->proto->rgb(i, 1,   1,   1  );}              // Fill color for the background of the blocked out area
 
-  cairo_set_font_size (cr, editBuffer->fontSize);                                // Cairo
-  cairo_font_extents_t fontExtents;
-  cairo_font_extents  (cr, &fontExtents);
+  void       openFont() {i->proto->font(i, CairoTextFont_sansBold);    openTagFillColor();} // Font  for opening tag
+  void      closeFont() {i->proto->font(i, CairoTextFont_sans);       closeTagFillColor();} // Font  for closing tag
+  void       textFont() {i->proto->font(i, CairoTextFont_serif);          textFillColor();} // Font  for text
+  void lineNumberFont() {i->proto->font(i, CairoTextFont_sansMono); lineNumberFillColor();} // Font  for line numbers
 
-  const typeof(fontExtents.ascent) A = fontExtents.ascent;                                                       // Descent from base line
-  const typeof(fontExtents.descent) D = fontExtents.descent;                                                      // Descent from base line
-  const typeof(A + D) H = A + D;                                                                    // Interline height
-  editBuffer->lineHeight = H;                                                    // Record line height
-  const typeof(H * editBuffer->scroll) scrollPixels = H * editBuffer->scroll;                                         // Number of pixels scrolled down
+  i->proto->fontSize(i, editBuffer->fontSize);                                           // Cairo font
+  editBuffer->lineHeight = i->fontHeight;                                       // Record line height
+  const typeof(i->fontHeight * editBuffer->scroll) scrollPixels = i->fontHeight * editBuffer->scroll;                            // Number of pixels scrolled down
 
   size_t getLineNumberWidth()                                                   // Width of line numbers
-   {const typeof(8ul) N = 8ul; const typeof(editBuffer->xml.proto->count(&editBuffer->xml)) n = editBuffer->xml.proto->count(&editBuffer->xml);                                        // Maximum width we will allow
+   {const typeof(8ul) N = 8ul; const typeof(editBuffer->xml.proto->count(&editBuffer->xml)) n = editBuffer->xml.proto->count(&editBuffer->xml);                                       // Maximum width we will allow
     char z[2] = {'0', 0};                                                       // A string of one zero
-    const typeof(i.proto->textAdvance(&i, z)) a = i.proto->textAdvance(&i, z);                                                     // Width of string of one zero
+    const typeof(i->proto->textAdvance(i, z)) a = i->proto->textAdvance(i, z);                                                     // Width of string of one zero
     typeof(1ul) t = 1ul;                                                                    // Power of ten
     for(size_t i = 1; i <= N; ++i)                                              // Find power of ten neede to allow all tag numbers
      {t *= 10ul;                                                                // Next power
@@ -88,7 +87,7 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
    }
 
   const typeof(getLineNumberWidth()) lineNumberWidth = getLineNumberWidth();                                   // Width of line numbers
-  const typeof(editBuffer->zone.proto->left(&editBuffer->zone, lineNumberWidth)) editLineNumbersText = editBuffer->zone.proto->left(&editBuffer->zone, lineNumberWidth);                // Split the drawing area into line numbers and text
+  const typeof(editBuffer->zone.proto->left(&editBuffer->zone, lineNumberWidth)) editLineNumbersText = editBuffer->zone.proto->left(&editBuffer->zone, lineNumberWidth);          // Split the drawing area into line numbers and text
   const typeof(editLineNumbersText.a) editLineNumbers = editLineNumbersText.a;                                  // Line numbers
   const typeof(editLineNumbersText.b.proto->left(&editLineNumbersText.b, lineNumberGutterText)) editGutterAndText = editLineNumbersText.b.proto->left(&editLineNumbersText.b, lineNumberGutterText);     // Split the drawing area into line numbers and text
   const typeof(editGutterAndText.a) editGutter = editGutterAndText.a;                                    // Gutter just before text
@@ -97,8 +96,7 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
   size_t currentTagOffset = 0, currentTagNumber =  0, currentPositionInTag = 0, // Current tag and position within current tag
          currentChar      = 0, currentEditLine  =  1;                           // Current character number counted over all tags drawn, current edit line
 
-  double x = editText.x, y = editText.y - scrollPixels - H;                     // Initial text position allowing for the new line operation which always occurs first.
-  cairo_move_to(cr,   x, y);
+  double x = editText.x, y = editText.y - scrollPixels - i->fontHeight;         // Initial text position allowing for the new line operation which always occurs first.
 
   void drawTagOrText(XmlTag parent, int depth)                                  // Print the specified parent and its children
    {currentTagOffset = parent.node.offset;                                      // In case the pointer is located in this tag
@@ -107,59 +105,52 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
     const typeof(paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN]) backgroundColour = paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
     const typeof(paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN]) backgroundColour1 = paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN];        // Background colour for previous layer
 
-    void       openFont() {i.proto->font(&i, CairoTextFont_sansBold);    openTagFillColor();} // Font  for opening tag
-    void      closeFont() {i.proto->font(&i, CairoTextFont_sans);       closeTagFillColor();} // Font  for closing tag
-    void       textFont() {i.proto->font(&i, CairoTextFont_serif);          textFillColor();} // Font  for text
-    void lineNumberFont() {i.proto->font(&i, CairoTextFont_sansMono); lineNumberFillColor();} // Font  for line numbers
-
     void startNewLine(int indent)                                               // Move to next line and indent if requested
      {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
-      const typeof((indent ? H * depth : 0)) dx = (indent ? H * depth : 0);                                            // Requested indentation
+      const typeof((indent ? i->fontHeight * depth : 0)) dx = (indent ? i->fontHeight * depth : 0);                                // Requested indentation
 
       if (draw)                                                                 // Finish current line
-       {cairo_save          (cr);
-        const typeof(lastBackGroundColourDrawn) b = lastBackGroundColourDrawn;                                          // Background colour of line number
-        cairo_set_source_rgb(cr, b.r, b.g, b.b);
-        cairo_rectangle     (cr, x, y, editText.X - x, H);                      // Background for line number
-        cairo_restore       (cr);
+       {i->proto->save(i);
+        const typeof(makeRectangleWH(x, y, editText.X - x, i->fontHeight)) r = makeRectangleWH(x, y, editText.X - x, i->fontHeight);               // Rectangle for line number
+        i->proto->rectangle(i, r, lastBackGroundColourDrawn);                            // Background for line number
+        i->proto->restore(i);
        }
 
-      y += H;                                                                   // Y coordinate of top of new line
+      y += i->fontHeight;                                                       // Y coordinate of top of new line
 
       if (draw)
        {lsprintf(n, 1024, "%lu", currentTagNumber);                             // Format line number
-        cairo_save          (cr);
+        i->proto->save(i);
 
         const typeof(lastBackGroundColourDrawn) b = lastBackGroundColourDrawn;                                          // Background colour of line number
-        cairo_set_source_rgb(cr, b.r, b.g, b.b);
-        cairo_rectangle     (cr, editLineNumbers.x, y, lineNumberWidth, H);     // Background for line number
+        i->proto->colour(i, b);
+        cairo_rectangle     (cr, editLineNumbers.x, y,                          // Background for line number
+                                 lineNumberWidth,   i->fontHeight);
         if (indent)
-         {cairo_rectangle   (cr, editText.x,        y, dx,              H);     // Indentation for text
+         {cairo_rectangle   (cr, editText.x, y, dx, i->fontHeight);             // Indentation for text
          }
         cairo_fill          (cr);
 
         lineNumberFont      ();                                                 // Text of line number
-        const typeof(i.proto->textAdvance(&i, n)) a = i.proto->textAdvance(&i, n);                                                // Width of this line number
+        const typeof(i->proto->textAdvance(i, n)) a = i->proto->textAdvance(i, n);                                                // Width of this line number
         const typeof(editLineNumbers.x + lineNumberWidth - a) tx = editLineNumbers.x + lineNumberWidth - a;
-        const typeof(y + A) ty = y + A;
-        cairo_move_to       (cr, tx, ty);
-        cairo_show_text     (cr, n);
-        cairo_restore       (cr);
+        i->proto->text(i, tx, y + i->fontAscent, n);
+        i->proto->restore(i);
        }
-      cairo_move_to(cr, x = editText.x + dx, y);                                // Position for first character of new line
+      i->proto->move(i, x = editText.x + dx, y);                                         // Position for first character of new line
      }
 
     void drawChar(char c, int openClose)                                        // Draw a character at the current (x,y) position and advance the currrent position to the end of the character drawn. A gradient background is drawn for the first/last letters of a tag (0: no gradient, 1: opening gradient, 2: closing gradient)
      {char s[2] = {c, 0};                                                       // Character to be drawn as a string
 
-      const typeof(i.proto->textAdvance(&i, s)) width = i.proto->textAdvance(&i, s);                                               // Measure character
+      const typeof(i->proto->textAdvance(i, s)) width = i->proto->textAdvance(i, s);                                               // Measure character
 
       void drawBackGroundForChar()                                              // Draw the background for the current character
        {const typeof(backgroundColour) b = backgroundColour;
         const typeof(backgroundColour1) B = backgroundColour1;
-        const typeof(width) w = width; const typeof(H) h = H;
+        const typeof(width) w = width; const typeof(i->fontHeight) h = i->fontHeight;
 
-        cairo_save     (cr);
+        i->proto->save(i);
         if (openClose)                                                          // Gradient background
          {cairo_pattern_t *g = cairo_pattern_create_linear(x, y, x + w, y);     // Create gradient
           if (openClose == XmlOpen)                                             // Open
@@ -180,32 +171,30 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
          }
         cairo_rectangle(cr, x, y, w, h);                                        // Draw background
         cairo_fill     (cr);
-        cairo_restore  (cr);
+        i->proto->restore(i);
        }
 
-      Rectangle charR() {return makeRectangleWH(x, y, width, H);}               // Rectangle occupied by current character
+      const typeof(makeRectangleWH(x, y, width, i->fontHeight)) charR = makeRectangleWH(x, y, width, i->fontHeight);                      // Rectangle occupied by current character
 
-      if (editBuffer->blockIn && editBuffer->block.proto->containsACorner(&editBuffer->block, charR()))  // Skip over blocked out area
+      if (editBuffer->blockIn && editBuffer->block.proto->containsACorner(&editBuffer->block, charR))    // Skip over blocked out area
        {const typeof(lastBackGroundColourDrawn) b = lastBackGroundColourDrawn;                                          // Background colour of line number
-        cairo_save          (cr);
-        cairo_set_source_rgb(cr, b.r, b.g, b.b);
-        cairo_rectangle     (cr, x, y, editBuffer->block.X - x, H);             // Background for line number
-        cairo_fill          (cr);
-        cairo_restore       (cr);
+        i->proto->save(i);
+        const typeof(makeRectangleWH(x, y, editBuffer->block.X - x, i->fontHeight)) r = makeRectangleWH(x, y, editBuffer->block.X - x, i->fontHeight);      // Rectangle for line number
+        i->proto->rectangle(i, r, b);
+        i->proto->restore(i);
         x = editBuffer->block.X;                                                // Restart after the blocked out area
        }
 
       if (x + width >= editText.X) startNewLine(0);                             // Start a new line if the draw would be off the end of the line
 
-      if (draw && editText.proto->containsACorner(&editText, charR()))                          // Draw character or symbol if drawing and we are in the drawing area
+      if (draw && editText.proto->containsACorner(&editText, charR))                            // Draw character or symbol if drawing and we are in the drawing area
        {drawBackGroundForChar();                                                // Background
-        cairo_move_to  (cr, x, y + A);                                          // Draw the character the ascent down from the current down position
-        cairo_show_text(cr, s);
+        i->proto->text(i, x, y, s);
        }
 
       ++currentPositionInTag; ++currentChar;                                    // Pointer and cursor location
-      if (editBuffer->py <= y+H && editBuffer->py >= y)                           // Line containing pointer
-       {const typeof(fabs(editBuffer->px - x - width / 2)) d = fabs(editBuffer->px - x - width / 2);                                // Distance from the center of the current character to pointer.
+      if (editBuffer->py <= y + i->fontHeight && editBuffer->py >= y)           // Line containing pointer
+       {const typeof(fabs(editBuffer->px - x - width / 2)) d = fabs(editBuffer->px - x - width / 2);                               // Distance from the center of the current character to pointer.
         if (d < closestSoFar)                                                   // Best distance so far
          {closestSoFar = d;
           editBuffer->pointer.tag           = currentTagOffset;
@@ -217,7 +206,7 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
          }
        }
 
-      if (editBuffer->cursor.character   == currentChar)                         // Cursor location
+      if (editBuffer->cursor.character   == currentChar)                        // Cursor location
        {editBuffer->cursor.tag            = currentTagOffset;
         editBuffer->cursor.positionInTag  = currentPositionInTag;
         editBuffer->cursor.editLine       = currentEditLine;
@@ -292,20 +281,15 @@ static MimagemEditBuffer drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer     
   if (1)                                                                        // Draw gutter between line numbers and text
    {const typeof(editGutter) g = editGutter;
     lineNumberGutterTextFillColor();
-    cairo_rectangle     (cr, g.x, g.y, g.proto->width(&g),   g.proto->height(&g));
-    cairo_fill          (cr);
+    i->proto->rectangleWH(i, g.x, g.y, g.proto->width(&g),   g.proto->height(&g));
     lineNumberGutterTextStrokeColor();
-    cairo_rectangle     (cr, g.x, g.y, g.proto->width(&g)/2, g.proto->height(&g));
-    cairo_fill          (cr);
-    cairo_stroke        (cr);
+    i->proto->rectangleWH(i, g.x, g.y, g.proto->width(&g)/2, g.proto->height(&g));
    }
 
-  if (editBuffer->blockIn)                                                       // Clear the blocked out area
-   {const typeof(i.cr) cr = i.cr;
+  if (editBuffer->blockIn)                                                      // Clear the blocked out area
+   {blockedOutAreaBackgroundColor();
     const typeof(editBuffer->block) b = editBuffer->block;
-    cairo_rectangle     (cr, b.x, b.y, b.proto->width(&b), b.proto->height(&b));
-    blockedOutAreaBackgroundColor();
-    cairo_fill          (cr);
+    i->proto->rectangleWH(i, b.x, b.y, b.proto->width(&b), b.proto->height(&b));
    }
 
   return *editBuffer;                                                           // Return the updated edit buffer
@@ -333,27 +317,22 @@ void test0()
      const typeof(parseXmlFromString(xml, 0)) x = parseXmlFromString(xml, 0);
   assert( !x.proto->errors(&x));
 
-  void draw(CairoTextImage i)
-   {typeof(i.cr) cr = i.cr;
-    cairo_set_font_size (cr, 40);
-    cairo_set_source_rgb(cr, 0, 0, 0);
-    cairo_font_extents_t fontExtents;
-    cairo_font_extents  (cr, &fontExtents);
-
+  void draw(CairoTextImage * i)
+   {i->proto->fontSize(i, 40);
     typeof(0ul) line = 0ul;
 
     void drawXml(const XmlTag tag, int start, int depth)
      {makeLocalCopyOfXmlTagString(t, l, tag);
-      cairo_move_to     (cr, fontExtents.max_x_advance * depth,
-                    line++ * fontExtents.height);
-      cairo_show_text   (cr, t);
+      const typeof(i->fontHeight * depth) x = i->fontHeight * depth;
+      const typeof(i->fontHeight * line++) y = i->fontHeight * line++;
+      i->proto->text(i, x, y, t);
       if(0)start=start;
      }
 
     x.proto->scan(&x, drawXml);
    }
 
-  typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem0.png", "11ff")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem0.png", "11ff");
+  typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem0.png", "deb8")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem0.png", "deb8");
   i.proto->free(&i);
  }
 
@@ -363,14 +342,14 @@ void test1()                                                                    
      const typeof(parseXmlFromString(xml, 0)) X = parseXmlFromString(xml, 0);
   assert( !X.proto->errors(&X));
 
-  void draw(CairoTextImage i)                                                   // Draw the xml into an image
-   {const typeof(makeRectangleWH(0, 0, i.width, i.height)) page = makeRectangleWH(0, 0, i.width, i.height);
+  void draw(CairoTextImage * const i)                                           // Draw the xml into an image
+   {const typeof(makeRectangleWH(0, 0, i->width, i->height)) page = makeRectangleWH(0, 0, i->width, i->height);
     const typeof(4) wScroll = 4; const typeof(100) fontSize = 100;                                                // Scroll amount in wide mode, font size of text in image
 
     const typeof(page.proto->right(&page, 0)) ww = page.proto->right(&page, 0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
     typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     typeof(we.proto->drawEditBuffer(&we)) wr = we.proto->drawEditBuffer(&we);
-         i.proto->saveAsPng(&i, "Mimagem1_wide.png", "a"); i.proto->clearWhite(&i);
+         i->proto->saveAsPng(i, "Mimagem1_wide.png", "a"); i->proto->clearWhite(i);
 
     const typeof(X.tree.proto->offset(&X.tree, wr.pointer.tag)) wn = X.tree.proto->offset(&X.tree, wr.pointer.tag);                                       // Pointer location in wide version
     assert( wn.proto->equalsString(&wn, "GGG"));
@@ -378,10 +357,10 @@ void test1()                                                                    
     assert( wr.pointer.character     == 81);
     assert( wr.pointer.editLine      == 12);
 
-    const typeof(page.proto->left(&page, i.width * 4 / 8)) nw = page.proto->left(&page, i.width * 4 / 8);                                          // Measure in narrow mode to find position of cursor as set by pointer in previous image
+    const typeof(page.proto->left(&page, i->width * 4 / 8)) nw = page.proto->left(&page, i->width * 4 / 8);                                         // Measure in narrow mode to find position of cursor as set by pointer in previous image
     typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: wr.pointer, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) ne = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: wr.pointer, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     typeof(ne.proto->drawEditBuffer(&ne)) nr = ne.proto->drawEditBuffer(&ne);
-    i.proto->saveAsPng(&i, "Mimagem1_narrow.png", "a"); i.proto->clearWhite(&i);
+    i->proto->saveAsPng(i, "Mimagem1_narrow.png", "a"); i->proto->clearWhite(i);
 
     const typeof(X.tree.proto->offset(&X.tree, nr.cursor.tag)) nn = X.tree.proto->offset(&X.tree, nr.cursor.tag);                                        // Cursor location in narrow mode
     assert( nn.proto->equalsString(&nn, "GGG"));
@@ -413,8 +392,8 @@ void test2()                                                                    
      const typeof(parseXmlFromString(xml, 0)) X = parseXmlFromString(xml, 0);
   assert( !X.proto->errors(&X));
 
-  void draw(CairoTextImage i)                                                   // Draw the xml into an image
-   {const typeof(makeRectangleWH(0, 0, i.width, i.height)) page = makeRectangleWH(0, 0, i.width, i.height);
+  void draw(CairoTextImage * i)                                                 // Draw the xml into an image
+   {const typeof(makeRectangleWH(0, 0, i->width, i->height)) page = makeRectangleWH(0, 0, i->width, i->height);
     const typeof(100) fontSize = 100;                                                             // Font size of text in image
 
     const typeof(makeRectangleWH(500, 500, 1000, 1000)) b = makeRectangleWH(500, 500, 1000, 1000);                                  // Block out this area
