@@ -69,6 +69,13 @@ typedef struct ArenaListDescription                                             
   const time_t created;                                                         // Time in seconds since the epoch when this ArenaList was created
  } ArenaListDescription;
 
+typedef struct ArenaListPosition                                                        // The position of a child in nodes and bytes in the ArenaList
+ {const size_t node;                                                            // Node count
+  const size_t byte;                                                            // Byte count
+  const size_t depth;                                                           // Depth of the node
+  const struct ProtoTypes_ArenaListPosition *proto;                                     // Methods associated with a position
+ } ArenaListPosition;
+
 #include <arenaList_prototypes.h>                                                      // ArenaList prototypes now that the relevant structures have been declared
 #define ArenaListfe( child, parent) for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child)) // Each child under a parent from first to last
 //#define ArenaListFe( child, list)   for(typeof(list.proto->first(&list)) child = list.proto->first(&list); child.proto->valid(&child); child = child.proto->next(&child)) // Each child under the root node of a ArenaList from first to last
@@ -246,6 +253,15 @@ static int equals_int__ArenaListNode_ArenaListNode                              
  {return a->list.arena == b.list.arena && a->offset == b.offset;
  }
 
+static int equalsPosition_int__ArenaListPosition_ArenaListPosition                              // Confirm two positions are equal
+ (const ArenaListPosition * a,                                                          // First position
+  const ArenaListPosition   b)                                                          // Second position
+ {if (a->byte != b.byte) return 0;
+  if (a->node != b.node) return 0;
+  if (a->depth != b.depth) return 0;
+  return 1;
+ }
+
 //D1 Root node                                                                  // The root node of an ArenaList is at offset 0
 
 static  ArenaListNode root_ArenaListNode__ArenaList                                                     // Return the root node of a ArenaList.
@@ -318,6 +334,12 @@ static ArenaListNode node_ArenaListNode__ArenaList_string_size                  
   c->length = length;                                                           // Save key length
   memcpy(n.proto->key(&n), key, length);                                                 // Copy in key
   return n;                                                                     // Return node
+ }
+
+static ArenaListNode nodez_ArenaListNode__ArenaList_string                                              // Create a new ArenaList node with a key specified by a zero terminated string.
+ (const ArenaList    *       list,                                                      // ArenaList in which to create the node
+  const char * const key)                                                       // Zero terminated string representing the key for this node.
+ {return list->proto->node(list, key, strlen(key));
  }
 
 static void setKey__ArenaListNode_string_size                                           // Set the key of a node to a different value as long as there is enough room from the last setting.
@@ -516,17 +538,17 @@ static  ArenaListNode last_ArenaListNode__ArenaListNode                         
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->last);
  }
-#line 514 "/home/phil/c/z/arenaList/arenaList.c"
+#line 537 "/home/phil/c/z/arenaList/arenaList.c" // AA
 static  ArenaListNode next_ArenaListNode__ArenaListNode                                                // Get the next child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->next);
  }
-#line 514 "/home/phil/c/z/arenaList/arenaList.c"
+#line 537 "/home/phil/c/z/arenaList/arenaList.c" // AA
 static  ArenaListNode prev_ArenaListNode__ArenaListNode                                                // Get the prev child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->prev);
  }
-#line 514 "/home/phil/c/z/arenaList/arenaList.c"
+#line 537 "/home/phil/c/z/arenaList/arenaList.c" // AA
 
 static  ArenaListNode first_ArenaListNode__ArenaList                                                    // Get the first child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
@@ -538,19 +560,19 @@ static  ArenaListNode last_ArenaListNode__ArenaList                             
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->last(&root);
  }
-#line 521 "/home/phil/c/z/arenaList/arenaList.c"
+#line 544 "/home/phil/c/z/arenaList/arenaList.c" // AA
 static  ArenaListNode next_ArenaListNode__ArenaList                                                    // Get the next child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->next(&root);
  }
-#line 521 "/home/phil/c/z/arenaList/arenaList.c"
+#line 544 "/home/phil/c/z/arenaList/arenaList.c" // AA
 static  ArenaListNode prev_ArenaListNode__ArenaList                                                    // Get the prev child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->prev(&root);
  }
-#line 521 "/home/phil/c/z/arenaList/arenaList.c"
+#line 544 "/home/phil/c/z/arenaList/arenaList.c" // AA
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -659,7 +681,7 @@ static int isLast_int__ArenaListNode                                            
  {const typeof(child->proto->parent(child)) parent = child->proto->parent(child);
   return child->proto->equals(child, parent.proto->last(&parent));
  }
-#line 625 "/home/phil/c/z/arenaList/arenaList.c"
+#line 648 "/home/phil/c/z/arenaList/arenaList.c" // AA
 
 static int isEmpty_int__ArenaListNode                                                   // Confirm a node has no children.
  (const ArenaListNode * node)                                                           // ArenaListNode
@@ -714,7 +736,7 @@ static  ArenaListNode   putTreeLast_ArenaListNode__ArenaListNode                
   const typeof(t.proto->root(&t)) r = t.proto->root(&t);
   return r.proto->putLast(&r, *child);                                                  // Put the child last
  }
-#line 674 "/home/phil/c/z/arenaList/arenaList.c"
+#line 697 "/home/phil/c/z/arenaList/arenaList.c" // AA
 
 static  ArenaListNode   putFirst_ArenaListNode__ArenaListNode_ArenaListNode                                     // Put a child first under its parent
  (const ArenaListNode * parent,                                                         // Parent
@@ -726,7 +748,7 @@ static  ArenaListNode   putLast_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                          // Child
  {return putFL_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *parent, child);                       // Put a child last under its parent
  }
-#line 681 "/home/phil/c/z/arenaList/arenaList.c"
+#line 704 "/home/phil/c/z/arenaList/arenaList.c" // AA
 
 static  ArenaListNode putNP_ArenaListNode__int_ArenaListNode_ArenaListNode                                      //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -775,7 +797,7 @@ static  ArenaListNode   putPrev_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                            // Child
  {return putNP_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *sibling, child);                      // Put child previous
  }
-#line 725 "/home/phil/c/z/arenaList/arenaList.c"
+#line 748 "/home/phil/c/z/arenaList/arenaList.c" // AA
 
 static  void replace__ArenaListNode_ArenaListNode                                               // Replace the specified node with this node
  (const ArenaListNode * with,                                                           // Replace with this node
@@ -901,7 +923,6 @@ static  size_t count_size__ArenaListNode                                        
   return l - 1;                                                                 // Return count without counting the root node
  }
 
-
 static  size_t count_size__ArenaList                                                    // Count the number of nodes in a ArenaList
  (const ArenaList * list)                                                               // ArenaList
  {size_t l = 0;
@@ -909,6 +930,29 @@ static  size_t count_size__ArenaList                                            
   const typeof(list->proto->root(list)) root = list->proto->root(list);                                                           // Root is always invalid
   ArenaListfe(child, root) l += 1 + child.proto->count(&child);                                      // Child under root plus its children
   return l;                                                                     // Return count without counting the root node
+ }
+
+static ArenaListPosition preOrderPosition__ArenaListTag                                         // Position of a node in pre-order - nodes are counted from one in preorder, bytes are the number of preceding bytes.
+ (const ArenaListNode * node)                                                           // ArenaListTag
+ {ArenaListPosition p = newArenaListPosition(({struct ArenaListPosition t = {proto: &ProtoTypes_ArenaListPosition};   t;}));
+  typeof(0ul) n = 0ul; typeof(0ul) b = 0ul;
+  jmp_buf found;
+
+  void children(ArenaListNode parent, int depth)                                        // Process the children of the specified parent
+   {if (parent.proto->invalid(&parent)) return;                                               // Empty child
+    ++n;                                                                        // Node count
+    if (parent.offset == node->offset)                                          // Found current node
+     {ArenaListPosition q = newArenaListPosition(({struct ArenaListPosition t = {byte: b, node: n, depth: depth, proto: &ProtoTypes_ArenaListPosition}; t;}));              // Record position
+      ({typeof(p) sourcesourcesource = q; memcpy(&p, &sourcesourcesource, sizeof(p));});                                                                    // Set read only structure in memory
+      longjmp(found, 1);                                                        // Finished
+     }
+    b += parent.proto->length(&parent);                                                       // Preceding byte count
+    ArenaListfe(child, parent) children(child, depth + 1);                              // Start at the root node
+   }
+
+  const typeof(node->list.proto->root(&node->list)) root = node->list.proto->root(&node->list);
+  if (!setjmp(found)) ArenaListfe(child, root) children(child, 1);                      // Start at the root node
+  return p;
  }
 
 static  ArenaList copyAndCompact_ArenaList__ArenaList                                                   // Copy a ArenaList compacting any free space.  This method assumes that there are no direct external references to the nodes in the list as this process might change the location of one or more nodes in the arena.
@@ -1008,6 +1052,12 @@ static void dump__ArenaListNode                                                 
  {const typeof(*Node) node = *Node;
   makeLocalCopyOfArenaListKey(k, l, node);                                              // Local copy of key
   say("%d %s", l, k);                                                           // Print key number
+ }
+
+static void dumpPosition__ArenaListPosition                                             //P Dump a ArenaListPosition
+ (const ArenaListPosition * position)                                                   // ArenaListPosition
+ {const typeof(*position) p = *position;
+  say("position(byte: %lu, node: %lu, depth: %lu)", p.byte, p.node, p.depth);                                                           // Print key number
  }
 
 static void print__ArenaListNode_function                                               // Apply a function to the print of a ArenaListNode and the tree below it.
@@ -1466,12 +1516,12 @@ void test7()                                                                    
   t.proto->free(&t);
  }
 
-void test8()                                                                    //TputTreeFirst //TputTreeLast //TsetKey //Tkey //Tlength //Tused //TkeyEquals
+void test8()                                                                    //TputTreeFirst //TputTreeLast //TsetKey //Tkey //Tlength //Tused //TkeyEquals //Tnodez
  {const typeof(makeArenaList()) t = makeArenaList();
 
   const typeof(t.proto->node(&t, "c", 1)) c = t.proto->node(&t, "c", 1); c.proto->putTreeFirst(&c);
   const typeof(t.proto->node(&t, "d", 1)) d = t.proto->node(&t, "d", 1); d.proto->putTreeLast(&d);
-  typeof(t.proto->node(&t, "b", 1)) b = t.proto->node(&t, "b", 1); b.proto->putTreeFirst(&b);
+  typeof(t.proto->nodez(&t, "b")) b = t.proto->nodez(&t, "b");    b.proto->putTreeFirst(&b);
 
   b.proto->setKey(&b, "B", 1);
   assert( b.proto->length(&b) == 1);
@@ -1771,12 +1821,34 @@ void test18()                                                                   
   s.proto->free(&s);
  }
 
+void test19()                                                                   //TpreOrderPosition //TequalsPosition
+ {const typeof(makeArenaList()) z = makeArenaList();
+
+  const typeof(z.proto->nodez(&z, "a")) a = z.proto->nodez(&z, "a");  a.proto->putTreeLast(&a);
+  const typeof(z.proto->nodez(&z, "b")) b = z.proto->nodez(&z, "b");  b.proto->putTreeLast(&b);
+  const typeof(z.proto->nodez(&z, "aa")) aa = z.proto->nodez(&z, "aa"); a.proto->putLast(&a, aa);
+  const typeof(z.proto->nodez(&z, "ab")) ab = z.proto->nodez(&z, "ab"); a.proto->putLast(&a, ab);
+  const typeof(z.proto->nodez(&z, "ba")) ba = z.proto->nodez(&z, "ba"); b.proto->putLast(&b, ba);
+  const typeof(z.proto->nodez(&z, "bb")) bb = z.proto->nodez(&z, "bb"); b.proto->putLast(&b, bb);
+
+  assert( z.proto->printsWithBracketsAs(&z, "(a(aaab)b(babb))"));
+
+  {const typeof(a.proto->preOrderPosition(&a)) p = a.proto->preOrderPosition(&a); const typeof(newArenaListPosition(({struct ArenaListPosition t = {byte: 0, node: 1, depth: 1, proto: &ProtoTypes_ArenaListPosition}; t;}))) q = newArenaListPosition(({struct ArenaListPosition t = {byte: 0, node: 1, depth: 1, proto: &ProtoTypes_ArenaListPosition}; t;})); assert( p.proto->equalsPosition(&p, q));}
+  {const typeof(aa.proto->preOrderPosition(&aa)) p = aa.proto->preOrderPosition(&aa); const typeof(newArenaListPosition(({struct ArenaListPosition t = {byte: 1, node: 2, depth: 2, proto: &ProtoTypes_ArenaListPosition}; t;}))) q = newArenaListPosition(({struct ArenaListPosition t = {byte: 1, node: 2, depth: 2, proto: &ProtoTypes_ArenaListPosition}; t;})); assert( p.proto->equalsPosition(&p, q));}
+  {const typeof(ab.proto->preOrderPosition(&ab)) p = ab.proto->preOrderPosition(&ab); const typeof(newArenaListPosition(({struct ArenaListPosition t = {byte: 3, node: 3, depth: 2, proto: &ProtoTypes_ArenaListPosition}; t;}))) q = newArenaListPosition(({struct ArenaListPosition t = {byte: 3, node: 3, depth: 2, proto: &ProtoTypes_ArenaListPosition}; t;})); assert( p.proto->equalsPosition(&p, q));}
+  {const typeof(b.proto->preOrderPosition(&b)) p = b.proto->preOrderPosition(&b); const typeof(newArenaListPosition(({struct ArenaListPosition t = {byte: 5, node: 4, depth: 1, proto: &ProtoTypes_ArenaListPosition}; t;}))) q = newArenaListPosition(({struct ArenaListPosition t = {byte: 5, node: 4, depth: 1, proto: &ProtoTypes_ArenaListPosition}; t;})); assert( p.proto->equalsPosition(&p, q));}
+  {const typeof(ba.proto->preOrderPosition(&ba)) p = ba.proto->preOrderPosition(&ba); const typeof(newArenaListPosition(({struct ArenaListPosition t = {byte: 6, node: 5, depth: 2, proto: &ProtoTypes_ArenaListPosition}; t;}))) q = newArenaListPosition(({struct ArenaListPosition t = {byte: 6, node: 5, depth: 2, proto: &ProtoTypes_ArenaListPosition}; t;})); assert( p.proto->equalsPosition(&p, q));}
+  {const typeof(bb.proto->preOrderPosition(&bb)) p = bb.proto->preOrderPosition(&bb); const typeof(newArenaListPosition(({struct ArenaListPosition t = {byte: 8, node: 6, depth: 2, proto: &ProtoTypes_ArenaListPosition}; t;}))) q = newArenaListPosition(({struct ArenaListPosition t = {byte: 8, node: 6, depth: 2, proto: &ProtoTypes_ArenaListPosition}; t;})); assert( p.proto->equalsPosition(&p, q));}
+
+  z.proto->free(&z);
+ }
+
 int main(void)                                                                  // Run tests
  {const int repetitions = 1;                                                    // Number of times to test
   void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
-                           test15, test16, test17, test18, 0};
+                           test15, test16, test17, test18, test19, 0};
   run_tests("ArenaList", repetitions, tests);
 
   return 0;
