@@ -16,22 +16,19 @@
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an ArenaTree.
-struct ArenaTreeFound;                                                                  // Forward declare some of the structures used
-struct ArenaTreeNode;
 
 typedef struct ArenaTree                                                                // ArenaTree
  {const struct ProtoTypes_ArenaTree *proto;                                             // Methods associated with an ArenaTree
   struct ArenaTreeArena *arena;                                                         // The arena for the ArenaTree
-//  int (*different)(const struct ArenaTreeFound *f, const struct ArenaTreeNode *n);
  } ArenaTree;
 
-#line 45 "/home/phil/c/z/arenaList/arenaList.c"
+#line 45 "/home/phil/c/z/arenaList/arenaList.c" // BB
 typedef struct ArenaTreeNode                                                            //I Offset to the content of a node in the ArenaTree.
  {ArenaTree      list;                                                                  // ArenaTree containing the item
   size_t offset;                                                                // Offset
   const struct ProtoTypes_ArenaTreeNode *proto;                                         // Methods associated with nodes
  } ArenaTreeNode;
-#line 51 "/home/phil/c/z/arenaList/arenaList.c"
+#line 51 "/home/phil/c/z/arenaList/arenaList.c" // BB
 typedef struct ArenaTreeArena                                                           //I Description of the block of memory that holds an ArenaTree.  The individual nodes of the ArenaTree cannot be cannot be freed individually, but the entire ArenaTree can be freed. As the ArenaTree uses offsets to store addresses the ArenaTree can be moved to a different location in memory while retaining its structure.
  {size_t size;                                                                  // The total size of the arena used to hold data associated with the ArenaTree.
   size_t used;                                                                  // The number of bytes currently used.
@@ -42,7 +39,7 @@ typedef struct ArenaTreeArena                                                   
   size_t freeSpace[8*sizeof(unsigned int)];                                     // Lists of freed nodes by exponent of power of two of node size.
 #endif
  } ArenaTreeArena;
-#line 62 "/home/phil/c/z/arenaList/arenaList.c"
+#line 62 "/home/phil/c/z/arenaList/arenaList.c" // BB
 typedef struct ArenaTreeDescription                                                     //I The description of an ArenaTree which is written as the header record for dump files.
  {const size_t version;                                                         // Version of ArenaTree
   const size_t littleEndian;                                                    // Little endian if true
@@ -52,7 +49,7 @@ typedef struct ArenaTreeDescription                                             
   const size_t width;                                                           // Width of user data associated with each node
   const time_t created;                                                         // Time in seconds since the epoch when this ArenaTree was created
  } ArenaTreeDescription;
-#line 28 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 25 "/home/phil/c/z/arenaTree/arenaTree.c" // CC
 
 typedef struct ArenaTreeContent                                                         // Content of a node in a ArenaTree
  {unsigned int left, right, up, height, tree, length;                           // Location of left, right, parent trees, sub tree height, owned sub tree, length of key.
@@ -73,7 +70,7 @@ typedef struct ArenaTreeFound                                                   
 
 //D1 Pointers, offsets and allocations                                          // Locate items allocated in the arena
 
-#line 82 "/home/phil/c/z/arenaList/arenaList.c"
+#line 89 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static ArenaTree makeArenaTreeWithWidth                                                         //I Create a new ArenaTree with the specified width for the optional user data associated with each node.
  (const size_t width)                                                           // Width
  {ArenaTreeArena * a = alloc(sizeof(ArenaTreeArena));                                           // Allocate arena description
@@ -89,12 +86,12 @@ static ArenaTree makeArenaTreeWithWidth                                         
   t.proto->node(&t, "", 0);                                                              // Initialize root node
   return t;
  }
-#line 98 "/home/phil/c/z/arenaList/arenaList.c"
+#line 105 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static ArenaTree makeArenaTree                                                                  //I Create a new ArenaTree
  ()                                                                             // ArenaTreeallocator
  {return makeArenaTreeWithWidth(0);                                                     // Allocate arena description
  }
-#line 170 "/home/phil/c/z/arenaList/arenaList.c"
+#line 177 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static void * pointer__ArenaTree_size                                                   //IPV Return a temporary pointer to data in the arena of the specified ArenaTree
  (const ArenaTree   *  list,                                                            // ArenaTree
   const size_t offset)                                                          // Offset
@@ -103,50 +100,50 @@ static void * pointer__ArenaTree_size                                           
    }
   return (void *)(list->arena->data + offset);                                  // Convert a non zero delta that is within the arena to a valid pointer
  }
-#line 179 "/home/phil/c/z/arenaList/arenaList.c"
+#line 186 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static ArenaTreeContent * content__ArenaTreeNode                                                //IPV Convert a node offset to an address so that the content of a node can be updated in situ as long as the ArenaTree is not reallocated to a different position.
  (const ArenaTreeNode   * node)                                                         // ArenaTreeNode
  {return (ArenaTreeContent *)pointer__ArenaTree_size(&node->list, node->offset);
  }
-#line 184 "/home/phil/c/z/arenaList/arenaList.c"
+#line 191 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static size_t width_size__ArenaTree                                                     //I Get the width of the data area for a ArenaTree
  (const ArenaTree * list)                                                               // ArenaTreeNode
  {return list->arena->width;
  }
-#line 189 "/home/phil/c/z/arenaList/arenaList.c"
+#line 196 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static size_t width_size__ArenaTreeNode                                                 //I Get the width of the data area for a node
  (const ArenaTreeNode * node)                                                           // ArenaTreeNode
  {return node->list.arena->width;
  }
-#line 194 "/home/phil/c/z/arenaList/arenaList.c"
+#line 201 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static char * key_pointer__ArenaTreeNode                                                //IV Get a temporary pointer to the key of a node.
  (const ArenaTreeNode * node)                                                           // ArenaTreeNode
  {const typeof(node->proto->width(node)) width = node->proto->width(node);                                                         // Width of node
   return pointer__ArenaTree_size(&node->list, node->offset + sizeof(ArenaTreeContent) + width); // The key is stored after the node and optional user data in the arena.
  }
-#line 200 "/home/phil/c/z/arenaList/arenaList.c"
+#line 207 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static void   * data_pointer__ArenaTreeNode                                             //IV Get a temporary pointer to the user data of a node.
  (const ArenaTreeNode * node)                                                           // ArenaTreeNode
  {return pointer__ArenaTree_size(&node->list, node->offset + sizeof(ArenaTreeContent));         // The optional user data is stored immediately after the node in the arena.
  }
-#line 205 "/home/phil/c/z/arenaList/arenaList.c"
+#line 212 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static size_t   length_size__ArenaTreeNode                                              //I Get the length of the key associated with a node
  (const ArenaTreeNode * node)                                                           // ArenaTreeNode
  {return node->proto->content(node)->length;
  }
-#line 220 "/home/phil/c/z/arenaList/arenaList.c"
+#line 227 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static  ArenaTreeNode  offset__ArenaTree_size                                                   //IP Create a node to locate an allocation within the arena of a ArenaTree.
  (const ArenaTree    * list,                                                            // ArenaTree
   const size_t delta)                                                           // Delta within arena. A delta of zero represents no such node.
  {return newArenaTreeNode(({struct ArenaTreeNode t = {list: *list, offset: delta, proto: &ProtoTypes_ArenaTreeNode}; t;}));
  }
-#line 237 "/home/phil/c/z/arenaList/arenaList.c"
+#line 250 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static int equals_int__ArenaTreeNode_ArenaTreeNode                                              //I Confirm two nodes are equal
  (const ArenaTreeNode * a,                                                              // First offset
   const ArenaTreeNode   b)                                                              // Second offset
  {return a->list.arena == b.list.arena && a->offset == b.offset;
  }
-#line 257 "/home/phil/c/z/arenaList/arenaList.c"
+#line 279 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static  ArenaTreeNode  allocate_ArenaTreeNode__ArenaTree_size                                           //IP Allocate a node within the arena of a ArenaTree
  (const ArenaTree     *list,                                                            // ArenaTree in which to allocate
   const size_t size)                                                            // Amount of memory required
@@ -184,12 +181,12 @@ static  ArenaTreeNode  allocate_ArenaTreeNode__ArenaTree_size                   
    }
   printStackBackTraceAndExit(2, "Requested arena too large\n");                 // The arena has become too large for the chosen size of offsets.
  }
-#line 295 "/home/phil/c/z/arenaList/arenaList.c"
+#line 317 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static size_t used_size__ArenaTree                                                      //I Amount of space currently being used within the arena of a ArenaTree.
  (const ArenaTree * list)                                                               // ArenaTree
  {return list->arena->used;
  }
-#line 300 "/home/phil/c/z/arenaList/arenaList.c"
+#line 322 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static ArenaTreeNode node_ArenaTreeNode__ArenaTree_string_size                                          //I Create a new ArenaTree node with the specified key.
  (const ArenaTree    *       list,                                                      // ArenaTree in which to create the node
   const void * const key,                                                       // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the ArenaTree is determined solely by the user.
@@ -206,13 +203,13 @@ static ArenaTreeNode node_ArenaTreeNode__ArenaTree_string_size                  
   memcpy(n.proto->key(&n), key, length);                                                 // Copy in key
   return n;                                                                     // Return node
  }
-#line 515 "/home/phil/c/z/arenaList/arenaList.c"
+#line 548 "/home/phil/c/z/arenaList/arenaList.c" // BB
 static int equalsString_int__ArenaTreeNode_string                                       //I Check that the key of a node equals a string
  (const ArenaTreeNode      * node,                                                      // ArenaTreeNode
   const char * const key)                                                       // Key
  {return node->proto->keyEquals(node, key, strlen(key));
  }
-#line 49 "/home/phil/c/z/arenaTree/arenaTree.c"
+#line 46 "/home/phil/c/z/arenaTree/arenaTree.c" // CC
 
 static void free_ArenaTree                                                              // Free a ArenaTree in its entirety
  (ArenaTree * tree)                                                                     // ArenaTree
@@ -261,7 +258,7 @@ static ArenaTreeNode left_ArenaTreeNode_ArenaTreeNode                           
 
 static ArenaTreeNode right_ArenaTreeNode_ArenaTreeNode                                                  // Right child node below the specified parent node.
  (const ArenaTreeNode * parent)                                                         // Parent
- {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->right);
+ {return parent->list.proto->offset(&parent->list, parent->proto->content(parent)->right);
  }
 
 static ArenaTreeNode ownedTreeRoot_ArenaTreeNode_ArenaTreeNode                                          //P Root of ArenaTree owned by this node if there is  one, else the returned node has an offset of zero.
@@ -346,7 +343,7 @@ static ArenaTreeFound find_ArenaTreeFound_ArenaTreeFound_ArenaTreeNode_string   
  }
 
 static ArenaTreeNode locate_ArenaTreeNode_string                                                // Locate the node with the specified key if it exists within the ArenaTree owned by the specified node.
- (const ArenaTreeNode   *     node,                                                     // Node
+ (const ArenaTreeNode *       node,                                                     // Node
   const char  * const key,                                                      // Key to find
   const size_t        length)                                                   // Length of the key to find
  {ArenaTreeNode p = node->proto->ownedTreeRoot(node);                                               // Root node
@@ -407,9 +404,9 @@ static int check_ArenaTree                                                      
  }
 
 static  ArenaTreeFound find_ArenaTreeFound_ArenaTreeNode_string                                         //P Find a key if it exists within the ArenaTree owned by the specified node.
- (const ArenaTreeNode  * Node,                                                          // The node owning the ArenaTree to search
-  char * const key,                                                             // The key to find
-  const size_t length)                                                          // Length of the key to find
+ (const ArenaTreeNode * Node,                                                           // The node owning the ArenaTree to search
+  char * const  key,                                                            // The key to find
+  const size_t  length)                                                         // Length of the key to find
  {const typeof(*Node) node = *Node;
   typeof(makeArenaTreeFound(node.list, key, length)) f = makeArenaTreeFound(node.list, key, length);                                       // Status of find
   const typeof(node.proto->ownedTreeRoot(&node)) r = node.proto->ownedTreeRoot(&node);                                                     // Root node of owned ArenaTree
@@ -595,7 +592,7 @@ static StringBuffer print_ArenaTree                                             
  }
 
 static void dump_ArenaTree                                                              //P Print a ArenaTree on stderr
- (const ArenaTree tree)                                                                 // ArenaTree
+ (const  ArenaTree tree)                                                                // ArenaTree
  {typeof(0ul) height = 0ul;                                                                 // Height of root
 
   void print(const ArenaTreeNode node, size_t depth)                                    // Print to allocated string
