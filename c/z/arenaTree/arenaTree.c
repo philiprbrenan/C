@@ -15,13 +15,10 @@
 #include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an $.
-struct $Found;                                                                  // Forward declare some of the structures used
-struct $Node;
 
 typedef struct $                                                                // $
  {const struct ProtoTypes_$ *proto;                                             // Methods associated with an $
   struct $Arena *arena;                                                         // The arena for the $
-//  int (*different)(const struct $Found *f, const struct $Node *n);
  } $;
 
 include ../arenaList/arenaList.c :structs !$ !$Content
@@ -94,7 +91,7 @@ static $Node left_$Node_$Node                                                   
 
 static $Node right_$Node_$Node                                                  // Right child node below the specified parent node.
  (const $Node * parent)                                                         // Parent
- {return  parent->list ▷ offset(parent ▶ content->right);
+ {return parent->list ▷ offset(parent ▶ content->right);
  }
 
 static $Node ownedTreeRoot_$Node_$Node                                          //P Root of $ owned by this node if there is  one, else the returned node has an offset of zero.
@@ -179,7 +176,7 @@ static $Found find_$Found_$Found_$Node_string                                   
  }
 
 static $Node locate_$Node_string                                                // Locate the node with the specified key if it exists within the $ owned by the specified node.
- (const $Node   *     node,                                                     // Node
+ (const $Node *       node,                                                     // Node
   const char  * const key,                                                      // Key to find
   const size_t        length)                                                   // Length of the key to find
  {$Node p = node ▶ ownedTreeRoot;                                               // Root node
@@ -240,9 +237,9 @@ static int check_$                                                              
  }
 
 static  $Found find_$Found_$Node_string                                         //P Find a key if it exists within the $ owned by the specified node.
- (const $Node  * Node,                                                          // The node owning the $ to search
-  char * const key,                                                             // The key to find
-  const size_t length)                                                          // Length of the key to find
+ (const $Node * Node,                                                           // The node owning the $ to search
+  char * const  key,                                                            // The key to find
+  const size_t  length)                                                         // Length of the key to find
  {node ◁ *Node;
   f ◀ make$Found(node.list, key, length);                                       // Status of find
   r ◁ node ▷ ownedTreeRoot;                                                     // Root node of owned $
@@ -428,7 +425,7 @@ static StringBuffer print_$                                                     
  }
 
 static void dump_$                                                              //P Print a $ on stderr
- (const $ tree)                                                                 // $
+ (const  $ tree)                                                                // $
  {height ◀ 0ul;                                                                 // Height of root
 
   void print(const $Node node, size_t depth)                                    // Print to allocated string
