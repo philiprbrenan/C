@@ -179,7 +179,7 @@ if (1)                                                                          
 
 if (1)
  {my $y = <<END;                                                                # Workflow for Perl
-# Build and text CPAN module: Preprocess::Ops
+# Build and test CPAN module: Preprocess::Ops
 
 name: Test
 
