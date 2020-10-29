@@ -29,7 +29,10 @@ my $includes = fpd($dir, q(includes));                                          
 my $cpan     = q(/home/phil/perl/cpan/PreprocessOps/);                          # Associated CPAN module
 my $cpanRepo = containingFolderName(fpf($cpan, q(aaa)));                        # GitHub repo is the last component of the folder containing the CPAN module
 
-my ($positional, $keywords) = parseCommandLineArguments {@_} [@ARGV], [qw(clean test)];
+my ($positional, $keywords) =                                                   # Parse command line
+  parseCommandLineArguments {@_} [@ARGV],
+  {clean => 'Clean up github',
+   test  => 'Run tests before uploading'};
 
 my @cz       =  grep {!/\A#/} split /\s+/, <<END;                               # C files in /z/ to upload and run
 utilities
