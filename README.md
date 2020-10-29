@@ -8,7 +8,7 @@ to make ANSI-C code object oriented.
 
 See the last few lines of :
 
-https://github.com/philiprbrenan/C/blob/master/c/z/arenaTree/arenaTree.c
+https://github.com/philiprbrenan/C/blob/master/c/z/arenaList/arenaList.c
 
 for a working example.
 
