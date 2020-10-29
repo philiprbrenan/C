@@ -233,7 +233,7 @@ static  $Pair left_$Pair_$_double                                               
   const double d)                                                               // Distance
  {w ◁ r ▶ width; h ◁ r ▶ height;
   if (d <= w)
-   {a ◁ make$WH(r->x, r->y, d, h);
+   {a ◁ make$WH(r->x,   r->y,     d, h);
     b ◁ make$WH(r->x+d, r->y, w - d, h);
     return new $Pair(source: *r, a: a, b: b, d: d, valid: 1);                   // Valid split
    }
@@ -269,8 +269,8 @@ static  $Pair up_$Pair_$_double                                                 
   const double d)                                                               // Distance
  {w ◁ r ▶ width; h ◁ r ▶ height;
   if (d <= w)
-   {a ◁ make$WH(r->x, r->y,     w, h-d);
-    b ◁ make$WH(r->x, r->y+h-d, w, d);
+   {a ◁ make$WH(r->x, r->y,     w, h - d);
+    b ◁ make$WH(r->x, r->y+h-d, w,     d);
     return new $Pair(source: *r, a: a, b: b, d: d, valid: 1);                   // Valid split
    }
   return   new $Pair(source: *r,             d: d, valid: 0);                   // Invalid split
