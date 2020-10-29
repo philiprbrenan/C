@@ -198,6 +198,9 @@ jobs:
       run: |
         sudo apt update
         sudo apt -y install build-essential tree
+
+    - name: InstallDTT
+      run: |
         sudo cpan install Data::Table::Text
 
     - name: Test
