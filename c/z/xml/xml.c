@@ -855,7 +855,7 @@ void test1()                                                                    
  } // test1
 
 void test2()                                                                    //Tprint
- {char * string = ◉   "/home/phil/c/z/xml/samples/foreword.dita";
+ {char * string = ◉;
 <?xml version="1.0"?>
 <!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
 <!-- Created with XMetaL (http://www.xmetal.com) -->
