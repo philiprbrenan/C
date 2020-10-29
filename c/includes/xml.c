@@ -12,7 +12,7 @@
 #ifndef Xml_included
 #define Xml_included
 
-//D1 Structures                                                                 // Structures describing an Arena Tree.
+//D1 Structures                                                                 // Structures in memory describing an Xml parse tree.
 
 #define XmltagNameLength 1024                                                     // Tag name return area as xml tags are of limited size
 char XmltagName[XmltagNameLength+1];                                                // Tag name return area as xml tags are short
@@ -225,19 +225,19 @@ static XmlParse  parseXmlFromString                                             
  }
 
 static void free_XmlParse                                                         // Free an Xml parse
- (const XmlParse * x)                                                               // Xml descriptor
+ (const XmlParse * x)                                                             // Xml descriptor
  {x->tree.proto->free(&x->tree); x->errors.proto->free(&x->errors); if (x->fileName.proto) x->fileName.proto->free(&x->fileName);
  }
 
 static void free_XmlValidate                                                      // Free an Xml validator
- (XmlValidate * x)                                                            // Xml validator
+ (XmlValidate * x)                                                                // Xml validator
  {x->possibilities.proto->free(&x->possibilities);
   x->first.proto->free(&x->first);
   x->next.proto->free(&x->next);
  }
 
 static size_t errors_size_XmlParse                                                // Number of errors encountered while creating an Xml parse tree.
- (const XmlParse * x)                                                               // Xml descriptor
+ (const XmlParse * x)                                                             // Xml descriptor
  {return x->errors.proto->count(&x->errors);
  }
 
@@ -272,7 +272,7 @@ static  char * parseXmlTagName                                                  
  }
 
 static char * tagName_string_XmlTag                                               // Get the tag name from a node in the Xml parse tree. The tag name is returned in a reused static buffer that the caller should not free.
- (const XmlTag * Tag)                                                               // Tag
+ (const XmlTag * Tag)                                                             // Tag
  {const typeof(*Tag) tag = *Tag;
   if (tag.proto->isText(&tag)) return "text";                                              // Text node
   makeLocalCopyOfXmlTagString(t, l, tag);
@@ -286,12 +286,12 @@ static int tagNameEquals_int_XmlTag_string                                      
  }
 
 static char * tagString_string_XmlTag                                             //V Get the entire tag from a node in the Xml parse tree.
- (const XmlTag * tag)                                                               // Tag
+ (const XmlTag * tag)                                                             // Tag
  {return tag->node.proto->key(&tag->node);
  }
 
 static size_t tagStringLength_size_XmlTag                                         // Get the length of the entire tag
- (const XmlTag * tag)                                                               // Tag
+ (const XmlTag * tag)                                                             // Tag
  {return tag->node.proto->length(&tag->node);
  }
 
@@ -307,36 +307,36 @@ static int tagStringEquals_int_XmlTag_string                                    
 #define Xmlfer(child, parent) for(XmlTag child = newXmlTag(({struct XmlTag t = {xml: parent.xml, node: parent.proto->last(&parent).node, proto: &ProtoTypes_XmlTag}; t;}));  child.proto->valid(&child); child.node.offset = child.proto->prev(&child).node.offset) // Each child in a parent from last to first
 
 static XmlTag first_XmlTag                                                          // Return the first child tag under the specified parent tag.
- (const XmlTag * parent)                                                            // Parent tag
+ (const XmlTag * parent)                                                          // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent->xml, node: parent->node.proto->first(&parent->node), proto: &ProtoTypes_XmlTag}; t;}));
  }
 static XmlTag last_XmlTag                                                          // Return the first child tag under the specified parent tag.
- (const XmlTag * parent)                                                            // Parent tag
+ (const XmlTag * parent)                                                          // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent->xml, node: parent->node.proto->last(&parent->node), proto: &ProtoTypes_XmlTag}; t;}));
  }
 #line 313 "/home/phil/c/z/xml/xml.c" // AA
 static XmlTag next_XmlTag                                                          // Return the first child tag under the specified parent tag.
- (const XmlTag * parent)                                                            // Parent tag
+ (const XmlTag * parent)                                                          // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent->xml, node: parent->node.proto->next(&parent->node), proto: &ProtoTypes_XmlTag}; t;}));
  }
 #line 313 "/home/phil/c/z/xml/xml.c" // AA
 static XmlTag prev_XmlTag                                                          // Return the first child tag under the specified parent tag.
- (const XmlTag * parent)                                                            // Parent tag
+ (const XmlTag * parent)                                                          // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent->xml, node: parent->node.proto->prev(&parent->node), proto: &ProtoTypes_XmlTag}; t;}));
  }
 #line 313 "/home/phil/c/z/xml/xml.c" // AA
 static XmlTag parent_XmlTag                                                          // Return the first child tag under the specified parent tag.
- (const XmlTag * parent)                                                            // Parent tag
+ (const XmlTag * parent)                                                          // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent->xml, node: parent->node.proto->parent(&parent->node), proto: &ProtoTypes_XmlTag}; t;}));
  }
 #line 313 "/home/phil/c/z/xml/xml.c" // AA
 
 static XmlTag first_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
- (const XmlParse * xml)                                                             // Parent tag
+ (const XmlParse * xml)                                                           // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: *xml, node: xml->tree.proto->first(&xml->tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
 static XmlTag last_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
- (const XmlParse * xml)                                                             // Parent tag
+ (const XmlParse * xml)                                                           // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: *xml, node: xml->tree.proto->last(&xml->tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
 #line 319 "/home/phil/c/z/xml/xml.c" // AA
@@ -344,7 +344,7 @@ static XmlTag last_XmlParse                                                     
 //D1 Location                                                                   // Check the current location in the Xml parse tre
 
 static int depth_int_XmlTag                                                       // The depth of a tag
- (const XmlTag * Tag)                                                               // Tag
+ (const XmlTag * Tag)                                                             // Tag
  {typeof(0) i = 0;
   const typeof(*Tag) tag = *Tag;
   for(XmlTag t = tag; t.proto->valid(&t); t.node.offset = t.proto->parent(&t).node.offset) ++i;     // Count up to root
@@ -352,13 +352,13 @@ static int depth_int_XmlTag                                                     
  }
 
 static int isRoot_int_XmlTag                                                      // Check whether the specified tag is the root tag
- (const XmlTag * tag)                                                               // Tag
+ (const XmlTag * tag)                                                             // Tag
  {const typeof(tag->proto->parent(tag)) p = tag->proto->parent(tag);                                                             // Possibly the root of the ArenaList
   return !p.proto->valid(&p);                                                            // The root of the xml tree is one level below the root of the ArenaList
  }
 
 static int isFirst_int_XmlTag                                                     // Check that the specified tag is first under its parent
- (const XmlTag * Tag)                                                               // Tag
+ (const XmlTag * Tag)                                                             // Tag
  {const typeof(*Tag) tag = *Tag;
   if (tag.proto->isRoot(&tag)) return 1;                                                   // The root tag is always first
       const typeof(tag.proto->parent(&tag)) parent = tag.proto->parent(&tag);
@@ -366,7 +366,7 @@ static int isFirst_int_XmlTag                                                   
   return f.proto->equals(&f, tag);
  }
 static int isLast_int_XmlTag                                                     // Check that the specified tag is last under its parent
- (const XmlTag * Tag)                                                               // Tag
+ (const XmlTag * Tag)                                                             // Tag
  {const typeof(*Tag) tag = *Tag;
   if (tag.proto->isRoot(&tag)) return 1;                                                   // The root tag is always last
       const typeof(tag.proto->parent(&tag)) parent = tag.proto->parent(&tag);
@@ -378,14 +378,14 @@ static int isLast_int_XmlTag                                                    
 //D1 Text methods                                                               // Methods that operate on text tags
 
 static int isText_int_XmlTag                                                      // Check whether we are on a text element
- (const XmlTag * tag)                                                               // Tag
+ (const XmlTag * tag)                                                             // Tag
  {XmlNodeExt e;                                                                   // Extension data for node
-  tag->node.proto->getData(&tag->node, &e);                                                       // Get extension data from node
+  tag->node.proto->getData(&tag->node, &e);                                                      // Get extension data from node
   return e.text;                                                                // Text or not
  }
 
 static int onlyText_XmlTag                                                        // Return true if a tag contains just one text element and nothing else
- (const XmlTag * parent)                                                            // Tag
+ (const XmlTag * parent)                                                          // Tag
  {const typeof(parent->proto->countChildren(parent)) n = parent->proto->countChildren(parent);
   if (n != 1) return 0;                                                         // If there is more than one tag than there must be a non text tag present to separate the text
   const typeof(parent->proto->first(parent)) f = parent->proto->first(parent);
@@ -395,24 +395,24 @@ static int onlyText_XmlTag                                                      
 //D1 Statistics                                                                 // Counts on the tag
 
 static int empty_int_XmlTag                                                       // Check whether the specified parent tag is empty
- (const XmlTag * parent)                                                            // Parent tag
+ (const XmlTag * parent)                                                          // Parent tag
  {return !parent->proto->countChildren(parent);
  }
 
 static int isTag_int_tag                                                        // Check that the tag is a tag not text
- (const XmlTag * tag)                                                               // Parent tag
+ (const XmlTag * tag)                                                             // Parent tag
  {return !tag->proto->isText(tag);
  }
 
 static int hasText_int_XmlTag                                                     // Check whether the tag contains a text element
- (const XmlTag * Parent)                                                            // Parent tag
+ (const XmlTag * Parent)                                                          // Parent tag
  {const typeof(*Parent) parent = *Parent;
    Xmlfe(child, parent) if (child.proto->isText(&child)) return 1;
   return 0;
  }
 
 static int stayInLine_int_XmlTag                                                  // Check whether a tag is text or is preceded or followed by text
- (const XmlTag * Tag)                                                               // Tag
+ (const XmlTag * Tag)                                                             // Tag
  {const typeof(*Tag) tag = *Tag;
   if ( tag.proto->isText(&tag))                   return 1;
   if (!tag.proto->isFirst(&tag)) {const typeof(tag.proto->prev(&tag)) p = tag.proto->prev(&tag); return p.proto->isText(&p);}
@@ -421,19 +421,19 @@ static int stayInLine_int_XmlTag                                                
  }
 
 static size_t length_size__XmlTag                                                 // Length of a tag string
- (const XmlTag * tag)                                                               // XmlTag
+ (const XmlTag * tag)                                                             // XmlTag
  {return tag->node.proto->content(&tag->node)->length;
  }
 
 //D1 Search                                                                     // Search the Xml parse tree
 
 static int valid_int_XmlTag                                                       // Check that a tag is valid.
- (const XmlTag * tag)                                                               // Tag
- {return tag->node.offset;                                                       // A tag is valid unless it is the root node of the arena tree backing the Xml parse tree.
+ (const XmlTag * tag)                                                             // Tag
+ {return tag->node.offset;                                                      // A tag is valid unless it is the root node of the arena tree backing the Xml parse tree.
  }
 
 static XmlTag findFirstChild_XmlTag_XmlTag_string                                     // Find the first child tag with the specified name under the specified parent tag.
- (const XmlTag *       Parent,                                                          // Parent
+ (const XmlTag *       Parent,                                                    // Parent
   const char * const key)                                                       // Name of the tag to find
  {const typeof(*Parent) parent = *Parent;
   Xmlfe(child, parent)                                                            // Each child of the parent
@@ -443,18 +443,18 @@ static XmlTag findFirstChild_XmlTag_XmlTag_string                               
  }
 
 static XmlTag findFirstChild_XmlTag_XmlParse_string                                   // Find the first child tag with the specified name under the root tag of the specified parse tree.
- (const XmlParse * xml,                                                             // Parent
-  const char   * const key)                                                       // Name of the tag to find
+ (const XmlParse * xml,                                                           // Parent
+  const char   * const key)                                                     // Name of the tag to find
  {    const typeof(xml->proto->root(xml)) root = xml->proto->root(xml);                                                        // Root tag
   const typeof(root.proto->first(&root)) f = root.proto->first(&root);
   return f.proto->findFirstChild(&f, key);                                               // Each child of the parent
  }
 
 static XmlTag findFirstTag_XmlTag_XmlTag_string                                       // Find the first tag with the specified name in the Xml parse tree starting at the specified tag.
- (const XmlTag *       parent,                                                          // Parent tag
+ (const XmlTag *       parent,                                                    // Parent tag
   const char * const key)                                                       // Name of the tag to find
  {jmp_buf found;
-  XmlTag T = newXmlTag(({struct XmlTag t = {xml: parent->xml, proto: &ProtoTypes_XmlTag}; t;}));                                           // Tag found if any
+  XmlTag T = newXmlTag(({struct XmlTag t = {xml: parent->xml, proto: &ProtoTypes_XmlTag}; t;}));                                          // Tag found if any
 
   void find(const XmlTag tag)                                                     // Check whether the name of the tag matches the specified key
    {if (tag.proto->tagNameEquals(&tag, key))
@@ -468,10 +468,10 @@ static XmlTag findFirstTag_XmlTag_XmlTag_string                                 
  }
 
 static XmlTag findFirstTag_XmlTag_XmlParse_string                                     // Find the first tag in an Xml parse tree with the specified name.
- (const XmlParse *       xml,                                                       // Xml parse tree
-  const char   * const key)                                                       // Name of the tag to find
+ (const XmlParse *       xml,                                                     // Xml parse tree
+  const char   * const key)                                                     // Name of the tag to find
  {jmp_buf found;
-  XmlTag T = newXmlTag(({struct XmlTag t = {xml: *xml, proto: &ProtoTypes_XmlTag}; t;}));                                                  // Tag found if any
+  XmlTag T = newXmlTag(({struct XmlTag t = {xml: *xml, proto: &ProtoTypes_XmlTag}; t;}));                                                 // Tag found if any
 
   void find(const XmlTag tag)                                                     // Check whether the name of the tag matches the specified key
    {if (tag.proto->tagNameEquals(&tag, key))
@@ -485,17 +485,17 @@ static XmlTag findFirstTag_XmlTag_XmlParse_string                               
  }
 
 static XmlTag root_XmlParse                                                         // Return the root tag of the specified Xml parse tree
- (const XmlParse * xml)                                                             // Xml parse tree
+ (const XmlParse * xml)                                                           // Xml parse tree
  {return newXmlTag(({struct XmlTag t = {xml: *xml, node: xml->tree.proto->root(&xml->tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
 
 static XmlTag root_XmlTag                                                           // Return the root tsg of the Xml parse tree containing the specified tag.
- (const XmlTag * tag)                                                               // Tag
+ (const XmlTag * tag)                                                             // Tag
  {return newXmlTag(({struct XmlTag t = {xml: tag->xml, node: tag->xml.tree.proto->root(&tag->xml.tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
 
 static int equals_XmlTag_XmlTag                                                     // Confirm that two tags refer to the same text location in the source document.
- (const XmlTag * a,                                                                 // First tag
+ (const XmlTag * a,                                                               // First tag
   const XmlTag b)                                                                 // Second tag
  {return a->node.offset == b.node.offset;
  }
@@ -503,7 +503,7 @@ static int equals_XmlTag_XmlTag                                                 
 //D1 Traverse                                                                   // Traverse the Xml parse tree.
 
 static void by_XmlTag_sub                                                         // Traverse the Xml parse tree rooted at the specified tag in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
- (const XmlTag * tag,                                                               // Starting tag
+ (const XmlTag * tag,                                                             // Starting tag
   void (* const function) (const XmlTag tag))                                     // Function to call on each tag
  {void f(const ArenaListNode node)
    {function(newXmlTag(({struct XmlTag t = {xml: tag->xml, node: node, proto: &ProtoTypes_XmlTag}; t;})));
@@ -512,7 +512,7 @@ static void by_XmlTag_sub                                                       
  }
 
 static void by_XmlParse_sub                                                       // Traverse the Xml parse tree in post-order calling the specified function to process each tag.  The tree is buffered allowing changes to be made to the structure of the tree without disruption as long as each child checks its context.
- (const XmlParse * xml,                                                             // Xml parse tree
+ (const XmlParse * xml,                                                           // Xml parse tree
   void (* const function) (const XmlTag tag))                                     // Function to call on each tag
  {void f(const ArenaListNode node)
    {function(newXmlTag(({struct XmlTag t = {xml: *xml, node: node, proto: &ProtoTypes_XmlTag}; t;})));
@@ -522,7 +522,7 @@ static void by_XmlParse_sub                                                     
  }
 
 static void scan_XmlTag_sub                                                       // Traverse the Xml parse tree rooted at the specified tag calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The Xml is buffered allowing changes to be made to the structure of the Xml without disruption as long as each child checks its context.
- (const XmlTag * tag,                                                               // Starting tag
+ (const XmlTag * tag,                                                             // Starting tag
   void (* const function) (XmlTag tag, int start, int depth))                     // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
  {void f(const ArenaListNode node,   int start, int depth)
    {function(newXmlTag(({struct XmlTag t = {xml: tag->xml, node: node, proto: &ProtoTypes_XmlTag}; t;})), start, depth);
@@ -531,7 +531,7 @@ static void scan_XmlTag_sub                                                     
  }
 
 static void scan_XmlParse_sub                                                     // Traverse the Xml parse tree calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The Xml is buffered allowing changes to be made to the structure of the Xml without disruption as long as each child checks its context.
- (const XmlParse * xml,                                                             // Xml parse tree
+ (const XmlParse * xml,                                                           // Xml parse tree
   void (* const function) (XmlTag tag, int start, int depth))                     // Function to call on each tag: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
  {void f(const ArenaListNode node,   int start, int depth)
    {function(newXmlTag(({struct XmlTag t = {xml: *xml, node: node, proto: &ProtoTypes_XmlTag}; t;})), start, depth);
@@ -540,30 +540,30 @@ static void scan_XmlParse_sub                                                   
  }
 
 static  size_t countChildren_size_Xml                                             // Count the number of tags at the first level in an xml parse tree.
- (const XmlParse * xml)                                                             // Xml parse
- {       const typeof(xml->tree.proto->root(&xml->tree)) root = xml->tree.proto->root(&xml->tree);                                                // Root node
+ (const XmlParse * xml)                                                           // Xml parse
+ {       const typeof(xml->tree.proto->root(&xml->tree)) root = xml->tree.proto->root(&xml->tree);                                               // Root node
   return root.proto->countChildren(&root) - 1;                                              // Count the level immediately below the root tag of which there is always just one
  }
 
 static  size_t countChildren_size_XmlTag                                          // Count the number of child tags directly under a parent tag
- (const XmlTag * parent)                                                            // Parent tag
+ (const XmlTag * parent)                                                          // Parent tag
  {return parent->node.proto->countChildren(&parent->node);
  }
 
 static  size_t count_size_Xml                                                     // Count the number of tags in an Xml parse tree
- (const XmlParse * x)                                                               // Xml parse tree
+ (const XmlParse * x)                                                             // Xml parse tree
  {return x->tree.proto->count(&x->tree);
  }
 
 static  size_t count_size_XmlTag                                                  // Count the number of tags under the specified tag in an Xml parse tree
- (const XmlTag * t)                                                                 // Parent tag
+ (const XmlTag * t)                                                               // Parent tag
  {return t->node.proto->count(&t->node);
  }
 
 //D1 Edit                                                                       // Change the structure of an Xml parse tree.
 
 static void changeName_XmlTag                                                     // Change the name of the specified tag.
- (const XmlTag * Tag,                                                       // Tag
+ (const XmlTag * Tag,                                                             // Tag
   const char * const newName)                                                   // New name                                                                               //vconst XmlTag t)                                                                 // Tag
  {const typeof(*Tag) tag = *Tag;
   const typeof(tag.proto->tagName(&tag)) oldName = tag.proto->tagName(&tag);                                                      // Old name
@@ -580,27 +580,27 @@ static void changeName_XmlTag                                                   
  }
 
 static void insertChar__XmlTag_char_size                                          // Insert the specified character into the string of a tag at the specified position.
- (XmlTag  * tag,                                                              // XmlTag
+ (XmlTag  * tag,                                                                  // XmlTag
   const char  ins,                                                              // Character to insert
   size_t      pos)                                                              // Position in key. 0 prepends the char, while >= length appends the char.
  {tag->node.proto->insertChar(&tag->node, ins, pos);
  }
 
 static void replaceChar__XmlTag_char_size                                         // Replace the character at the specified position in the key string of a tag with the specified character.
- (const XmlTag  * tag,                                                              // XmlTag
+ (const XmlTag  * tag,                                                            // XmlTag
   const char  repl,                                                             // Replacement character
   size_t      pos)                                                              // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
  {tag->node.proto->replaceChar(&tag->node, repl, pos);
  }
 
 static void swapChars__XmlTag_size                                                // Delete the character at the specified position in the string of a tag.
- (const XmlTag  * tag,                                                              // XmlTag
+ (const XmlTag  * tag,                                                            // XmlTag
   size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
  {tag->node.proto->swapChars(&tag->node, pos);
  }
 
 static void deleteChar__XmlTag_size                                               // Delete the character at the specified position in the string of a tag.
- (const XmlTag  * tag,                                                              // XmlTag
+ (const XmlTag  * tag,                                                            // XmlTag
   size_t      pos)                                                              // Position in key. 0 deletes the first character.  No deletion occurs if the requested character is beyond the end of the key string
  {tag->node.proto->deleteChar(&tag->node, pos);
  }
@@ -619,14 +619,14 @@ static XmlTag wrap_XmlTag_string                                                
 
 static XmlTag unwrap_XmlTag                                                         // Unwrap the specified tag.
  (const XmlTag  *      tag)                                                       // Tag
- {if (!tag->proto->isRoot(tag)) tag->node.proto->unwrap(&tag->node);                                         // Cannot unwrap the root tag
+ {if (!tag->proto->isRoot(tag)) tag->node.proto->unwrap(&tag->node);                                        // Cannot unwrap the root tag
   return *tag;
  }
 
 //D1 Print                                                                      // Print an Xml parse tree starting at the specified tag.
 
 static StringBuffer prettyPrint_stringBuffer_XmlTag                               // Pretty print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
- (const XmlTag * tag)                                                               // Starting tag
+ (const XmlTag * tag)                                                             // Starting tag
  {typeof(makeStringBuffer()) p = makeStringBuffer();
 
   void print(const XmlTag parent, const int depth)                                // Print the specified parent and its children
@@ -665,20 +665,20 @@ static StringBuffer prettyPrint_stringBuffer_XmlTag                             
    }
 
   print(*tag, 0);
-  p.proto->addNewLine(&p);                                                             // Terminating new line
+  p.proto->addNewLine(&p);                                                               // Terminating new line
   p.proto->join(&p);
   return p;
  } // prettyPrint
 
 static StringBuffer prettyPrint_stringBuffer_Xml                                  // Pretty print the Xml parse tree with additional spacing between tags to make the tree easier to read.
- (const XmlParse * xml)                                                             // Xml parse tree
+ (const XmlParse * xml)                                                           // Xml parse tree
  {    const typeof(xml->proto->root(xml)) root = xml->proto->root(xml);
   const typeof(root.proto->first(&root)) f = root.proto->first(&root);
   return f.proto->prettyPrint(&f);
  } // prettyPrint
 
 static StringBuffer print_stringBuffer_XmlTag                                     // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
- (const XmlTag * tag)                                                               // Starting tag
+ (const XmlTag * tag)                                                             // Starting tag
  {const StringBuffer p = makeStringBuffer();
 
   void print(const XmlTag parent, const int depth)                                // Print the specified parent and its children
@@ -714,7 +714,7 @@ static StringBuffer print_stringBuffer_XmlTag                                   
  }
 
 static StringBuffer print_stringBuffer_Xml                                        // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
- (const XmlParse * xml)                                                             // Xml parse tree
+ (const XmlParse * xml)                                                           // Xml parse tree
  {    const typeof(xml->proto->root(xml)) root = xml->proto->root(xml);
   const typeof(root.proto->first(&root)) f = root.proto->first(&root);
   return f.proto->print(&f);
@@ -767,7 +767,7 @@ static void printAssert_Xml_string                                              
  }
 
 static void dump_Xml                                                              //P Print the Xml parse tree starting to stderr
- (const XmlParse * x)                                                               // Xml
+ (const XmlParse * x)                                                             // Xml
  {typeof(x->proto->prettyPrint(x)) t = x->proto->prettyPrint(x);
   t.proto->join(&t);
   t.proto->dump(&t);
@@ -775,7 +775,7 @@ static void dump_Xml                                                            
  }
 
 static void dump_XmlTag                                                           //P Dump the specified tag
- (const XmlTag * Tag)                                                               // Xml
+ (const XmlTag * Tag)                                                             // Xml
  {const typeof(*Tag) tag = *Tag;
   makeLocalCopyOfXmlTagString(t, l, tag);
   say("%s\n", t);
