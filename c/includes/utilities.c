@@ -109,7 +109,7 @@ void execSystemCommand                                                          
   char *c;
   vasprintf(&c, format, arg);
   va_end(arg);
-  system(c);                                                                    // Execute b2sum to calculate digest with specified width
+  system(c);
   free  (c);
  }
 
