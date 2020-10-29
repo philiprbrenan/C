@@ -930,7 +930,7 @@ void test2()                                                                    
 "   </section>\n"
 "  </conbody>\n"
 "</concept>\n"
-   "/home/phil/c/z/xml/samples/foreword.dita";
+;
 
   const typeof(makeXmlParseFromString(string, strlen(string), 0)) x = makeXmlParseFromString(string, strlen(string), 0);
 
