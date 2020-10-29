@@ -63,8 +63,12 @@ if (exists $$keywords{test})                                                    
  {clearFolder($includes, 20);
   for my $f(@cz)
    {my $c = fpe($dir, qw(z), $f, $f, q(c));
-    lll $c;
-    say STDERR qx(makeWithPerl --c  --run "$c");
+    lll $f;
+    my $r = qx(makeWithPerl --c  --run "$c" 2>&1);
+    if ($r !~ m(SUCCESS:))
+     {say STDERR $r;
+      exit;
+     }
    }
  }
 
