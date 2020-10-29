@@ -1750,25 +1750,7 @@ void test17()                                                                   
   a ▷ free;
  }
 
-void test18()                                                                   //Tat //Tindex //Tinvalid //TkeyEqualsString
- {s ◁ make$(); s ▷ fromLetters("ab(cde)fg");
-
-  a ◁ s ▷ findFirst("a"); ✓ a ▷ index == 1;  ✓ a ▷ equals(s ▷ at(1));
-  b ◁ s ▷ findFirst("b"); ✓ b ▷ index == 2;  ✓ b ▷ equals(s ▷ at(2));
-
-  c ◁ s ▷ findFirst("c"); ✓ c ▷ index == 1;  ✓ c ▷ equals(b ▷ at(1));
-  d ◁ s ▷ findFirst("d");
-  ✓ d ▷ index == 2;
-  ✓ d ▷ equals(b ▷ at(2));
-  ✓ a ▷ keyEqualsString("a");
-
-  z ◁ s ▷ at(20); ✓ z ▷ invalid;
-  y ◁ b ▷ at(20); ✓ y ▷ invalid;
-
-  s ▷ free;
- }
-
-void test19()                                                                   //TpreOrderPosition //TequalsPosition
+void test18()                                                                   //TpreOrderPosition //TequalsPosition
  {z ◁ make$();
 
   a  ◁ z ▷ nodez("a");  a ▷ putTreeLast;
@@ -1790,13 +1772,30 @@ void test19()                                                                   
   z ▷ free;
  }
 
+void test19()                                                                   //Tat //Tindex //Tinvalid //TkeyEqualsString
+ {  s ◁ make$(); s ▷ fromLetters("ab(cde)fg");
+
+    a ◁ s ▷ findFirst("a"); ✓ a ▷ index == 1;  ✓ a ▷ equals(s ▷ at(1));
+    b ◁ s ▷ findFirst("b"); ✓ b ▷ index == 2;  ✓ b ▷ equals(s ▷ at(2));
+
+    c ◁ s ▷ findFirst("c"); ✓ c ▷ index == 1;  ✓ c ▷ equals(b ▷ at(1));
+    d ◁ s ▷ findFirst("d");
+  ✓ d ▷ index == 2;
+  ✓ d ▷ equals(b ▷ at(2));
+  ✓ a ▷ keyEqualsString("a");
+
+    z ◁ s ▷ at(20); ✓ z ▷ invalid;
+    y ◁ b ▷ at(20); ✓ y ▷ invalid;
+
+    s ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
- {const int repetitions = 1;                                                    // Number of times to test
-  void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
+ {void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
                            test15, test16, test17, test18, test19, 0};
-  run_tests("$", repetitions, tests);
+  run_tests("$", 1, tests);
 
   return 0;
  }
