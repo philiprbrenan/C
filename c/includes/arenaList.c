@@ -1803,25 +1803,7 @@ void test17()                                                                   
   a.proto->free(&a);
  }
 
-void test18()                                                                   //Tat //Tindex //Tinvalid //TkeyEqualsString
- {const typeof(makeArenaList()) s = makeArenaList(); s.proto->fromLetters(&s, "ab(cde)fg");
-
-  const typeof(s.proto->findFirst(&s, "a")) a = s.proto->findFirst(&s, "a"); assert( a.proto->index(&a) == 1);  assert( a.proto->equals(&a, s.proto->at(&s, 1)));
-  const typeof(s.proto->findFirst(&s, "b")) b = s.proto->findFirst(&s, "b"); assert( b.proto->index(&b) == 2);  assert( b.proto->equals(&b, s.proto->at(&s, 2)));
-
-  const typeof(s.proto->findFirst(&s, "c")) c = s.proto->findFirst(&s, "c"); assert( c.proto->index(&c) == 1);  assert( c.proto->equals(&c, b.proto->at(&b, 1)));
-  const typeof(s.proto->findFirst(&s, "d")) d = s.proto->findFirst(&s, "d");
-  assert( d.proto->index(&d) == 2);
-  assert( d.proto->equals(&d, b.proto->at(&b, 2)));
-  assert( a.proto->keyEqualsString(&a, "a"));
-
-  const typeof(s.proto->at(&s, 20)) z = s.proto->at(&s, 20); assert( z.proto->invalid(&z));
-  const typeof(b.proto->at(&b, 20)) y = b.proto->at(&b, 20); assert( y.proto->invalid(&y));
-
-  s.proto->free(&s);
- }
-
-void test19()                                                                   //TpreOrderPosition //TequalsPosition
+void test18()                                                                   //TpreOrderPosition //TequalsPosition
  {const typeof(makeArenaList()) z = makeArenaList();
 
   const typeof(z.proto->nodez(&z, "a")) a = z.proto->nodez(&z, "a");  a.proto->putTreeLast(&a);
@@ -1843,13 +1825,30 @@ void test19()                                                                   
   z.proto->free(&z);
  }
 
+void test19()                                                                   //Tat //Tindex //Tinvalid //TkeyEqualsString
+ {  const typeof(makeArenaList()) s = makeArenaList(); s.proto->fromLetters(&s, "ab(cde)fg");
+
+    const typeof(s.proto->findFirst(&s, "a")) a = s.proto->findFirst(&s, "a"); assert( a.proto->index(&a) == 1);  assert( a.proto->equals(&a, s.proto->at(&s, 1)));
+    const typeof(s.proto->findFirst(&s, "b")) b = s.proto->findFirst(&s, "b"); assert( b.proto->index(&b) == 2);  assert( b.proto->equals(&b, s.proto->at(&s, 2)));
+
+    const typeof(s.proto->findFirst(&s, "c")) c = s.proto->findFirst(&s, "c"); assert( c.proto->index(&c) == 1);  assert( c.proto->equals(&c, b.proto->at(&b, 1)));
+    const typeof(s.proto->findFirst(&s, "d")) d = s.proto->findFirst(&s, "d");
+  assert( d.proto->index(&d) == 2);
+  assert( d.proto->equals(&d, b.proto->at(&b, 2)));
+  assert( a.proto->keyEqualsString(&a, "a"));
+
+    const typeof(s.proto->at(&s, 20)) z = s.proto->at(&s, 20); assert( z.proto->invalid(&z));
+    const typeof(b.proto->at(&b, 20)) y = b.proto->at(&b, 20); assert( y.proto->invalid(&y));
+
+    s.proto->free(&s);
+ }
+
 int main(void)                                                                  // Run tests
- {const int repetitions = 1;                                                    // Number of times to test
-  void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
+ {void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
                            test15, test16, test17, test18, test19, 0};
-  run_tests("ArenaList", repetitions, tests);
+  run_tests("ArenaList", 1, tests);
 
   return 0;
  }
