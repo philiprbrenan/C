@@ -234,7 +234,7 @@ static  RectanglePair left_RectanglePair_Rectangle_double                       
   const double d)                                                               // Distance
  {const typeof(r->proto->width(r)) w = r->proto->width(r); const typeof(r->proto->height(r)) h = r->proto->height(r);
   if (d <= w)
-   {const typeof(makeRectangleWH(r->x, r->y, d, h)) a = makeRectangleWH(r->x, r->y, d, h);
+   {const typeof(makeRectangleWH(r->x,   r->y,     d, h)) a = makeRectangleWH(r->x,   r->y,     d, h);
     const typeof(makeRectangleWH(r->x+d, r->y, w - d, h)) b = makeRectangleWH(r->x+d, r->y, w - d, h);
     return newRectanglePair(({struct RectanglePair t = {source: *r, a: a, b: b, d: d, valid: 1, proto: &ProtoTypes_RectanglePair}; t;}));                   // Valid split
    }
@@ -270,8 +270,8 @@ static  RectanglePair up_RectanglePair_Rectangle_double                         
   const double d)                                                               // Distance
  {const typeof(r->proto->width(r)) w = r->proto->width(r); const typeof(r->proto->height(r)) h = r->proto->height(r);
   if (d <= w)
-   {const typeof(makeRectangleWH(r->x, r->y,     w, h-d)) a = makeRectangleWH(r->x, r->y,     w, h-d);
-    const typeof(makeRectangleWH(r->x, r->y+h-d, w, d)) b = makeRectangleWH(r->x, r->y+h-d, w, d);
+   {const typeof(makeRectangleWH(r->x, r->y,     w, h - d)) a = makeRectangleWH(r->x, r->y,     w, h - d);
+    const typeof(makeRectangleWH(r->x, r->y+h-d, w,     d)) b = makeRectangleWH(r->x, r->y+h-d, w,     d);
     return newRectanglePair(({struct RectanglePair t = {source: *r, a: a, b: b, d: d, valid: 1, proto: &ProtoTypes_RectanglePair}; t;}));                   // Valid split
    }
   return   newRectanglePair(({struct RectanglePair t = {source: *r,             d: d, valid: 0, proto: &ProtoTypes_RectanglePair}; t;}));                   // Invalid split
