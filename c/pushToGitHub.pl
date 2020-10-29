@@ -29,6 +29,8 @@ my $includes = fpd($dir, q(includes));                                          
 my $cpan     = q(/home/phil/perl/cpan/PreprocessOps/);                          # Associated CPAN module
 my $cpanRepo = containingFolderName(fpf($cpan, q(aaa)));                        # GitHub repo is the last component of the folder containing the CPAN module
 
+my ($positional, $keywords) = parseCommandLineArguments {@_} [@ARGV], [qw(clean test)];
+
 my @cz       =  grep {!/\A#/} split /\s+/, <<END;                               # C files in /z/ to upload and run
 utilities
 arenaList
@@ -42,7 +44,7 @@ cairoText
 mimagem
 END
 
-if (1)                                                                          # Clean up github
+if (exists $$keywords{clean})                                                   # Clean up github
  {my $g = GitHub::Crud::new(userid => $user, repository => $repo);
   my @files = $g->list;
   for my $f(@files)
@@ -54,7 +56,7 @@ if (1)                                                                          
    }
  }
 
-if (1)                                                                          # Test all C files
+if (exists $$keywords{test})                                                    # Test all C files
  {clearFolder($includes, 20);
   for my $f(@cz)
    {my $c = fpe($dir, qw(z), $f, $f, q(c));
