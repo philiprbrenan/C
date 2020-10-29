@@ -85,7 +85,7 @@ static ArenaTreeFound find_ArenaTreeFound_ArenaTreeFound_ArenaTreeNode_string
  (ArenaTreeFound    * found,
   const ArenaTreeNode root);
 static ArenaTreeNode locate_ArenaTreeNode_string
- (const ArenaTreeNode   *     node,
+ (const ArenaTreeNode *       node,
   const char  * const key,
   const size_t        length);
 static ArenaTreeNode locate_ArenaTree_string
@@ -95,9 +95,9 @@ static ArenaTreeNode locate_ArenaTree_string
 static int check_ArenaTree
  (const ArenaTree * tree);
 static  ArenaTreeFound find_ArenaTreeFound_ArenaTreeNode_string
- (const ArenaTreeNode  * Node,
-  char * const key,
-  const size_t length);
+ (const ArenaTreeNode * Node,
+  char * const  key,
+  const size_t  length);
 static  ArenaTreeFound find_ArenaTreeFound_ArenaTree_string
  (ArenaTree    *       tree,
   char * const key,
@@ -124,7 +124,7 @@ static StringBuffer print_ArenaTreeNode
 static StringBuffer print_ArenaTree
  (const ArenaTree * tree);
 static void dump_ArenaTree
- (const ArenaTree tree);
+ (const  ArenaTree tree);
 struct ProtoTypes_ArenaTree {
   ArenaTreeNode    (*add)(                                                      // Add a new key if not already present in the specified base ArenaTree.
     ArenaTree     * tree,                                                       // The ArenaTree to search
@@ -138,7 +138,7 @@ struct ProtoTypes_ArenaTree {
   size_t  (*count)(                                                             // Count the number of nodes in a ArenaTree
     const ArenaTree * tree);                                                    // ArenaTree
   void  (*dump)(                                                                // Print a ArenaTree on stderr
-    const ArenaTree tree);                                                      // ArenaTree
+    const  ArenaTree tree);                                                     // ArenaTree
   ArenaTreeFound  (*find)(                                                      // Find a key if it exists within the base ArenaTree.
     ArenaTree    * tree,                                                        // The base ArenaTree to search
     char * const key,                                                           // The key to find
@@ -221,7 +221,7 @@ struct ProtoTypes_ArenaTreeNode {
     const ArenaTreeNode * a,                                                    // First offset
     const ArenaTreeNode b);                                                     // Second offset
   ArenaTreeFound  (*find)(                                                      // Find a key if it exists within the ArenaTree owned by the specified node.
-    const ArenaTreeNode  * Node,                                                // The node owning the ArenaTree to search
+    const ArenaTreeNode * Node,                                                 // The node owning the ArenaTree to search
     char * const key,                                                           // The key to find
     const size_t length);                                                       // Length of the key to find
   size_t  (*height)(                                                            // Height of a sub ArenaTree starting at the specified node
@@ -239,7 +239,7 @@ struct ProtoTypes_ArenaTreeNode {
   size_t    (*length)(                                                          // Get the length of the key associated with a node
     const ArenaTreeNode * node);                                                // ArenaTreeNode
   ArenaTreeNode  (*locate)(                                                     // Locate the node with the specified key if it exists within the ArenaTree owned by the specified node.
-    const ArenaTreeNode   * node,                                               // Node
+    const ArenaTreeNode * node,                                                 // Node
     const char  * const key,                                                    // Key to find
     const size_t length);                                                       // Length of the key to find
   ArenaTreeNode  (*ownedTreeRoot)(                                              // Root of ArenaTree owned by this node if there is  one, else the returned node has an offset of zero.
