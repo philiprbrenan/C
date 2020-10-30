@@ -780,6 +780,55 @@ static void dump_XmlTag                                                         
   makeLocalCopyOfXmlTagString(t, l, tag);
   say("%s\n", t);
  }
+
+//D1 Samples                                                                    // Samples of Xml
+
+const char * XmlsampleDita1()                                                     // Dita
+ {return
+"<?xml version=\"1.0\"?>\n"
+"<!DOCTYPE concept PUBLIC \"-//OASIS//DTD DITA Concept//EN\" \"concept.dtd\">\n"
+"<!-- Created with XMetaL (http://www.xmetal.com) -->\n"
+"<concept id=\"concept_6FD9560EEEED4FB0A70086250EE15F88\">\n"
+"  <title>Foreword</title>\n"
+"  <shortdesc><?xm-replace_text Short Description?>\n"
+"  </shortdesc>\n"
+"  <conbody>\n"
+"   <p>DITA represents a fundamental shift in the approach to writing and\n"
+"    publishing, and to a certain extent, the carefully accumulated practice of\n"
+"    hundreds of years of publication projects has to be reviewed and redefined.\n"
+"   </p>\n"
+"   <section id=\"section_73DD7CCCB3734B7DB29E4D200702B61F\"\n"
+"    audience=\"contributor\">\n"
+"    <title>Rationale</title>\n"
+"    <lq reftitle=\"Deborah Pickett, Yahoo! DITA Users Group\"\n"
+"     href=\"http://tech.dir.groups.yahoo.com/group/dita-users/message/12656\"> I would\n"
+"      suggest that users who are interested in a particular feature get together and\n"
+"      define their own best practices for said feature. Define the markup that\n"
+"      authors should use, and define the processing expectations of that markup. If\n"
+"      this unofficial spec is reasonable, then vendors will find it in their\n"
+"      interests to support it rather than striking out on their own. (It's this kind\n"
+"      of distributed, grassroots power-to-the-users ideology that the DITA TC wants\n"
+"      to instill in the community.) I've found that vendors (both commercial and\n"
+"      non-commercial) are usually very willing to accommodate users' requirements,\n"
+"      once they know what those requirements are.\n"
+"    </lq>\n"
+"    <lq reftitle=\"Joe Gershon, OASIS DITA TC Mailing List\">The problem is\n"
+"      that the vast majority of new users are misusing DITA to a point that they are\n"
+"      often worse off than they were in Word or FrameMaker. Most companies choose not\n"
+"      to hire an expert to help them migrate to DITA, and they get what they pay for.\n"
+"      I'd like us as a TC (and moving forward via the Adoption SC) to put tutorials,\n"
+"      white papers, etc. in place to educate new users to help them to do the right\n"
+"      thing from the beginning. At the same time, we must develop tutorials, white\n"
+"      papers, and other guides that cover as many use cases and user groups as we're\n"
+"      aware of and address their needs, suggesting best practices and, where\n"
+"      relevant, providing unofficial packages of DTDs and supporting code (e.g.\n"
+"      DITA-OT plugins).\n"
+"    </lq>\n"
+"   </section>\n"
+"  </conbody>\n"
+"</concept>\n"
+;
+ }
 #endif
 
 //D1 Tests                                                                      // Tests
@@ -887,50 +936,7 @@ void test1()                                                                    
  } // test1
 
 void test2()                                                                    //Tprint
- {char * string =
-"<?xml version=\"1.0\"?>\n"
-"<!DOCTYPE concept PUBLIC \"-//OASIS//DTD DITA Concept//EN\" \"concept.dtd\">\n"
-"<!-- Created with XMetaL (http://www.xmetal.com) -->\n"
-"<concept id=\"concept_6FD9560EEEED4FB0A70086250EE15F88\">\n"
-"  <title>Foreword</title>\n"
-"  <shortdesc><?xm-replace_text Short Description?>\n"
-"  </shortdesc>\n"
-"  <conbody>\n"
-"   <p>DITA represents a fundamental shift in the approach to writing and\n"
-"    publishing, and to a certain extent, the carefully accumulated practice of\n"
-"    hundreds of years of publication projects has to be reviewed and redefined.\n"
-"   </p>\n"
-"   <section id=\"section_73DD7CCCB3734B7DB29E4D200702B61F\"\n"
-"    audience=\"contributor\">\n"
-"    <title>Rationale</title>\n"
-"    <lq reftitle=\"Deborah Pickett, Yahoo! DITA Users Group\"\n"
-"     href=\"http://tech.dir.groups.yahoo.com/group/dita-users/message/12656\"> I would\n"
-"      suggest that users who are interested in a particular feature get together and\n"
-"      define their own best practices for said feature. Define the markup that\n"
-"      authors should use, and define the processing expectations of that markup. If\n"
-"      this unofficial spec is reasonable, then vendors will find it in their\n"
-"      interests to support it rather than striking out on their own. (It's this kind\n"
-"      of distributed, grassroots power-to-the-users ideology that the DITA TC wants\n"
-"      to instill in the community.) I've found that vendors (both commercial and\n"
-"      non-commercial) are usually very willing to accommodate users' requirements,\n"
-"      once they know what those requirements are.\n"
-"    </lq>\n"
-"    <lq reftitle=\"Joe Gershon, OASIS DITA TC Mailing List\">The problem is\n"
-"      that the vast majority of new users are misusing DITA to a point that they are\n"
-"      often worse off than they were in Word or FrameMaker. Most companies choose not\n"
-"      to hire an expert to help them migrate to DITA, and they get what they pay for.\n"
-"      I'd like us as a TC (and moving forward via the Adoption SC) to put tutorials,\n"
-"      white papers, etc. in place to educate new users to help them to do the right\n"
-"      thing from the beginning. At the same time, we must develop tutorials, white\n"
-"      papers, and other guides that cover as many use cases and user groups as we're\n"
-"      aware of and address their needs, suggesting best practices and, where\n"
-"      relevant, providing unofficial packages of DTDs and supporting code (e.g.\n"
-"      DITA-OT plugins).\n"
-"    </lq>\n"
-"   </section>\n"
-"  </conbody>\n"
-"</concept>\n"
-;
+ {const typeof(XmlsampleDita1()) string = XmlsampleDita1();
 
   const typeof(makeXmlParseFromString(string, strlen(string), 0)) x = makeXmlParseFromString(string, strlen(string), 0);
 
