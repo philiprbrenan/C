@@ -36,6 +36,7 @@ my ($positional, $keywords) =                                                   
 
 my @cz       =  grep {!/\A#/} split /\s+/, <<END;                               # C files in /z/ to upload and run
 utilities
+arenaArray
 arenaList
 stringBuffer
 arenaTree
