@@ -18,9 +18,9 @@
 
 typedef struct $EditPosition                                                    // A position in a $ edit buffer
  {const struct ProtoTypes_$EditPosition *proto;                                 // Prototypes for methods
-  size_t         character;                                                     // The number of the character at the position
-  size_t         tag;                                                           // The tag containing at the position
-  size_t         positionInTag;                                                 // The character offset in the tag at the position
+  size_t         character;                                                     // The number of the character
+  size_t         tag;                                                           // The number of the tag
+  size_t         positionInTag;                                                 // The character offset in the tag
   size_t         editLine;                                                      // The edit line containing the position
   size_t         x;                                                             // The x coordinate of the start of the position
   size_t         y;                                                             // The y coordinate of the start of the position
@@ -45,7 +45,7 @@ typedef struct $EditBuffer                                                      
 
 #include <$$_prototypes.h>
 
-static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       // Draw the edit buffer and return the location of the pointer and cursor
+static void drawEditBuffer_$EditBuffer_$EditBuffer                              // Draw the edit buffer and return the location of the pointer and cursor
  ($EditBuffer * editBuffer)                                                     // $ edit buffer
  {i    ◀ editBuffer->cti;                                                       // Image description
   cr   ◁ i->cr;                                                                 // Cairo context to draw in
@@ -290,8 +290,6 @@ static $EditBuffer drawEditBuffer_$EditBuffer_$EditBuffer                       
     b ◁ editBuffer->block;
     i ▶ rectangleWH(b.x, b.y, b ▷ width, b ▷ height);
    }
-
-  return *editBuffer;                                                           // Return the updated edit buffer
  } // drawEditBuffer
 
 static void maintainCursorPosition_$EditBuffer_$EditBuffer                      // Set the scroll amount of the altered edit buffer so that the position on the screen of the line containing the cursor is as close as possible to the position in the base edit buffer when the altered buffer is drawn in the place of the base buffer despite the altered buffer having been zoomed or having its width changed relative to the base buffer.  Both buffers should have been drawn before this operations (with measureOnly=1 if no drawing is required) so that the current position of the line containing the cursor is known in both buffers at the start of this operation. After this operation the altered buffer can be drawn in the area originally occupied by the base buffer while minimizing the amount the user must move their line of sight to track the cursor position.
@@ -347,38 +345,38 @@ void test1()                                                                    
 
     ww ◁ page ▷ right(0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
     we ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a);
-    wr ◀ we ▷ drawEditBuffer;
-         i  ▶ saveAsPng("$1_wide.png", "a"); i ▶ clearWhite;
+    we ▷ drawEditBuffer;
+    i  ▶ saveAsPng("$1_wide.png", "a"); i ▶ clearWhite;
 
-    wn ◁ X.tree ▷ offset(wr.pointer.tag);                                       // Pointer location in wide version
+    wn ◁ X.tree ▷ offset(we.pointer.tag);                                       // Pointer location in wide version
     ✓ wn ▷ equalsString("GGG");
-    ✓ wr.pointer.positionInTag ==  2;
-    ✓ wr.pointer.character     == 81;
-    ✓ wr.pointer.editLine      == 12;
+    ✓ we.pointer.positionInTag ==  2;
+    ✓ we.pointer.character     == 81;
+    ✓ we.pointer.editLine      == 12;
 
     nw ◁ page ▷ left(i->width * 4 / 8);                                         // Measure in narrow mode to find position of cursor as set by pointer in previous image
-    ne ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: wr.pointer, zone: nw.a);
-    nr ◀ ne ▷ drawEditBuffer;
+    ne ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: we.pointer, zone: nw.a);
+    ne ▷ drawEditBuffer;
     i  ▶ saveAsPng("$1_narrow.png", "a"); i ▶ clearWhite;
 
-    nn ◁ X.tree ▷ offset(nr.cursor.tag);                                        // Cursor location in narrow mode
+    nn ◁ X.tree ▷ offset(ne.cursor.tag);                                        // Cursor location in narrow mode
     ✓ nn ▷ equalsString("GGG");
-    ✓ nr.cursor.positionInTag == wr.pointer.positionInTag;
-    ✓ nr.cursor.character     == wr.pointer.character;
-    ✓ nr.cursor.editLine      == 14;
+    ✓ ne.cursor.positionInTag == we.pointer.positionInTag;
+    ✓ ne.cursor.character     == we.pointer.character;
+    ✓ ne.cursor.editLine      == 14;
 
-    wr.cursor = wr.pointer;                                                     // Simulate a click - the cursor position is set to match the pointer position
-    wr ▷ maintainCursorPosition(&nr);                                           // Position the narrow display so that GGG is in much the same screen position as the wide display
+    we.cursor = we.pointer;                                                     // Simulate a click - the cursor position is set to match the pointer position
+    we ▷ maintainCursorPosition(&ne);                                           // Position the narrow display so that GGG is in much the same screen position as the wide display
 
-    nr.measureOnly = 0;                                                         // Request draw of the edit buffer
-    nR ◁ nr ▷ drawEditBuffer;                                                   // Draw scrolled edit buffer
+    ne.measureOnly = 0;                                                         // Request draw of the edit buffer
+    ne ▷ drawEditBuffer;                                                        // Draw scrolled edit buffer
 //  i  ▷ save("$1_narrowScrolled.png", "8d73");
 
-    nN ◁ X.tree ▷ offset(nR.cursor.tag);                                        // Cursor location in narrow mode
+    nN ◁ X.tree ▷ offset(ne.cursor.tag);                                        // Cursor location in narrow mode
     ✓ nN ▷ equalsString("GGG");
-    ✓ nR.cursor.positionInTag == wr.pointer.positionInTag;
-    ✓ nR.cursor.character     == wr.pointer.character;
-    ✓ nR.cursor.editLine      == nr.cursor.editLine;
+    ✓ ne.cursor.positionInTag == we.pointer.positionInTag;
+    ✓ ne.cursor.character     == we.pointer.character;
+    ✓ ne.cursor.editLine      == ne.cursor.editLine;
    }
 
   i ◀ makeCairoTextImage(draw, 2000, 2000, "$1.png", "a");                      // Create image containing some text and check its digest
