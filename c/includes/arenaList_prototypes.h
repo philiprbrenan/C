@@ -361,8 +361,8 @@ struct ProtoTypes_ArenaList {
     ArenaList target);                                                          // Target ArenaList
   size_t  (*used)(                                                              // Amount of space currently being used within the arena of a ArenaList.
     const ArenaList * list);                                                    // ArenaList
-  size_t  (*width)(                                                             // Get the width of the data area for a ArenaList
-    const ArenaList * list);                                                    // ArenaListNode
+  size_t  (*width)(                                                             // Get the width of the data area in a node for a ArenaList
+    const ArenaList * list);                                                    // ArenaList
   void  (*write)(                                                               // Write a ArenaList to a named file or abort
     const ArenaList    * list,                                                  // ArenaList
     const char * const file);                                                   // File
