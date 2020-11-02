@@ -49,6 +49,11 @@ jobs:
       run: |
         (cd /home/runner/work/C/C/c/z/utilities/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/utilities//utilities.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
 
+    - name: Run arenaArray
+      if: always()
+      run: |
+        (cd /home/runner/work/C/C/c/z/arenaArray/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/arenaArray//arenaArray.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
+
     - name: Run arenaList
       if: always()
       run: |
