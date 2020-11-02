@@ -51,7 +51,7 @@ typedef struct $Arena                                                           
  {size_t size;                                                                  // The total size of the arena used to hold data associated with the $.
   size_t used;                                                                  // The number of bytes currently used.
   size_t root;                                                                  // Offset to the root node
-  size_t width;                                                                 // Width of a fixed data area added to each node measured in bytes
+  size_t width;                                                                 // Width of a fixed data area, measured in bytes, added to each node
   void * data;                                                                  // The arena containing the data associated with the $
 #ifdef $Editable
   size_t freeSpace[8*sizeof(unsigned int)];                                     // Lists of freed nodes by exponent of power of two of node size.
@@ -70,7 +70,7 @@ typedef struct $Description                                                     
 
 typedef struct $Position                                                        // The position of a child in nodes and bytes in the $
  {const size_t node;                                                            // Node count
-  const size_t byte;                                                            // Byte count
+  const size_t byte;                                                            // Byte count from start of $
   const size_t depth;                                                           // Depth of the node
   const struct ProtoTypes_$Position *proto;                                     // Methods associated with a position
  } $Position;
@@ -176,7 +176,7 @@ static char * check_string_$                                                    
 static void * pointer__$_size                                                   //PV Return a temporary pointer to data in the arena of the specified $
  (const $   *  list,                                                            // $
   const size_t offset)                                                          // Offset
- {if (offset > list->arena->used)                                               // Check that the offset is valid
+ {if (offset >= list->arena->used)                                              // Check that the offset is valid
    {printStackBackTraceAndExit(1, "Accessing area outside arena");
    }
   return (void *)(list->arena->data + offset);                                  // Convert a non zero delta that is within the arena to a valid pointer
@@ -187,8 +187,8 @@ static $Content * content__$Node                                                
  {return ($Content *)pointer__$_size(&node->list, node->offset);
  }
 
-static size_t width_size__$                                                     // Get the width of the data area for a $
- (const $ * list)                                                               // $Node
+static size_t width_size__$                                                     // Get the width of the data area in a node for a $
+ (const $ * list)                                                               // $
  {return list->arena->width;
  }
 
@@ -285,12 +285,12 @@ static  $Node  allocate_$Node__$_size                                           
   if (f)                                                                        // Free chain has an element
    {$Content * c = list ▶ pointer(f);                                           // Content of first free node
     list->arena->freeSpace[e] = c->next;                                        // Remove node from free chain
-    return list ▶ offset(f);                                            // Return node - it was cleared when it was freed
+    return list ▶ offset(f);                                                    // Return node - it was cleared when it was freed
    }
 #endif
 
  if (list->arena->used + size < list->arena->size)                              // Allocate within existing arena
-   {n ◁ list ▶ offset(list->arena->used);                               // Current offset to open memory
+   {n ◁ list ▶ offset(list->arena->used);                                       // Current offset to open memory
     list->arena->used += size;                                                  // Allocate
 #ifdef $Editable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
     n ▷ content->size = exponentOfNextPowerOfTwo(size);                         // Node size
