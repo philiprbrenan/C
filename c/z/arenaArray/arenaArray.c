@@ -51,51 +51,51 @@ static $ make$                                                                  
 //D1 Pointers and Offsets                                                       // Operations on pointers and offsets
 
 static void * pointer11__$_size                                                 //PV Return a temporary pointer to the indexed item
- (const $   *  array,                                                            // $
+ (const $   *  array,                                                           // $
   const size_t index)                                                           // Index of item
- {o ◁ index * array ▶ width;                                                     // Offset of index
-  if (o >= array->arena->used)                                                   // Check that the offset is valid
+ {o ◁ index * array ▶ width;                                                    // Offset of index
+  if (o >= array->arena->used)                                                  // Check that the offset is valid
    {printStackBackTraceAndExit(1, "Accessing area outside arena");
    }
-  return (void *)(array->arena->data + o);                                       // Convert an offset in the arena to a temporary pointer
+  return (void *)(array->arena->data + o);                                      // Convert an offset in the arena to a temporary pointer
  }
 
 static size_t width_size__$                                                     // Get the width of an element in the $
- (const $ * array)                                                               // $Node
+ (const $ * array)                                                              // $Node
  {return array->arena->width;
  }
 
 //D1 Allocation                                                                 // Allocating memory in the $
 
 static  void * allocate__$                                                      //VP Allocate the next element of the $
- (const $    * array)                                                            // $ in which to allocate
- {width ◁ array ▶ width;                                                         // Amount of memory required for an element
-  if (array->arena->used + width < array->arena->size)                            // Allocate within existing arena
-   {a ◁ array->arena->data + array->arena->used;                                  // Existing Allocate
-    array->arena->used += width;                                                 // Allocate
+ (const $    * array)                                                           // $ in which to allocate
+ {width ◁ array ▶ width;                                                        // Amount of memory required for an element
+  if (array->arena->used + width < array->arena->size)                          // Allocate within existing arena
+   {a ◁ array->arena->data + array->arena->used;                                // Existing Allocate
+    array->arena->used += width;                                                // Allocate
     return a;                                                                   // Return allocation
    }
   else                                                                          // Reallocate arena
-   {S ◁ nextPowerOfTwo(array->arena->size + width);                              // Round up memory required
-    m ◁ realloc(array->arena->data, S);                                          // Reallocate arena - the old one will be copied into it if it is moved.
+   {S ◁ nextPowerOfTwo(array->arena->size + width);                             // Round up memory required
+    m ◁ realloc(array->arena->data, S);                                         // Reallocate arena - the old one will be copied into it if it is moved.
     if (m)                                                                      // Retry the memory allocation
-     {array->arena->data = m;                                                    // New arena
-      array->arena->size = S;                                                    // Arena size
-      u ◁ array->arena->used;                                                    // Length of free space
-      memset(array->arena->data + u, 0, S - u);                                  // Clear free space
-      return array ▶ allocate;                                                   // Allocate within arena
+     {array->arena->data = m;                                                   // New arena
+      array->arena->size = S;                                                   // Arena size
+      u ◁ array->arena->used;                                                   // Length of free space
+      memset(array->arena->data + u, 0, S - u);                                 // Clear free space
+      return array ▶ allocate;                                                  // Allocate within arena
      }
    }
   printStackBackTraceAndExit(2, "Requested arena too large\n");                 // The arena has become too large for the chosen size of offsets.
  }
 
 static size_t used_size__$                                                      // Amount of space currently being used within the arena of a $.
- (const $ * array)                                                               // $
+ (const $ * array)                                                              // $
  {return array->arena->used;
  }
 
 static void free__$                                                             // Free an entire $.
- (const $ * array)                                                               // $ to free
+ (const $ * array)                                                              // $ to free
  {a ◁ array->arena;
   if  (a->data) free(a->data);
   free(a);
@@ -104,30 +104,30 @@ static void free__$                                                             
 //D1 Statistics                                                                 // Numbers describing the $
 
 static size_t count__$_pointer                                                  // Number of elements in the $
- (const $ * array)                                                               // $
+ (const $ * array)                                                              // $
  {return array->arena->used / array->arena->width;
  }
 
 //D1 Stack                                                                      // Stack operations on an $
 
 static void * top__$                                                            //V Address of the top most element
- (const $ * array)                                                               // $
- {w ◁ array ▶ width;                                                             // Width of elements in $
-  if (array->arena->used >= w)                                                   // $ has elements
+ (const $ * array)                                                              // $
+ {w ◁ array ▶ width;                                                            // Width of elements in $
+  if (array->arena->used >= w)                                                  // $ has elements
    {return array->arena->data + array->arena->used - w;
    }
   return 0;                                                                     // Empty $
  }
 
 static void * push__$_pointer                                                   //V Push an element on to the $ and return its address
- (const $ * array)                                                               // $
- {return array ▶ allocate;                                                       // Allocate space and return its address
+ (const $ * array)                                                              // $
+ {return array ▶ allocate;                                                      // Allocate space and return its address
  }
 
 static void * pop__$                                                            //V Pop and return the address of the top most element
- (const $ * array)                                                               // $
- {if (array ▶ count)                                                             // $ has elements
-   {w ◁ array ▶ width;                                                             // Width of elements in $
+ (const $ * array)                                                              // $
+ {if (array ▶ count)                                                            // $ has elements
+   {w ◁ array ▶ width;                                                          // Width of elements in $
     p ◁ array->arena->data + array->arena->used - w;
     array->arena->used -= w;
     return p;
@@ -138,13 +138,13 @@ static void * pop__$                                                            
 //D1 Traverse                                                                   // Traverse a $.
 
 static void * at__$_index                                                       //V The address of the element at the specified index counting from one, else 0 if the index is not held in the $
- (const $ * array,                                                               // $
+ (const $ * array,                                                              // $
   size_t    index)                                                              // Index
  {if (!index)                                                                   // Index is one based
    {printStackBackTrace("Index from one not zero\n");
    }
-  else if (index <= array ▶ count)                                               // Index in range
-   {return array->arena->data + (index - 1) * array ▶ width;                      // One based
+  else if (index <= array ▶ count)                                              // Index in range
+   {return array->arena->data + (index - 1) * array ▶ width;                    // One based
    }
   return 0;                                                                     // Index out of range
  }
@@ -154,7 +154,7 @@ static void * at__$_index                                                       
 //D1 Input and Output                                                           // Read and write a $ from/to a file
 
 static void write__$_string                                                     // Write a $ to a named file or abort
- (const $    *       array,                                                      // $
+ (const $    *       array,                                                     // $
   const char * const file)                                                      // File
  {    o ◁ open(file, O_CREAT| O_WRONLY, S_IRWXU);                               // Open for output creating if needed
   if (o < 0) printStackBackTrace("Cannot open file: %s for write\n", file);
@@ -167,7 +167,7 @@ static void write__$_string                                                     
    {printStackBackTrace("Cannot write $ header to file: %s\n", file);
    }
 
-  w ◁ write(o, array->arena->data, array->arena->used);                           // Write arena
+  w ◁ write(o, array->arena->data, array->arena->used);                         // Write arena
   if (w < 0 || array->arena->used != (size_t)w)
    {printStackBackTrace("Cannot write $ arena to file: %s\n", file);
    }
@@ -178,7 +178,7 @@ static void write__$_string                                                     
 $ read$                                                                         // Read a $ from a file
  (const char * const file)                                                      // File
  {$Arena * const arena = alloc(sizeof($Arena));                                 // Create arena
-  array ◁ new $(arena: arena);                                                   // Initialize $
+  array ◁ new $(arena: arena);                                                  // Initialize $
 
       i ◁ open(file, 0, O_RDONLY);                                              // Open for input
   if (i < 0) printStackBackTrace("Cannot open file: %s for read\n", file);
@@ -188,7 +188,7 @@ $ read$                                                                         
    {printStackBackTrace("Cannot read header from file: %s\n", file);
    }
 
-  array.arena->data = alloc(arena->size = arena->used = h.used);                 // Allocate arena
+  array.arena->data = alloc(arena->size = arena->used = h.used);                // Allocate arena
 
       r ◁ read(i, arena->data, arena->used);                                    // Read arena
   if (r < 0 || arena->used != (size_t)r)
