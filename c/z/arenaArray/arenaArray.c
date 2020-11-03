@@ -48,28 +48,11 @@ static $ make$                                                                  
   return t;
  }
 
-//D1 Pointers and Offsets                                                       // Operations on pointers and offsets
-
-static void * pointer11__$_size                                                 //PV Return a temporary pointer to the indexed item
- (const $   *  array,                                                           // $
-  const size_t index)                                                           // Index of item
- {o ◁ index * array ▶ width;                                                    // Offset of index
-  if (o >= array->arena->used)                                                  // Check that the offset is valid
-   {printStackBackTraceAndExit(1, "Accessing area outside arena");
-   }
-  return (void *)(array->arena->data + o);                                      // Convert an offset in the arena to a temporary pointer
- }
-
-static size_t width_size__$                                                     // Get the width of an element in the $
- (const $ * array)                                                              // $Node
- {return array->arena->width;
- }
-
 //D1 Allocation                                                                 // Allocating memory in the $
 
 static  void * allocate__$                                                      //VP Allocate the next element of the $
  (const $    * array)                                                           // $ in which to allocate
- {width ◁ array ▶ width;                                                        // Amount of memory required for an element
+ {width ◁ array->arena->width;                                                  // Amount of memory required for an element
   if (array->arena->used + width < array->arena->size)                          // Allocate within existing arena
    {a ◁ array->arena->data + array->arena->used;                                // Existing Allocate
     array->arena->used += width;                                                // Allocate
@@ -89,9 +72,19 @@ static  void * allocate__$                                                      
   printStackBackTraceAndExit(2, "Requested arena too large\n");                 // The arena has become too large for the chosen size of offsets.
  }
 
-static size_t used_size__$                                                      // Amount of space currently being used within the arena of a $.
+static int notEmpty_int__$                                                      // Whether the specified $ has an elements
  (const $ * array)                                                              // $
- {return array->arena->used;
+ {return !!array->arena->used;
+ }
+
+static int empty_int__$                                                         // Whether the specified $ is empty
+ (const $ * array)                                                              // $
+ {return  !array->arena->used;
+ }
+
+static size_t width_size__$                                                     // Get the width of an element in the $
+ (const $ * array)                                                              // $Node
+ {return array->arena->width;
  }
 
 static void free__$                                                             // Free an entire $.
@@ -112,9 +105,8 @@ static size_t count__$_pointer                                                  
 
 static void * top__$                                                            //V Address of the top most element
  (const $ * array)                                                              // $
- {w ◁ array ▶ width;                                                            // Width of elements in $
-  if (array->arena->used >= w)                                                  // $ has elements
-   {return array->arena->data + array->arena->used - w;
+ {if (array->arena->used)                                                       // $ has elements
+   {return array->arena->data + array->arena->used - array->arena->width;
    }
   return 0;                                                                     // Empty $
  }
@@ -127,7 +119,7 @@ static void * push__$_pointer                                                   
 static void * pop__$                                                            //V Pop and return the address of the top most element
  (const $ * array)                                                              // $
  {if (array ▶ count)                                                            // $ has elements
-   {w ◁ array ▶ width;                                                          // Width of elements in $
+   {w ◁ array->arena->width;                                                    // Width of elements in $
     p ◁ array->arena->data + array->arena->used - w;
     array->arena->used -= w;
     return p;
@@ -144,7 +136,7 @@ static void * at__$_index                                                       
    {printStackBackTrace("Index from one not zero\n");
    }
   else if (index <= array ▶ count)                                              // Index in range
-   {return array->arena->data + (index - 1) * array ▶ width;                    // One based
+   {return array->arena->data + (index - 1) * array->arena->width;              // One based
    }
   return 0;                                                                     // Index out of range
  }
@@ -161,7 +153,7 @@ static void write__$_string                                                     
 
   time_t current; time(&current);
   const $Description h =                                                        // Create $ header describing the $
-   {1, 1, 0, array ▶ used, array ▶ width, current};
+   {1, 1, 0, array->arena->used, array->arena->width, current};
 
   if (sizeof(h) != write(o, &h, sizeof(h)))                                     // Write header
    {printStackBackTrace("Cannot write $ header to file: %s\n", file);
@@ -204,11 +196,11 @@ $ read$                                                                         
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
 
-void test0()                                                                    //Tmake$ //Tcount //Tpush //Ttop //Tat //Tpop //Tfree
+void test0()                                                                    //Tmake$ //Tcount //Tpush //Ttop //Tat //Tpop //Tfree //Tempty //TnotEmpty //Twidth
  {a ◁ make$(sizeof(size_t));
 
-                ✓ a ▷ count == 0;
-  p ◁ a ▷ push; ✓ a ▷ count == 1; p ◧ 2ul; ✓ p ◧◧ 2ul;
+  ✓ a ▷ empty;  ✓ a ▷ count == 0; ✓ a ▷ width == sizeof(size_t);
+  p ◁ a ▷ push; ✓ a ▷ count == 1; p ◧ 2ul; ✓ p ◧◧ 2ul; ✓ a ▷ notEmpty;
   q ◁ a ▷ push; ✓ a ▷ count == 2; q ◧ 4ul; ✓ p ◧◧ 2ul; ✓ q ◧◧ 4ul;
   t ◁ a ▷ top;  ✓ a ▷ count == 2; ✓ q == t;
 
