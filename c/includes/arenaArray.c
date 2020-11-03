@@ -49,54 +49,47 @@ static ArenaArray makeArenaArray                                                
   return t;
  }
 
-//D1 Pointers and Offsets                                                       // Operations on pointers and offsets
-
-static void * pointer11__ArenaArray_size                                                 //PV Return a temporary pointer to the indexed item
- (const ArenaArray   *  array,                                                            // ArenaArray
-  const size_t index)                                                           // Index of item
- {const typeof(index * array->proto->width(array)) o = index * array->proto->width(array);                                                     // Offset of index
-  if (o >= array->arena->used)                                                   // Check that the offset is valid
-   {printStackBackTraceAndExit(1, "Accessing area outside arena");
-   }
-  return (void *)(array->arena->data + o);                                       // Convert an offset in the arena to a temporary pointer
- }
-
-static size_t width_size__ArenaArray                                                     // Get the width of an element in the ArenaArray
- (const ArenaArray * array)                                                               // ArenaArrayNode
- {return array->arena->width;
- }
-
 //D1 Allocation                                                                 // Allocating memory in the ArenaArray
 
 static  void * allocate__ArenaArray                                                      //VP Allocate the next element of the ArenaArray
- (const ArenaArray    * array)                                                            // ArenaArray in which to allocate
- {const typeof(array->proto->width(array)) width = array->proto->width(array);                                                         // Amount of memory required for an element
-  if (array->arena->used + width < array->arena->size)                            // Allocate within existing arena
-   {const typeof(array->arena->data + array->arena->used) a = array->arena->data + array->arena->used;                                  // Existing Allocate
-    array->arena->used += width;                                                 // Allocate
+ (const ArenaArray    * array)                                                           // ArenaArray in which to allocate
+ {const typeof(array->arena->width) width = array->arena->width;                                                  // Amount of memory required for an element
+  if (array->arena->used + width < array->arena->size)                          // Allocate within existing arena
+   {const typeof(array->arena->data + array->arena->used) a = array->arena->data + array->arena->used;                                // Existing Allocate
+    array->arena->used += width;                                                // Allocate
     return a;                                                                   // Return allocation
    }
   else                                                                          // Reallocate arena
-   {const typeof(nextPowerOfTwo(array->arena->size + width)) S = nextPowerOfTwo(array->arena->size + width);                              // Round up memory required
-    const typeof(realloc(array->arena->data, S)) m = realloc(array->arena->data, S);                                          // Reallocate arena - the old one will be copied into it if it is moved.
+   {const typeof(nextPowerOfTwo(array->arena->size + width)) S = nextPowerOfTwo(array->arena->size + width);                             // Round up memory required
+    const typeof(realloc(array->arena->data, S)) m = realloc(array->arena->data, S);                                         // Reallocate arena - the old one will be copied into it if it is moved.
     if (m)                                                                      // Retry the memory allocation
-     {array->arena->data = m;                                                    // New arena
-      array->arena->size = S;                                                    // Arena size
-      const typeof(array->arena->used) u = array->arena->used;                                                    // Length of free space
-      memset(array->arena->data + u, 0, S - u);                                  // Clear free space
-      return array->proto->allocate(array);                                                   // Allocate within arena
+     {array->arena->data = m;                                                   // New arena
+      array->arena->size = S;                                                   // Arena size
+      const typeof(array->arena->used) u = array->arena->used;                                                   // Length of free space
+      memset(array->arena->data + u, 0, S - u);                                 // Clear free space
+      return array->proto->allocate(array);                                                  // Allocate within arena
      }
    }
   printStackBackTraceAndExit(2, "Requested arena too large\n");                 // The arena has become too large for the chosen size of offsets.
  }
 
-static size_t used_size__ArenaArray                                                      // Amount of space currently being used within the arena of a ArenaArray.
- (const ArenaArray * array)                                                               // ArenaArray
- {return array->arena->used;
+static int notEmpty_int__ArenaArray                                                      // Whether the specified ArenaArray has an elements
+ (const ArenaArray * array)                                                              // ArenaArray
+ {return !!array->arena->used;
+ }
+
+static int empty_int__ArenaArray                                                         // Whether the specified ArenaArray is empty
+ (const ArenaArray * array)                                                              // ArenaArray
+ {return  !array->arena->used;
+ }
+
+static size_t width_size__ArenaArray                                                     // Get the width of an element in the ArenaArray
+ (const ArenaArray * array)                                                              // ArenaArrayNode
+ {return array->arena->width;
  }
 
 static void free__ArenaArray                                                             // Free an entire ArenaArray.
- (const ArenaArray * array)                                                               // ArenaArray to free
+ (const ArenaArray * array)                                                              // ArenaArray to free
  {const typeof(array->arena) a = array->arena;
   if  (a->data) free(a->data);
   free(a);
@@ -105,30 +98,29 @@ static void free__ArenaArray                                                    
 //D1 Statistics                                                                 // Numbers describing the ArenaArray
 
 static size_t count__ArenaArray_pointer                                                  // Number of elements in the ArenaArray
- (const ArenaArray * array)                                                               // ArenaArray
+ (const ArenaArray * array)                                                              // ArenaArray
  {return array->arena->used / array->arena->width;
  }
 
 //D1 Stack                                                                      // Stack operations on an ArenaArray
 
 static void * top__ArenaArray                                                            //V Address of the top most element
- (const ArenaArray * array)                                                               // ArenaArray
- {const typeof(array->proto->width(array)) w = array->proto->width(array);                                                             // Width of elements in ArenaArray
-  if (array->arena->used >= w)                                                   // ArenaArray has elements
-   {return array->arena->data + array->arena->used - w;
+ (const ArenaArray * array)                                                              // ArenaArray
+ {if (array->arena->used)                                                       // ArenaArray has elements
+   {return array->arena->data + array->arena->used - array->arena->width;
    }
   return 0;                                                                     // Empty ArenaArray
  }
 
 static void * push__ArenaArray_pointer                                                   //V Push an element on to the ArenaArray and return its address
- (const ArenaArray * array)                                                               // ArenaArray
- {return array->proto->allocate(array);                                                       // Allocate space and return its address
+ (const ArenaArray * array)                                                              // ArenaArray
+ {return array->proto->allocate(array);                                                      // Allocate space and return its address
  }
 
 static void * pop__ArenaArray                                                            //V Pop and return the address of the top most element
- (const ArenaArray * array)                                                               // ArenaArray
- {if (array->proto->count(array))                                                             // ArenaArray has elements
-   {const typeof(array->proto->width(array)) w = array->proto->width(array);                                                             // Width of elements in ArenaArray
+ (const ArenaArray * array)                                                              // ArenaArray
+ {if (array->proto->count(array))                                                            // ArenaArray has elements
+   {const typeof(array->arena->width) w = array->arena->width;                                                    // Width of elements in ArenaArray
     const typeof(array->arena->data + array->arena->used - w) p = array->arena->data + array->arena->used - w;
     array->arena->used -= w;
     return p;
@@ -139,13 +131,13 @@ static void * pop__ArenaArray                                                   
 //D1 Traverse                                                                   // Traverse a ArenaArray.
 
 static void * at__ArenaArray_index                                                       //V The address of the element at the specified index counting from one, else 0 if the index is not held in the ArenaArray
- (const ArenaArray * array,                                                               // ArenaArray
+ (const ArenaArray * array,                                                              // ArenaArray
   size_t    index)                                                              // Index
  {if (!index)                                                                   // Index is one based
    {printStackBackTrace("Index from one not zero\n");
    }
-  else if (index <= array->proto->count(array))                                               // Index in range
-   {return array->arena->data + (index - 1) * array->proto->width(array);                      // One based
+  else if (index <= array->proto->count(array))                                              // Index in range
+   {return array->arena->data + (index - 1) * array->arena->width;              // One based
    }
   return 0;                                                                     // Index out of range
  }
@@ -155,20 +147,20 @@ static void * at__ArenaArray_index                                              
 //D1 Input and Output                                                           // Read and write a ArenaArray from/to a file
 
 static void write__ArenaArray_string                                                     // Write a ArenaArray to a named file or abort
- (const ArenaArray    *       array,                                                      // ArenaArray
+ (const ArenaArray    *       array,                                                     // ArenaArray
   const char * const file)                                                      // File
  {    const typeof(open(file, O_CREAT| O_WRONLY, S_IRWXU)) o = open(file, O_CREAT| O_WRONLY, S_IRWXU);                               // Open for output creating if needed
   if (o < 0) printStackBackTrace("Cannot open file: %s for write\n", file);
 
   time_t current; time(&current);
   const ArenaArrayDescription h =                                                        // Create ArenaArray header describing the ArenaArray
-   {1, 1, 0, array->proto->used(array), array->proto->width(array), current};
+   {1, 1, 0, array->arena->used, array->arena->width, current};
 
   if (sizeof(h) != write(o, &h, sizeof(h)))                                     // Write header
    {printStackBackTrace("Cannot write ArenaArray header to file: %s\n", file);
    }
 
-  const typeof(write(o, array->arena->data, array->arena->used)) w = write(o, array->arena->data, array->arena->used);                           // Write arena
+  const typeof(write(o, array->arena->data, array->arena->used)) w = write(o, array->arena->data, array->arena->used);                         // Write arena
   if (w < 0 || array->arena->used != (size_t)w)
    {printStackBackTrace("Cannot write ArenaArray arena to file: %s\n", file);
    }
@@ -179,7 +171,7 @@ static void write__ArenaArray_string                                            
 ArenaArray readArenaArray                                                                         // Read a ArenaArray from a file
  (const char * const file)                                                      // File
  {ArenaArrayArena * const arena = alloc(sizeof(ArenaArrayArena));                                 // Create arena
-  const typeof(newArenaArray(({struct ArenaArray t = {arena: arena, proto: &ProtoTypes_ArenaArray}; t;}))) array = newArenaArray(({struct ArenaArray t = {arena: arena, proto: &ProtoTypes_ArenaArray}; t;}));                                                   // Initialize ArenaArray
+  const typeof(newArenaArray(({struct ArenaArray t = {arena: arena, proto: &ProtoTypes_ArenaArray}; t;}))) array = newArenaArray(({struct ArenaArray t = {arena: arena, proto: &ProtoTypes_ArenaArray}; t;}));                                                  // Initialize ArenaArray
 
       const typeof(open(file, 0, O_RDONLY)) i = open(file, 0, O_RDONLY);                                              // Open for input
   if (i < 0) printStackBackTrace("Cannot open file: %s for read\n", file);
@@ -189,7 +181,7 @@ ArenaArray readArenaArray                                                       
    {printStackBackTrace("Cannot read header from file: %s\n", file);
    }
 
-  array.arena->data = alloc(arena->size = arena->used = h.used);                 // Allocate arena
+  array.arena->data = alloc(arena->size = arena->used = h.used);                // Allocate arena
 
       const typeof(read(i, arena->data, arena->used)) r = read(i, arena->data, arena->used);                                    // Read arena
   if (r < 0 || arena->used != (size_t)r)
@@ -205,11 +197,11 @@ ArenaArray readArenaArray                                                       
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
 
-void test0()                                                                    //TmakeArenaArray //Tcount //Tpush //Ttop //Tat //Tpop //Tfree
+void test0()                                                                    //TmakeArenaArray //Tcount //Tpush //Ttop //Tat //Tpop //Tfree //Tempty //TnotEmpty //Twidth
  {const typeof(makeArenaArray(sizeof(size_t))) a = makeArenaArray(sizeof(size_t));
 
-                assert( a.proto->count(&a) == 0);
-  const typeof(a.proto->push(&a)) p = a.proto->push(&a); assert( a.proto->count(&a) == 1); ({typeof(2ul) sourcesourcesource = 2ul;  memcpy((void *)p,  (void *)&sourcesourcesource, sizeof(2ul));}); assert( ({typeof(2ul) sourcesourcesource = 2ul; !memcmp((void *)p,  (void *)&sourcesourcesource, sizeof(2ul));}));
+  assert( a.proto->empty(&a));  assert( a.proto->count(&a) == 0); assert( a.proto->width(&a) == sizeof(size_t));
+  const typeof(a.proto->push(&a)) p = a.proto->push(&a); assert( a.proto->count(&a) == 1); ({typeof(2ul) sourcesourcesource = 2ul;  memcpy((void *)p,  (void *)&sourcesourcesource, sizeof(2ul));}); assert( ({typeof(2ul) sourcesourcesource = 2ul; !memcmp((void *)p,  (void *)&sourcesourcesource, sizeof(2ul));})); assert( a.proto->notEmpty(&a));
   const typeof(a.proto->push(&a)) q = a.proto->push(&a); assert( a.proto->count(&a) == 2); ({typeof(4ul) sourcesourcesource = 4ul;  memcpy((void *)q,  (void *)&sourcesourcesource, sizeof(4ul));}); assert( ({typeof(2ul) sourcesourcesource = 2ul; !memcmp((void *)p,  (void *)&sourcesourcesource, sizeof(2ul));})); assert( ({typeof(4ul) sourcesourcesource = 4ul; !memcmp((void *)q,  (void *)&sourcesourcesource, sizeof(4ul));}));
   const typeof(a.proto->top(&a)) t = a.proto->top(&a);  assert( a.proto->count(&a) == 2); assert( q == t);
 
