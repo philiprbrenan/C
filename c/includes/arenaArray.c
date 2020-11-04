@@ -4,11 +4,11 @@
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
 #define _GNU_SOURCE
-#include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an ArenaArray.
 #ifndef ArenaArray_included
 #define ArenaArray_included
+#include <utilities.c>
 
 typedef struct ArenaArray                                                                // ArenaArray
  {const struct ProtoTypes_ArenaArray *proto;                                             // Methods associated with an ArenaArray
