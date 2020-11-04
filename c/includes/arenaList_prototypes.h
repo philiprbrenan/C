@@ -88,9 +88,9 @@ static void free__ArenaList
 static void free__ArenaListNode
  (ArenaListNode * node);
 static void insertChar__ArenaListNode_char_size
- (ArenaListNode * node,
-  const char    ins,
-  size_t        pos);
+ (ArenaListNode    * node,
+  const char ins,
+  size_t     pos);
 static void replaceChar__ArenaListNode_size
  (const ArenaListNode * node,
   const char    repl,
@@ -136,7 +136,7 @@ static  ArenaListNode findFirstChild_ArenaListNode__ArenaListNode_string
  (const ArenaListNode *       Parent,
   const char  * const key);
 static  ArenaListNode findFirstChild_ArenaListNode__ArenaList_string
- (const ArenaList          * list,
+ (const ArenaList    *       list,
   const char * const key);
 static  ArenaListNode at_ArenaListNode__ArenaListNode_size
  (const ArenaListNode * Parent,
@@ -155,9 +155,9 @@ static int isFirst_int__ArenaListNode
 static int isLast_int__ArenaListNode
  (const ArenaListNode * child);
 static int isEmpty_int__ArenaListNode
- (const ArenaListNode * node);
+ (const ArenaListNode   * node);
 static int isOnlyChild_int__ArenaListNode
- (const ArenaListNode * child);
+ (const ArenaListNode    * child);
 static int isRoot_int__ArenaListNode
  (const ArenaListNode * node);
 static  ArenaListNode putFL_ArenaListNode__int_ArenaListNode_ArenaListNode
@@ -303,7 +303,7 @@ struct ProtoTypes_ArenaList {
   void  (*dump)(                                                                // Dump a ArenaList on stderr
     const ArenaList * list);                                                    // ArenaList
   ArenaListNode  (*findFirstChild)(                                             // Find the first child immediately under the root with the specified key.
-    const ArenaList          * list,                                            // ArenaList
+    const ArenaList    * list,                                                  // ArenaList
     const char * const key);                                                    // Key to find
   ArenaListNode  (*findFirst)(                                                  // Find the first node with the specified key in a post-order traversal of the ArenaList.
     const ArenaList    * list,                                                  // ArenaList
@@ -447,19 +447,19 @@ struct ProtoTypes_ArenaListNode {
   size_t  (*index)(                                                             // The index of the specified child under its parent counting from one.
     const ArenaListNode * child);                                               // Child
   void  (*insertChar)(                                                          // Insert the specified character into the key string of a node at the specified position.
-    ArenaListNode * node,                                                       // ArenaListNode
+    ArenaListNode    * node,                                                    // ArenaListNode
     const char ins,                                                             // Character to insert
     size_t pos);                                                                // Position in key. 0 prepends the char, while >= length appends the char.
   int  (*invalid)(                                                              // Check that a node is not valid.
     const ArenaListNode * child);                                               // ArenaListNode
   int  (*isEmpty)(                                                              // Confirm a node has no children.
-    const ArenaListNode * node);                                                // ArenaListNode
+    const ArenaListNode   * node);                                              // ArenaListNode
   int  (*isFirst)(                                                              // Confirm a child is first under its parent
     const ArenaListNode * child);                                               // Child
   int  (*isLast)(                                                               // Confirm a child is last under its parent
     const ArenaListNode * child);                                               // Child
   int  (*isOnlyChild)(                                                          // Confirm that this child is the only child of its parent
-    const ArenaListNode * child);                                               // Child
+    const ArenaListNode    * child);                                            // Child
   int  (*isRoot)(                                                               // Confirm a node is the root
     const ArenaListNode * node);                                                // ArenaListNode
   int  (*keyEqualsString)(                                                      // Confirm that the key of a node is equal to the specified zero terminated string
