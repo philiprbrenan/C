@@ -141,6 +141,23 @@ static void * at__$_index                                                       
   return 0;                                                                     // Index out of range
  }
 
+static void reverse__$                                                          // Reverse a $ in situ.
+ (const $ * array)                                                              // $
+ {count ◁ array ▶ count;                                                        // Number of elements
+  if (count <= 1) return;                                                       // Already reversed
+  m ◁ count / 2;
+  width ◁ array ▶ width;                                                        // Width of each element
+  buffer ≋ width;
+  for(i ◀ 0ul; i < m; ++i)                                                      // Swap elements
+   {j ◁ count - 1 - i;                                                          // Opposing element
+    J ◁ array->arena->data + j * width;
+    I ◁ array->arena->data + i * width;
+    memcpy(buffer, J, width);
+    memcpy(J,      I, width);
+    memcpy(I, buffer, width);
+   }
+ }
+
 //D1 Print                                                                      // Print $s in various ways
 
 //D1 Input and Output                                                           // Read and write a $ from/to a file
@@ -215,8 +232,19 @@ void test0()                                                                    
   a ▷ free;
  }
 
+void test1()                                                                    //Treverse
+ {a ◁ make$(sizeof(size_t));
+  N ◁ 10ul;
+  for(i ◀ 1ul; i <= N; ++i) {p ◁ a ▷ push;    p  ◧ N - i + 1;}
+  for(i ◀ 1ul; i <= N; ++i) {p ◁ a ▷ at(i); ✓ p !◧ i;}
+  a ▷ reverse;
+  for(i ◀ 1ul; i <= N; ++i) {p ◁ a ▷ at(i); ✓ p ◧◧ i;}
+
+  a ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, 0};
+ {void (*tests[])(void) = {test0, test1, 0};
   run_tests("$", 1, tests);
   return 0;
  }
