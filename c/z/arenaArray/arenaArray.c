@@ -3,11 +3,11 @@
 // Philip R Brenan at gmail dot com, Appa Apps Ltd. Inc., 2020
 //------------------------------------------------------------------------------
 #define _GNU_SOURCE
-#include <utilities.c>
 
 //D1 Structures                                                                 // Structures describing an $.
 #ifndef $_included
 #define $_included
+#include <utilities.c>
 
 typedef struct $                                                                // $
  {const struct ProtoTypes_$ *proto;                                             // Methods associated with an $
