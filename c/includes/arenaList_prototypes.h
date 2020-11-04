@@ -207,7 +207,7 @@ static void scan__ArenaList_sub
   void (* const function) (ArenaListNode node, int start, int depth));
 static void scanFrom__ArenaListNode_sub
  (ArenaListNode * node,
-  int (* const function) (ArenaListNode node, int start, int depth));
+  int (* const sub) (ArenaListNode node, int start, int depth));
 static  size_t countChildren_size__ArenaList
  (const ArenaList * list);
 static  size_t countChildren_size__ArenaListNode
@@ -529,7 +529,7 @@ struct ProtoTypes_ArenaListNode {
     const ArenaListNode node);                                                  // ArenaListNode
   void  (*scanFrom)(                                                            // Traverse the ArenaList starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
     ArenaListNode * node,                                                       // ArenaListNode
-    int (* const function) (ArenaListNode node, int start, int depth));         // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.  The funstion should return true if processing should continue, else false.
+    int (* const sub) (ArenaListNode node, int start, int depth));              // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the sub is called once with start set to zero.  The funstion should return true if processing should continue, else false.
   void  (*scan)(                                                                // Traverse the ArenaList rooted at the specified node calling the specified function before(+1) and after(-1) processing the children of each node - or - if the node has no children the function is called once(0) . The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
     const ArenaListNode * node,                                                 // ArenaListNode
     void (* const function) (ArenaListNode node, int start, int depth));        // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
