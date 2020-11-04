@@ -77,8 +77,9 @@ typedef struct $Position                                                        
  } $Position;
 
 typedef struct $NodeAndState                                                    // Replace recursive processing with linear processing
- {$Node node;
-  int state;
+ {$Node  node;                                                                  // Node
+  size_t count;                                                                 // Number of children
+  int    state;                                                                 // Processing state
  } $NodeAndState;
 
 #include <$$_prototypes.h>                                                      // $ prototypes now that the relevant structures have been declared
@@ -853,34 +854,40 @@ static void scanFrom__$Node_sub                                                 
  {$NodeAndState *s, *S;
   stack ◀ makeArenaArray(sizeof(*s));
 
-  for(parent ◀ *node; parent ▷ valid; parent = parent ▷ next)                   // Load path on stack
-   {n ◀ node;
-    p ◀ stack ▷ top;
-    p ◧ n;
+  for(parent  ◀ *node; parent ▷ valid; parent = parent ▷ parent)                // Load path on stack
+   {s = stack ▷ push;
+    s->node   = parent;
+    s->count  = parent ▷ countChildren;
+    s->state  = 1;
    }
   stack ▷ reverse;
-
-  while(stack ▷ notEmpty)
+  if (stack ▷ count)                                                            // Non empty stack
    {s = stack ▷ top;
-    if (s->state == 0)
-     {if (s->node ▷ countChildren)
-       {function(s->node, +1, stack ▷ count);
-        S = stack ▷ push;
-        S->state = 0; S->node  = s->node ▷ first;
+    s->state = 0;                                                               // Start on the specified node not just after it
+
+    while(stack ▷ notEmpty)
+     {s = stack ▷ top;
+      if (s->state == 0)
+       {if ((s->count = s->node ▷ countChildren))
+         {function(s->node, +1, stack ▷ count);
+          S = stack ▷ push;
+          S->state = 0; S->node  = s->node ▷ first;
+         }
+        else
+         {function(s->node, 0, stack ▷ count);
+         }
         s->state = 1;
        }
       else
-       {function(s->node, 0, stack ▷ count);
-        stack ▷ pop;
+       {if (s->count)
+         {function(s->node, -1, stack ▷ count);
+         }
+        n ◀ s->node ▷ next;
+        if (n ▷ valid)
+         {s->state = 0; s->node = n;
+         }
+        else stack ▷ pop;
        }
-     }
-    else
-     {function(s->node, -1, stack ▷ count);
-      n ◀ s->node ▷ next;
-      if (n ▷ valid)
-       {s->state = 0; s->node = n;
-       }
-      else stack ▷ pop;
      }
    }
  }
@@ -1301,6 +1308,7 @@ $ read$                                                                         
 
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
+#include <stringBuffer.c>
 
 void test0()                                                                    //Tmake$ //Tnode //Tfree //TputFirst //TputLast //Tfe //Tfer
  {   t ◁ make$();                                                               // Create a $
@@ -1834,11 +1842,39 @@ void test19()                                                                   
     s ▷ free;
  }
 
+void test20()                                                                   //TscanFrom
+ {  s ◁ make$(); s ▷ fromLetters("ab(cde(fg)h(ij))klm");
+    S ◁ makeStringBuffer();
+
+    f ◀ s ▷ findFirst("f");
+    void sub($Node node, int start, int depth)
+     {makeLocalCopyOf$Key(k, l, node);
+      S ▷ addFormat("start=%2d  depth=%d  %s\n", start, depth, k);
+     }
+    f ▷ scanFrom(sub);
+
+    ✓ S ▷ equalsString(◉);
+start= 0  depth=3  f
+start= 0  depth=3  g
+start=-1  depth=2  e
+start= 1  depth=2  h
+start= 0  depth=3  i
+start= 0  depth=3  j
+start=-1  depth=2  h
+start=-1  depth=1  b
+start= 0  depth=1  k
+start= 0  depth=1  l
+start= 0  depth=1  m
+◉
+    s ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
-                           test15, test16, test17, test18, test19, 0};
+                           test15, test16, test17, test18, test19,
+                           test20, 0};
   run_tests("$", 1, tests);
 
   return 0;
