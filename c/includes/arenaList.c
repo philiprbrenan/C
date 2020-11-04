@@ -17,6 +17,7 @@
 #define _GNU_SOURCE
 #include <ctype.h>
 #include <setjmp.h>
+#include <arenaArray.c>
 #include <utilities.c>
 #define ArenaListEditable
 
@@ -75,6 +76,11 @@ typedef struct ArenaListPosition                                                
   const size_t depth;                                                           // Depth of the node
   const struct ProtoTypes_ArenaListPosition *proto;                                     // Methods associated with a position
  } ArenaListPosition;
+
+typedef struct ArenaListNodeAndState                                                    // Replace recursive processing with linear processing
+ {ArenaListNode node;
+  int state;
+ } ArenaListNodeAndState;
 
 #include <arenaList_prototypes.h>                                                      // ArenaList prototypes now that the relevant structures have been declared
 #define ArenaListfe( child, parent) for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child)) // Each child under a parent from first to last
@@ -466,7 +472,7 @@ static void insertChar__ArenaListNode_char_size                                 
   size_t        pos)                                                            // Position in key. 0 prepends the char, while >= length appends the char.
  {const typeof(node->proto->maxLength(node)) m = node->proto->maxLength(node);                                                         // Maximum length of key
   const typeof(node->proto->length(node)) l = node->proto->length(node);                                                            // Current length of key
-  if (pos >= l) pos = l;                                                         // Append to end of string if requested position is beyond the end of the string
+  if (pos > l) pos = l;                                                         // Append to end of string if requested position is beyond the end of the string
   if (l + 1 <= m)                                                               // There is enough room in the existing key for the new key
    {char * k = node->proto->key(node);                                                      // Address key
     memmove(k + pos + 1, k + pos, l - pos);                                     // Overlapping move
@@ -538,17 +544,17 @@ static  ArenaListNode last_ArenaListNode__ArenaListNode                         
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->last);
  }
-#line 537 "/home/phil/c/z/arenaList/arenaList.c"
+#line 543 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaListNode                                                // Get the next child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->next);
  }
-#line 537 "/home/phil/c/z/arenaList/arenaList.c"
+#line 543 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaListNode                                                // Get the prev child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->prev);
  }
-#line 537 "/home/phil/c/z/arenaList/arenaList.c"
+#line 543 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode first_ArenaListNode__ArenaList                                                    // Get the first child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
@@ -560,19 +566,19 @@ static  ArenaListNode last_ArenaListNode__ArenaList                             
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->last(&root);
  }
-#line 544 "/home/phil/c/z/arenaList/arenaList.c"
+#line 550 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaList                                                    // Get the next child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->next(&root);
  }
-#line 544 "/home/phil/c/z/arenaList/arenaList.c"
+#line 550 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaList                                                    // Get the prev child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->prev(&root);
  }
-#line 544 "/home/phil/c/z/arenaList/arenaList.c"
+#line 550 "/home/phil/c/z/arenaList/arenaList.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -681,7 +687,7 @@ static int isLast_int__ArenaListNode                                            
  {const typeof(child->proto->parent(child)) parent = child->proto->parent(child);
   return child->proto->equals(child, parent.proto->last(&parent));
  }
-#line 648 "/home/phil/c/z/arenaList/arenaList.c"
+#line 654 "/home/phil/c/z/arenaList/arenaList.c"
 
 static int isEmpty_int__ArenaListNode                                                   // Confirm a node has no children.
  (const ArenaListNode * node)                                                           // ArenaListNode
@@ -736,7 +742,7 @@ static  ArenaListNode   putTreeLast_ArenaListNode__ArenaListNode                
   const typeof(t.proto->root(&t)) r = t.proto->root(&t);
   return r.proto->putLast(&r, *child);                                                  // Put the child last
  }
-#line 697 "/home/phil/c/z/arenaList/arenaList.c"
+#line 703 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode   putFirst_ArenaListNode__ArenaListNode_ArenaListNode                                     // Put a child first under its parent
  (const ArenaListNode * parent,                                                         // Parent
@@ -748,7 +754,7 @@ static  ArenaListNode   putLast_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                          // Child
  {return putFL_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *parent, child);                       // Put a child last under its parent
  }
-#line 704 "/home/phil/c/z/arenaList/arenaList.c"
+#line 710 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putNP_ArenaListNode__int_ArenaListNode_ArenaListNode                                      //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -797,7 +803,7 @@ static  ArenaListNode   putPrev_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                            // Child
  {return putNP_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *sibling, child);                      // Put child previous
  }
-#line 748 "/home/phil/c/z/arenaList/arenaList.c"
+#line 754 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  void replace__ArenaListNode_ArenaListNode                                               // Replace the specified node with this node
  (const ArenaListNode * with,                                                           // Replace with this node
@@ -892,6 +898,44 @@ static void scan__ArenaList_sub                                                 
     function(root, -1, 0);                                                      // Call after
    }
   else function(root, 0, 0);                                                    // Call once as the root has no children
+ }
+
+static void scanFrom__ArenaListNode_sub                                                 // Traverse the ArenaList starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
+ (ArenaListNode * node,                                                                 // ArenaListNode
+  void (* const function) (ArenaListNode node, int start, int depth))                   // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {ArenaListNodeAndState *s, *S;
+  typeof(makeArenaArray(sizeof(*s))) stack = makeArenaArray(sizeof(*s));
+
+  for(typeof(*node) parent = *node; parent.proto->valid(&parent); parent = parent.proto->next(&parent))                    // Load path on stack
+   {typeof(node) n = node;
+    typeof(stack.proto->top(&stack)) p = stack.proto->top(&stack);
+    ({typeof(n) sourcesourcesource = n;  memcpy((void *)p,  (void *)&sourcesourcesource, sizeof(n));});
+   }
+  stack.proto->reverse(&stack);
+
+  while(stack.proto->notEmpty(&stack))
+   {s = stack.proto->top(&stack);
+    if (s->state == 0)
+     {if (s->node.proto->countChildren(&s->node))
+       {function(s->node, +1, stack.proto->count(&stack));
+        S = stack.proto->push(&stack);
+        S->state = 0; S->node  = s->node.proto->first(&s->node);
+        s->state = 1;
+       }
+      else
+       {function(s->node, 0, stack.proto->count(&stack));
+        stack.proto->pop(&stack);
+       }
+     }
+    else
+     {function(s->node, -1, stack.proto->count(&stack));
+      typeof(s->node.proto->next(&s->node)) n = s->node.proto->next(&s->node);
+      if (n.proto->valid(&n))
+       {s->state = 0; s->node = n;
+       }
+      else stack.proto->pop(&stack);
+     }
+   }
  }
 
 static  size_t countChildren_size__ArenaList                                            // Count the number of children directly under a parent.
