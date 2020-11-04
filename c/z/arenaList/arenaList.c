@@ -850,7 +850,7 @@ static void scan__$_sub                                                         
 
 static void scanFrom__$Node_sub                                                 // Traverse the $ starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
  ($Node * node,                                                                 // $Node
-  void (* const function) ($Node node, int start, int depth))                   // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+  int (* const function) ($Node node, int start, int depth))                    // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.  The funstion should return true if processing should continue, else false.
  {$NodeAndState *s, *S;
   stack ◀ makeArenaArray(sizeof(*s));
 
@@ -860,36 +860,42 @@ static void scanFrom__$Node_sub                                                 
     s->count  = parent ▷ countChildren;
     s->state  = 1;
    }
+
   stack ▷ reverse;
+
   if (stack ▷ count)                                                            // Non empty stack
    {s = stack ▷ top;
     s->state = 0;                                                               // Start on the specified node not just after it
 
-    while(stack ▷ notEmpty)
-     {s = stack ▷ top;
-      if (s->state == 0)
-       {if ((s->count = s->node ▷ countChildren))
-         {function(s->node, +1, stack ▷ count);
-          S = stack ▷ push;
-          S->state = 0; S->node  = s->node ▷ first;
+    jmp_buf finish;
+    if (!setjmp(finish))                                                        // Scan forwards until terminated
+     {while(stack ▷ notEmpty)
+       {s = stack ▷ top;
+        if (s->state == 0)
+         {if ((s->count = s->node ▷ countChildren))
+           {if (function(s->node, +1, stack ▷ count)) longjmp(finish, 1);
+            S = stack ▷ push;
+            S->state = 0; S->node  = s->node ▷ first;
+           }
+          else
+           {if (function(s->node,  0, stack ▷ count)) longjmp(finish, 2);
+           }
+          s->state = 1;
          }
         else
-         {function(s->node, 0, stack ▷ count);
+         {if (s->count)
+           {if (function(s->node, -1, stack ▷ count)) longjmp(finish, 3);
+           }
+          n ◀ s->node ▷ next;
+          if (n ▷ valid)
+           {s->state = 0; s->node = n;
+           }
+          else stack ▷ pop;
          }
-        s->state = 1;
-       }
-      else
-       {if (s->count)
-         {function(s->node, -1, stack ▷ count);
-         }
-        n ◀ s->node ▷ next;
-        if (n ▷ valid)
-         {s->state = 0; s->node = n;
-         }
-        else stack ▷ pop;
        }
      }
    }
+  stack ▷ free;
  }
 
 static  size_t countChildren_size__$                                            // Count the number of children directly under a parent.
@@ -1843,14 +1849,16 @@ void test19()                                                                   
  }
 
 void test20()                                                                   //TscanFrom
- {  s ◁ make$(); s ▷ fromLetters("ab(cde(fg)h(ij))klm");
+ {  s ◁ make$(); s ▷ fromLetters("ab(cde(fg)h(ij))k(l)m");
     S ◁ makeStringBuffer();
 
     f ◀ s ▷ findFirst("f");
-    void sub($Node node, int start, int depth)
+    int sub($Node node, int start, int depth)
      {makeLocalCopyOf$Key(k, l, node);
       S ▷ addFormat("start=%2d  depth=%d  %s\n", start, depth, k);
+      return start < 0 && k ≈≈ "k";                                             // Closing k
      }
+
     f ▷ scanFrom(sub);
 
     ✓ S ▷ equalsString(◉);
@@ -1862,11 +1870,11 @@ start= 0  depth=3  i
 start= 0  depth=3  j
 start=-1  depth=2  h
 start=-1  depth=1  b
-start= 0  depth=1  k
-start= 0  depth=1  l
-start= 0  depth=1  m
+start= 1  depth=1  k
+start= 0  depth=2  l
+start=-1  depth=1  k
 ◉
-    s ▷ free;
+    s ▷ free; S ▷ free;
  }
 
 int main(void)                                                                  // Run tests
