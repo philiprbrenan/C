@@ -410,7 +410,9 @@ static ArenaListNode  copy_ArenaListNode__ArenaListNode_ArenaList               
   const ArenaList       target)                                                         // Target ArenaList
  {makeLocalCopyOfArenaListKey(s, l, *source);
   typeof(target.proto->node(&target, s, l)) n = target.proto->node(&target, s, l);                                                    // Copy node to target
-  if  (n.proto->width(&n) != source->proto->width(source)) printStackBackTrace("Width of target different from width of source\n");
+  if  (n.proto->width(&n) != source->proto->width(source))
+   {printStackBackTrace("Width of target different from width of source\n");
+   }
   else n.proto->copyData(&n, *source);                                                   // Copy data from source to target
   return n;                                                                     // Copy any data associated with the node
  }                                                                              // Return new node
@@ -545,17 +547,17 @@ static  ArenaListNode last_ArenaListNode__ArenaListNode                         
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->last);
  }
-#line 544 "/home/phil/c/z/arenaList/arenaList.c"
+#line 546 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaListNode                                                // Get the next child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->next);
  }
-#line 544 "/home/phil/c/z/arenaList/arenaList.c"
+#line 546 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaListNode                                                // Get the prev child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->prev);
  }
-#line 544 "/home/phil/c/z/arenaList/arenaList.c"
+#line 546 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode first_ArenaListNode__ArenaList                                                    // Get the first child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
@@ -567,19 +569,19 @@ static  ArenaListNode last_ArenaListNode__ArenaList                             
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->last(&root);
  }
-#line 551 "/home/phil/c/z/arenaList/arenaList.c"
+#line 553 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaList                                                    // Get the next child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->next(&root);
  }
-#line 551 "/home/phil/c/z/arenaList/arenaList.c"
+#line 553 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaList                                                    // Get the prev child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->prev(&root);
  }
-#line 551 "/home/phil/c/z/arenaList/arenaList.c"
+#line 553 "/home/phil/c/z/arenaList/arenaList.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -686,7 +688,7 @@ static int isLast_int__ArenaListNode                                            
  {const typeof(child->proto->parent(child)) parent = child->proto->parent(child);
   return child->proto->equals(child, parent.proto->last(&parent));
  }
-#line 653 "/home/phil/c/z/arenaList/arenaList.c"
+#line 655 "/home/phil/c/z/arenaList/arenaList.c"
 
 static int isEmpty_int__ArenaListNode                                                   // Confirm a node has no children.
  (const ArenaListNode   * node)                                                         // ArenaListNode
@@ -741,7 +743,7 @@ static  ArenaListNode   putTreeLast_ArenaListNode__ArenaListNode                
   const typeof(t.proto->root(&t)) r = t.proto->root(&t);
   return r.proto->putLast(&r, *child);                                                  // Put the child last
  }
-#line 702 "/home/phil/c/z/arenaList/arenaList.c"
+#line 704 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode   putFirst_ArenaListNode__ArenaListNode_ArenaListNode                                     // Put a child first under its parent
  (const ArenaListNode * parent,                                                         // Parent
@@ -753,7 +755,7 @@ static  ArenaListNode   putLast_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                          // Child
  {return putFL_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *parent, child);                       // Put a child last under its parent
  }
-#line 709 "/home/phil/c/z/arenaList/arenaList.c"
+#line 711 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putNP_ArenaListNode__int_ArenaListNode_ArenaListNode                                      //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -802,7 +804,7 @@ static  ArenaListNode   putPrev_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                          // Child
  {return putNP_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *sibling, child);                      // Put child previous
  }
-#line 753 "/home/phil/c/z/arenaList/arenaList.c"
+#line 755 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  void replace__ArenaListNode_ArenaListNode                                               // Replace the specified node with this node
  (const ArenaListNode * with,                                                           // Replace with this node
@@ -901,51 +903,40 @@ static void scan__ArenaList_sub                                                 
 
 static void scanFrom__ArenaListNode_sub                                                 // Traverse the ArenaList starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
  (ArenaListNode * node,                                                                 // ArenaListNode
-  int (* const function) (ArenaListNode node, int start, int depth))                    // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.  The funstion should return true if processing should continue, else false.
+  int (* const sub) (ArenaListNode node, int start, int depth))                         // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the sub is called once with start set to zero.  The funstion should return true if processing should continue, else false.
  {ArenaListNodeAndState *s, *S;
-  typeof(makeArenaArray(sizeof(*s))) stack = makeArenaArray(sizeof(*s));
 
-  for(typeof(*node) parent = *node; parent.proto->valid(&parent); parent = parent.proto->parent(&parent))                // Load path on stack
+  typeof(makeArenaArray(sizeof(*s))) stack = makeArenaArray(sizeof(*s));                                           // Path from root to current node being expanded
+
+  for(typeof(*node) parent = *node; parent.proto->valid(&parent); parent = parent.proto->parent(&parent))                 // Load path on stack
    {s = stack.proto->push(&stack);
-    s->node   = parent;
-    s->count  = parent.proto->countChildren(&parent);
-    s->state  = 1;
+    s->node = parent; s->state = 1; s->count  = parent.proto->countChildren(&parent);         // Process forwards from each node om the stack
    }
 
-  stack.proto->reverse(&stack);
+  stack.proto->reverse(&stack);                                                              // Path from [root to current node
+  s = stack.proto->top(&stack); s->state = 0;                                                // Start on the specified node not just after it
 
-  if (stack.proto->count(&stack))                                                            // Non empty stack
-   {s = stack.proto->top(&stack);
-    s->state = 0;                                                               // Start on the specified node not just after it
-
-    jmp_buf finish;
-    if (!setjmp(finish))                                                        // Scan forwards until terminated
-     {while(stack.proto->notEmpty(&stack))
-       {s = stack.proto->top(&stack);
-        if (s->state == 0)
-         {if ((s->count = s->node.proto->countChildren(&s->node)))
-           {if (function(s->node, +1, stack.proto->count(&stack))) longjmp(finish, 1);
-            S = stack.proto->push(&stack);
-            S->state = 0; S->node  = s->node.proto->first(&s->node);
-           }
-          else
-           {if (function(s->node,  0, stack.proto->count(&stack))) longjmp(finish, 2);
-           }
-          s->state = 1;
+  jmp_buf finish;
+  if (!setjmp(finish))                                                          // Scan forwards until terminated
+   {while(stack.proto->notEmpty(&stack))                                                     // Process remaining nodes
+     {s = stack.proto->top(&stack);                                                          // Latest node to expand
+      if (!s->state)                                                            // Expand node
+       {if ((s->count = s->node.proto->countChildren(&s->node)))                               // Latest node has children
+         {if (sub(s->node, +1, stack.proto->count(&stack))) longjmp(finish, 1);              // Open scope
+          S = stack.proto->push(&stack); S->state = 0; S->node  = s->node.proto->first(&s->node);           // Add first child to scope
          }
-        else
-         {if (s->count)
-           {if (function(s->node, -1, stack.proto->count(&stack))) longjmp(finish, 3);
-           }
-          typeof(s->node.proto->next(&s->node)) n = s->node.proto->next(&s->node);
-          if (n.proto->valid(&n))
-           {s->state = 0; s->node = n;
-           }
-          else stack.proto->pop(&stack);
-         }
+        else if (sub(s->node,  0, stack.proto->count(&stack))) longjmp(finish, 2);           // Latest node is a leaf
+        s->state = 1;                                                           // Mark node for processing after expansion
+       }
+      else                                                                      // Move to next node  after expansion has been completed
+       {if (s->count && sub(s->node, -1, stack.proto->count(&stack))) longjmp(finish, 3);    // Close scope if necessary
+        typeof(s->node.proto->next(&s->node)) n = s->node.proto->next(&s->node);                                                     // Next node
+        if (n.proto->valid(&n)) {s->state = 0; s->node = n;}                             // Place node on stack for processing
+        else stack.proto->pop(&stack);                                                       // No more siblings, close scope
        }
      }
    }
+
   stack.proto->free(&stack);
  }
 
