@@ -903,7 +903,7 @@ static void scan__ArenaList_sub                                                 
 
 static void scanFrom__ArenaListNode_sub                                                 // Traverse the ArenaList starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
  (ArenaListNode * node,                                                                 // ArenaListNode
-  void (* const function) (ArenaListNode node, int start, int depth))                   // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+  int (* const function) (ArenaListNode node, int start, int depth))                    // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.  The funstion should return true if processing should continue, else false.
  {ArenaListNodeAndState *s, *S;
   typeof(makeArenaArray(sizeof(*s))) stack = makeArenaArray(sizeof(*s));
 
@@ -913,36 +913,42 @@ static void scanFrom__ArenaListNode_sub                                         
     s->count  = parent.proto->countChildren(&parent);
     s->state  = 1;
    }
+
   stack.proto->reverse(&stack);
+
   if (stack.proto->count(&stack))                                                            // Non empty stack
    {s = stack.proto->top(&stack);
     s->state = 0;                                                               // Start on the specified node not just after it
 
-    while(stack.proto->notEmpty(&stack))
-     {s = stack.proto->top(&stack);
-      if (s->state == 0)
-       {if ((s->count = s->node.proto->countChildren(&s->node)))
-         {function(s->node, +1, stack.proto->count(&stack));
-          S = stack.proto->push(&stack);
-          S->state = 0; S->node  = s->node.proto->first(&s->node);
+    jmp_buf finish;
+    if (!setjmp(finish))                                                        // Scan forwards until terminated
+     {while(stack.proto->notEmpty(&stack))
+       {s = stack.proto->top(&stack);
+        if (s->state == 0)
+         {if ((s->count = s->node.proto->countChildren(&s->node)))
+           {if (function(s->node, +1, stack.proto->count(&stack))) longjmp(finish, 1);
+            S = stack.proto->push(&stack);
+            S->state = 0; S->node  = s->node.proto->first(&s->node);
+           }
+          else
+           {if (function(s->node,  0, stack.proto->count(&stack))) longjmp(finish, 2);
+           }
+          s->state = 1;
          }
         else
-         {function(s->node, 0, stack.proto->count(&stack));
+         {if (s->count)
+           {if (function(s->node, -1, stack.proto->count(&stack))) longjmp(finish, 3);
+           }
+          typeof(s->node.proto->next(&s->node)) n = s->node.proto->next(&s->node);
+          if (n.proto->valid(&n))
+           {s->state = 0; s->node = n;
+           }
+          else stack.proto->pop(&stack);
          }
-        s->state = 1;
-       }
-      else
-       {if (s->count)
-         {function(s->node, -1, stack.proto->count(&stack));
-         }
-        typeof(s->node.proto->next(&s->node)) n = s->node.proto->next(&s->node);
-        if (n.proto->valid(&n))
-         {s->state = 0; s->node = n;
-         }
-        else stack.proto->pop(&stack);
        }
      }
    }
+  stack.proto->free(&stack);
  }
 
 static  size_t countChildren_size__ArenaList                                            // Count the number of children directly under a parent.
@@ -1896,14 +1902,16 @@ void test19()                                                                   
  }
 
 void test20()                                                                   //TscanFrom
- {  const typeof(makeArenaList()) s = makeArenaList(); s.proto->fromLetters(&s, "ab(cde(fg)h(ij))klm");
+ {  const typeof(makeArenaList()) s = makeArenaList(); s.proto->fromLetters(&s, "ab(cde(fg)h(ij))k(l)m");
     const typeof(makeStringBuffer()) S = makeStringBuffer();
 
     typeof(s.proto->findFirst(&s, "f")) f = s.proto->findFirst(&s, "f");
-    void sub(ArenaListNode node, int start, int depth)
+    int sub(ArenaListNode node, int start, int depth)
      {makeLocalCopyOfArenaListKey(k, l, node);
       S.proto->addFormat(&S, "start=%2d  depth=%d  %s\n", start, depth, k);
+      return start < 0 && !strcmp(k, "k");                                             // Closing k
      }
+
     f.proto->scanFrom(&f, sub);
 
     assert( S.proto->equalsString(&S,
@@ -1915,11 +1923,11 @@ void test20()                                                                   
 "start= 0  depth=3  j\n"
 "start=-1  depth=2  h\n"
 "start=-1  depth=1  b\n"
-"start= 0  depth=1  k\n"
-"start= 0  depth=1  l\n"
-"start= 0  depth=1  m\n"
+"start= 1  depth=1  k\n"
+"start= 0  depth=2  l\n"
+"start=-1  depth=1  k\n"
 ));
-    s.proto->free(&s);
+    s.proto->free(&s); S.proto->free(&S);
  }
 
 int main(void)                                                                  // Run tests
