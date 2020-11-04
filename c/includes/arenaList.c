@@ -127,6 +127,7 @@ static ArenaList makeArenaListFromLines                                         
 
   const char * p = str, *q = p;                                                 // Parse the string into new lines
   typeof(0ul) B = 0ul;
+
   void save()                                                                   // Save a line
    {if (B && p > q) {const typeof(l.proto->node(&l, q, p - q)) n = l.proto->node(&l, q, p - q); n.proto->putTreeLast(&n); B = 0;}
     q = p + 1;
@@ -134,6 +135,7 @@ static ArenaList makeArenaListFromLines                                         
 
   for(; *p; ++p) if (*p == '\n') save(); else if (!isspace(*p)) ++B;
   save();
+
   return l;
  };
 
@@ -150,6 +152,7 @@ static ArenaList makeArenaListFromWords                                         
 
   for(; *p; ++p) if (isspace(*p)) save();
   save();
+
   return l;
  };
 
@@ -263,10 +266,7 @@ static int equals_int__ArenaListNode_ArenaListNode                              
 static int equalsPosition_int__ArenaListPosition_ArenaListPosition                              // Confirm two positions are equal
  (const ArenaListPosition * a,                                                          // First position
   const ArenaListPosition   b)                                                          // Second position
- {if (a->byte != b.byte) return 0;
-  if (a->node != b.node) return 0;
-  if (a->depth != b.depth) return 0;
-  return 1;
+ {return a->byte == b.byte && a->node == b.node && a->depth == b.depth;
  }
 
 //D1 Root node                                                                  // The root node of an ArenaList is at offset 0
@@ -468,9 +468,9 @@ static void free__ArenaListNode                                                 
 //D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
 
 static void insertChar__ArenaListNode_char_size                                         // Insert the specified character into the key string of a node at the specified position.
- (ArenaListNode * node,                                                                 // ArenaListNode
-  const char    ins,                                                            // Character to insert
-  size_t        pos)                                                            // Position in key. 0 prepends the char, while >= length appends the char.
+ (ArenaListNode    * node,                                                              // ArenaListNode
+  const char ins,                                                               // Character to insert
+  size_t     pos)                                                               // Position in key. 0 prepends the char, while >= length appends the char.
  {const typeof(node->proto->maxLength(node)) m = node->proto->maxLength(node);                                                         // Maximum length of key
   const typeof(node->proto->length(node)) l = node->proto->length(node);                                                            // Current length of key
   if (pos > l) pos = l;                                                         // Append to end of string if requested position is beyond the end of the string
@@ -634,19 +634,17 @@ static  ArenaListNode findFirstChild_ArenaListNode__ArenaListNode_string        
  }
 
 static  ArenaListNode findFirstChild_ArenaListNode__ArenaList_string                                    // Find the first child immediately under the root with the specified key.
- (const ArenaList          * list,                                                      // ArenaList
+ (const ArenaList    *       list,                                                      // ArenaList
   const char * const key)                                                       // Key to find
- {       const typeof(list->proto->root(list)) r = list->proto->root(list);                                                       // Root node of the ArenaList
+ {       const typeof(list->proto->root(list)) r = list->proto->root(list);                                                      // Root node of the ArenaList
   return r.proto->findFirstChild(&r, key);                                               // Search the ArenaList
  }
 
 static  ArenaListNode at_ArenaListNode__ArenaListNode_size                                              // The child at the specified index under its parent counting from one.  An invalid node is returned if the index is too large.
  (const ArenaListNode * Parent,                                                         // Parent node
   const size_t  index)                                                          // Index
- {const typeof(*Parent) parent = *Parent;
-  typeof(0ul) n = 0ul;
-  ArenaListfe(child, parent) if (++n == index) return child;                            // Found matching child
-
+ {const typeof(* Parent) parent = * Parent;
+  typeof(0ul) n = 0ul; ArenaListfe(child, parent) if (++n == index) return child;                   // Found matching child
   return newArenaListNode(({struct ArenaListNode t = {proto: &ProtoTypes_ArenaListNode};   t;}));                                                           // An invalid node
  }
 
@@ -688,18 +686,18 @@ static int isLast_int__ArenaListNode                                            
  {const typeof(child->proto->parent(child)) parent = child->proto->parent(child);
   return child->proto->equals(child, parent.proto->last(&parent));
  }
-#line 655 "/home/phil/c/z/arenaList/arenaList.c"
+#line 653 "/home/phil/c/z/arenaList/arenaList.c"
 
 static int isEmpty_int__ArenaListNode                                                   // Confirm a node has no children.
- (const ArenaListNode * node)                                                           // ArenaListNode
+ (const ArenaListNode   * node)                                                         // ArenaListNode
  {const typeof(node->proto->first(node)) child = node->proto->first(node);
   return !child.proto->valid(&child);                                                        // No first child so the node is empty
  }
 
 static int isOnlyChild_int__ArenaListNode                                               // Confirm that this child is the only child of its parent
- (const ArenaListNode * child)                                                          // Child
+ (const ArenaListNode    * child)                                                       // Child
  {const typeof(child->proto->parent(child)) parent = child->proto->parent(child);                                                      // Parent
-  return parent.proto->valid(&parent) && child->proto->isFirst(child) && child->proto->isLast(child);                   // Child is first and last and not the root so it is an only child
+  return parent.proto->valid(&parent) && child->proto->isFirst(child) && child->proto->isLast(child);                  // Child is first and last and not the root so it is an only child
  }
 
 static int isRoot_int__ArenaListNode                                                    // Confirm a node is the root
@@ -743,7 +741,7 @@ static  ArenaListNode   putTreeLast_ArenaListNode__ArenaListNode                
   const typeof(t.proto->root(&t)) r = t.proto->root(&t);
   return r.proto->putLast(&r, *child);                                                  // Put the child last
  }
-#line 704 "/home/phil/c/z/arenaList/arenaList.c"
+#line 702 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode   putFirst_ArenaListNode__ArenaListNode_ArenaListNode                                     // Put a child first under its parent
  (const ArenaListNode * parent,                                                         // Parent
@@ -755,7 +753,7 @@ static  ArenaListNode   putLast_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                          // Child
  {return putFL_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *parent, child);                       // Put a child last under its parent
  }
-#line 711 "/home/phil/c/z/arenaList/arenaList.c"
+#line 709 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putNP_ArenaListNode__int_ArenaListNode_ArenaListNode                                      //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -794,22 +792,22 @@ static void setUp__ArenaListNode_ArenaListNode                                  
  {child.proto->content(&child)->parent = parent.offset;                                      // Set parent of child
  }
 
-static  ArenaListNode   putNext_ArenaListNode__ArenaListNode_ArenaListNode                                        // Put a child next after the specified sibling
- (const ArenaListNode * sibling,                                                          // Sibling
-  const ArenaListNode   child)                                                            // Child
+static  ArenaListNode   putNext_ArenaListNode__ArenaListNode_ArenaListNode                                      // Put a child next after the specified sibling
+ (const ArenaListNode * sibling,                                                        // Sibling
+  const ArenaListNode   child)                                                          // Child
  {return putNP_ArenaListNode__int_ArenaListNode_ArenaListNode(1, *sibling, child);                      // Put child next
  }
-static  ArenaListNode   putPrev_ArenaListNode__ArenaListNode_ArenaListNode                                        // Put a child previous after the specified sibling
- (const ArenaListNode * sibling,                                                          // Sibling
-  const ArenaListNode   child)                                                            // Child
+static  ArenaListNode   putPrev_ArenaListNode__ArenaListNode_ArenaListNode                                      // Put a child previous after the specified sibling
+ (const ArenaListNode * sibling,                                                        // Sibling
+  const ArenaListNode   child)                                                          // Child
  {return putNP_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *sibling, child);                      // Put child previous
  }
-#line 755 "/home/phil/c/z/arenaList/arenaList.c"
+#line 753 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  void replace__ArenaListNode_ArenaListNode                                               // Replace the specified node with this node
  (const ArenaListNode * with,                                                           // Replace with this node
   const ArenaListNode   over)                                                           // Node to be replaced
- {over.proto->putPrev(&over, *with);                                                         // Place new node
+ {over.proto->putPrev(&over, *with);                                                        // Place new node
   ArenaListContent * w = with->proto->content(with);                                                // Transfer children
   ArenaListContent * o = over.proto->content(&over);
   w->first = o->first; w->last = o->last;
