@@ -16,6 +16,7 @@
 #define _GNU_SOURCE
 #include <ctype.h>
 #include <setjmp.h>
+#include <arenaArray.c>
 #include <utilities.c>
 #define $Editable
 
@@ -74,6 +75,11 @@ typedef struct $Position                                                        
   const size_t depth;                                                           // Depth of the node
   const struct ProtoTypes_$Position *proto;                                     // Methods associated with a position
  } $Position;
+
+typedef struct $NodeAndState                                                    // Replace recursive processing with linear processing
+ {$Node node;
+  int state;
+ } $NodeAndState;
 
 #include <$$_prototypes.h>                                                      // $ prototypes now that the relevant structures have been declared
 #define $fe( child, parent) for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next) // Each child under a parent from first to last
@@ -839,6 +845,44 @@ static void scan__$_sub                                                         
     function(root, -1, 0);                                                      // Call after
    }
   else function(root, 0, 0);                                                    // Call once as the root has no children
+ }
+
+static void scanFrom__$Node_sub                                                 // Traverse the $ starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
+ ($Node * node,                                                                 // $Node
+  void (* const function) ($Node node, int start, int depth))                   // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.
+ {$NodeAndState *s, *S;
+  stack ◀ makeArenaArray(sizeof(*s));
+
+  for(parent ◀ *node; parent ▷ valid; parent = parent ▷ next)                   // Load path on stack
+   {n ◀ node;
+    p ◀ stack ▷ top;
+    p ◧ n;
+   }
+  stack ▷ reverse;
+
+  while(stack ▷ notEmpty)
+   {s = stack ▷ top;
+    if (s->state == 0)
+     {if (s->node ▷ countChildren)
+       {function(s->node, +1, stack ▷ count);
+        S = stack ▷ push;
+        S->state = 0; S->node  = s->node ▷ first;
+        s->state = 1;
+       }
+      else
+       {function(s->node, 0, stack ▷ count);
+        stack ▷ pop;
+       }
+     }
+    else
+     {function(s->node, -1, stack ▷ count);
+      n ◀ s->node ▷ next;
+      if (n ▷ valid)
+       {s->state = 0; s->node = n;
+       }
+      else stack ▷ pop;
+     }
+   }
  }
 
 static  size_t countChildren_size__$                                            // Count the number of children directly under a parent.
