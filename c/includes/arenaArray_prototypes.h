@@ -21,6 +21,8 @@ static void * pop__ArenaArray
 static void * at__ArenaArray_index
  (const ArenaArray * array,
   size_t    index);
+static void reverse__ArenaArray
+ (const ArenaArray * array);
 static void write__ArenaArray_string
  (const ArenaArray    *       array,
   const char * const file);
@@ -42,6 +44,8 @@ struct ProtoTypes_ArenaArray {
     const ArenaArray * array);                                                  // ArenaArray
   void *  (*push)(                                                              // Push an element on to the ArenaArray and return its address
     const ArenaArray * array);                                                  // ArenaArray
+  void  (*reverse)(                                                             // Reverse a ArenaArray in situ.
+    const ArenaArray * array);                                                  // ArenaArray
   void *  (*top)(                                                               // Address of the top most element
     const ArenaArray * array);                                                  // ArenaArray
   size_t  (*width)(                                                             // Get the width of an element in the ArenaArray
@@ -50,7 +54,7 @@ struct ProtoTypes_ArenaArray {
     const ArenaArray    * array,                                                // ArenaArray
     const char * const file);                                                   // File
  } const ProtoTypes_ArenaArray =
-{allocate__ArenaArray, at__ArenaArray_index, count__ArenaArray_pointer, empty_int__ArenaArray, free__ArenaArray, notEmpty_int__ArenaArray, pop__ArenaArray, push__ArenaArray_pointer, top__ArenaArray, width_size__ArenaArray, write__ArenaArray_string};
+{allocate__ArenaArray, at__ArenaArray_index, count__ArenaArray_pointer, empty_int__ArenaArray, free__ArenaArray, notEmpty_int__ArenaArray, pop__ArenaArray, push__ArenaArray_pointer, reverse__ArenaArray, top__ArenaArray, width_size__ArenaArray, write__ArenaArray_string};
 ArenaArray newArenaArray(ArenaArray allocator) {return allocator;}
 
 struct ProtoTypes_ArenaArrayArena {
