@@ -142,6 +142,23 @@ static void * at__ArenaArray_index                                              
   return 0;                                                                     // Index out of range
  }
 
+static void reverse__ArenaArray                                                          // Reverse a ArenaArray in situ.
+ (const ArenaArray * array)                                                              // ArenaArray
+ {const typeof(array->proto->count(array)) count = array->proto->count(array);                                                        // Number of elements
+  if (count <= 1) return;                                                       // Already reversed
+  const typeof(count / 2) m = count / 2;
+  const typeof(array->proto->width(array)) width = array->proto->width(array);                                                        // Width of each element
+  char buffer[width];
+  for(typeof(0ul) i = 0ul; i < m; ++i)                                                      // Swap elements
+   {const typeof(count - 1 - i) j = count - 1 - i;                                                          // Opposing element
+    const typeof(array->arena->data + j * width) J = array->arena->data + j * width;
+    const typeof(array->arena->data + i * width) I = array->arena->data + i * width;
+    memcpy(buffer, J, width);
+    memcpy(J,      I, width);
+    memcpy(I, buffer, width);
+   }
+ }
+
 //D1 Print                                                                      // Print ArenaArrays in various ways
 
 //D1 Input and Output                                                           // Read and write a ArenaArray from/to a file
@@ -216,8 +233,19 @@ void test0()                                                                    
   a.proto->free(&a);
  }
 
+void test1()                                                                    //Treverse
+ {const typeof(makeArenaArray(sizeof(size_t))) a = makeArenaArray(sizeof(size_t));
+  const typeof(10ul) N = 10ul;
+  for(typeof(1ul) i = 1ul; i <= N; ++i) {const typeof(a.proto->push(&a)) p = a.proto->push(&a);    ({typeof(N - i + 1) sourcesourcesource = N - i + 1;  memcpy((void *)p,  (void *)&sourcesourcesource, sizeof(N - i + 1));});}
+  for(typeof(1ul) i = 1ul; i <= N; ++i) {const typeof(a.proto->at(&a, i)) p = a.proto->at(&a, i); assert( ({typeof(i) sourcesourcesource = i;  memcmp((void *)p,  (void *)&sourcesourcesource, sizeof(i));}));}
+  a.proto->reverse(&a);
+  for(typeof(1ul) i = 1ul; i <= N; ++i) {const typeof(a.proto->at(&a, i)) p = a.proto->at(&a, i); assert( ({typeof(i) sourcesourcesource = i; !memcmp((void *)p,  (void *)&sourcesourcesource, sizeof(i));}));}
+
+  a.proto->free(&a);
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, 0};
+ {void (*tests[])(void) = {test0, test1, 0};
   run_tests("ArenaArray", 1, tests);
   return 0;
  }
