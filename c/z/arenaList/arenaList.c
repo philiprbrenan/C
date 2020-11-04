@@ -126,6 +126,7 @@ static $ make$FromLines                                                         
 
   const char * p = str, *q = p;                                                 // Parse the string into new lines
   B ◀ 0ul;
+
   void save()                                                                   // Save a line
    {if (B && p > q) {n ◁ l ▷ node(q, p - q); n ▷ putTreeLast; B = 0;}
     q = p + 1;
@@ -133,6 +134,7 @@ static $ make$FromLines                                                         
 
   for(; *p; ++p) if (*p == '\n') save(); else if (!isspace(*p)) ++B;
   save();
+
   return l;
  };
 
@@ -149,6 +151,7 @@ static $ make$FromWords                                                         
 
   for(; *p; ++p) if (isspace(*p)) save();
   save();
+
   return l;
  };
 
@@ -262,10 +265,7 @@ static int equals_int__$Node_$Node                                              
 static int equalsPosition_int__$Position_$Position                              // Confirm two positions are equal
  (const $Position * a,                                                          // First position
   const $Position   b)                                                          // Second position
- {if (a->byte != b.byte) return 0;
-  if (a->node != b.node) return 0;
-  if (a->depth != b.depth) return 0;
-  return 1;
+ {return a->byte == b.byte && a->node == b.node && a->depth == b.depth;
  }
 
 //D1 Root node                                                                  // The root node of an $ is at offset 0
@@ -409,7 +409,9 @@ static $Node  copy_$Node__$Node_$                                               
   const $       target)                                                         // Target $
  {makeLocalCopyOf$Key(s, l, *source);
   n ◀ target ▷ node  (s, l);                                                    // Copy node to target
-  if  (n ▷ width != source ▶ width) printStackBackTrace("Width of target different from width of source\n");
+  if  (n ▷ width != source ▶ width)
+   {printStackBackTrace("Width of target different from width of source\n");
+   }
   else n ▷ copyData(*source);                                                   // Copy data from source to target
   return n;                                                                     // Copy any data associated with the node
  }                                                                              // Return new node
@@ -467,9 +469,9 @@ static void free__$Node                                                         
 //D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
 
 static void insertChar__$Node_char_size                                         // Insert the specified character into the key string of a node at the specified position.
- ($Node * node,                                                                 // $Node
-  const char    ins,                                                            // Character to insert
-  size_t        pos)                                                            // Position in key. 0 prepends the char, while >= length appends the char.
+ ($Node    * node,                                                              // $Node
+  const char ins,                                                               // Character to insert
+  size_t     pos)                                                               // Position in key. 0 prepends the char, while >= length appends the char.
  {m ◁ node ▶ maxLength;                                                         // Maximum length of key
   l ◁ node ▶ length;                                                            // Current length of key
   if (pos > l) pos = l;                                                         // Append to end of string if requested position is beyond the end of the string
@@ -602,19 +604,17 @@ static  $Node findFirstChild_$Node__$Node_string                                
  }
 
 static  $Node findFirstChild_$Node__$_string                                    // Find the first child immediately under the root with the specified key.
- (const $          * list,                                                      // $
+ (const $    *       list,                                                      // $
   const char * const key)                                                       // Key to find
- {       r ◁ list ▶ root;                                                       // Root node of the $
+ {       r ◁ list ▶  root;                                                      // Root node of the $
   return r ▷ findFirstChild(key);                                               // Search the $
  }
 
 static  $Node at_$Node__$Node_size                                              // The child at the specified index under its parent counting from one.  An invalid node is returned if the index is too large.
  (const $Node * Parent,                                                         // Parent node
   const size_t  index)                                                          // Index
- {parent ◁ *Parent;
-  n ◀ 0ul;
-  $fe(child, parent) if (++n == index) return child;                            // Found matching child
-
+ {parent ◁    * Parent;
+  n ◀ 0ul; $fe(child, parent) if (++n == index) return child;                   // Found matching child
   return new $Node();                                                           // An invalid node
  }
 
@@ -654,15 +654,15 @@ static int isFirst_int__$Node                                                   
 duplicate s/First/Last/,s/first/last/
 
 static int isEmpty_int__$Node                                                   // Confirm a node has no children.
- (const $Node * node)                                                           // $Node
- {child ◁ node ▶ first;
+ (const $Node   * node)                                                         // $Node
+ {child ◁ node  ▶ first;
   return !child ▷ valid;                                                        // No first child so the node is empty
  }
 
 static int isOnlyChild_int__$Node                                               // Confirm that this child is the only child of its parent
- (const $Node * child)                                                          // Child
+ (const $Node    * child)                                                       // Child
  {parent ◁ child ▶ parent;                                                      // Parent
-  return parent ▷ valid && child ▶ isFirst && child ▶ isLast;                   // Child is first and last and not the root so it is an only child
+  return parent  ▷ valid && child ▶ isFirst && child ▶ isLast;                  // Child is first and last and not the root so it is an only child
  }
 
 static int isRoot_int__$Node                                                    // Confirm a node is the root
@@ -746,9 +746,9 @@ static void setUp__$Node_$Node                                                  
  {child ▷ content->parent = parent.offset;                                      // Set parent of child
  }
 
-static  $Node   putNext_$Node__$Node_$Node                                        // Put a child next after the specified sibling
- (const $Node * sibling,                                                          // Sibling
-  const $Node   child)                                                            // Child
+static  $Node   putNext_$Node__$Node_$Node                                      // Put a child next after the specified sibling
+ (const $Node * sibling,                                                        // Sibling
+  const $Node   child)                                                          // Child
  {return putNP_$Node__int_$Node_$Node(1, *sibling, child);                      // Put child next
  }
 duplicate s/Next/Prev/g,s/next/previous/g,s/1/0/
@@ -756,7 +756,7 @@ duplicate s/Next/Prev/g,s/next/previous/g,s/1/0/
 static  void replace__$Node_$Node                                               // Replace the specified node with this node
  (const $Node * with,                                                           // Replace with this node
   const $Node   over)                                                           // Node to be replaced
- {over ▷ putPrev(*with);                                                         // Place new node
+ {over ▷ putPrev(*with);                                                        // Place new node
   $Content * w = with ▶ content;                                                // Transfer children
   $Content * o = over ▷ content;
   w->first = o->first; w->last = o->last;
