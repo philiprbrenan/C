@@ -850,51 +850,40 @@ static void scan__$_sub                                                         
 
 static void scanFrom__$Node_sub                                                 // Traverse the $ starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
  ($Node * node,                                                                 // $Node
-  int (* const function) ($Node node, int start, int depth))                    // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the function is called once with start set to zero.  The funstion should return true if processing should continue, else false.
+  int (* const sub) ($Node node, int start, int depth))                         // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the sub is called once with start set to zero.  The funstion should return true if processing should continue, else false.
  {$NodeAndState *s, *S;
-  stack ◀ makeArenaArray(sizeof(*s));
 
-  for(parent  ◀ *node; parent ▷ valid; parent = parent ▷ parent)                // Load path on stack
+  stack ◀ makeArenaArray(sizeof(*s));                                           // Path from root to current node being expanded
+
+  for(parent ◀ *node; parent ▷ valid; parent = parent ▷ parent)                 // Load path on stack
    {s = stack ▷ push;
-    s->node   = parent;
-    s->count  = parent ▷ countChildren;
-    s->state  = 1;
+    s->node = parent; s->state = 1; s->count  = parent ▷ countChildren;         // Process forwards from each node om the stack
    }
 
-  stack ▷ reverse;
+  stack ▷ reverse;                                                              // Path from [root to current node
+  s = stack ▷ top; s->state = 0;                                                // Start on the specified node not just after it
 
-  if (stack ▷ count)                                                            // Non empty stack
-   {s = stack ▷ top;
-    s->state = 0;                                                               // Start on the specified node not just after it
-
-    jmp_buf finish;
-    if (!setjmp(finish))                                                        // Scan forwards until terminated
-     {while(stack ▷ notEmpty)
-       {s = stack ▷ top;
-        if (s->state == 0)
-         {if ((s->count = s->node ▷ countChildren))
-           {if (function(s->node, +1, stack ▷ count)) longjmp(finish, 1);
-            S = stack ▷ push;
-            S->state = 0; S->node  = s->node ▷ first;
-           }
-          else
-           {if (function(s->node,  0, stack ▷ count)) longjmp(finish, 2);
-           }
-          s->state = 1;
+  jmp_buf finish;
+  if (!setjmp(finish))                                                          // Scan forwards until terminated
+   {while(stack ▷ notEmpty)                                                     // Process remaining nodes
+     {s = stack ▷ top;                                                          // Latest node to expand
+      if (!s->state)                                                            // Expand node
+       {if ((s->count = s->node ▷ countChildren))                               // Latest node has children
+         {if (sub(s->node, +1, stack ▷ count)) longjmp(finish, 1);              // Open scope
+          S = stack ▷ push; S->state = 0; S->node  = s->node ▷ first;           // Add first child to scope
          }
-        else
-         {if (s->count)
-           {if (function(s->node, -1, stack ▷ count)) longjmp(finish, 3);
-           }
-          n ◀ s->node ▷ next;
-          if (n ▷ valid)
-           {s->state = 0; s->node = n;
-           }
-          else stack ▷ pop;
-         }
+        else if (sub(s->node,  0, stack ▷ count)) longjmp(finish, 2);           // Latest node is a leaf
+        s->state = 1;                                                           // Mark node for processing after expansion
+       }
+      else                                                                      // Move to next node  after expansion has been completed
+       {if (s->count && sub(s->node, -1, stack ▷ count)) longjmp(finish, 3);    // Close scope if necessary
+        n ◀ s->node ▷ next;                                                     // Next node
+        if (n ▷ valid) {s->state = 0; s->node = n;}                             // Place node on stack for processing
+        else stack ▷ pop;                                                       // No more siblings, close scope
        }
      }
    }
+
   stack ▷ free;
  }
 
