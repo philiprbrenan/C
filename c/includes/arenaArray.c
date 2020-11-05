@@ -258,10 +258,8 @@ void test1()                                                                    
   a.proto->free(&a);
  }
 
-void test2()                                                                    //TArenaArrayfe TArenaArrayfr
- {const typeof(makeArenaArray(sizeof(size_t))) a = makeArenaArray(sizeof(size_t));
-  typeof(makeStringBuffer()) s = makeStringBuffer();
-  typeof(makeStringBuffer()) r = makeStringBuffer();
+void test2()                                                                    //TArenaArrayfe //TArenaArrayfr
+ {const typeof(makeArenaArray(sizeof(size_t))) a = makeArenaArray(sizeof(size_t)); typeof(makeStringBuffer()) s = makeStringBuffer(); typeof(makeStringBuffer()) r = makeStringBuffer();
   const typeof(10ul) N = 10ul;
 
   for(typeof(1ul) i = 1ul; i <= N; ++i) {const typeof(a.proto->push(&a)) p = a.proto->push(&a); ({typeof(i) sourcesourcesource = i;  memcpy((void *)p,  (void *)&sourcesourcesource, sizeof(i));});}
@@ -276,8 +274,23 @@ void test2()                                                                    
   a.proto->free(&a); r.proto->free(&r); s.proto->free(&s);
  }
 
+void test3()                                                                    //TpushArray
+ {const typeof(makeArenaArray(sizeof(size_t))) a = makeArenaArray(sizeof(size_t)); const typeof(makeArenaArray(sizeof(size_t))) b = makeArenaArray(sizeof(size_t)); typeof(makeStringBuffer()) s = makeStringBuffer();
+  const typeof(10ul) N = 10ul;
+
+  for(typeof(1ul) i = 1ul; i <= N; ++i) {const typeof(a.proto->push(&a)) p = a.proto->push(&a); ({typeof(i) sourcesourcesource = i;  memcpy((void *)p,  (void *)&sourcesourcesource, sizeof(i));}); const typeof(b.proto->push(&b)) q = b.proto->push(&b); ({typeof(i) sourcesourcesource = i;  memcpy((void *)q,  (void *)&sourcesourcesource, sizeof(i));});}
+
+  a.proto->pushArray(&a, b);
+  ArenaArrayfe(c,a) {typeof(0ul) i = 0ul;                        memcpy((void *)&i, (void *)c, sizeof(i)); s.proto->addFormat(&s, "%lu", i);}
+  s.proto->joinWith(&s, " ");
+
+  assert( s.proto->equalsString(&s, "1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10"));
+
+  a.proto->free(&a); s.proto->free(&s);
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, 0};
   run_tests("ArenaArray", 1, tests);
   return 0;
  }
