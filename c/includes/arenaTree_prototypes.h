@@ -24,7 +24,7 @@ static int equals_int__ArenaTreeNode_ArenaTreeNode
  (const ArenaTreeNode * a,
   const ArenaTreeNode   b);
 static  ArenaTreeNode  allocate_ArenaTreeNode__ArenaTree_size
- (const ArenaTree     *list,
+ (const ArenaTree    * list,
   const size_t size);
 static size_t used_size__ArenaTree
  (const ArenaTree * list);
@@ -131,7 +131,7 @@ struct ProtoTypes_ArenaTree {
     char  * const key,                                                          // The key to add
     const size_t length);                                                       // Length of the key to find
   ArenaTreeNode   (*allocate)(                                                  // Allocate a node within the arena of a ArenaTree
-    const ArenaTree     * list,                                                 // ArenaTree in which to allocate
+    const ArenaTree    * list,                                                  // ArenaTree in which to allocate
     const size_t size);                                                         // Amount of memory required
   int  (*check)(                                                                // Check the integrity of the ArenaTree
     const ArenaTree * tree);                                                    // ArenaTree to check
@@ -173,8 +173,8 @@ struct ProtoTypes_ArenaTree {
     const ArenaTree * tree);                                                    // ArenaTree
   size_t  (*used)(                                                              // Amount of space currently being used within the arena of a ArenaTree.
     const ArenaTree * list);                                                    // ArenaTree
-  size_t  (*width)(                                                             // Get the width of the data area for a ArenaTree
-    const ArenaTree * list);                                                    // ArenaTreeNode
+  size_t  (*width)(                                                             // Get the width of the data area in a node for a ArenaTree
+    const ArenaTree * list);                                                    // ArenaTree
  } const ProtoTypes_ArenaTree =
 {add_ArenaTreeNode_ArenaTree_string, allocate_ArenaTreeNode__ArenaTree_size, check_ArenaTree, count_size_ArenaTree, dump_ArenaTree, find_ArenaTreeFound_ArenaTree_string, free_ArenaTree, ll_ArenaTreeNode_ArenaTree_strings, locate_ArenaTree_string, makeArenaTreeFound, node_ArenaTreeNode__ArenaTree_string_size, offset__ArenaTree_size, pointer__ArenaTree_size, print_ArenaTree, root_ArenaTree, used_size__ArenaTree, width_size__ArenaTree};
 ArenaTree newArenaTree(ArenaTree allocator) {return allocator;}
