@@ -286,7 +286,7 @@ void test3()                                                                    
 
   assert( s.proto->equalsString(&s, "1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10"));
 
-  a.proto->free(&a); s.proto->free(&s);
+  a.proto->free(&a); b.proto->free(&b); s.proto->free(&s);
  }
 
 int main(void)                                                                  // Run tests
