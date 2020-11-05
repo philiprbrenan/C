@@ -257,10 +257,8 @@ void test1()                                                                    
   a ▷ free;
  }
 
-void test2()                                                                    //T$fe T$fr
- {a ◁ make$(sizeof(size_t));
-  s ◀ makeStringBuffer();
-  r ◀ makeStringBuffer();
+void test2()                                                                    //T$fe //T$fr
+ {a ◁ make$(sizeof(size_t)); s ◀ makeStringBuffer(); r ◀ makeStringBuffer();
   N ◁ 10ul;
 
   for(i ◀ 1ul; i <= N; ++i) {p ◁ a ▷ push; p ◧ i;}
@@ -275,8 +273,23 @@ void test2()                                                                    
   a ▷ free; r ▷ free; s ▷ free;
  }
 
+void test3()                                                                    //TpushArray
+ {a ◁ make$(sizeof(size_t)); b ◁ make$(sizeof(size_t)); s ◀ makeStringBuffer();
+  N ◁ 10ul;
+
+  for(i ◀ 1ul; i <= N; ++i) {p ◁ a ▷ push; p ◧ i; q ◁ b ▷ push; q ◧ i;}
+
+  a ▷ pushArray(b);
+  $fe(c,a) {i ◀ 0ul; i ◨ c; s ▷ addFormat("%lu", i);}
+  s ▷ joinWith(" ");
+
+  ✓ s ▷ equalsString("1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10");
+
+  a ▷ free; b ▷ free; s ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test0, test1, test2, test3, 0};
   run_tests("$", 1, tests);
   return 0;
  }
