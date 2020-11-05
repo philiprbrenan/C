@@ -32,6 +32,8 @@ typedef struct ArenaArrayDescription                                            
  } ArenaArrayDescription;
 
 #include <arenaArray_prototypes.h>                                                      // ArenaArray prototypes now that the relevant structures have been declared
+#define ArenaArrayfe(child, parent) for(void * child = parent.arena->data; child < parent.arena->data + parent.arena->used; child += parent.arena->width) // Each element in series
+#define ArenaArrayfr(child, parent) for(void * child = parent.arena->data + parent.arena->used - parent.arena->width; child >= parent.arena->data; child -= parent.arena->width) // Each element in series
 
 //D1 Constructors                                                               // Construct a new ArenaArray.
 
@@ -213,6 +215,7 @@ ArenaArray readArenaArray                                                       
 
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
+#include <stringBuffer.c>
 
 void test0()                                                                    //TmakeArenaArray //Tcount //Tpush //Ttop //Tat //Tpop //Tfree //Tempty //TnotEmpty //Twidth
  {const typeof(makeArenaArray(sizeof(size_t))) a = makeArenaArray(sizeof(size_t));
@@ -244,8 +247,26 @@ void test1()                                                                    
   a.proto->free(&a);
  }
 
+void test2()                                                                    //TArenaArrayfe
+ {const typeof(makeArenaArray(sizeof(size_t))) a = makeArenaArray(sizeof(size_t));
+  typeof(makeStringBuffer()) s = makeStringBuffer();
+  typeof(makeStringBuffer()) r = makeStringBuffer();
+  const typeof(10ul) N = 10ul;
+
+  for(typeof(1ul) i = 1ul; i <= N; ++i) {const typeof(a.proto->push(&a)) p = a.proto->push(&a); ({typeof(i) sourcesourcesource = i;  memcpy((void *)p,  (void *)&sourcesourcesource, sizeof(i));});}
+
+  ArenaArrayfe(c,a) {typeof(0ul) i = 0ul;                        memcpy((void *)&i, (void *)c, sizeof(i)); s.proto->addFormat(&s, "%lu", i);}
+  ArenaArrayfr(c,a) {typeof(0ul) i = 0ul;                        memcpy((void *)&i, (void *)c, sizeof(i)); r.proto->addFormat(&r, "%lu", i);}
+    r.proto->joinWith(&r, " ");
+    s.proto->joinWith(&s, " ");
+  assert( r.proto->equalsString(&r, "10 9 8 7 6 5 4 3 2 1"));
+  assert( s.proto->equalsString(&s, "1 2 3 4 5 6 7 8 9 10"));
+
+  a.proto->free(&a); s.proto->free(&s);
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, 0};
+ {void (*tests[])(void) = {test0, test1, test2, 0};
   run_tests("ArenaArray", 1, tests);
   return 0;
  }
