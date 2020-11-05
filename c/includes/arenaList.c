@@ -86,9 +86,9 @@ typedef struct ArenaListNodeAndState                                            
 #include <arenaList_prototypes.h>                                                      // ArenaList prototypes now that the relevant structures have been declared
 #define ArenaListfe( child, parent) for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child)) // Each child under a parent from first to last
 //#define ArenaListFe( child, list)   for(typeof(list.proto->first(&list)) child = list.proto->first(&list); child.proto->valid(&child); child = child.proto->next(&child)) // Each child under the root node of a ArenaList from first to last
-#define ArenaListfer(child, parent) for(typeof(parent.proto->last(&parent) ) child = parent.proto->last(&parent) ; child.proto->valid(&child); child = child.proto->prev(&child)) // Each child under a parent from last to first
+#define ArenaListfr(child, parent) for(typeof(parent.proto->last(&parent) ) child = parent.proto->last(&parent) ; child.proto->valid(&child); child = child.proto->prev(&child)) // Each child under a parent from last to first
 //#define ArenaListFer(child, list)   for(typeof(list.proto->last(&list)) child = list.proto->last(&list); child.proto->valid(&child); child = child.proto->prev(&child)) // Each child under the root node of a ArenaList from last to first
-#define ArenaListfeⁱ(child, parent) size_t child##ⁱ = 1; for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child), ++child##ⁱ) // Each child under a parent from first to last with a counter
+#define ArenaListfⁱ(child, parent) size_t child##ⁱ = 1; for(typeof(parent.proto->first(&parent)) child = parent.proto->first(&parent); child.proto->valid(&child); child = child.proto->next(&child), ++child##ⁱ) // Each child under a parent from first to last with a counter
 #define makeLocalCopyOfArenaListKey(string,stringLength,node) const typeof(content__ArenaListNode(&node)->length) stringLength = content__ArenaListNode(&node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(&node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 //D1 Constructors                                                               // Construct a new ArenaList.
@@ -284,7 +284,7 @@ static  ArenaListNode root_ArenaListNode__ArenaListNode                         
 //D1 Allocation                                                                 // Allocating memory in the ArenaList
 
 static  ArenaListNode  allocate_ArenaListNode__ArenaList_size                                           //P Allocate a node within the arena of a ArenaList
- (const ArenaList     *list,                                                            // ArenaList in which to allocate
+ (const ArenaList    * list,                                                            // ArenaList in which to allocate
   const size_t size)                                                            // Amount of memory required
  {
 #ifdef ArenaListEditable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
@@ -1363,7 +1363,7 @@ void test0()                                                                    
 
   if (1)                                                                        // For each in reverse
    {const typeof(t.proto->count(&t)) n = t.proto->count(&t); char l[n + 1]; memset((void *)&l, 0,                                           sizeof(l));
-    ArenaListfer(child, root) strncat(l, child.proto->key(&child), child.proto->length(&child));
+    ArenaListfr(child, root) strncat(l, child.proto->key(&child), child.proto->length(&child));
     assert(strcmp(l, "jihgfedcbaABCDEFGHIJ") == 0);
    }
 
@@ -1735,7 +1735,7 @@ void test16()                                                                   
   assert( w.proto->countChildren(&w) == 4);
   assert( w.proto->printsWithBracketsAs(&w, "(abbcccdddd)"));
 
-   {typeof(0ul) c = 0ul; ArenaListfeⁱ(x, w) c += xⁱ; assert( c == 10);}
+   {typeof(0ul) c = 0ul; ArenaListfⁱ(x, w) c += xⁱ; assert( c == 10);}
 
   w.proto->free(&w);
 
@@ -1770,7 +1770,7 @@ void test16()                                                                   
 
   if (1)
    {char s[1024], *p = s;
-    ArenaListfer(y,x)
+    ArenaListfr(y,x)
      {makeLocalCopyOfArenaListKey(k, l, y);
        p = stpcpy(p, k);
        p = stpcpy(p, " - ");
