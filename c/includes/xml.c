@@ -314,22 +314,22 @@ static XmlTag last_XmlTag                                                       
  (const XmlTag * parent)                                                          // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent->xml, node: parent->node.proto->last(&parent->node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 313 "/home/phil/c/z/xml/xml.c" // AA
+#line 313 "/home/phil/c/z/xml/xml.c"
 static XmlTag next_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag * parent)                                                          // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent->xml, node: parent->node.proto->next(&parent->node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 313 "/home/phil/c/z/xml/xml.c" // AA
+#line 313 "/home/phil/c/z/xml/xml.c"
 static XmlTag prev_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag * parent)                                                          // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent->xml, node: parent->node.proto->prev(&parent->node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 313 "/home/phil/c/z/xml/xml.c" // AA
+#line 313 "/home/phil/c/z/xml/xml.c"
 static XmlTag parent_XmlTag                                                          // Return the first child tag under the specified parent tag.
  (const XmlTag * parent)                                                          // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: parent->xml, node: parent->node.proto->parent(&parent->node), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 313 "/home/phil/c/z/xml/xml.c" // AA
+#line 313 "/home/phil/c/z/xml/xml.c"
 
 static XmlTag first_XmlParse                                                        // Return the first child tag in the specified Xml parse tree.
  (const XmlParse * xml)                                                           // Parent tag
@@ -339,7 +339,7 @@ static XmlTag last_XmlParse                                                     
  (const XmlParse * xml)                                                           // Parent tag
  {return newXmlTag(({struct XmlTag t = {xml: *xml, node: xml->tree.proto->last(&xml->tree), proto: &ProtoTypes_XmlTag}; t;}));
  }
-#line 319 "/home/phil/c/z/xml/xml.c" // AA
+#line 319 "/home/phil/c/z/xml/xml.c"
 
 //D1 Location                                                                   // Check the current location in the Xml parse tre
 
@@ -373,7 +373,7 @@ static int isLast_int_XmlTag                                                    
   const typeof(parent.proto->last(&parent)) f = parent.proto->last(&parent);
   return f.proto->equals(&f, tag);
  }
-#line 345 "/home/phil/c/z/xml/xml.c" // AA
+#line 345 "/home/phil/c/z/xml/xml.c"
 
 //D1 Text methods                                                               // Methods that operate on text tags
 
