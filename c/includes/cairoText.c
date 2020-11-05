@@ -664,7 +664,7 @@ static void drawOrLayout__CairoTextCompactList                                  
   ArenaListNode entry          [N+1]; memset((void *)&entry, 0,                                           sizeof(entry));                                // Offset for each entry
   Rectangle     entryRectangles[N+1];                                           // Rectangle for each entry up to next tab stop
 
-  ArenaListfeⁱ(word, cl->list)                                                  // Each word
+  ArenaListfⁱ(word, cl->list)                                                   // Each word
    {if (word.offset >= cl->startAt.offset)                                      // Words in the scrolled to area
      {makeLocalCopyOfArenaListKey(K, L, word);
       if (L <= cl->prefixLength) continue;                                      // Word shorter than prefix entered so far
