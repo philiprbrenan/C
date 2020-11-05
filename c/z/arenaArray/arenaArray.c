@@ -31,6 +31,8 @@ typedef struct $Description                                                     
  } $Description;
 
 #include <$$_prototypes.h>                                                      // $ prototypes now that the relevant structures have been declared
+#define $fe(child, parent) for(void * child = parent.arena->data; child < parent.arena->data + parent.arena->used; child += parent.arena->width) // Each element in series
+#define $fr(child, parent) for(void * child = parent.arena->data + parent.arena->used - parent.arena->width; child >= parent.arena->data; child -= parent.arena->width) // Each element in series
 
 //D1 Constructors                                                               // Construct a new $.
 
@@ -212,6 +214,7 @@ $ read$                                                                         
 
 //D1 Tests                                                                      // Tests
 #if __INCLUDE_LEVEL__ == 0
+#include <stringBuffer.c>
 
 void test0()                                                                    //Tmake$ //Tcount //Tpush //Ttop //Tat //Tpop //Tfree //Tempty //TnotEmpty //Twidth
  {a ◁ make$(sizeof(size_t));
@@ -243,8 +246,26 @@ void test1()                                                                    
   a ▷ free;
  }
 
+void test2()                                                                    //T$fe T$fr
+ {a ◁ make$(sizeof(size_t));
+  s ◀ makeStringBuffer();
+  r ◀ makeStringBuffer();
+  N ◁ 10ul;
+
+  for(i ◀ 1ul; i <= N; ++i) {p ◁ a ▷ push; p ◧ i;}
+
+  $fe(c,a) {i ◀ 0ul; i ◨ c; s ▷ addFormat("%lu", i);}
+  $fr(c,a) {i ◀ 0ul; i ◨ c; r ▷ addFormat("%lu", i);}
+    r ▷ joinWith(" ");
+    s ▷ joinWith(" ");
+  ✓ r ▷ equalsString("10 9 8 7 6 5 4 3 2 1");
+  ✓ s ▷ equalsString("1 2 3 4 5 6 7 8 9 10");
+
+  a ▷ free; s ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, 0};
+ {void (*tests[])(void) = {test0, test1, test2, 0};
   run_tests("$", 1, tests);
   return 0;
  }
