@@ -118,6 +118,15 @@ static void * push__$_pointer                                                   
  {return array ▶ allocate;                                                      // Allocate space and return its address
  }
 
+static void pushArray__$_$                                                      // Push a copy of the second array onto the first array.
+ (const $ * first,                                                              // First $
+  const $   second)                                                             // Second $
+ {$fe(child, second)
+   {p ◁ first ▶ allocate;
+    memcpy(p, child, first->arena->width);
+   }
+ }
+
 static void * pop__$                                                            //V Pop and return the address of the top most element
  (const $ * array)                                                              // $
  {if (array ▶ count)                                                            // $ has elements
@@ -159,6 +168,8 @@ static void reverse__$                                                          
     memcpy(I, buffer, width);
    }
  }
+
+//D1 Substring                                                                  // Create a new array as part off an existing array
 
 //D1 Print                                                                      // Print $s in various ways
 
@@ -261,7 +272,7 @@ void test2()                                                                    
   ✓ r ▷ equalsString("10 9 8 7 6 5 4 3 2 1");
   ✓ s ▷ equalsString("1 2 3 4 5 6 7 8 9 10");
 
-  a ▷ free; s ▷ free;
+  a ▷ free; r ▷ free; s ▷ free;
  }
 
 int main(void)                                                                  // Run tests
