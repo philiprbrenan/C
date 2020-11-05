@@ -119,6 +119,15 @@ static void * push__ArenaArray_pointer                                          
  {return array->proto->allocate(array);                                                      // Allocate space and return its address
  }
 
+static void pushArray__ArenaArray_ArenaArray                                                      // Push a copy of the second array onto the first array.
+ (const ArenaArray * first,                                                              // First ArenaArray
+  const ArenaArray   second)                                                             // Second ArenaArray
+ {ArenaArrayfe(child, second)
+   {const typeof(first->proto->allocate(first)) p = first->proto->allocate(first);
+    memcpy(p, child, first->arena->width);
+   }
+ }
+
 static void * pop__ArenaArray                                                            //V Pop and return the address of the top most element
  (const ArenaArray * array)                                                              // ArenaArray
  {if (array->proto->count(array))                                                            // ArenaArray has elements
@@ -160,6 +169,8 @@ static void reverse__ArenaArray                                                 
     memcpy(I, buffer, width);
    }
  }
+
+//D1 Substring                                                                  // Create a new array as part off an existing array
 
 //D1 Print                                                                      // Print ArenaArrays in various ways
 
@@ -247,7 +258,7 @@ void test1()                                                                    
   a.proto->free(&a);
  }
 
-void test2()                                                                    //TArenaArrayfe
+void test2()                                                                    //TArenaArrayfe TArenaArrayfr
  {const typeof(makeArenaArray(sizeof(size_t))) a = makeArenaArray(sizeof(size_t));
   typeof(makeStringBuffer()) s = makeStringBuffer();
   typeof(makeStringBuffer()) r = makeStringBuffer();
@@ -262,7 +273,7 @@ void test2()                                                                    
   assert( r.proto->equalsString(&r, "10 9 8 7 6 5 4 3 2 1"));
   assert( s.proto->equalsString(&s, "1 2 3 4 5 6 7 8 9 10"));
 
-  a.proto->free(&a); s.proto->free(&s);
+  a.proto->free(&a); r.proto->free(&r); s.proto->free(&s);
  }
 
 int main(void)                                                                  // Run tests
