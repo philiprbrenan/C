@@ -283,7 +283,7 @@ static  $Node root_$Node__$Node                                                 
 //D1 Allocation                                                                 // Allocating memory in the $
 
 static  $Node  allocate_$Node__$_size                                           //P Allocate a node within the arena of a $
- (const $     *list,                                                            // $ in which to allocate
+ (const $    * list,                                                            // $ in which to allocate
   const size_t size)                                                            // Amount of memory required
  {
 #ifdef $Editable                                                                // Check the free space chains first to see if there is any free space we can reuse rather than allocating more space in the arena.
