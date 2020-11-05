@@ -877,9 +877,8 @@ static void scanFrom__$Node_sub                                                 
        }
       else                                                                      // Move to next node  after expansion has been completed
        {if (s->count && sub(s->node, -1, stack ▷ count)) longjmp(finish, 3);    // Close scope if necessary
-        n ◀ s->node ▷ next;                                                     // Next node
-        if (n ▷ valid) {s->state = 0; s->node = n;}                             // Place node on stack for processing
-        else stack ▷ pop;                                                       // No more siblings, close scope
+        n ◀ s->node ▷ next;                                                     // Next sibling
+        if (n ▷ valid) {s->state = 0; s->node = n;} else stack ▷ pop;           // Place next sibling on stack for processing or close the scope if there are no more siblings
        }
      }
    }
@@ -889,17 +888,13 @@ static void scanFrom__$Node_sub                                                 
 
 static  size_t countChildren_size__$                                            // Count the number of children directly under a parent.
  (const $ * list)                                                               // $
- {size_t l = 0;
-  root ◁ list ▶ root;
-  $fe(child, root) ++l;
+ {size_t l = 0; root ◁ list ▶ root; $fe(child, root) ++l;
   return l;                                                                     // Return count
  }
 
 static  size_t countChildren_size__$Node                                        // Count the number of children directly under a node.
  (const $Node * Parent)                                                         // Parent
- {size_t l = 0;
-  parent  ◁ *Parent;
-  $fe(child, parent) ++l;
+ {size_t l = 0; parent ◁ *Parent; $fe(child, parent) ++l;
   return l;                                                                     // Return count
  }
 
@@ -920,8 +915,7 @@ static  size_t count_size__$                                                    
  (const $ * list)                                                               // $
  {size_t l = 0;
 
-  root ◁ list ▶ root;                                                           // Root is always invalid
-  $fe(child, root) l += 1 + child ▷ count;                                      // Child under root plus its children
+  root ◁ list ▶ root; $fe(child, root) l += 1 + child ▷ count;                  // Child under root plus its children
   return l;                                                                     // Return count without counting the root node
  }
 
@@ -1035,9 +1029,7 @@ static void dump__$                                                             
     if (!parent ▷ isEmpty) $fe(child, parent) print(child, depth+1);            // Each child
    }
 
-  root ◁ list ▶ root;                                                           // Root
-  say("Dump:");
-  print(root, 0);
+  root ◁ list ▶ root; say("Dump:"); print(root, 0);                             // Dump from root
  }
 
 static void dump__$Node                                                         //P Dump a $Node on stderr
@@ -1070,8 +1062,7 @@ static void print__$Node_function                                               
     *p = 0;                                                                     // End the string
    }
 
-  len(*node); char P[l+1]; P[0] = 0; p = P; print(*node);                       // Print in local string
-  printer(P, l);                                                                // Apply function
+  len(*node); char P[l+1]; P[0] = 0; p = P; print(*node); printer(P, l);        // Print in local string
  }
 
 static int printsAs_int__$Node_string                                           // Check that the specified node prints as expected.
@@ -1092,8 +1083,7 @@ static int printsAs_int__$_string                                               
   void printer(char * s, size_t l)
    {r = !strncmp(s, expected, l);
    }
-  root ◁ list ▶ root;                                                           // Print from root of $
-  root ▷ print(printer);
+  root ◁ list ▶ root; root ▷ print(printer);                                    // Print from root of $
   return r;
  }
 
@@ -1115,8 +1105,7 @@ static int printContains_int__$                                                 
   void printer(char * s, size_t l)
    {r = !!strstr(s, expected); if(0)l=l;
    }
-  root ◁ list ▶ root;                                                           // Print from root of $
-  root ▷ print(printer);
+  root ◁ list ▶ root; root ▷ print(printer);                                    // Print from root of $
   return r;
  }
 
@@ -1128,14 +1117,8 @@ static int cmp_int__$_$                                                         
  {first ◁ *First;
   makeLocalCopyOf$Key(K, L, first);                                             // Key of first node
   makeLocalCopyOf$Key(k, l, second);                                            // Key of second node
-  if (l < L)                                                                    // First key longer than second key
-   {i ◁ strncmp(K, k, l);
-    return i ? i : +1;
-   }
-  if (L < l)                                                                    // First key shorter then second key
-   {i ◁ strncmp(K, k, L);
-    return i ? i : -1;
-   }
+  if (l < L) {i ◁ strncmp(K, k, l); return i ? i : +1;}                         // First key longer than second key
+  if (L < l) {i ◁ strncmp(K, k, L); return i ? i : -1;}                         // First key shorter then second key
   return strncmp(K, k, L);                                                      // Equal length keys
  }
 
@@ -1746,55 +1729,55 @@ void test16()                                                                   
  }
 
 void test17()                                                                   //Tsort //Thighest //Tlowest
- {z ◁ make$();
-  z ▷ sort;
+ {  z ◁ make$();
+    z ▷ sort;
   ✓ z ▷ countChildren == 0;
   ✓ z ▷ printsWithBracketsAs("()");
-  z ▷ free;
+    z ▷ free;
 
-  o ◁ make$FromWords("1");
-  o ▷ sort;
+    o ◁ make$FromWords("1");
+    o ▷ sort;
   ✓ o ▷ countChildren == 1;
   ✓ o ▷ printsWithBracketsAs("(1)");
-  o ▷ free;
+    o ▷ free;
 
-  t ◁ make$FromWords("1 2");
-  t ▷ sort;
+    t ◁ make$FromWords("1 2");
+    t ▷ sort;
   ✓ t ▷ countChildren == 2;
   ✓ t ▷ printsWithBracketsAs("(12)");
-  t ▷ free;
+    t ▷ free;
 
-  r ◁ make$FromWords("3 1 2");
-  r ▷ sort;
+    r ◁ make$FromWords("3 1 2");
+    r ▷ sort;
   ✓ r ▷ countChildren == 3;
   ✓ r ▷ printsWithBracketsAs("(123)");
-  r ▷ free;
+    r ▷ free;
 
-  f ◁ make$FromWords("1 2 3 4");
-  f ▷ sort;
+    f ◁ make$FromWords("1 2 3 4");
+    f ▷ sort;
   ✓ f ▷ countChildren == 4;
   ✓ f ▷ printsWithBracketsAs("(1234)");
-  f ▷ free;
+    f ▷ free;
 
-  F ◁ make$FromWords("4 3 2 1");
-  F ▷ sort;
+    F ◁ make$FromWords("4 3 2 1");
+    F ▷ sort;
   ✓ F ▷ countChildren == 4;
   ✓ F ▷ printsWithBracketsAs("(1234)");
-  F ▷ free;
+    F ▷ free;
 
-  w ◁ make$FromWords(" 9 8 7 6 5 0 2 3 4 1");
-  w ▷ sort;
+    w ◁ make$FromWords(" 9 8 7 6 5 0 2 3 4 1");
+    w ▷ sort;
   ✓ w ▷ countChildren == 10;
   ✓ w ▷ printsWithBracketsAs("(0123456789)");
-  w ▷ free;
+    w ▷ free;
 
-  a ◁ make$FromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14");
-  a ▷ sort;
+    a ◁ make$FromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14");
+    a ▷ sort;
   ✓ a ▷ countChildren == 15;
   ✓ a ▷ printsWithBracketsAs("(14a3aa2aaa1aaaa0acc4b13bb12bbaa6bbb11bbbb10c9cc8ccc7cccc5)");
-  l ◁ a ▷ lowest;              h ◁ a ▷ highest;
+    l ◁ a ▷ lowest;              h ◁ a ▷ highest;
   ✓ l ▷ equalsString("14");  ✓ h ▷ equalsString("cccc5");
-  a ▷ free;
+    a ▷ free;
  }
 
 void test18()                                                                   //TpreOrderPosition //TequalsPosition
