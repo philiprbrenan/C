@@ -51,7 +51,7 @@ static  ArenaListNode root_ArenaListNode__ArenaList
 static  ArenaListNode root_ArenaListNode__ArenaListNode
  (const ArenaListNode node);
 static  ArenaListNode  allocate_ArenaListNode__ArenaList_size
- (const ArenaList     *list,
+ (const ArenaList    * list,
   const size_t size);
 static size_t used_size__ArenaList
  (const ArenaList * list);
@@ -282,7 +282,7 @@ static void write__ArenaList_string
   const char * const file);
 struct ProtoTypes_ArenaList {
   ArenaListNode   (*allocate)(                                                  // Allocate a node within the arena of a ArenaList
-    const ArenaList     * list,                                                 // ArenaList in which to allocate
+    const ArenaList    * list,                                                  // ArenaList in which to allocate
     const size_t size);                                                         // Amount of memory required
   ArenaListNode  (*at)(                                                         // The child at the specified index under the root node of the ArenaList.
     const ArenaList    * list,                                                  // ArenaList
