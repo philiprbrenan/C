@@ -930,9 +930,8 @@ static void scanFrom__ArenaListNode_sub                                         
        }
       else                                                                      // Move to next node  after expansion has been completed
        {if (s->count && sub(s->node, -1, stack.proto->count(&stack))) longjmp(finish, 3);    // Close scope if necessary
-        typeof(s->node.proto->next(&s->node)) n = s->node.proto->next(&s->node);                                                     // Next node
-        if (n.proto->valid(&n)) {s->state = 0; s->node = n;}                             // Place node on stack for processing
-        else stack.proto->pop(&stack);                                                       // No more siblings, close scope
+        typeof(s->node.proto->next(&s->node)) n = s->node.proto->next(&s->node);                                                     // Next sibling
+        if (n.proto->valid(&n)) {s->state = 0; s->node = n;} else stack.proto->pop(&stack);           // Place next sibling on stack for processing or close the scope if there are no more siblings
        }
      }
    }
@@ -942,17 +941,13 @@ static void scanFrom__ArenaListNode_sub                                         
 
 static  size_t countChildren_size__ArenaList                                            // Count the number of children directly under a parent.
  (const ArenaList * list)                                                               // ArenaList
- {size_t l = 0;
-  const typeof(list->proto->root(list)) root = list->proto->root(list);
-  ArenaListfe(child, root) ++l;
+ {size_t l = 0; const typeof(list->proto->root(list)) root = list->proto->root(list); ArenaListfe(child, root) ++l;
   return l;                                                                     // Return count
  }
 
 static  size_t countChildren_size__ArenaListNode                                        // Count the number of children directly under a node.
  (const ArenaListNode * Parent)                                                         // Parent
- {size_t l = 0;
-  const typeof(*Parent) parent = *Parent;
-  ArenaListfe(child, parent) ++l;
+ {size_t l = 0; const typeof(*Parent) parent = *Parent; ArenaListfe(child, parent) ++l;
   return l;                                                                     // Return count
  }
 
@@ -973,8 +968,7 @@ static  size_t count_size__ArenaList                                            
  (const ArenaList * list)                                                               // ArenaList
  {size_t l = 0;
 
-  const typeof(list->proto->root(list)) root = list->proto->root(list);                                                           // Root is always invalid
-  ArenaListfe(child, root) l += 1 + child.proto->count(&child);                                      // Child under root plus its children
+  const typeof(list->proto->root(list)) root = list->proto->root(list); ArenaListfe(child, root) l += 1 + child.proto->count(&child);                  // Child under root plus its children
   return l;                                                                     // Return count without counting the root node
  }
 
@@ -1088,9 +1082,7 @@ static void dump__ArenaList                                                     
     if (!parent.proto->isEmpty(&parent)) ArenaListfe(child, parent) print(child, depth+1);            // Each child
    }
 
-  const typeof(list->proto->root(list)) root = list->proto->root(list);                                                           // Root
-  say("Dump:");
-  print(root, 0);
+  const typeof(list->proto->root(list)) root = list->proto->root(list); say("Dump:"); print(root, 0);                             // Dump from root
  }
 
 static void dump__ArenaListNode                                                         //P Dump a ArenaListNode on stderr
@@ -1123,8 +1115,7 @@ static void print__ArenaListNode_function                                       
     *p = 0;                                                                     // End the string
    }
 
-  len(*node); char P[l+1]; P[0] = 0; p = P; print(*node);                       // Print in local string
-  printer(P, l);                                                                // Apply function
+  len(*node); char P[l+1]; P[0] = 0; p = P; print(*node); printer(P, l);        // Print in local string
  }
 
 static int printsAs_int__ArenaListNode_string                                           // Check that the specified node prints as expected.
@@ -1145,8 +1136,7 @@ static int printsAs_int__ArenaList_string                                       
   void printer(char * s, size_t l)
    {r = !strncmp(s, expected, l);
    }
-  const typeof(list->proto->root(list)) root = list->proto->root(list);                                                           // Print from root of ArenaList
-  root.proto->print(&root, printer);
+  const typeof(list->proto->root(list)) root = list->proto->root(list); root.proto->print(&root, printer);                                    // Print from root of ArenaList
   return r;
  }
 
@@ -1168,8 +1158,7 @@ static int printContains_int__ArenaList                                         
   void printer(char * s, size_t l)
    {r = !!strstr(s, expected); if(0)l=l;
    }
-  const typeof(list->proto->root(list)) root = list->proto->root(list);                                                           // Print from root of ArenaList
-  root.proto->print(&root, printer);
+  const typeof(list->proto->root(list)) root = list->proto->root(list); root.proto->print(&root, printer);                                    // Print from root of ArenaList
   return r;
  }
 
@@ -1181,14 +1170,8 @@ static int cmp_int__ArenaList_ArenaList                                         
  {const typeof(*First) first = *First;
   makeLocalCopyOfArenaListKey(K, L, first);                                             // Key of first node
   makeLocalCopyOfArenaListKey(k, l, second);                                            // Key of second node
-  if (l < L)                                                                    // First key longer than second key
-   {const typeof(strncmp(K, k, l)) i = strncmp(K, k, l);
-    return i ? i : +1;
-   }
-  if (L < l)                                                                    // First key shorter then second key
-   {const typeof(strncmp(K, k, L)) i = strncmp(K, k, L);
-    return i ? i : -1;
-   }
+  if (l < L) {const typeof(strncmp(K, k, l)) i = strncmp(K, k, l); return i ? i : +1;}                         // First key longer than second key
+  if (L < l) {const typeof(strncmp(K, k, L)) i = strncmp(K, k, L); return i ? i : -1;}                         // First key shorter then second key
   return strncmp(K, k, L);                                                      // Equal length keys
  }
 
@@ -1799,55 +1782,55 @@ void test16()                                                                   
  }
 
 void test17()                                                                   //Tsort //Thighest //Tlowest
- {const typeof(makeArenaList()) z = makeArenaList();
-  z.proto->sort(&z);
+ {  const typeof(makeArenaList()) z = makeArenaList();
+    z.proto->sort(&z);
   assert( z.proto->countChildren(&z) == 0);
   assert( z.proto->printsWithBracketsAs(&z, "()"));
-  z.proto->free(&z);
+    z.proto->free(&z);
 
-  const typeof(makeArenaListFromWords("1")) o = makeArenaListFromWords("1");
-  o.proto->sort(&o);
+    const typeof(makeArenaListFromWords("1")) o = makeArenaListFromWords("1");
+    o.proto->sort(&o);
   assert( o.proto->countChildren(&o) == 1);
   assert( o.proto->printsWithBracketsAs(&o, "(1)"));
-  o.proto->free(&o);
+    o.proto->free(&o);
 
-  const typeof(makeArenaListFromWords("1 2")) t = makeArenaListFromWords("1 2");
-  t.proto->sort(&t);
+    const typeof(makeArenaListFromWords("1 2")) t = makeArenaListFromWords("1 2");
+    t.proto->sort(&t);
   assert( t.proto->countChildren(&t) == 2);
   assert( t.proto->printsWithBracketsAs(&t, "(12)"));
-  t.proto->free(&t);
+    t.proto->free(&t);
 
-  const typeof(makeArenaListFromWords("3 1 2")) r = makeArenaListFromWords("3 1 2");
-  r.proto->sort(&r);
+    const typeof(makeArenaListFromWords("3 1 2")) r = makeArenaListFromWords("3 1 2");
+    r.proto->sort(&r);
   assert( r.proto->countChildren(&r) == 3);
   assert( r.proto->printsWithBracketsAs(&r, "(123)"));
-  r.proto->free(&r);
+    r.proto->free(&r);
 
-  const typeof(makeArenaListFromWords("1 2 3 4")) f = makeArenaListFromWords("1 2 3 4");
-  f.proto->sort(&f);
+    const typeof(makeArenaListFromWords("1 2 3 4")) f = makeArenaListFromWords("1 2 3 4");
+    f.proto->sort(&f);
   assert( f.proto->countChildren(&f) == 4);
   assert( f.proto->printsWithBracketsAs(&f, "(1234)"));
-  f.proto->free(&f);
+    f.proto->free(&f);
 
-  const typeof(makeArenaListFromWords("4 3 2 1")) F = makeArenaListFromWords("4 3 2 1");
-  F.proto->sort(&F);
+    const typeof(makeArenaListFromWords("4 3 2 1")) F = makeArenaListFromWords("4 3 2 1");
+    F.proto->sort(&F);
   assert( F.proto->countChildren(&F) == 4);
   assert( F.proto->printsWithBracketsAs(&F, "(1234)"));
-  F.proto->free(&F);
+    F.proto->free(&F);
 
-  const typeof(makeArenaListFromWords(" 9 8 7 6 5 0 2 3 4 1")) w = makeArenaListFromWords(" 9 8 7 6 5 0 2 3 4 1");
-  w.proto->sort(&w);
+    const typeof(makeArenaListFromWords(" 9 8 7 6 5 0 2 3 4 1")) w = makeArenaListFromWords(" 9 8 7 6 5 0 2 3 4 1");
+    w.proto->sort(&w);
   assert( w.proto->countChildren(&w) == 10);
   assert( w.proto->printsWithBracketsAs(&w, "(0123456789)"));
-  w.proto->free(&w);
+    w.proto->free(&w);
 
-  const typeof(makeArenaListFromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14")) a = makeArenaListFromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14");
-  a.proto->sort(&a);
+    const typeof(makeArenaListFromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14")) a = makeArenaListFromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14");
+    a.proto->sort(&a);
   assert( a.proto->countChildren(&a) == 15);
   assert( a.proto->printsWithBracketsAs(&a, "(14a3aa2aaa1aaaa0acc4b13bb12bbaa6bbb11bbbb10c9cc8ccc7cccc5)"));
-  const typeof(a.proto->lowest(&a)) l = a.proto->lowest(&a);              const typeof(a.proto->highest(&a)) h = a.proto->highest(&a);
+    const typeof(a.proto->lowest(&a)) l = a.proto->lowest(&a);              const typeof(a.proto->highest(&a)) h = a.proto->highest(&a);
   assert( l.proto->equalsString(&l, "14"));  assert( h.proto->equalsString(&h, "cccc5"));
-  a.proto->free(&a);
+    a.proto->free(&a);
  }
 
 void test18()                                                                   //TpreOrderPosition //TequalsPosition
