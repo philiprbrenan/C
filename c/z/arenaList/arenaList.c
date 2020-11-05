@@ -85,9 +85,9 @@ typedef struct $NodeAndState                                                    
 #include <$$_prototypes.h>                                                      // $ prototypes now that the relevant structures have been declared
 #define $fe( child, parent) for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next) // Each child under a parent from first to last
 //#define $Fe( child, list)   for(child ◀ list   ▷ first; child ▷ valid; child = child ▷ next) // Each child under the root node of a $ from first to last
-#define $fer(child, parent) for(child ◀ parent ▷ last ; child ▷ valid; child = child ▷ prev) // Each child under a parent from last to first
+#define $fr(child, parent) for(child ◀ parent ▷ last ; child ▷ valid; child = child ▷ prev) // Each child under a parent from last to first
 //#define $Fer(child, list)   for(child ◀ list   ▷  last; child ▷ valid; child = child ▷ prev) // Each child under the root node of a $ from last to first
-#define $feⁱ(child, parent) size_t child##ⁱ = 1; for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next, ++child##ⁱ) // Each child under a parent from first to last with a counter
+#define $fⁱ(child, parent) size_t child##ⁱ = 1; for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next, ++child##ⁱ) // Each child under a parent from first to last with a counter
 #define makeLocalCopyOfArenaListKey(string,stringLength,node) stringLength ◁ content__ArenaListNode(&node)->length; char string[stringLength+1]; string[stringLength] = 0; memcpy(string, key_pointer__ArenaListNode(&node), stringLength); // Copy the key and the length of the key of the specified node to the stack.
 
 //D1 Constructors                                                               // Construct a new $.
@@ -1310,7 +1310,7 @@ void test0()                                                                    
 
   if (1)                                                                        // For each in reverse
    {n ◁ t ▷ count; char l[n + 1]; l ≞ 0;
-    $fer(child, root) strncat(l, child ▷ key, child ▷ length);
+    $fr(child, root) strncat(l, child ▷ key, child ▷ length);
     ✓strcmp(l, "jihgfedcbaABCDEFGHIJ") == 0;
    }
 
@@ -1682,7 +1682,7 @@ void test16()                                                                   
   ✓ w ▷ countChildren == 4;
   ✓ w ▷ printsWithBracketsAs("(abbcccdddd)");
 
-   {c ◀ 0ul; $feⁱ(x, w) c += xⁱ; ✓ c == 10;}
+   {c ◀ 0ul; $fⁱ(x, w) c += xⁱ; ✓ c == 10;}
 
   w ▷ free;
 
@@ -1717,7 +1717,7 @@ void test16()                                                                   
 
   if (1)
    {char s[1024], *p = s;
-    $fer(y,x)
+    $fr(y,x)
      {makeLocalCopyOf$Key(k, l, y);
        p = stpcpy(p, k);
        p = stpcpy(p, " - ");
