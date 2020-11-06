@@ -1698,8 +1698,6 @@ void test14()                                                                   
     a.proto->insertChar(&a, 'C', 2); assert( a.proto->keyEquals(&a, "abCcDdE", 7));
     a.proto->insertChar(&a, 'B', 1); assert( a.proto->keyEquals(&a, "aBbCcDdE", 8));
     a.proto->insertChar(&a, 'A', 0); assert( a.proto->keyEquals(&a, "AaBbCcDdE", 9));
-  assert( a.proto->keyEquals(&a, "AaBbCcDdE", 9));
-               //  012345678
     a.proto->deleteChar(&a, 9);      assert( a.proto->keyEquals(&a, "AaBbCcDdE", 9));
     a.proto->deleteChar(&a, 4);      assert( a.proto->keyEquals(&a, "AaBbcDdE", 8));
     a.proto->deleteChar(&a, 4);      assert( a.proto->keyEquals(&a, "AaBbDdE", 7));
