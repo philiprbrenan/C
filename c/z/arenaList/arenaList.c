@@ -1645,8 +1645,6 @@ void test14()                                                                   
     a ▷ insertChar('C', 2); ✓ a ▷ keyEquals("abCcDdE", 7);
     a ▷ insertChar('B', 1); ✓ a ▷ keyEquals("aBbCcDdE", 8);
     a ▷ insertChar('A', 0); ✓ a ▷ keyEquals("AaBbCcDdE", 9);
-  ✓ a ▷ keyEquals("AaBbCcDdE", 9);
-               //  012345678
     a ▷ deleteChar(9);      ✓ a ▷ keyEquals("AaBbCcDdE", 9);
     a ▷ deleteChar(4);      ✓ a ▷ keyEquals("AaBbcDdE", 8);
     a ▷ deleteChar(4);      ✓ a ▷ keyEquals("AaBbDdE", 7);
