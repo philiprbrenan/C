@@ -1686,13 +1686,10 @@ void test14()                                                                   
 #else
   assert( a.proto->maxLength(&a) == 32);
 
+                            assert( a.proto->keyEquals(&a, "abce", 4));
     a.proto->replaceChar(&a, 'd',3); assert( a.proto->keyEquals(&a, "abcd", 4));
-
     a.proto->swapChars(&a, 1);       assert( a.proto->keyEquals(&a, "bacd", 4));
     a.proto->swapChars(&a, 1);       assert( a.proto->keyEquals(&a, "abcd", 4));
-
-    a.proto->replaceChar(&a, 'd',3); assert( a.proto->keyEquals(&a, "abcd", 4));
-
     a.proto->insertChar(&a, 'E', 5); assert( a.proto->keyEquals(&a, "abcdE", 5));
     a.proto->insertChar(&a, 'D', 3); assert( a.proto->keyEquals(&a, "abcDdE", 6));
     a.proto->insertChar(&a, 'C', 2); assert( a.proto->keyEquals(&a, "abCcDdE", 7));
