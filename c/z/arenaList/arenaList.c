@@ -1633,13 +1633,10 @@ void test14()                                                                   
 #else
   ✓ a ▷ maxLength == 32;
 
+                            ✓ a ▷ keyEquals("abce", 4);
     a ▷ replaceChar('d',3); ✓ a ▷ keyEquals("abcd", 4);
-
     a ▷ swapChars(1);       ✓ a ▷ keyEquals("bacd", 4);
     a ▷ swapChars(1);       ✓ a ▷ keyEquals("abcd", 4);
-
-    a ▷ replaceChar('d',3); ✓ a ▷ keyEquals("abcd", 4);
-
     a ▷ insertChar('E', 5); ✓ a ▷ keyEquals("abcdE", 5);
     a ▷ insertChar('D', 3); ✓ a ▷ keyEquals("abcDdE", 6);
     a ▷ insertChar('C', 2); ✓ a ▷ keyEquals("abCcDdE", 7);
