@@ -559,7 +559,7 @@ static int equalsString_int__$Node_string                                       
  {return node ▶ keyEquals(key, strlen(key));
  }
 
-static  $Node findFirst_$Node__string                                           // Find the first node with the specified key in a post-order traversal of the $ starting at the specified node.
+static  $Node findFirst_$Node__$Node_string                                     // Find the first node with the specified key in a post-order traversal of the $ starting at the specified node.
  (const $Node * node,                                                           // $Node at the start of the list to be searched
   const char  * const key)                                                      // Key to find
  {jmp_buf found;
@@ -850,7 +850,8 @@ static void scan__$_sub                                                         
 
 static void scanFrom__$Node_sub                                                 // Traverse the $ starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
  ($Node * node,                                                                 // $Node
-  int (* const sub) ($Node node, int start, int depth))                         // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the sub is called once with start set to zero.  The funstion should return true if processing should continue, else false.
+  int  (* const sub) ($Node node, int start, int depth),                        // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the sub is called once with start set to zero.  The funstion should return true if processing should continue, else false.
+  int     close)                                                                // Start at the close tag of a non singleton tag if true otherwise start at the open.
  {$NodeAndState *s, *S;
 
   stack ◀ makeArenaArray(sizeof(*s));                                           // Path from root to current node being expanded
@@ -861,7 +862,7 @@ static void scanFrom__$Node_sub                                                 
    }
 
   stack ▷ reverse;                                                              // Path from [root to current node
-  s = stack ▷ top; s->state = 0;                                                // Start on the specified node not just after it
+  s = stack ▷ top; s->state = close;                                            // Start on the specified node not just after it
 
   jmp_buf finish;
   if (!setjmp(finish))                                                          // Scan forwards until terminated
@@ -1291,8 +1292,8 @@ $ read$                                                                         
 void test0()                                                                    //Tmake$ //Tnode //Tfree //TputFirst //TputLast //Tfe //Tfer
  {   t ◁ make$();                                                               // Create a $
   root ◀ t ▷ root;
-
-  for(int i = 0; i < 10; ++i)                                                   // Load $
+  N ◁ 10ul;
+  for(i ◀ 0ul; i < N; ++i)                                                      // Load $
    {char c = 'a'+i;
 
     c1 ◁ t ▷ node(&c, 1); root ▷ putLast (c1);
@@ -1304,14 +1305,16 @@ void test0()                                                                    
 
   if (1)                                                                        // For each
    {n ◁ t ▷ count; char l[n + 1]; l ≞ 0;
+    ✓ n == 2 * N;
+
     $fe (child, root) strncat(l, child ▷ key, child ▷ length);
-    ✓ !strcmp(l, "JIHGFEDCBAabcdefghij");
+    ✓ l ≈≈ "JIHGFEDCBAabcdefghij";
    }
 
   if (1)                                                                        // For each in reverse
    {n ◁ t ▷ count; char l[n + 1]; l ≞ 0;
     $fr(child, root) strncat(l, child ▷ key, child ▷ length);
-    ✓strcmp(l, "jihgfedcbaABCDEFGHIJ") == 0;
+    ✓ l ≈≈ "jihgfedcbaABCDEFGHIJ";
    }
 
   t ▷ free;
@@ -1329,7 +1332,7 @@ void test1()                                                                    
   d ◁ e ▷ prev;
 
   char * k = d ▷ key;
-  ✓k[0] == 'd';
+  ✓ *k == 'd';
     b ▷ printsWithBracketsAs("b(c(de)f)");
     c ▷ printsWithBracketsAs(  "c(de)");
 
@@ -1358,11 +1361,11 @@ void test2()                                                                    
      }
 
     t ▷ by(process);
-    ✓ !strcmp(l, "decfbhigj");
+    ✓ l ≈≈ "decfbhigj";
    }
 
   if (1)
-   {char l[1024], *p = l;
+   {l ≋ 1024; char * p = l;
 
     void process($Node n, int start, int depth)
      {makeLocalCopyOf$Key(k, l, n);
@@ -1370,14 +1373,15 @@ void test2()                                                                    
      }
 
     t ▷ scan(process);
-    ✓ !strcmp(l, "(1,0)b(1,1)c(1,2)d(0,3)e(0,3)c(-1,2)f(0,2)b(-1,1)g(1,1)h(0,2)i(0,2)g(-1,1)j(0,1)(-1,0)");
+    r ◁ "(1,0)b(1,1)c(1,2)d(0,3)e(0,3)c(-1,2)f(0,2)b(-1,1)g(1,1)h(0,2)i(0,2)g(-1,1)j(0,1)(-1,0)";
+    ✓ l ≈≈ r;
    }
 
   t ▷ free;
  }
 
 void test3()                                                                    //TisFirst //TisLast //TisEmpty //TisRoot //TisOnlyChild //Tcontext //TcheckKey //Tvalid
- {t ◁ make$();     t ▷ fromLetters("b(c(de(f)gh)i)j");
+ {t ◁ make$();    t ▷ fromLetters("b(c(de(f)gh)i)j");
   ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
   a ◁ t ▷ root;  ✓a ▷ equalsString("");                           ✓a ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
@@ -1411,21 +1415,21 @@ void test3()                                                                    
  }
 
 void test4()                                                                    //Tcut //TfindFirst //TcountChildren //TequalsString //TfindFirstChild
- {t ◁ make$();     t ▷ fromLetters("b(c(de(f)gh)i)j");
-  ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
+ {  t ◁ make$();     t ▷ fromLetters("b(c(de(f)gh)i)j");
+  ✓ t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
-  c ◁ t ▷ findFirst("c");
+    c ◁ t ▷ findFirst("c");
 
-  ✓c ▷ equalsString("c");
-  d ◁ t ▷ findFirst("d"); ✓d ▷ equalsString("d");
-  e ◁ t ▷ findFirst("e"); ✓e ▷ equalsString("e");
-  f ◁ t ▷ findFirst("f"); ✓f ▷ equalsString("f");
-  g ◁ t ▷ findFirst("g"); ✓g ▷ equalsString("g");
-  h ◁ t ▷ findFirst("h"); ✓h ▷ equalsString("h");
+  ✓ c ▷ equalsString("c");
+    d ◁ t ▷ findFirst("d"); ✓d ▷ equalsString("d");
+    e ◁ t ▷ findFirst("e"); ✓e ▷ equalsString("e");
+    f ◁ t ▷ findFirst("f"); ✓f ▷ equalsString("f");
+    g ◁ t ▷ findFirst("g"); ✓g ▷ equalsString("g");
+    h ◁ t ▷ findFirst("h"); ✓h ▷ equalsString("h");
 
-  ✓g ▷ equals(c ▷ findFirstChild("g"));
-  ✓c ▷ countChildren == 4;
-  ✓e ▷ countChildren == 1;
+  ✓ g ▷ equals(c ▷ findFirstChild("g"));
+  ✓ c ▷ countChildren == 4;
+  ✓ e ▷ countChildren == 1;
 
   f ▷ cut;           ✓t ▷ printsWithBracketsAs("(b(c(degh)i)j)");
   e ▷ putFirst(f);   ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
@@ -1443,23 +1447,23 @@ void test4()                                                                    
  }
 
 void test5()                                                                    //TreadArenaTree //Twrite
- {t ◁ make$();     t ▷ fromLetters("b(c(de(f)gh)i)j");
-  ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
+ {  t ◁ make$();     t ▷ fromLetters("b(c(de(f)gh)i)j");
+  ✓ t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
-   f ◁ "/tmp/arenaTreeTest.data";
-  ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
-   t ▷ write(f);
+    f ◁ "/tmp/arenaTreeTest.data";
+  ✓ t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
+    t ▷ write(f);
 
-   u ◁ read$(f);
-  ✓u ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
+    u ◁ read$(f);
+  ✓ u ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
-  t ▷ free;
-  u ▷ free;
+    t ▷ free;
+    u ▷ free;
   unlink(f);
  }
 
 void test6()                                                                    //Tunwrap //Twrap //Tcount
- {t ◁ make$();     t ▷ fromLetters("bce");
+ {  t ◁ make$();     t ▷ fromLetters("bce");
   ✓ t ▷ printsWithBracketsAs("(bce)");
   ✓ t ▷ count == 3;
 
@@ -1494,13 +1498,13 @@ void test7()                                                                    
  }
 
 void test8()                                                                    //TputTreeFirst //TputTreeLast //TsetKey //Tkey //Tlength //Tused //TkeyEquals //Tnodez
- {t ◁ make$();
+ {  t ◁ make$();
 
-  c ◁ t ▷ node ("c", 1); c ▷ putTreeFirst;
-  d ◁ t ▷ node ("d", 1); d ▷ putTreeLast;
-  b ◀ t ▷ nodez("b");    b ▷ putTreeFirst;
+    c ◁ t ▷ node ("c", 1); c ▷ putTreeFirst;
+    d ◁ t ▷ node ("d", 1); d ▷ putTreeLast;
+    b ◀ t ▷ nodez("b");    b ▷ putTreeFirst;
 
-  b ▷ setKey("B", 1);
+    b ▷ setKey("B", 1);
   ✓ b ▷ length == 1;
   ✓ *(char *)(b ▷ key) == 'B';
   ✓ b ▷ keyEquals("B", 1);
@@ -1513,7 +1517,7 @@ void test8()                                                                    
 
   ✓ t ▷ printsWithBracketsAs("(Bcd)");
 
-  t ▷ free;
+    t ▷ free;
  }
 
 void test9()                                                                    //Tswap
@@ -1707,7 +1711,7 @@ void test16()                                                                   
        p = stpcpy(p, k);
        p = stpcpy(p, " - ");
       }
-    ✓ !strcmp(s, "a b c d   -   aa bb cc dd  -  aaa   bbb ccc ddd - ");
+    ✓ s ≈≈ "a b c d   -   aa bb cc dd  -  aaa   bbb ccc ddd - ";
    }
 
   if (1)
@@ -1717,7 +1721,7 @@ void test16()                                                                   
        p = stpcpy(p, k);
        p = stpcpy(p, " - ");
       }
-    ✓ !strcmp(s, " aaa   bbb ccc ddd -   aa bb cc dd  - a b c d   - ");
+    ✓ s ≈≈ " aaa   bbb ccc ddd -   aa bb cc dd  - a b c d   - ";
    }
 
   x ▷ free;
@@ -1770,7 +1774,7 @@ void test17()                                                                   
     a ▷ sort;
   ✓ a ▷ countChildren == 15;
   ✓ a ▷ printsWithBracketsAs("(14a3aa2aaa1aaaa0acc4b13bb12bbaa6bbb11bbbb10c9cc8ccc7cccc5)");
-    l ◁ a ▷ lowest;              h ◁ a ▷ highest;
+    l ◁ a ▷ lowest;            h ◁ a ▷ highest;
   ✓ l ▷ equalsString("14");  ✓ h ▷ equalsString("cccc5");
     a ▷ free;
  }
@@ -1817,17 +1821,18 @@ void test19()                                                                   
 
 void test20()                                                                   //TscanFrom
  {  s ◁ make$(); s ▷ fromLetters("ab(cde(fg)h(ij))k(l)m");
-    S ◁ makeStringBuffer();
+    S ◁ makeStringBuffer(); T ◁ makeStringBuffer();
 
     f ◀ s ▷ findFirst("f");
+    h ◀ s ▷ findFirst("h");
+
     int sub($Node node, int start, int depth)
      {makeLocalCopyOf$Key(k, l, node);
       S ▷ addFormat("start=%2d  depth=%d  %s\n", start, depth, k);
       return start < 0 && k ≈≈ "k";                                             // Closing k
      }
 
-    f ▷ scanFrom(sub);
-
+      f ▷ scanFrom(sub, 0);
     ✓ S ▷ equalsString(◉);
 start= 0  depth=3  f
 start= 0  depth=3  g
@@ -1841,7 +1846,23 @@ start= 1  depth=1  k
 start= 0  depth=2  l
 start=-1  depth=1  k
 ◉
-    s ▷ free; S ▷ free;
+
+    int tub($Node node, int start, int depth)
+     {makeLocalCopyOf$Key(k, l, node);
+      T ▷ addFormat("start=%2d  depth=%d  %s\n", start, depth, k);
+      return 0;                                                                 // Continue to bitter end
+     }
+
+    h ▷ scanFrom(tub, 1);
+    ✓ T ▷ equalsString(◉);
+start=-1  depth=2  h
+start=-1  depth=1  b
+start= 1  depth=1  k
+start= 0  depth=2  l
+start=-1  depth=1  k
+start= 0  depth=1  m
+◉
+    s ▷ free; S ▷ free; T ▷ free;
  }
 
 int main(void)                                                                  // Run tests
