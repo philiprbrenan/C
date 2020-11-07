@@ -591,7 +591,7 @@ static int equalsString_int__ArenaListNode_string                               
  {return node->proto->keyEquals(node, key, strlen(key));
  }
 
-static  ArenaListNode findFirst_ArenaListNode__string                                           // Find the first node with the specified key in a post-order traversal of the ArenaList starting at the specified node.
+static  ArenaListNode findFirst_ArenaListNode__ArenaListNode_string                                     // Find the first node with the specified key in a post-order traversal of the ArenaList starting at the specified node.
  (const ArenaListNode * node,                                                           // ArenaListNode at the start of the list to be searched
   const char  * const key)                                                      // Key to find
  {jmp_buf found;
@@ -903,7 +903,8 @@ static void scan__ArenaList_sub                                                 
 
 static void scanFrom__ArenaListNode_sub                                                 // Traverse the ArenaList starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
  (ArenaListNode * node,                                                                 // ArenaListNode
-  int (* const sub) (ArenaListNode node, int start, int depth))                         // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the sub is called once with start set to zero.  The funstion should return true if processing should continue, else false.
+  int  (* const sub) (ArenaListNode node, int start, int depth),                        // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the sub is called once with start set to zero.  The funstion should return true if processing should continue, else false.
+  int     close)                                                                // Start at the close tag of a non singleton tag if true otherwise start at the open.
  {ArenaListNodeAndState *s, *S;
 
   typeof(makeArenaArray(sizeof(*s))) stack = makeArenaArray(sizeof(*s));                                           // Path from root to current node being expanded
@@ -914,7 +915,7 @@ static void scanFrom__ArenaListNode_sub                                         
    }
 
   stack.proto->reverse(&stack);                                                              // Path from [root to current node
-  s = stack.proto->top(&stack); s->state = 0;                                                // Start on the specified node not just after it
+  s = stack.proto->top(&stack); s->state = close;                                            // Start on the specified node not just after it
 
   jmp_buf finish;
   if (!setjmp(finish))                                                          // Scan forwards until terminated
@@ -1344,8 +1345,8 @@ ArenaList readArenaList                                                         
 void test0()                                                                    //TmakeArenaList //Tnode //Tfree //TputFirst //TputLast //Tfe //Tfer
  {   const typeof(makeArenaList()) t = makeArenaList();                                                               // Create a ArenaList
   typeof(t.proto->root(&t)) root = t.proto->root(&t);
-
-  for(int i = 0; i < 10; ++i)                                                   // Load ArenaList
+  const typeof(10ul) N = 10ul;
+  for(typeof(0ul) i = 0ul; i < N; ++i)                                                      // Load ArenaList
    {char c = 'a'+i;
 
     const typeof(t.proto->node(&t, &c, 1)) c1 = t.proto->node(&t, &c, 1); root.proto->putLast(&root, c1);
@@ -1357,6 +1358,8 @@ void test0()                                                                    
 
   if (1)                                                                        // For each
    {const typeof(t.proto->count(&t)) n = t.proto->count(&t); char l[n + 1]; memset((void *)&l, 0,                                           sizeof(l));
+    assert( n == 2 * N);
+
     ArenaListfe (child, root) strncat(l, child.proto->key(&child), child.proto->length(&child));
     assert( !strcmp(l, "JIHGFEDCBAabcdefghij"));
    }
@@ -1364,7 +1367,7 @@ void test0()                                                                    
   if (1)                                                                        // For each in reverse
    {const typeof(t.proto->count(&t)) n = t.proto->count(&t); char l[n + 1]; memset((void *)&l, 0,                                           sizeof(l));
     ArenaListfr(child, root) strncat(l, child.proto->key(&child), child.proto->length(&child));
-    assert(strcmp(l, "jihgfedcbaABCDEFGHIJ") == 0);
+    assert( !strcmp(l, "jihgfedcbaABCDEFGHIJ"));
    }
 
   t.proto->free(&t);
@@ -1382,7 +1385,7 @@ void test1()                                                                    
   const typeof(e.proto->prev(&e)) d = e.proto->prev(&e);
 
   char * k = d.proto->key(&d);
-  assert(k[0] == 'd');
+  assert( *k == 'd');
     b.proto->printsWithBracketsAs(&b, "b(c(de)f)");
     c.proto->printsWithBracketsAs(&c,   "c(de)");
 
@@ -1415,7 +1418,7 @@ void test2()                                                                    
    }
 
   if (1)
-   {char l[1024], *p = l;
+   {char l[1024]; char * p = l;
 
     void process(ArenaListNode n, int start, int depth)
      {makeLocalCopyOfArenaListKey(k, l, n);
@@ -1423,14 +1426,15 @@ void test2()                                                                    
      }
 
     t.proto->scan(&t, process);
-    assert( !strcmp(l, "(1,0)b(1,1)c(1,2)d(0,3)e(0,3)c(-1,2)f(0,2)b(-1,1)g(1,1)h(0,2)i(0,2)g(-1,1)j(0,1)(-1,0)"));
+    const typeof("(1,0)b(1,1)c(1,2)d(0,3)e(0,3)c(-1,2)f(0,2)b(-1,1)g(1,1)h(0,2)i(0,2)g(-1,1)j(0,1)(-1,0)") r = "(1,0)b(1,1)c(1,2)d(0,3)e(0,3)c(-1,2)f(0,2)b(-1,1)g(1,1)h(0,2)i(0,2)g(-1,1)j(0,1)(-1,0)";
+    assert( !strcmp(l, r));
    }
 
   t.proto->free(&t);
  }
 
 void test3()                                                                    //TisFirst //TisLast //TisEmpty //TisRoot //TisOnlyChild //Tcontext //TcheckKey //Tvalid
- {const typeof(makeArenaList()) t = makeArenaList();     t.proto->fromLetters(&t, "b(c(de(f)gh)i)j");
+ {const typeof(makeArenaList()) t = makeArenaList();    t.proto->fromLetters(&t, "b(c(de(f)gh)i)j");
   assert(t.proto->printsWithBracketsAs(&t, "(b(c(de(f)gh)i)j)"));
 
   const typeof(t.proto->root(&t)) a = t.proto->root(&t);  assert(a.proto->equalsString(&a, ""));                           assert(a.proto->printsWithBracketsAs(&a, "(b(c(de(f)gh)i)j)"));
@@ -1464,21 +1468,21 @@ void test3()                                                                    
  }
 
 void test4()                                                                    //Tcut //TfindFirst //TcountChildren //TequalsString //TfindFirstChild
- {const typeof(makeArenaList()) t = makeArenaList();     t.proto->fromLetters(&t, "b(c(de(f)gh)i)j");
-  assert(t.proto->printsWithBracketsAs(&t, "(b(c(de(f)gh)i)j)"));
+ {  const typeof(makeArenaList()) t = makeArenaList();     t.proto->fromLetters(&t, "b(c(de(f)gh)i)j");
+  assert( t.proto->printsWithBracketsAs(&t, "(b(c(de(f)gh)i)j)"));
 
-  const typeof(t.proto->findFirst(&t, "c")) c = t.proto->findFirst(&t, "c");
+    const typeof(t.proto->findFirst(&t, "c")) c = t.proto->findFirst(&t, "c");
 
-  assert(c.proto->equalsString(&c, "c"));
-  const typeof(t.proto->findFirst(&t, "d")) d = t.proto->findFirst(&t, "d"); assert(d.proto->equalsString(&d, "d"));
-  const typeof(t.proto->findFirst(&t, "e")) e = t.proto->findFirst(&t, "e"); assert(e.proto->equalsString(&e, "e"));
-  const typeof(t.proto->findFirst(&t, "f")) f = t.proto->findFirst(&t, "f"); assert(f.proto->equalsString(&f, "f"));
-  const typeof(t.proto->findFirst(&t, "g")) g = t.proto->findFirst(&t, "g"); assert(g.proto->equalsString(&g, "g"));
-  const typeof(t.proto->findFirst(&t, "h")) h = t.proto->findFirst(&t, "h"); assert(h.proto->equalsString(&h, "h"));
+  assert( c.proto->equalsString(&c, "c"));
+    const typeof(t.proto->findFirst(&t, "d")) d = t.proto->findFirst(&t, "d"); assert(d.proto->equalsString(&d, "d"));
+    const typeof(t.proto->findFirst(&t, "e")) e = t.proto->findFirst(&t, "e"); assert(e.proto->equalsString(&e, "e"));
+    const typeof(t.proto->findFirst(&t, "f")) f = t.proto->findFirst(&t, "f"); assert(f.proto->equalsString(&f, "f"));
+    const typeof(t.proto->findFirst(&t, "g")) g = t.proto->findFirst(&t, "g"); assert(g.proto->equalsString(&g, "g"));
+    const typeof(t.proto->findFirst(&t, "h")) h = t.proto->findFirst(&t, "h"); assert(h.proto->equalsString(&h, "h"));
 
-  assert(g.proto->equals(&g, c.proto->findFirstChild(&c, "g")));
-  assert(c.proto->countChildren(&c) == 4);
-  assert(e.proto->countChildren(&e) == 1);
+  assert( g.proto->equals(&g, c.proto->findFirstChild(&c, "g")));
+  assert( c.proto->countChildren(&c) == 4);
+  assert( e.proto->countChildren(&e) == 1);
 
   f.proto->cut(&f);           assert(t.proto->printsWithBracketsAs(&t, "(b(c(degh)i)j)"));
   e.proto->putFirst(&e, f);   assert(t.proto->printsWithBracketsAs(&t, "(b(c(de(f)gh)i)j)"));
@@ -1496,23 +1500,23 @@ void test4()                                                                    
  }
 
 void test5()                                                                    //TreadArenaTree //Twrite
- {const typeof(makeArenaList()) t = makeArenaList();     t.proto->fromLetters(&t, "b(c(de(f)gh)i)j");
-  assert(t.proto->printsWithBracketsAs(&t, "(b(c(de(f)gh)i)j)"));
+ {  const typeof(makeArenaList()) t = makeArenaList();     t.proto->fromLetters(&t, "b(c(de(f)gh)i)j");
+  assert( t.proto->printsWithBracketsAs(&t, "(b(c(de(f)gh)i)j)"));
 
-   const typeof("/tmp/arenaTreeTest.data") f = "/tmp/arenaTreeTest.data";
-  assert(t.proto->printsWithBracketsAs(&t, "(b(c(de(f)gh)i)j)"));
-   t.proto->write(&t, f);
+    const typeof("/tmp/arenaTreeTest.data") f = "/tmp/arenaTreeTest.data";
+  assert( t.proto->printsWithBracketsAs(&t, "(b(c(de(f)gh)i)j)"));
+    t.proto->write(&t, f);
 
-   const typeof(readArenaList(f)) u = readArenaList(f);
-  assert(u.proto->printsWithBracketsAs(&u, "(b(c(de(f)gh)i)j)"));
+    const typeof(readArenaList(f)) u = readArenaList(f);
+  assert( u.proto->printsWithBracketsAs(&u, "(b(c(de(f)gh)i)j)"));
 
-  t.proto->free(&t);
-  u.proto->free(&u);
+    t.proto->free(&t);
+    u.proto->free(&u);
   unlink(f);
  }
 
 void test6()                                                                    //Tunwrap //Twrap //Tcount
- {const typeof(makeArenaList()) t = makeArenaList();     t.proto->fromLetters(&t, "bce");
+ {  const typeof(makeArenaList()) t = makeArenaList();     t.proto->fromLetters(&t, "bce");
   assert( t.proto->printsWithBracketsAs(&t, "(bce)"));
   assert( t.proto->count(&t) == 3);
 
@@ -1547,13 +1551,13 @@ void test7()                                                                    
  }
 
 void test8()                                                                    //TputTreeFirst //TputTreeLast //TsetKey //Tkey //Tlength //Tused //TkeyEquals //Tnodez
- {const typeof(makeArenaList()) t = makeArenaList();
+ {  const typeof(makeArenaList()) t = makeArenaList();
 
-  const typeof(t.proto->node(&t, "c", 1)) c = t.proto->node(&t, "c", 1); c.proto->putTreeFirst(&c);
-  const typeof(t.proto->node(&t, "d", 1)) d = t.proto->node(&t, "d", 1); d.proto->putTreeLast(&d);
-  typeof(t.proto->nodez(&t, "b")) b = t.proto->nodez(&t, "b");    b.proto->putTreeFirst(&b);
+    const typeof(t.proto->node(&t, "c", 1)) c = t.proto->node(&t, "c", 1); c.proto->putTreeFirst(&c);
+    const typeof(t.proto->node(&t, "d", 1)) d = t.proto->node(&t, "d", 1); d.proto->putTreeLast(&d);
+    typeof(t.proto->nodez(&t, "b")) b = t.proto->nodez(&t, "b");    b.proto->putTreeFirst(&b);
 
-  b.proto->setKey(&b, "B", 1);
+    b.proto->setKey(&b, "B", 1);
   assert( b.proto->length(&b) == 1);
   assert( *(char *)(b.proto->key(&b)) == 'B');
   assert( b.proto->keyEquals(&b, "B", 1));
@@ -1566,7 +1570,7 @@ void test8()                                                                    
 
   assert( t.proto->printsWithBracketsAs(&t, "(Bcd)"));
 
-  t.proto->free(&t);
+    t.proto->free(&t);
  }
 
 void test9()                                                                    //Tswap
@@ -1823,7 +1827,7 @@ void test17()                                                                   
     a.proto->sort(&a);
   assert( a.proto->countChildren(&a) == 15);
   assert( a.proto->printsWithBracketsAs(&a, "(14a3aa2aaa1aaaa0acc4b13bb12bbaa6bbb11bbbb10c9cc8ccc7cccc5)"));
-    const typeof(a.proto->lowest(&a)) l = a.proto->lowest(&a);              const typeof(a.proto->highest(&a)) h = a.proto->highest(&a);
+    const typeof(a.proto->lowest(&a)) l = a.proto->lowest(&a);            const typeof(a.proto->highest(&a)) h = a.proto->highest(&a);
   assert( l.proto->equalsString(&l, "14"));  assert( h.proto->equalsString(&h, "cccc5"));
     a.proto->free(&a);
  }
@@ -1870,17 +1874,18 @@ void test19()                                                                   
 
 void test20()                                                                   //TscanFrom
  {  const typeof(makeArenaList()) s = makeArenaList(); s.proto->fromLetters(&s, "ab(cde(fg)h(ij))k(l)m");
-    const typeof(makeStringBuffer()) S = makeStringBuffer();
+    const typeof(makeStringBuffer()) S = makeStringBuffer(); const typeof(makeStringBuffer()) T = makeStringBuffer();
 
     typeof(s.proto->findFirst(&s, "f")) f = s.proto->findFirst(&s, "f");
+    typeof(s.proto->findFirst(&s, "h")) h = s.proto->findFirst(&s, "h");
+
     int sub(ArenaListNode node, int start, int depth)
      {makeLocalCopyOfArenaListKey(k, l, node);
       S.proto->addFormat(&S, "start=%2d  depth=%d  %s\n", start, depth, k);
       return start < 0 && !strcmp(k, "k");                                             // Closing k
      }
 
-    f.proto->scanFrom(&f, sub);
-
+      f.proto->scanFrom(&f, sub, 0);
     assert( S.proto->equalsString(&S,
 "start= 0  depth=3  f\n"
 "start= 0  depth=3  g\n"
@@ -1894,7 +1899,23 @@ void test20()                                                                   
 "start= 0  depth=2  l\n"
 "start=-1  depth=1  k\n"
 ));
-    s.proto->free(&s); S.proto->free(&S);
+
+    int tub(ArenaListNode node, int start, int depth)
+     {makeLocalCopyOfArenaListKey(k, l, node);
+      T.proto->addFormat(&T, "start=%2d  depth=%d  %s\n", start, depth, k);
+      return 0;                                                                 // Continue to bitter end
+     }
+
+    h.proto->scanFrom(&h, tub, 1);
+    assert( T.proto->equalsString(&T,
+"start=-1  depth=2  h\n"
+"start=-1  depth=1  b\n"
+"start= 1  depth=1  k\n"
+"start= 0  depth=2  l\n"
+"start=-1  depth=1  k\n"
+"start= 0  depth=1  m\n"
+));
+    s.proto->free(&s); S.proto->free(&S); T.proto->free(&T);
  }
 
 int main(void)                                                                  // Run tests
