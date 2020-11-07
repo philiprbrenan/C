@@ -19,29 +19,31 @@
 
 typedef struct MimagemEditPosition                                                    // A position in a Mimagem edit buffer
  {const struct ProtoTypes_MimagemEditPosition *proto;                                 // Prototypes for methods
-  size_t         character;                                                     // The number of the character
-  size_t         tag;                                                           // The number of the tag
+  size_t         character;                                                     // The number of the character starting at the beginning of the XML
+  size_t         tag;                                                           // The offset of the tag
   size_t         positionInTag;                                                 // The character offset in the tag
   size_t         editLine;                                                      // The edit line containing the position
-  size_t         x;                                                             // The x coordinate of the start of the position
-  size_t         y;                                                             // The y coordinate of the start of the position
+  size_t         x;                                                             // The x coordinate of the start of the position measured in pixels
+  size_t         y;                                                             // The y coordinate of the start of the position measured in pixels
  } MimagemEditPosition;
 
 typedef struct MimagemEditBuffer                                                      // Mimagem edit buffer
  {const struct ProtoTypes_MimagemEditBuffer *proto;                                   // Prototypes for methods
-  XmlParse       xml;                                                           // Xml parse tree being edited
-  CairoTextImage*cti;                                                           // Cairo text image that we are drawing into
-  Rectangle      zone;                                                          // The rectangle in which the edit buffer will be drawn
-  Rectangle      block;                                                         // A rectangle in the edit buffer that displays options in line with teh xml flowing around it so that bioth the options and the xmnl to b operated on are simultaneously visible.
-  int            measureOnly;                                                   // Suppresses drawing if true.  All other operations are performed so that returned measurements of the pointer and cursor position are accurate.
-  int            blockIn;                                                       // Enable the blocked out rectangle if true.
-  double         lineHeight;                                                    // The distance between lines for the specified font size.
+  XmlParse       xml;                                                           //I Xml parse tree being edited
+  CairoTextImage*cti;                                                           //I Cairo text image that we are drawing into
+  Rectangle      zone;                                                          //I The rectangle in which the edit buffer will be drawn
+  Rectangle      block;                                                         //I A rectangle in the edit buffer that displays options in line with teh xml flowing around it so that bioth the options and the xmnl to b operated on are simultaneously visible.
+  int            measureOnly;                                                   //I Suppresses drawing if true.  All other operations are performed so that returned measurements of the pointer and cursor position are accurate.
+  int            blockIn;                                                       //I Enable the blocked out rectangle if true.
+  double         lineHeight;                                                    //O The distance between lines for the specified font size.
   size_t         scroll;                                                        // The number of edit lines we have scrolled down
-  size_t         fontSize;                                                      // Font size to use in creating text
-  size_t         px;                                                            // Pointer pixel position in x
-  size_t         py;                                                            // Pointer pixel position in y
-  MimagemEditPosition  pointer;                                                       // Position of the pointer in Mimagem edit buffer
-  MimagemEditPosition  cursor;                                                        // Position of the cursor in Mimagem edit buffer
+  size_t         fontSize;                                                      //I Font size to use in creating text
+  size_t         px;                                                            //I Pointer pixel position in x
+  size_t         py;                                                            //I Pointer pixel position in y
+  size_t         cx;                                                            //I Cursor pixel position in x
+  size_t         cy;                                                            //I Cursor pixel position in y
+  MimagemEditPosition  pointer;                                                       //O Position of the pointer in Mimagem edit buffer
+  MimagemEditPosition  cursor;                                                        //O Position of the cursor in Mimagem edit buffer
  } MimagemEditBuffer;
 
 #include <mimagem_prototypes.h>
@@ -300,6 +302,7 @@ static void maintainCursorPosition_MimagemEditBuffer_MimagemEditBuffer          
   const typeof(altered->cursor.y) a = altered->cursor.y;                                                        // Location of cursor line in altered Mimagem edit buffer on display in pixels
 
   const typeof((a - b) / altered->lineHeight + altered->scroll) s = (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
+say("SSSS %f\n", s);
 
   altered->scroll = nearbyint(s);
 //altered->scroll = floor(s);
