@@ -78,10 +78,11 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
 
   i ▶ fontSize(editBuffer->fontSize);                                           // Cairo font
   editBuffer->lineHeight = i->fontHeight;                                       // Record line height
-  scrollPixels ◁ i->fontHeight * editBuffer->scroll;                            // Number of pixels scrolled down
 
   size_t getLineNumberWidth()                                                   // Width of line numbers
-   {N ◁ 8ul; n ◁ editBuffer->xml ▷ count;                                       // Maximum width we will allow
+   {N ◁ 8ul;
+    root ◁ editBuffer->xml ▷ root;
+    n ◁ root ▷ charPosition(1);                                                 // Maximum width we will allow
     char z[2] = {'0', 0};                                                       // A string of one zero
     a ◁ i ▶ textAdvance(z);                                                     // Width of string of one zero
     t ◀ 1ul;                                                                    // Power of ten
@@ -99,17 +100,19 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
   editGutter          ◁ editGutterAndText.a;                                    // Gutter just before text
   editText            ◁ editGutterAndText.b;                                    // Text
 
-  size_t currentTagOffset = 0, currentTagNumber =  0, currentPositionInTag = 0, // Current tag and position within current tag
-         currentChar      = 0, currentEditLine  =  1;                           // Current character number counted over all tags drawn, current edit line
+  size_t currentTagNumber = 0, currentPositionInTag = 0,                        // Current tag and position within current tag
+         currentChar      = 0, currentEditLine      = 1;                        // Current character number counted over all tags drawn, current edit line
 
-  double x = editText.x, y = editText.y - scrollPixels - i->fontHeight;         // Initial text position allowing for the new line operation which always occurs first.
+  double x = editText.x, y = editText.y - i->fontHeight;                        // Initial text position allowing for the new line operation which always occurs first.
 
-  void drawTagOrText(XmlTag parent, int depth)                                  // Print the specified parent and its children
-   {currentTagOffset = parent.node.offset;                                      // In case the pointer is located in this tag
-
-    t ◁ parent ▷ isText; pcN ◁ paleColours.N;
-    backgroundColour  ◁ paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
-    backgroundColour1 ◁ paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN];        // Background colour for previous layer
+  void drawTagOrText                                                            // Draw the specified tag
+   (XmlTag parent,                                                              // Tag
+    int openClose,                                                              // +1 open, 0 - singleton, -1 close
+    int depth,                                                                  // Depth of tag
+    int startAtChar)                                                            // Character to start at - normally zero except for the first tag to be drawn
+   {pcN ◁ paleColours.N;
+    backgroundColour  ◁ paleColours.p[(abs(depth - (parent ▷ isText ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
+    backgroundColour1 ◁ paleColours.p[(abs(depth - (parent ▷ isText ? 2 : 1))) % pcN];        // Background colour for previous layer
 
     void startNewLine(int indent)                                               // Move to next line and indent if requested
      {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
@@ -125,7 +128,7 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
       y += i->fontHeight;                                                       // Y coordinate of top of new line
 
       if (draw)
-       {lsprintf(n, 1024, "%lu", currentTagNumber);                             // Format line number
+       {lsprintf(n, 1024, "%lu", parent ▷ charPosition(openClose) + currentChar);// Format line number
         i ▶ save;
 
         b ◁ lastBackGroundColourDrawn;                                          // Background colour of line number
@@ -139,8 +142,8 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
 
         lineNumberFont      ();                                                 // Text of line number
         a  ◁ i ▶ textAdvance(n);                                                // Width of this line number
-        tx ◁ editLineNumbers.x + lineNumberWidth - a;
-        i ▶ text            (tx, y + i->fontAscent, n);
+        tx ◁ editLineNumbers.X - a;
+        i ▶ text            (tx, y, n);
         i ▶ restore;
        }
       i ▶ move(x = editText.x + dx, y);                                         // Position for first character of new line
@@ -203,7 +206,7 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
        {d ◁ fabs(editBuffer->px - x - width / 2);                               // Distance from the center of the current character to pointer.
         if (d < closestSoFar)                                                   // Best distance so far
          {closestSoFar = d;
-          editBuffer->pointer.tag           = currentTagOffset;
+          editBuffer->pointer.tag           = parent.node.offset;
           editBuffer->pointer.positionInTag = currentPositionInTag;
           editBuffer->pointer.editLine      = currentEditLine;
           editBuffer->pointer.character     = currentChar;
@@ -213,7 +216,7 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
        }
 
       if (editBuffer->cursor.character   == currentChar)                        // Cursor location
-       {editBuffer->cursor.tag            = currentTagOffset;
+       {editBuffer->cursor.tag            = parent.node.offset;
         editBuffer->cursor.positionInTag  = currentPositionInTag;
         editBuffer->cursor.editLine       = currentEditLine;
         editBuffer->cursor.x              = x;
@@ -224,7 +227,7 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
      } // drawChar
 
     void drawString(char *s, size_t l, int openClose)                           // Draw a string
-     {for(size_t i = 0; i < l; ++i)
+     {for(size_t i = startAtChar; i < l; ++i)
        {const int d = (i == 0     && openClose == XmlOpen ) ||
                       (i == l - 1 && openClose == XmlClose) ? openClose : 0;
         drawChar(s[i], d);
@@ -254,7 +257,7 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
        }
       else                                                                      // Opener
        {openFont();
-        startNewLine(1);
+        if (!parent ▷ stayInLine) startNewLine(1);                              // Start a new line unless this tag stays inline because it is preceded or followed by text
 //      drawChar  (XmlOpen);
         drawString(parent ▷ tagString, parent ▷ tagStringLength, XmlOpen);
 //      drawChar  (XmlClose);
@@ -266,7 +269,7 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
       if (parent ▷ isTag)
        {if (!parent ▷ empty)
          {currentTagNumber++;                                                   // Close tag
-          if (!parent ▷ stayInLine) startNewLine(1);                            // Start a new line unless this tag sats inline because it is preceded or followed by text
+          if (!parent ▷ stayInLine) startNewLine(1);                            // Start a new line unless this tag stays inline because it is preceded or followed by text
           closeFont();
 //        drawChar  (XmlSlash);
           drawString(XmltagName, strlen(parent ▷ tagName), XmlClose);
@@ -275,12 +278,23 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
        }
      } // close
 
-    open(); Xmlfe(child, parent) drawTagOrText(child, depth+1); close();        // Draw this level and its children
-   }
+    if (openClose > -1) open(); else close();                                   // Draw opening or closing tag
+   } // drawTagOrText
 
-  root    ◁ editBuffer->xml ▷ root;
-  rootTag ◁ root ▷ first;
-  drawTagOrText(rootTag, 0);                                                    // Start at the root tag
+  if (1)                                                                        // Draw the tags from the starting position in the start tag
+   {e ◁ editBuffer;                                                             // Edit buffer
+    s ◀ e->xml.tree ▷ offset(e->startTagOffset);                                // Start tag
+    startAtChar ◀ e->startTagChar;                                              // Set for first tag
+
+    int sub(ArenaListNode node, int start, int depth)                           // Each node in the parse tree going forward from the start position
+     {t ◁ newXmlTag(xml: e->xml, node: node);
+      drawTagOrText(t, start < 0 ? 1 : 0, depth, startAtChar);                  // Draw tag
+      startAtChar = 0;                                                          // Draw tags after the first one from their start position
+      return 0;  // Continue indefinately but we really want to stop one we clear the drawing zone
+     }
+
+    s ▷ scanFrom(sub, e->startTagClose);
+   }
 
   if (1)                                                                        // Draw gutter between line numbers and text
    {g ◁ editGutter;
@@ -303,10 +317,10 @@ static void maintainCursorPosition_$EditBuffer_$EditBuffer                      
  {b ◁ base->   cursor.y;                                                        // Location of cursor line of base $ edit buffer on display in pixels
   a ◁ altered->cursor.y;                                                        // Location of cursor line in altered $ edit buffer on display in pixels
 
-  s ◁ (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
+  s ◁ (a - b) / altered->lineHeight;                                            // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
 say("SSSS %f\n", s);
 
-  altered->scroll = nearbyint(s);
+//altered->scroll = nearbyint(s);
 //altered->scroll = floor(s);
 //altered->scroll = ceil(s);
  }
@@ -345,12 +359,14 @@ void test1()                                                                    
      X ◁ parseXmlFromString(xml, 0);
   ✓ !X ▷ errors;
 
+  b ◁ X ▷ findFirstChild("b");
+
   void draw(CairoTextImage * const i)                                           // Draw the xml into an image
    {page ◁ makeRectangleWH(0, 0, i->width, i->height);
-    wScroll ◁ 4; fontSize ◁ 100;                                                // Scroll amount in wide mode, font size of text in image
+    fontSize ◁ 100;                                                             // Scroll amount in wide mode, font size of text in image
 
     ww ◁ page ▷ right(0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
-    we ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a);
+    we ◀ new $EditBuffer(cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, startTagOffset: b.node.offset, zone: ww.a);
     we ▷ drawEditBuffer;
     i  ▶ saveAsPng("$1_wide.png", "a"); i ▶ clearWhite;
 
@@ -409,7 +425,7 @@ void test2()                                                                    
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test0, 0, test1, test2, 0};
   run_tests("$", 1, tests);
   return 0;
  }
