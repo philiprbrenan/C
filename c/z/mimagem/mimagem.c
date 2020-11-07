@@ -18,29 +18,36 @@
 
 typedef struct $EditPosition                                                    // A position in a $ edit buffer
  {const struct ProtoTypes_$EditPosition *proto;                                 // Prototypes for methods
-  size_t         character;                                                     // The number of the character
-  size_t         tag;                                                           // The number of the tag
+  size_t         character;                                                     // The number of the character starting at the beginning of the XML
+  size_t         tag;                                                           // The offset of the tag
   size_t         positionInTag;                                                 // The character offset in the tag
   size_t         editLine;                                                      // The edit line containing the position
-  size_t         x;                                                             // The x coordinate of the start of the position
-  size_t         y;                                                             // The y coordinate of the start of the position
+  size_t         x;                                                             // The x coordinate of the start of the position measured in pixels
+  size_t         y;                                                             // The y coordinate of the start of the position measured in pixels
+  int            tagClose;                                                      // If true the descrtiption refers to a singleton ro cling tag otheriwse a singleton or opening tag
  } $EditPosition;
 
 typedef struct $EditBuffer                                                      // $ edit buffer
  {const struct ProtoTypes_$EditBuffer *proto;                                   // Prototypes for methods
-  XmlParse       xml;                                                           // Xml parse tree being edited
-  CairoTextImage*cti;                                                           // Cairo text image that we are drawing into
-  Rectangle      zone;                                                          // The rectangle in which the edit buffer will be drawn
-  Rectangle      block;                                                         // A rectangle in the edit buffer that displays options in line with teh xml flowing around it so that bioth the options and the xmnl to b operated on are simultaneously visible.
-  int            measureOnly;                                                   // Suppresses drawing if true.  All other operations are performed so that returned measurements of the pointer and cursor position are accurate.
-  int            blockIn;                                                       // Enable the blocked out rectangle if true.
-  double         lineHeight;                                                    // The distance between lines for the specified font size.
-  size_t         scroll;                                                        // The number of edit lines we have scrolled down
-  size_t         fontSize;                                                      // Font size to use in creating text
-  size_t         px;                                                            // Pointer pixel position in x
-  size_t         py;                                                            // Pointer pixel position in y
-  $EditPosition  pointer;                                                       // Position of the pointer in $ edit buffer
-  $EditPosition  cursor;                                                        // Position of the cursor in $ edit buffer
+  XmlParse       xml;                                                           //I Xml parse tree being edited
+  CairoTextImage*cti;                                                           //I Cairo text image that we are drawing into
+  Rectangle      zone;                                                          //I The rectangle in which the edit buffer will be drawn
+  Rectangle      block;                                                         //I A rectangle in the edit buffer that displays options in line with the xml flowing around it so that both the options and the xml to be operated on are simultaneously visible.
+  size_t         startTagOffset;                                                //I The offset of the tag at which we are to start drawing
+  size_t         startTagChar;                                                  //I The character offset in the tag at which we are to start drawing
+  int            startTagClose;                                                 //I If true start drawing at the closing tag for this xml node.  If the tag is a singleton this parameter has no effect
+  int            measureOnly;                                                   //I Suppresses drawing if true.  All other operations are performed so that returned measurements of the pointer and cursor position are accurate.
+  int            blockIn;                                                       //I Enable the blocked out rectangle if true otherwise the blocked out area is hidden.
+  size_t         fontSize;                                                      //I Font size to use in creating text
+  size_t         px;                                                            //I Pointer pixel position in x
+  size_t         py;                                                            //I Pointer pixel position in y
+  size_t         cx;                                                            //I Cursor pixel position in x
+  size_t         cy;                                                            //I Cursor pixel position in y
+  double         lineHeight;                                                    //O The distance between lines for the specified font size.
+  $EditPosition  firstPos;                                                      //O The first item drawn in the edit text zone
+  $EditPosition  lastPos;                                                       //O The last  item drawn in the edit text zone
+  $EditPosition  pointer;                                                       //O Position of the pointer in the edit buffer
+  $EditPosition  cursor;                                                        //O Position of the cursor  in the edit buffer
  } $EditBuffer;
 
 #include <$$_prototypes.h>
@@ -259,9 +266,7 @@ static void drawEditBuffer_$EditBuffer_$EditBuffer                              
       if (parent ▷ isTag)
        {if (!parent ▷ empty)
          {currentTagNumber++;                                                   // Close tag
-          if (!parent ▷ stayInLine)
-           {startNewLine(1);
-           }
+          if (!parent ▷ stayInLine) startNewLine(1);                            // Start a new line unless this tag sats inline because it is preceded or followed by text
           closeFont();
 //        drawChar  (XmlSlash);
           drawString(XmltagName, strlen(parent ▷ tagName), XmlClose);
@@ -299,6 +304,7 @@ static void maintainCursorPosition_$EditBuffer_$EditBuffer                      
   a ◁ altered->cursor.y;                                                        // Location of cursor line in altered $ edit buffer on display in pixels
 
   s ◁ (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
+say("SSSS %f\n", s);
 
   altered->scroll = nearbyint(s);
 //altered->scroll = floor(s);
