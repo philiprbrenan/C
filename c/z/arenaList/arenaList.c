@@ -848,7 +848,7 @@ static void scan__$_sub                                                         
   else function(root, 0, 0);                                                    // Call once as the root has no children
  }
 
-static void scanFrom__$Node_sub                                                 // Traverse the $ starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
+static void scanFrom__$Node_sub_int                                             // Traverse the $ starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The $ is buffered allowing changes to be made to the structure of the $ without disruption as long as each child checks its context.
  ($Node * node,                                                                 // $Node
   int  (* const sub) ($Node node, int start, int depth),                        // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the sub is called once with start set to zero.  The funstion should return true if processing should continue, else false.
   int     close)                                                                // Start at the close tag of a non singleton tag if true otherwise start at the open.
