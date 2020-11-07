@@ -94,8 +94,3 @@ jobs:
       run: |
         (cd /home/runner/work/C/C/c/z/cairoText/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/cairoText//cairoText.c --cIncludes /home/runner/work/C/C/c/includes  --gccVersion gcc-10)
 
-    - name: Run mimagem
-      if: always()
-      run: |
-        (cd /home/runner/work/C/C/c/z/mimagem/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/mimagem//mimagem.c --cIncludes /home/runner/work/C/C/c/includes  --gccVersion gcc-10)
-
