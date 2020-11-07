@@ -62,6 +62,11 @@ void __attribute__ ((noreturn,unused)) printStackBackTraceAndExit               
   exit(code);
  }
 
+void __attribute__ ((unused)) assertNot                                         // Invert the condition in assert
+ (const int   condition)                                                        // Condition to test
+ {assert(!condition);
+ }
+
 size_t __attribute__ ((unused)) topOfStack()                                    // Return the address of the current top of the stack
  {char a;
   return (size_t)(&a-0);
