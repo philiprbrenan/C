@@ -25,6 +25,7 @@ typedef struct MimagemEditPosition                                              
   size_t         editLine;                                                      // The edit line containing the position
   size_t         x;                                                             // The x coordinate of the start of the position measured in pixels
   size_t         y;                                                             // The y coordinate of the start of the position measured in pixels
+  int            tagClose;                                                      // If true the descrtiption refers to a singleton ro cling tag otheriwse a singleton or opening tag
  } MimagemEditPosition;
 
 typedef struct MimagemEditBuffer                                                      // Mimagem edit buffer
@@ -32,18 +33,22 @@ typedef struct MimagemEditBuffer                                                
   XmlParse       xml;                                                           //I Xml parse tree being edited
   CairoTextImage*cti;                                                           //I Cairo text image that we are drawing into
   Rectangle      zone;                                                          //I The rectangle in which the edit buffer will be drawn
-  Rectangle      block;                                                         //I A rectangle in the edit buffer that displays options in line with teh xml flowing around it so that bioth the options and the xmnl to b operated on are simultaneously visible.
+  Rectangle      block;                                                         //I A rectangle in the edit buffer that displays options in line with the xml flowing around it so that both the options and the xml to be operated on are simultaneously visible.
+  size_t         startTagOffset;                                                //I The offset of the tag at which we are to start drawing
+  size_t         startTagChar;                                                  //I The character offset in the tag at which we are to start drawing
+  int            startTagClose;                                                 //I If true start drawing at the closing tag for this xml node.  If the tag is a singleton this parameter has no effect
   int            measureOnly;                                                   //I Suppresses drawing if true.  All other operations are performed so that returned measurements of the pointer and cursor position are accurate.
-  int            blockIn;                                                       //I Enable the blocked out rectangle if true.
-  double         lineHeight;                                                    //O The distance between lines for the specified font size.
-  size_t         scroll;                                                        // The number of edit lines we have scrolled down
+  int            blockIn;                                                       //I Enable the blocked out rectangle if true otherwise the blocked out area is hidden.
   size_t         fontSize;                                                      //I Font size to use in creating text
   size_t         px;                                                            //I Pointer pixel position in x
   size_t         py;                                                            //I Pointer pixel position in y
   size_t         cx;                                                            //I Cursor pixel position in x
   size_t         cy;                                                            //I Cursor pixel position in y
-  MimagemEditPosition  pointer;                                                       //O Position of the pointer in Mimagem edit buffer
-  MimagemEditPosition  cursor;                                                        //O Position of the cursor in Mimagem edit buffer
+  double         lineHeight;                                                    //O The distance between lines for the specified font size.
+  MimagemEditPosition  firstPos;                                                      //O The first item drawn in the edit text zone
+  MimagemEditPosition  lastPos;                                                       //O The last  item drawn in the edit text zone
+  MimagemEditPosition  pointer;                                                       //O Position of the pointer in the edit buffer
+  MimagemEditPosition  cursor;                                                        //O Position of the cursor  in the edit buffer
  } MimagemEditBuffer;
 
 #include <mimagem_prototypes.h>
@@ -74,10 +79,11 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
 
   i->proto->fontSize(i, editBuffer->fontSize);                                           // Cairo font
   editBuffer->lineHeight = i->fontHeight;                                       // Record line height
-  const typeof(i->fontHeight * editBuffer->scroll) scrollPixels = i->fontHeight * editBuffer->scroll;                            // Number of pixels scrolled down
 
   size_t getLineNumberWidth()                                                   // Width of line numbers
-   {const typeof(8ul) N = 8ul; const typeof(editBuffer->xml.proto->count(&editBuffer->xml)) n = editBuffer->xml.proto->count(&editBuffer->xml);                                       // Maximum width we will allow
+   {const typeof(8ul) N = 8ul;
+    const typeof(editBuffer->xml.proto->root(&editBuffer->xml)) root = editBuffer->xml.proto->root(&editBuffer->xml);
+    const typeof(root.proto->charPosition(&root, 1)) n = root.proto->charPosition(&root, 1);                                                 // Maximum width we will allow
     char z[2] = {'0', 0};                                                       // A string of one zero
     const typeof(i->proto->textAdvance(i, z)) a = i->proto->textAdvance(i, z);                                                     // Width of string of one zero
     typeof(1ul) t = 1ul;                                                                    // Power of ten
@@ -95,17 +101,19 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
   const typeof(editGutterAndText.a) editGutter = editGutterAndText.a;                                    // Gutter just before text
   const typeof(editGutterAndText.b) editText = editGutterAndText.b;                                    // Text
 
-  size_t currentTagOffset = 0, currentTagNumber =  0, currentPositionInTag = 0, // Current tag and position within current tag
-         currentChar      = 0, currentEditLine  =  1;                           // Current character number counted over all tags drawn, current edit line
+  size_t currentTagNumber = 0, currentPositionInTag = 0,                        // Current tag and position within current tag
+         currentChar      = 0, currentEditLine      = 1;                        // Current character number counted over all tags drawn, current edit line
 
-  double x = editText.x, y = editText.y - scrollPixels - i->fontHeight;         // Initial text position allowing for the new line operation which always occurs first.
+  double x = editText.x, y = editText.y - i->fontHeight;                        // Initial text position allowing for the new line operation which always occurs first.
 
-  void drawTagOrText(XmlTag parent, int depth)                                  // Print the specified parent and its children
-   {currentTagOffset = parent.node.offset;                                      // In case the pointer is located in this tag
-
-    const typeof(parent.proto->isText(&parent)) t = parent.proto->isText(&parent); const typeof(paleColours.N) pcN = paleColours.N;
-    const typeof(paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN]) backgroundColour = paleColours.p[(abs(depth - (t ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
-    const typeof(paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN]) backgroundColour1 = paleColours.p[(abs(depth - (t ? 2 : 1))) % pcN];        // Background colour for previous layer
+  void drawTagOrText                                                            // Draw the specified tag
+   (XmlTag parent,                                                              // Tag
+    int openClose,                                                              // +1 open, 0 - singleton, -1 close
+    int depth,                                                                  // Depth of tag
+    int startAtChar)                                                            // Character to start at - normally zero except for the first tag to be drawn
+   {const typeof(paleColours.N) pcN = paleColours.N;
+    const typeof(paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 1 : 0))) % pcN]) backgroundColour = paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
+    const typeof(paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 2 : 1))) % pcN]) backgroundColour1 = paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 2 : 1))) % pcN];        // Background colour for previous layer
 
     void startNewLine(int indent)                                               // Move to next line and indent if requested
      {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
@@ -121,7 +129,7 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
       y += i->fontHeight;                                                       // Y coordinate of top of new line
 
       if (draw)
-       {lsprintf(n, 1024, "%lu", currentTagNumber);                             // Format line number
+       {lsprintf(n, 1024, "%lu", parent.proto->charPosition(&parent, openClose) + currentChar);// Format line number
         i->proto->save(i);
 
         const typeof(lastBackGroundColourDrawn) b = lastBackGroundColourDrawn;                                          // Background colour of line number
@@ -135,8 +143,8 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
 
         lineNumberFont      ();                                                 // Text of line number
         const typeof(i->proto->textAdvance(i, n)) a = i->proto->textAdvance(i, n);                                                // Width of this line number
-        const typeof(editLineNumbers.x + lineNumberWidth - a) tx = editLineNumbers.x + lineNumberWidth - a;
-        i->proto->text(i, tx, y + i->fontAscent, n);
+        const typeof(editLineNumbers.X - a) tx = editLineNumbers.X - a;
+        i->proto->text(i, tx, y, n);
         i->proto->restore(i);
        }
       i->proto->move(i, x = editText.x + dx, y);                                         // Position for first character of new line
@@ -199,7 +207,7 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
        {const typeof(fabs(editBuffer->px - x - width / 2)) d = fabs(editBuffer->px - x - width / 2);                               // Distance from the center of the current character to pointer.
         if (d < closestSoFar)                                                   // Best distance so far
          {closestSoFar = d;
-          editBuffer->pointer.tag           = currentTagOffset;
+          editBuffer->pointer.tag           = parent.node.offset;
           editBuffer->pointer.positionInTag = currentPositionInTag;
           editBuffer->pointer.editLine      = currentEditLine;
           editBuffer->pointer.character     = currentChar;
@@ -209,7 +217,7 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
        }
 
       if (editBuffer->cursor.character   == currentChar)                        // Cursor location
-       {editBuffer->cursor.tag            = currentTagOffset;
+       {editBuffer->cursor.tag            = parent.node.offset;
         editBuffer->cursor.positionInTag  = currentPositionInTag;
         editBuffer->cursor.editLine       = currentEditLine;
         editBuffer->cursor.x              = x;
@@ -220,7 +228,7 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
      } // drawChar
 
     void drawString(char *s, size_t l, int openClose)                           // Draw a string
-     {for(size_t i = 0; i < l; ++i)
+     {for(size_t i = startAtChar; i < l; ++i)
        {const int d = (i == 0     && openClose == XmlOpen ) ||
                       (i == l - 1 && openClose == XmlClose) ? openClose : 0;
         drawChar(s[i], d);
@@ -250,7 +258,7 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
        }
       else                                                                      // Opener
        {openFont();
-        startNewLine(1);
+        if (!parent.proto->stayInLine(&parent)) startNewLine(1);                              // Start a new line unless this tag stays inline because it is preceded or followed by text
 //      drawChar  (XmlOpen);
         drawString(parent.proto->tagString(&parent), parent.proto->tagStringLength(&parent), XmlOpen);
 //      drawChar  (XmlClose);
@@ -262,9 +270,7 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
       if (parent.proto->isTag(&parent))
        {if (!parent.proto->empty(&parent))
          {currentTagNumber++;                                                   // Close tag
-          if (!parent.proto->stayInLine(&parent))
-           {startNewLine(1);
-           }
+          if (!parent.proto->stayInLine(&parent)) startNewLine(1);                            // Start a new line unless this tag stays inline because it is preceded or followed by text
           closeFont();
 //        drawChar  (XmlSlash);
           drawString(XmltagName, strlen(parent.proto->tagName(&parent)), XmlClose);
@@ -273,12 +279,23 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
        }
      } // close
 
-    open(); Xmlfe(child, parent) drawTagOrText(child, depth+1); close();        // Draw this level and its children
-   }
+    if (openClose > -1) open(); else close();                                   // Draw opening or closing tag
+   } // drawTagOrText
 
-  const typeof(editBuffer->xml.proto->root(&editBuffer->xml)) root = editBuffer->xml.proto->root(&editBuffer->xml);
-  const typeof(root.proto->first(&root)) rootTag = root.proto->first(&root);
-  drawTagOrText(rootTag, 0);                                                    // Start at the root tag
+  if (1)                                                                        // Draw the tags from the starting position in the start tag
+   {const typeof(editBuffer) e = editBuffer;                                                             // Edit buffer
+    typeof(e->xml.tree.proto->offset(&e->xml.tree, e->startTagOffset)) s = e->xml.tree.proto->offset(&e->xml.tree, e->startTagOffset);                                // Start tag
+    typeof(e->startTagChar) startAtChar = e->startTagChar;                                              // Set for first tag
+
+    int sub(ArenaListNode node, int start, int depth)                           // Each node in the parse tree going forward from the start position
+     {const typeof(newXmlTag(({struct XmlTag t = {xml: e->xml, node: node, proto: &ProtoTypes_XmlTag}; t;}))) t = newXmlTag(({struct XmlTag t = {xml: e->xml, node: node, proto: &ProtoTypes_XmlTag}; t;}));
+      drawTagOrText(t, start < 0 ? 1 : 0, depth, startAtChar);                  // Draw tag
+      startAtChar = 0;                                                          // Draw tags after the first one from their start position
+      return 0;  // Continue indefinately but we really want to stop one we clear the drawing zone
+     }
+
+    s.proto->scanFrom(&s, sub, e->startTagClose);
+   }
 
   if (1)                                                                        // Draw gutter between line numbers and text
    {const typeof(editGutter) g = editGutter;
@@ -301,10 +318,10 @@ static void maintainCursorPosition_MimagemEditBuffer_MimagemEditBuffer          
  {const typeof(base->   cursor.y) b = base->   cursor.y;                                                        // Location of cursor line of base Mimagem edit buffer on display in pixels
   const typeof(altered->cursor.y) a = altered->cursor.y;                                                        // Location of cursor line in altered Mimagem edit buffer on display in pixels
 
-  const typeof((a - b) / altered->lineHeight + altered->scroll) s = (a - b) / altered->lineHeight + altered->scroll;                          // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
+  const typeof((a - b) / altered->lineHeight) s = (a - b) / altered->lineHeight;                                            // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
 say("SSSS %f\n", s);
 
-  altered->scroll = nearbyint(s);
+//altered->scroll = nearbyint(s);
 //altered->scroll = floor(s);
 //altered->scroll = ceil(s);
  }
@@ -343,12 +360,14 @@ void test1()                                                                    
      const typeof(parseXmlFromString(xml, 0)) X = parseXmlFromString(xml, 0);
   assert( !X.proto->errors(&X));
 
+  const typeof(X.proto->findFirstChild(&X, "b")) b = X.proto->findFirstChild(&X, "b");
+
   void draw(CairoTextImage * const i)                                           // Draw the xml into an image
    {const typeof(makeRectangleWH(0, 0, i->width, i->height)) page = makeRectangleWH(0, 0, i->width, i->height);
-    const typeof(4) wScroll = 4; const typeof(100) fontSize = 100;                                                // Scroll amount in wide mode, font size of text in image
+    const typeof(100) fontSize = 100;                                                             // Scroll amount in wide mode, font size of text in image
 
     const typeof(page.proto->right(&page, 0)) ww = page.proto->right(&page, 0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
-    typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, scroll: wScroll, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
+    typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, startTagOffset: b.node.offset, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, startTagOffset: b.node.offset, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     we.proto->drawEditBuffer(&we);
     i->proto->saveAsPng(i, "Mimagem1_wide.png", "a"); i->proto->clearWhite(i);
 
@@ -407,7 +426,7 @@ void test2()                                                                    
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, test1, test2, 0};
+ {void (*tests[])(void) = {test0, 0, test1, test2, 0};
   run_tests("Mimagem", 1, tests);
   return 0;
  }
