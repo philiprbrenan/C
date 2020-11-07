@@ -45,7 +45,7 @@ rectangle
 vector2d
 xml
 cairoText
-mimagem
+#mimagem
 END
 
 if (exists $$keywords{clean})                                                   # Clean up github
