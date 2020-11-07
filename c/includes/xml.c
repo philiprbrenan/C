@@ -375,6 +375,36 @@ static int isLast_int_XmlTag                                                    
  }
 #line 345 "/home/phil/c/z/xml/xml.c"
 
+static size_t charPosition__XmlTag                                                // Character position of a tag assuming all tags are drawn as open/close not as singletons
+ (const XmlTag * tag,                                                             // XmlTag
+  const int    close)                                                           // 0 - start tag, 1 - close tag
+ {typeof(0ul) n = 0ul;
+  jmp_buf found;
+
+  void children(ArenaListNode parent, int depth)                                // Process the children of the specified parent
+   {if (parent.proto->invalid(&parent)) return;                                               // Empty child
+    if (close == 0 && parent.offset == tag->node.offset) longjmp(found, 1);     // Found current tag open
+    n += parent.proto->length(&parent);                                                       // Open
+    ArenaListfe(child, parent) children(child, depth + 1);                      // Content
+    const typeof(newXmlTag(({struct XmlTag t = {xml: tag->xml, node: parent, proto: &ProtoTypes_XmlTag}; t;}))) t = newXmlTag(({struct XmlTag t = {xml: tag->xml, node: parent, proto: &ProtoTypes_XmlTag}; t;}));                                  // Make tag from node
+    if (!t.proto->isText(&t))                                                            // Text is always a singleton
+     {if (close == 1 && parent.offset == tag->node.offset) longjmp(found, 1);   // Found current tag close
+      makeLocalCopyOfArenaListKey(k, l, parent);                                // Close
+      parseXmlTagName(k, l);
+      n += strlen(XmltagName);
+     }
+    else if (parent.offset == tag->node.offset) longjmp(found, 1);              // Found current tag
+   }
+
+  if (close == 0 && tag->proto->isRoot(tag)) return 0;                                     // Xml root
+  const typeof(tag->xml.proto->root(&tag->xml)) root = tag->xml.proto->root(&tag->xml);                                                       // Parse tree
+  makeLocalCopyOfArenaListKey(k, l, root.node);                                 // Close
+  parseXmlTagName(k, l);
+  n += strlen(XmltagName);
+  if (!setjmp(found)) Xmlfe(child, root) children(child.node, 1);                 // Start at the root node
+  return n;
+ }
+
 //D1 Text methods                                                               // Methods that operate on text tags
 
 static int isText_int_XmlTag                                                      // Check whether we are on a text element
@@ -445,9 +475,8 @@ static XmlTag findFirstChild_XmlTag_XmlTag_string                               
 static XmlTag findFirstChild_XmlTag_XmlParse_string                                   // Find the first child tag with the specified name under the root tag of the specified parse tree.
  (const XmlParse * xml,                                                           // Parent
   const char   * const key)                                                     // Name of the tag to find
- {    const typeof(xml->proto->root(xml)) root = xml->proto->root(xml);                                                        // Root tag
-  const typeof(root.proto->first(&root)) f = root.proto->first(&root);
-  return f.proto->findFirstChild(&f, key);                                               // Each child of the parent
+ {       const typeof(xml->proto->root(xml)) root = xml->proto->root(xml);                                                     // Root tag
+  return root.proto->findFirstChild(&root, key);                                            // Each child of the parent
  }
 
 static XmlTag findFirstTag_XmlTag_XmlTag_string                                       // Find the first tag with the specified name in the Xml parse tree starting at the specified tag.
@@ -486,12 +515,13 @@ static XmlTag findFirstTag_XmlTag_XmlParse_string                               
 
 static XmlTag root_XmlParse                                                         // Return the root tag of the specified Xml parse tree
  (const XmlParse * xml)                                                           // Xml parse tree
- {return newXmlTag(({struct XmlTag t = {xml: *xml, node: xml->tree.proto->root(&xml->tree), proto: &ProtoTypes_XmlTag}; t;}));
+ {const typeof(xml->tree.proto->root(&xml->tree)) root = xml->tree.proto->root(&xml->tree);
+  return newXmlTag(({struct XmlTag t = {xml: *xml, node: root.proto->first(&root), proto: &ProtoTypes_XmlTag}; t;}));
  }
 
 static XmlTag root_XmlTag                                                           // Return the root tsg of the Xml parse tree containing the specified tag.
  (const XmlTag * tag)                                                             // Tag
- {return newXmlTag(({struct XmlTag t = {xml: tag->xml, node: tag->xml.tree.proto->root(&tag->xml.tree), proto: &ProtoTypes_XmlTag}; t;}));
+ {return tag->xml.proto->root(&tag->xml);
  }
 
 static int equals_XmlTag_XmlTag                                                     // Confirm that two tags refer to the same text location in the source document.
@@ -670,14 +700,13 @@ static StringBuffer prettyPrint_stringBuffer_XmlTag                             
   return p;
  } // prettyPrint
 
-static StringBuffer prettyPrint_stringBuffer_Xml                                  // Pretty print the Xml parse tree with additional spacing between tags to make the tree easier to read.
+static StringBuffer prettyPrint_stringBuffer__Xml                                 // Pretty print the Xml parse tree with additional spacing between tags to make the tree easier to read.
  (const XmlParse * xml)                                                           // Xml parse tree
- {    const typeof(xml->proto->root(xml)) root = xml->proto->root(xml);
-  const typeof(root.proto->first(&root)) f = root.proto->first(&root);
-  return f.proto->prettyPrint(&f);
+ {       const typeof(xml->proto->root(xml)) root = xml->proto->root(xml);
+  return root.proto->prettyPrint(&root);
  } // prettyPrint
 
-static StringBuffer print_stringBuffer_XmlTag                                     // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
+static StringBuffer print_stringBuffer__XmlTag                                    // Print the Xml parse tree starting at the specified tag with additional spacing between tags to make the tree easier to read.
  (const XmlTag * tag)                                                             // Starting tag
  {const StringBuffer p = makeStringBuffer();
 
@@ -713,14 +742,13 @@ static StringBuffer print_stringBuffer_XmlTag                                   
   return p;
  }
 
-static StringBuffer print_stringBuffer_Xml                                        // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
+static StringBuffer print_stringBuffer__Xml                                       // Print the Xml parse tree with additional spacing between tags to make the tree easier to read.
  (const XmlParse * xml)                                                           // Xml parse tree
- {    const typeof(xml->proto->root(xml)) root = xml->proto->root(xml);
-  const typeof(root.proto->first(&root)) f = root.proto->first(&root);
-  return f.proto->print(&f);
+ {       const typeof(xml->proto->root(xml)) root = xml->proto->root(xml);
+  return root.proto->print(&root);
  }
 
-static int printsAs_int_Xml_string                                                // Check that the Xml parse tree prints as expected
+static int printsAs_int__Xml_string                                               // Check that the Xml parse tree prints as expected
  (const XmlParse *       xml,                                                     // Xml parse tree
   const char   * const expected)                                                // Expected print
  {const typeof(xml->proto->print(xml)) s = xml->proto->print(xml);
@@ -729,7 +757,7 @@ static int printsAs_int_Xml_string                                              
   return r;
  }
 
-static int printsAs_int_XmlTag_string                                             // Check that the Xml parse tree prints as expected
+static int printsAs_int__XmlTag_string                                            // Check that the Xml parse tree prints as expected
  (const XmlTag * tag,                                                             // Xml parse tree
   const char * const expected)                                                  // Expected print
  {const typeof(tag->proto->print(tag)) s = tag->proto->print(tag);
@@ -738,7 +766,7 @@ static int printsAs_int_XmlTag_string                                           
   return r;
  }
 
-static void printAssert_XmlTag                                                    //P Print the Xml parse tree starting at the specified tag as an assert statement
+static void printAssert__XmlTag                                                   //P Print the Xml parse tree starting at the specified tag as an assert statement
  (const XmlTag *       tag,                                                       // Starting tag
   const char * const variable)                                                  // The name of the variable preceding this call
  {typeof(tag->proto->print(tag)) t = tag->proto->print(tag);
@@ -876,17 +904,16 @@ void test1()                                                                    
 //        x.proto->printAssert(&x, "x");
   assert( x.proto->printsAs(&x, "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j/></a>"));
 
-  const typeof(x.proto->root(&x)) r = x.proto->root(&x);                assert(r.proto->isRoot(&r));
-  const typeof(r.proto->first(&r)) a = r.proto->first(&r);               assert(a.proto->valid(&a)); assert(a.proto->tagNameEquals(&a, "a"));
-  const typeof(x.proto->findFirstTag(&x, "b")) b = x.proto->findFirstTag(&x, "b"); assert(b.proto->valid(&b)); assert(b.proto->tagNameEquals(&b, "b")); assert(a.proto->equals(&a, b.proto->parent(&b)));
-  const typeof(x.proto->findFirstTag(&x, "c")) c = x.proto->findFirstTag(&x, "c"); assert(c.proto->valid(&c)); assert(c.proto->tagNameEquals(&c, "c")); assert(b.proto->equals(&b, c.proto->parent(&c)));
-  const typeof(b.proto->findFirstChild(&b, "d")) d = b.proto->findFirstChild(&b, "d"); assert(d.proto->valid(&d)); assert(d.proto->tagNameEquals(&d, "d")); assert(b.proto->equals(&b, d.proto->parent(&d)));
-  const typeof(d.proto->findFirstChild(&d, "e")) e = d.proto->findFirstChild(&d, "e"); assert(e.proto->valid(&e)); assert(e.proto->tagNameEquals(&e, "e")); assert(d.proto->equals(&d, e.proto->parent(&e)));
-  const typeof(d.proto->findFirstChild(&d, "f")) f = d.proto->findFirstChild(&d, "f"); assert(f.proto->valid(&f)); assert(f.proto->tagNameEquals(&f, "f")); assert(d.proto->equals(&d, f.proto->parent(&f)));
-  const typeof(d.proto->findFirstChild(&d, "g")) g = d.proto->findFirstChild(&d, "g"); assert(g.proto->valid(&g)); assert(g.proto->tagNameEquals(&g, "g")); assert(d.proto->equals(&d, g.proto->parent(&g)));
-  const typeof(b.proto->findFirstChild(&b, "h")) h = b.proto->findFirstChild(&b, "h"); assert(h.proto->valid(&h)); assert(h.proto->tagNameEquals(&h, "h")); assert(b.proto->equals(&b, h.proto->parent(&h)));
-  const typeof(x.proto->findFirstTag(&x, "i")) i = x.proto->findFirstTag(&x, "i"); assert(i.proto->valid(&i)); assert(i.proto->tagNameEquals(&i, "i")); assert(a.proto->equals(&a, i.proto->parent(&i)));
-  const typeof(x.proto->findFirstTag(&x, "j")) j = x.proto->findFirstTag(&x, "j"); assert(j.proto->valid(&j)); assert(j.proto->tagNameEquals(&j, "j")); assert(a.proto->equals(&a, j.proto->parent(&j)));
+  const typeof(x.proto->root(&x)) a = x.proto->root(&x); assert( a.proto->isRoot(&a));  assert( a.proto->valid(&a)); assert( a.proto->tagNameEquals(&a, "a"));
+  const typeof(x.proto->findFirstTag(&x, "b")) b = x.proto->findFirstTag(&x, "b"); assert( b.proto->valid(&b)); assert( b.proto->tagNameEquals(&b, "b")); assert( a.proto->equals(&a, b.proto->parent(&b)));
+  const typeof(x.proto->findFirstTag(&x, "c")) c = x.proto->findFirstTag(&x, "c"); assert( c.proto->valid(&c)); assert( c.proto->tagNameEquals(&c, "c")); assert( b.proto->equals(&b, c.proto->parent(&c)));
+  const typeof(b.proto->findFirstChild(&b, "d")) d = b.proto->findFirstChild(&b, "d"); assert( d.proto->valid(&d)); assert( d.proto->tagNameEquals(&d, "d")); assert( b.proto->equals(&b, d.proto->parent(&d)));
+  const typeof(d.proto->findFirstChild(&d, "e")) e = d.proto->findFirstChild(&d, "e"); assert( e.proto->valid(&e)); assert( e.proto->tagNameEquals(&e, "e")); assert( d.proto->equals(&d, e.proto->parent(&e)));
+  const typeof(d.proto->findFirstChild(&d, "f")) f = d.proto->findFirstChild(&d, "f"); assert( f.proto->valid(&f)); assert( f.proto->tagNameEquals(&f, "f")); assert( d.proto->equals(&d, f.proto->parent(&f)));
+  const typeof(d.proto->findFirstChild(&d, "g")) g = d.proto->findFirstChild(&d, "g"); assert( g.proto->valid(&g)); assert( g.proto->tagNameEquals(&g, "g")); assert( d.proto->equals(&d, g.proto->parent(&g)));
+  const typeof(b.proto->findFirstChild(&b, "h")) h = b.proto->findFirstChild(&b, "h"); assert( h.proto->valid(&h)); assert( h.proto->tagNameEquals(&h, "h")); assert( b.proto->equals(&b, h.proto->parent(&h)));
+  const typeof(x.proto->findFirstTag(&x, "i")) i = x.proto->findFirstTag(&x, "i"); assert( i.proto->valid(&i)); assert( i.proto->tagNameEquals(&i, "i")); assert( a.proto->equals(&a, i.proto->parent(&i)));
+  const typeof(x.proto->findFirstTag(&x, "j")) j = x.proto->findFirstTag(&x, "j"); assert( j.proto->valid(&j)); assert( j.proto->tagNameEquals(&j, "j")); assert( a.proto->equals(&a, j.proto->parent(&j)));
 
   assert( b.proto->equals(&b, a.proto->first(&a)));  assert(  b.proto->isFirst(&b));   assert( !d.proto->isFirst(&d)); assert( !b.proto->isRoot(&b));
   assert( c.proto->equals(&c, b.proto->first(&b)));  assert(  c.proto->empty(&c));     assert( !c.proto->stayInLine(&c));
@@ -1143,9 +1170,23 @@ void test7()                                                                    
   x.proto->free(&x);
  }
 
+void test8()                                                                    //TcharPos
+ {const typeof("<a><abcd>1234</abcd><efg></efg></a>") xml = "<a><abcd>1234</abcd><efg></efg></a>";
+     const typeof(parseXmlFromString(xml, 0)) x = parseXmlFromString(xml, 0);
+  assert( !x.proto->errors(&x));
+     const typeof(x.proto->root(&x)) X = x.proto->root(&x);                 assert( X.proto->charPosition(&X, 0) ==  0);  assert( X.proto->charPosition(&X, 1) == 19);
+  const typeof(x.proto->findFirstChild(&x, "abcd")) a = x.proto->findFirstChild(&x, "abcd");  assert( a.proto->charPosition(&a, 0) ==  1);  assert( a.proto->charPosition(&a, 1) == 9);
+  const typeof(a.proto->first(&a)) b = a.proto->first(&a);                   assert( b.proto->charPosition(&b, 0) ==  5);  assert( b.proto->charPosition(&b, 1) == 9);
+  const typeof(a.proto->next(&a)) c = a.proto->next(&a);
+say("AAAA %lu\n", c.proto->charPosition(&c, 0));
+                   assert( c.proto->charPosition(&c, 0) == 13);  assert( c.proto->charPosition(&c, 1) == 16);
+
+  x.proto->free(&x);
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0, test1, test2, test3, test4,
-                           test5, test6, test7, 0};
+                           test5, test6, test7, test8, 0};
   run_tests("Xml", 1, tests);
   return 0;
  }
