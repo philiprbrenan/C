@@ -55,10 +55,10 @@ typedef struct MimagemEditBuffer                                                
 
 static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                              // Draw the edit buffer and return the location of the pointer and cursor
  (MimagemEditBuffer * editBuffer)                                                     // Mimagem edit buffer
- {typeof(editBuffer->cti) i = editBuffer->cti;                                                       // Image description
-  const typeof(i->cr) cr = i->cr;                                                                 // Cairo context to draw in
-  const typeof(!editBuffer->measureOnly) draw = !editBuffer->measureOnly;                                              // Draw unless we only want to measure
-  typeof(ULONG_MAX) closestSoFar = ULONG_MAX;                                                     // Shortest distance so far to pointer
+ {typeof(editBuffer->cti) i = editBuffer->cti;                                       // Image description
+  const typeof(i->cr) cr = i->cr;                                                 // Cairo context to draw in
+  const typeof(!editBuffer->measureOnly) draw = !editBuffer->measureOnly;                              // Draw unless we only want to measure
+  typeof(ULONG_MAX) closestSoFar = ULONG_MAX;                                             // Shortest distance so far to pointer
   const typeof(8) lineNumberGutterText = 8;                                                     // Pixels Gutter between line numbers and text
 
   const typeof(makeColourPale()) paleColours = makeColourPale();                                               // Background colours for each tag by depth with text getting the same colour as its parent.
@@ -92,7 +92,7 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
       if (t > n) return i * a;                                                  // Big enough
      }
     return a * N;                                                               // Use default in extremis
-   }
+   } // getLineNumberWidth
 
   const typeof(getLineNumberWidth()) lineNumberWidth = getLineNumberWidth();                                   // Width of line numbers
   const typeof(editBuffer->zone.proto->left(&editBuffer->zone, lineNumberWidth)) editLineNumbersText = editBuffer->zone.proto->left(&editBuffer->zone, lineNumberWidth);          // Split the drawing area into line numbers and text
@@ -104,55 +104,55 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
   size_t currentTagNumber = 0, currentPositionInTag = 0,                        // Current tag and position within current tag
          currentChar      = 0, currentEditLine      = 1;                        // Current character number counted over all tags drawn, current edit line
 
-  double x = editText.x, y = editText.y - i->fontHeight;                        // Initial text position allowing for the new line operation which always occurs first.
+  double x = editText.X, y = editText.y - i->fontHeight;                        // Initial text position allowing for the new line operation which always occurs first.
 
   void drawTagOrText                                                            // Draw the specified tag
    (XmlTag parent,                                                              // Tag
-    int openClose,                                                              // +1 open, 0 - singleton, -1 close
+    int closeTag,                                                               // True if a closing tag
     int depth,                                                                  // Depth of tag
     int startAtChar)                                                            // Character to start at - normally zero except for the first tag to be drawn
    {const typeof(paleColours.N) pcN = paleColours.N;
     const typeof(paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 1 : 0))) % pcN]) backgroundColour = paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
     const typeof(paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 2 : 1))) % pcN]) backgroundColour1 = paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 2 : 1))) % pcN];        // Background colour for previous layer
 
-    void startNewLine(int indent)                                               // Move to next line and indent if requested
-     {++currentEditLine;                                                        // Edit line in the edit buffer drawing zone
-      const typeof((indent ? i->fontHeight * depth : 0)) dx = (indent ? i->fontHeight * depth : 0);                                // Requested indentation
+    void startNewLine(int indent)                                               // Move to next line or move to indent point on this line if possible else the next line
+     {const typeof(i->fontHeight * depth) ip = i->fontHeight * depth;                                               // Indentation position
+      const typeof(!indent || (indent && x > editText.x + ip)) nr = !indent || (indent && x > editText.x + ip);                          // New line required
 
-      if (draw)                                                                 // Finish current line
+      if (draw && nr)                                                           // Finish current line if we are moving to the next line
        {i->proto->save(i);
         const typeof(makeRectangleWH(x, y, editText.X - x, i->fontHeight)) r = makeRectangleWH(x, y, editText.X - x, i->fontHeight);               // Rectangle for line number
         i->proto->rectangle(i, r, lastBackGroundColourDrawn);                            // Background for line number
         i->proto->restore(i);
        }
 
-      y += i->fontHeight;                                                       // Y coordinate of top of new line
+      if (nr) {y += i->fontHeight; ++currentEditLine;}                          // Y coordinate of top of new line if moving to a new line
 
-      if (draw)
-       {lsprintf(n, 1024, "%lu", parent.proto->charPosition(&parent, openClose) + currentChar);// Format line number
-        i->proto->save(i);
+      if (draw)                                                                 // Draw the line number if starting a new line
+       {i->proto->save(i);
+        i->proto->colour(i, lastBackGroundColourDrawn);                                  // Background colour of line number
+        const typeof(i->fontHeight) H = i->fontHeight;
 
-        const typeof(lastBackGroundColourDrawn) b = lastBackGroundColourDrawn;                                          // Background colour of line number
-        i->proto->colour(i, b);
-        cairo_rectangle     (cr, editLineNumbers.x, y,                          // Background for line number
-                                 lineNumberWidth,   i->fontHeight);
         if (indent)
-         {cairo_rectangle   (cr, editText.x, y, dx, i->fontHeight);             // Indentation for text
+         {if (nr) i->proto->rectangleWH(i, editText.x, y,              ip,     H);       // Background of indentation leading to text on new line
+          else    i->proto->rectangleWH(i,          x, y, editText.x + ip - x, H);       // Background of indentation leading to text on same line
          }
-        cairo_fill          (cr);
 
-        lineNumberFont      ();                                                 // Text of line number
-        const typeof(i->proto->textAdvance(i, n)) a = i->proto->textAdvance(i, n);                                                // Width of this line number
-        const typeof(editLineNumbers.X - a) tx = editLineNumbers.X - a;
-        i->proto->text(i, tx, y, n);
+        if (nr)                                                                 // Draw line number
+         {i->proto->rectangleWH(i, editLineNumbers.x, y, lineNumberWidth, H);            // Background for line number
+          lineNumberFont();                                                     // Text of line number
+          const typeof(parent.proto->charPosition(&parent, closeTag) + currentChar + 1) l = parent.proto->charPosition(&parent, closeTag) + currentChar + 1;                // Format line number as current character position in xml. Current char is zero based so we add 1 to make it one based.
+          lsprintf(n, 1024, "%lu", l);                                          // Line number as string
+          i->proto->text(i, editLineNumbers.X - i->proto->textAdvance(i, n), y, n);
+         }
         i->proto->restore(i);
        }
-      i->proto->move(i, x = editText.x + dx, y);                                         // Position for first character of new line
-     }
+
+      x = editText.x + (indent ? ip : 0);                                       // Position for next character
+     } // startNewLine
 
     void drawChar(char c, int openClose)                                        // Draw a character at the current (x,y) position and advance the currrent position to the end of the character drawn. A gradient background is drawn for the first/last letters of a tag (0: no gradient, 1: opening gradient, 2: closing gradient)
      {char s[2] = {c, 0};                                                       // Character to be drawn as a string
-
       const typeof(i->proto->textAdvance(i, s)) width = i->proto->textAdvance(i, s);                                               // Measure character
 
       void drawBackGroundForChar()                                              // Draw the background for the current character
@@ -224,18 +224,29 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
         editBuffer->cursor.y              = y;
        }
 
-      cairo_move_to(cr, x += width, y += 0);                                    // Position ready for the next character
+      x += width;                                                               // Position ready for the next character
      } // drawChar
 
-    void drawString(char *s, size_t l, int openClose)                           // Draw a string
-     {for(size_t i = startAtChar; i < l; ++i)
-       {const int d = (i == 0     && openClose == XmlOpen ) ||
-                      (i == l - 1 && openClose == XmlClose) ? openClose : 0;
-        drawChar(s[i], d);
+    void drawString(char *string, const size_t length, int openClose)           // Draw a string
+     {for(size_t i = startAtChar; i < length; ++i)
+       {const int d = (i == 0          && openClose == XmlOpen ) ||
+                      (i == length - 1 && openClose == XmlClose) ? openClose : 0;
+        drawChar(string[i], d);
+       }
+     } //drawString
+
+    if (closeTag)                                                               // Add open tag or text
+     {currentPositionInTag = 0;                                                 // Position in tag
+      if (parent.proto->isTag(&parent))
+       {if (!parent.proto->empty(&parent))
+         {currentTagNumber++;                                                   // Close tag
+          if (!parent.proto->stayInLine(&parent)) startNewLine(1);                            // Start a new line unless this tag stays inline because it is preceded or followed by text
+          closeFont();
+          drawString(XmltagName, strlen(parent.proto->tagName(&parent)), XmlClose);           // tagName has the side effect of setting XmltagName
+         }
        }
      }
-
-    void open()                                                                 // Add open tag or text
+    else
      {currentPositionInTag = 0;                                                 // Position in tag
       currentTagNumber++;                                                       // Count string as a tag
 
@@ -246,40 +257,19 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
       else if (parent.proto->empty(&parent))                                                  // Write tag with no children on the same line
        {makeLocalCopyOfXmlTagString(s, l, parent);
         openFont();
-//      drawChar  (XmlOpen);
         drawString(s, l, XmlOpen);
-//      drawChar  (XmlClose);
         currentTagNumber++;                                                     // Close tag
         closeFont();
-//      drawChar  (XmlSlash);
         const typeof(parent.proto->tagName(&parent)) n = parent.proto->tagName(&parent);
         drawString(n, strlen(n), XmlClose);
-//      drawChar  (XmlClose);
        }
       else                                                                      // Opener
        {openFont();
         if (!parent.proto->stayInLine(&parent)) startNewLine(1);                              // Start a new line unless this tag stays inline because it is preceded or followed by text
-//      drawChar  (XmlOpen);
-        drawString(parent.proto->tagString(&parent), parent.proto->tagStringLength(&parent), XmlOpen);
-//      drawChar  (XmlClose);
+        makeLocalCopyOfXmlTagString(s, l, parent);
+        drawString(s, l, XmlOpen);
        }
-     } // open
-
-    void close()                                                                // Add close tag unless we are on text
-     {currentPositionInTag = 0;                                                 // Position in tag
-      if (parent.proto->isTag(&parent))
-       {if (!parent.proto->empty(&parent))
-         {currentTagNumber++;                                                   // Close tag
-          if (!parent.proto->stayInLine(&parent)) startNewLine(1);                            // Start a new line unless this tag stays inline because it is preceded or followed by text
-          closeFont();
-//        drawChar  (XmlSlash);
-          drawString(XmltagName, strlen(parent.proto->tagName(&parent)), XmlClose);
-//        drawChar  (XmlClose);
-         }
-       }
-     } // close
-
-    if (openClose > -1) open(); else close();                                   // Draw opening or closing tag
+     }
    } // drawTagOrText
 
   if (1)                                                                        // Draw the tags from the starting position in the start tag
@@ -291,10 +281,10 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
      {const typeof(newXmlTag(({struct XmlTag t = {xml: e->xml, node: node, proto: &ProtoTypes_XmlTag}; t;}))) t = newXmlTag(({struct XmlTag t = {xml: e->xml, node: node, proto: &ProtoTypes_XmlTag}; t;}));
       drawTagOrText(t, start < 0 ? 1 : 0, depth, startAtChar);                  // Draw tag
       startAtChar = 0;                                                          // Draw tags after the first one from their start position
-      return 0;  // Continue indefinately but we really want to stop one we clear the drawing zone
+      return y > editText.Y;                                                    // Stop drawing when we clear the drawing area
      }
 
-    s.proto->scanFrom(&s, sub, e->startTagClose);
+    s.proto->scanFrom(&s, sub, e->startTagClose);                                        // Draw from the current start tag
    }
 
   if (1)                                                                        // Draw gutter between line numbers and text
@@ -369,7 +359,7 @@ void test1()                                                                    
     const typeof(page.proto->right(&page, 0)) ww = page.proto->right(&page, 0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
     typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, startTagOffset: b.node.offset, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, startTagOffset: b.node.offset, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     we.proto->drawEditBuffer(&we);
-    i->proto->saveAsPng(i, "Mimagem1_wide.png", "a"); i->proto->clearWhite(i);
+    i->proto->saveAsPng(i, "Mimagem1_wide.png", "3014"); i->proto->clearWhite(i);
 
     const typeof(X.tree.proto->offset(&X.tree, we.pointer.tag)) wn = X.tree.proto->offset(&X.tree, we.pointer.tag);                                       // Pointer location in wide version
     assert( wn.proto->equalsString(&wn, "GGG"));
@@ -426,7 +416,7 @@ void test2()                                                                    
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0, 0, test1, test2, 0};
+ {void (*tests[])(void) = {0, test0, test1, test2, 0};
   run_tests("Mimagem", 1, tests);
   return 0;
  }
