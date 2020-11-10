@@ -405,17 +405,26 @@ static int isTag_int_tag                                                        
 static int hasText_int_$Tag                                                     // Check whether the tag contains a text element
  (const $Tag * Parent)                                                          // Parent tag
  {parent ◁ *Parent;
-   $fe(child, parent) if (child ▷ isText) return 1;
+  $fe(child, parent) if (child ▷ isText) return 1;
   return 0;
  }
 
-static int stayInLine_int_$Tag                                                  // Check whether a tag is text or is preceded or followed by text
+static int stayInLine_int_$Tag                                                  // Check whether an opening or singleton tag can stay in line: if it is text or is preceded or followed by text.
  (const $Tag * Tag)                                                             // Tag
  {tag ◁ *Tag;
-  if ( tag ▷ isText)                   return 1;
-  if (!tag ▷ isFirst) {p ◁ tag ▷ prev; return p ▷ isText;}
-  if (!tag ▷ isLast)  {n ◁ tag ▷ next; return n ▷ isText;}
+  if ( tag ▷ isText)                                   return 1;
+//n ◁ tag ▷ countChildren; if (n == 0)                 return 1;                // Need to differentiate between tags that can never have any content and tags that can have content.
+  if (!tag ▷ isFirst) {p ◁ tag ▷ prev; if (p ▷ isText) return 2;}
+  if (!tag ▷ isLast)  {n ◁ tag ▷ next; if (n ▷ isText) return 3;}
   return 0;
+ }
+
+static int stayInLineClose_int_$Tag                                             // Check whether a closing tag can stay inline: if it is preceded or followed by text or is empty, or its last child was text
+ (const $Tag * Tag)                                                             // Tag
+ {tag ◁ *Tag;
+  if (tag ▷ stayInLine) return 1;
+  l ◁ tag ▷ last;
+  return l ▷ valid && l ▷ isText;
  }
 
 static size_t length_size__$Tag                                                 // Length of a tag string
@@ -628,7 +637,13 @@ static StringBuffer prettyPrint_stringBuffer_$Tag                               
  {p ◀ makeStringBuffer();
 
   void print(const $Tag parent, const int depth)                                // Print the specified parent and its children
-   {void open()                                                                 // Add open tag
+   {void indent()                                                               // Indent to the current depth
+     {l ◁ p ▷ lengthOfLastLine;
+      n ◁ depth * 2ul;
+      if (l < n)                 p ▷ addSpaces(n - l);
+      else      {p ▷ addNewLine; p ▷ addSpaces(n);}
+     }
+    void open()                                                                 // Add open tag
      {if (parent ▷ isText)
        {p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
        }
@@ -644,7 +659,7 @@ static StringBuffer prettyPrint_stringBuffer_$Tag                               
         p ▷ addChar($Close);
        }
       else                                                                      // Opener
-       {p ▷ addNewLine; p ▷ addSpaces(depth*2);
+       {indent();
         p ▷ addChar($Open);
         p ▷ addn(parent ▷ tagString, parent ▷ tagStringLength);
         p ▷ addChar($Close);
@@ -652,7 +667,7 @@ static StringBuffer prettyPrint_stringBuffer_$Tag                               
      }
     void close()                                                                // Add close tag unless we are on text
      {if (parent ▷ isTag && !parent ▷ empty)
-       {if (!parent ▷ stayInLine) {p ▷ addNewLine; p ▷ addSpaces(depth*2);}
+       {if (!parent ▷ stayInLineClose) indent();
         p ▷ addFormat("%c%c%s%c", $Open, $Slash, parent ▷ tagName, $Close);
        }
      }
@@ -786,30 +801,28 @@ const char * $sampleDita1()                                                     
 <!-- Created with XMetaL (http://www.xmetal.com) -->
 <concept id="concept_6FD9560EEEED4FB0A70086250EE15F88">
   <title>Foreword</title>
-  <shortdesc><?xm-replace_text Short Description?>
+  <shortdesc>Short Description
   </shortdesc>
   <conbody>
-   <p>DITA represents a fundamental shift in the approach to writing and
+   <p id="0"> DITA <b>represents</b> a fundamental shift in the approach to writing and
     publishing, and to a certain extent, the carefully accumulated practice of
     hundreds of years of publication projects has to be reviewed and redefined.
    </p>
-   <section id="section_73DD7CCCB3734B7DB29E4D200702B61F"
-    audience="contributor">
+   <section id="1" audience="contributor">
     <title>Rationale</title>
-    <lq reftitle="Deborah Pickett, Yahoo! DITA Users Group"
-     href="http://tech.dir.groups.yahoo.com/group/dita-users/message/12656"> I would
-      suggest that users who are interested in a particular feature get together and
+    <p id="2"> I <b>would</b> suggest that users who are <b>interested</b>
+      in a <b>particular</b> <i>feature</i> get together and
       define their own best practices for said feature. Define the markup that
       authors should use, and define the processing expectations of that markup. If
-      this unofficial spec is reasonable, then vendors will find it in their
+      this unofficial spec is reasonable, then <b>vendors</b> will find it in their
       interests to support it rather than striking out on their own. (It's this kind
       of distributed, grassroots power-to-the-users ideology that the DITA TC wants
       to instill in the community.) I've found that vendors (both commercial and
       non-commercial) are usually very willing to accommodate users' requirements,
       once they know what those requirements are.
-    </lq>
-    <lq reftitle="Joe Gershon, OASIS DITA TC Mailing List">The problem is
-      that the vast majority of new users are misusing DITA to a point that they are
+    </p>
+    <p  id="3">The problem is
+      that the vast <b>majority</b> of new users are misusing DITA to a point that they are
       often worse off than they were in Word or FrameMaker. Most companies choose not
       to hire an expert to help them migrate to DITA, and they get what they pay for.
       I'd like us as a TC (and moving forward via the Adoption SC) to put tutorials,
@@ -819,7 +832,7 @@ const char * $sampleDita1()                                                     
       aware of and address their needs, suggesting best practices and, where
       relevant, providing unofficial packages of DTDs and supporting code (e.g.
       DITA-OT plugins).
-    </lq>
+    </p>
    </section>
   </conbody>
 </concept>
@@ -864,7 +877,7 @@ void test0()                                                                    
   x ▷ free;
  } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tparse$FromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot //TstayInLine
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //Tparse$FromString //Tparse$TagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot
  {char * xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
   x ◁ parse$FromString(xml, 0);
 
@@ -884,7 +897,7 @@ void test1()                                                                    
   j ◁ x ▷ findFirstTag  ("j"); ✓ j ▷ valid; ✓ j ▷ tagNameEquals("j"); ✓ a ▷ equals(j ▷ parent);
 
   ✓ b ▷ equals(a ▷ first);  ✓  b ▷ isFirst;   ✓ !d ▷ isFirst; ✓ !b ▷ isRoot;
-  ✓ c ▷ equals(b ▷ first);  ✓  c ▷ empty;     ✓ !c ▷ stayInLine;
+  ✓ c ▷ equals(b ▷ first);  ✓  c ▷ empty;
   ✓ h ▷ equals(b ▷ last);   ✓  h ▷ isLast;    ✓ !d ▷ isLast;
   ✓ j ▷ equals(a ▷ last);
 
@@ -1070,7 +1083,7 @@ void test4()                                                                    
  } // test4
 
 void test5()                                                                    //ThasText //TstayInline //TprettyPrint
- {xml ◁ "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>";         // Avoiding trailing blanks
+ {xml ◁ "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d><l>lll</l><m>mmm</m></a>";
 
   x ◁ parse$FromString(xml, 0);  ✓ ! x ▷ errors;
   b ◁ x ▷ findFirstTag("b");     ✓   b ▷ hasText;
@@ -1078,16 +1091,17 @@ void test5()                                                                    
   c ◁ x ▷ findFirstTag("c");     ✓   c ▷ stayInLine;
   C ◁ c ▷ next;                  ✓   C ▷ stayInLine;
   d ◁ x ▷ findFirstTag("d");     ✓ ! d ▷ hasText;
+  m ◁ x ▷ findFirstTag("m");     ✓ ! m ▷ stayInLine;
 
     p ◁ x ▷ prettyPrint;
   ✓ p ▷ printsAs(◉);
 <a>
-  <b>bb bb <c/> ccc
-  </b>
+  <b>bb bb <c/> ccc</b>
   <d><i/>
-    <j> jj <k/> kk
-    </j>
+    <j> jj <k/> kk</j>
   </d>
+  <l>lll</l>
+  <m>mmm</m>
 </a>
 ◉
 
