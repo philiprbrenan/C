@@ -64,7 +64,7 @@ static int valid                                                                
  }
 
 static void add_StringBuffer_string                                                        // Concatenate a string
- (const StringBuffer * buffer,                                                             // StringBuffer
+ (const StringBuffer    * buffer,                                                          // StringBuffer
   const char * const string)                                                    // Zero terminated string
  {const typeof(buffer->string.proto->node(&buffer->string, string, strlen(string))) s = buffer->string.proto->node(&buffer->string, string, strlen(string));
   s.proto->putTreeLast(&s);
@@ -80,7 +80,7 @@ static void addn_StringBuffer_string                                            
 
 static void addStringBuffer_StringBuffer_StringBuffer                                                            // Add a string buffer
  (const StringBuffer * buffer,                                                             // Target StringBuffer
-  const StringBuffer add)                                                                  // Source StringBuffer
+  const StringBuffer   add)                                                                // Source StringBuffer
  {makeLocalCopyOfStringBuffer(a, n, add);                                                  // Make a local copy of the buffer to be added in case the source and target buffers are the same
   buffer->proto->addn(buffer, a, n);                                                          // Add copy of source to target
  }
@@ -220,6 +220,14 @@ static size_t length_StringBuffer                                               
   ArenaListNode  root = buffer->string.proto->root(&buffer->string);
   ArenaListfe(c, root) length += c.proto->length(&c);
   return length;
+ }
+
+static size_t lengthOfLastLine_StringBuffer                                                // Length of the last line in the buffer
+ (const StringBuffer * Buffer)                                                             // StringBuffer
+ {const typeof(*Buffer) buffer = *Buffer;
+  makeLocalCopyOfStringBuffer(a, n, buffer);                                               // Make a local copy of the buffer to be added in case the source and target buffers are the same
+  for(size_t i = n; i > 0; --i)  if (a[i-1] == '\n') return n - i;              // Look back for last new line
+  return n;                                                                     // No new line found
  }
 
 static int equals_StringBuffer_StringBuffer                                                           // Checks whether two StringBuffer are equal.
@@ -649,10 +657,18 @@ void test11()                                                                   
      b.proto->free(&b);
  }
 
+void test12()                                                                   //TlengthOfLastLine
+ {StringBuffer  a = makeStringBuffer();      assert( a.proto->lengthOfLastLine(&a) == 0);
+     a.proto->add(&a, "a\n");
+     a.proto->add(&a, "bb\n");  assert( a.proto->lengthOfLastLine(&a) == 0);
+     a.proto->add(&a, "ccc");   assert( a.proto->lengthOfLastLine(&a) == 3);
+     a.proto->free(&a);
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0,  test1,  test2, test3, test4,
                            test5,  test6,  test7, test8, test9,
-                           test10, test11, 0};
+                           test10, test11, test12, 0};
   run_tests("StringBuffer", 1, tests);
   return 0;
  }
