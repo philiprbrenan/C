@@ -19,13 +19,12 @@
 
 typedef struct MimagemEditPosition                                                    // A position in a Mimagem edit buffer
  {const struct ProtoTypes_MimagemEditPosition *proto;                                 // Prototypes for methods
-  size_t         character;                                                     // The number of the character starting at the beginning of the XML
-  size_t         tag;                                                           // The offset of the tag
-  size_t         positionInTag;                                                 // The character offset in the tag
-  size_t         editLine;                                                      // The edit line containing the position
+  size_t         tagOffset;                                                     // The offset of the tag
+  size_t         tagChar;                                                       // The character offset in the tag
+  size_t         editLineNumber;                                                // The edit line number containing the position
   size_t         x;                                                             // The x coordinate of the start of the position measured in pixels
   size_t         y;                                                             // The y coordinate of the start of the position measured in pixels
-  int            tagClose;                                                      // If true the descrtiption refers to a singleton ro cling tag otheriwse a singleton or opening tag
+  int            tagClose;                                                      // True if this position is in a closing tag
  } MimagemEditPosition;
 
 typedef struct MimagemEditBuffer                                                      // Mimagem edit buffer
@@ -60,6 +59,7 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
   const typeof(!editBuffer->measureOnly) draw = !editBuffer->measureOnly;                              // Draw unless we only want to measure
   typeof(ULONG_MAX) closestSoFar = ULONG_MAX;                                             // Shortest distance so far to pointer
   const typeof(8) lineNumberGutterText = 8;                                                     // Pixels Gutter between line numbers and text
+  typeof(0) firstDrawn = 0;                                                     // First character drawn
 
   const typeof(makeColourPale()) paleColours = makeColourPale();                                               // Background colours for each tag by depth with text getting the same colour as its parent.
   const typeof(paleColours.p2) lastBackGroundColourDrawn = paleColours.p2;                                   // Keep track of the last character background colour used so that we can match the line numbers
@@ -105,6 +105,8 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
          currentChar      = 0, currentEditLine      = 1;                        // Current character number counted over all tags drawn, current edit line
 
   double x = editText.X, y = editText.y - i->fontHeight;                        // Initial text position allowing for the new line operation which always occurs first.
+  XmlTag invalidNode = newXmlTag(({struct XmlTag t = {proto: &ProtoTypes_XmlTag};   t;}));
+  typeof(invalidNode) lastIndentedOpen = invalidNode;
 
   void drawTagOrText                                                            // Draw the specified tag
    (XmlTag parent,                                                              // Tag
@@ -115,10 +117,9 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
     const typeof(paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 1 : 0))) % pcN]) backgroundColour = paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 1 : 0))) % pcN];        // Choose the back ground colour for this depth and tag
     const typeof(paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 2 : 1))) % pcN]) backgroundColour1 = paleColours.p[(abs(depth - (parent.proto->isText(&parent) ? 2 : 1))) % pcN];        // Background colour for previous layer
 
-    void startNewLine(int indent)                                               // Move to next line or move to indent point on this line if possible else the next line
+    void startNewLine(int indent, char * label)                                 // Move to next line or move to indent point on this line if possible else the next line
      {const typeof(i->fontHeight * depth) ip = i->fontHeight * depth;                                               // Indentation position
       const typeof(!indent || (indent && x > editText.x + ip)) nr = !indent || (indent && x > editText.x + ip);                          // New line required
-
       if (draw && nr)                                                           // Finish current line if we are moving to the next line
        {i->proto->save(i);
         const typeof(makeRectangleWH(x, y, editText.X - x, i->fontHeight)) r = makeRectangleWH(x, y, editText.X - x, i->fontHeight);               // Rectangle for line number
@@ -149,13 +150,12 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
        }
 
       x = editText.x + (indent ? ip : 0);                                       // Position for next character
+      ({typeof(lastIndentedOpen) sourcesourcesource = invalidNode; memcpy((void *)&lastIndentedOpen, (void *)&sourcesourcesource, sizeof(lastIndentedOpen));});                                           // Allow the caller to record the opening tag
+      if (0) label = label;
      } // startNewLine
 
-    void drawChar(char c, int openClose)                                        // Draw a character at the current (x,y) position and advance the currrent position to the end of the character drawn. A gradient background is drawn for the first/last letters of a tag (0: no gradient, 1: opening gradient, 2: closing gradient)
-     {char s[2] = {c, 0};                                                       // Character to be drawn as a string
-      const typeof(i->proto->textAdvance(i, s)) width = i->proto->textAdvance(i, s);                                               // Measure character
-
-      void drawBackGroundForChar()                                              // Draw the background for the current character
+    void drawChar(char * string, int openClose, double width)                   // Draw a string at the current (x,y) position and advance the currrent position to the end of the character drawn. A gradient background is drawn for the first/last letters of a tag (0: no gradient, 1: opening gradient, 2: closing gradient)
+     {void drawBackGroundForChar()                                              // Draw the background for the current character
        {const typeof(backgroundColour) b = backgroundColour;
         const typeof(backgroundColour1) B = backgroundColour1;
         const typeof(width) w = width; const typeof(i->fontHeight) h = i->fontHeight;
@@ -195,93 +195,116 @@ static void drawEditBuffer_MimagemEditBuffer_MimagemEditBuffer                  
         x = editBuffer->block.X;                                                // Restart after the blocked out area
        }
 
-      if (x + width >= editText.X) startNewLine(0);                             // Start a new line if the draw would be off the end of the line
+      if (x + width >= editText.X)                                              // Start a new line if the draw would be off the end of the line
+       {if (lastIndentedOpen.proto->equals(&lastIndentedOpen, parent)) startNewLine(1, "AA11");         // The opening tag is at the start of the preceding line - the closing tag will not fit on that line - as we are starting a new line we might as well vertically align them.
+        else startNewLine(0, "AA22");
+       }
 
       if (draw && editText.proto->containsACorner(&editText, charR))                            // Draw character or symbol if drawing and we are in the drawing area
        {drawBackGroundForChar();                                                // Background
-        i->proto->text(i, x, y, s);
+        i->proto->text(i, x, y, string);
        }
 
-      ++currentPositionInTag; ++currentChar;                                    // Pointer and cursor location
+      void recordPosition(MimagemEditPosition *p)                                     // Record the current position
+       {p->tagOffset      = parent.node.offset;
+        p->tagChar        = currentPositionInTag;
+        p->editLineNumber = currentEditLine;
+        p->x              = x;
+        p->y              = y;
+        p->tagClose       = openClose == XmlClose;
+       }
+
+      if (1)                                                                    // Pointer and cursor location
+       {const typeof(strlen(string)) l = strlen(string);
+        currentPositionInTag += l; currentChar += l;
+       }
+
       if (editBuffer->py <= y + i->fontHeight && editBuffer->py >= y)           // Line containing pointer
        {const typeof(fabs(editBuffer->px - x - width / 2)) d = fabs(editBuffer->px - x - width / 2);                               // Distance from the center of the current character to pointer.
         if (d < closestSoFar)                                                   // Best distance so far
          {closestSoFar = d;
-          editBuffer->pointer.tag           = parent.node.offset;
-          editBuffer->pointer.positionInTag = currentPositionInTag;
-          editBuffer->pointer.editLine      = currentEditLine;
-          editBuffer->pointer.character     = currentChar;
-          editBuffer->pointer.x             = x;
-          editBuffer->pointer.y             = y;
+          recordPosition(&editBuffer->pointer);
          }
        }
 
-      if (editBuffer->cursor.character   == currentChar)                        // Cursor location
-       {editBuffer->cursor.tag            = parent.node.offset;
-        editBuffer->cursor.positionInTag  = currentPositionInTag;
-        editBuffer->cursor.editLine       = currentEditLine;
-        editBuffer->cursor.x              = x;
-        editBuffer->cursor.y              = y;
+      if (editBuffer->cursor.tagChar == currentChar)                            // Cursor location
+       {recordPosition(&editBuffer->cursor);
        }
+
+      if (!firstDrawn) {recordPosition(&editBuffer->firstPos); firstDrawn++;}   // First position written
+      if (y < editText.Y) recordPosition(&editBuffer->lastPos);                 // Last  position written
 
       x += width;                                                               // Position ready for the next character
      } // drawChar
 
-    void drawString(char *string, const size_t length, int openClose)           // Draw a string
-     {for(size_t i = startAtChar; i < length; ++i)
-       {const int d = (i == 0          && openClose == XmlOpen ) ||
-                      (i == length - 1 && openClose == XmlClose) ? openClose : 0;
-        drawChar(string[i], d);
+    void drawString(char *string, const size_t length, int openClose)           // Draw a string as one or more words
+     {//say("AAAA %s\n", string);
+
+      for(size_t a = startAtChar; a < length; ++a)
+       {char word[1024] = {}; int w = 0;                                        // Word, word length
+        for(size_t b = 0; a + b < length; ++b)                                  // Look for a space to break on
+         {char c = string[a+b];                                                 // Next character
+          int  s = isspace(c);                                                  // On a space
+          word[w++] = s ? ' ' : c; word[w] = 0;                                 // Normalize white space
+          if (s || !string[a + b + 1])                                          // On a space or at the end of the string
+           {const typeof(i->proto->textAdvance(i, word)) width = i->proto->textAdvance(i, word);                                      // Measure word
+            drawChar(word, openClose, width);
+            a += b;
+            break;
+           }
+         }
+        for(size_t b = 0; a + b < length - 1; ++b)                              // Remove further trailing spaces
+         {if (!isspace(string[a+b+1])) {a += b; break;}
+         }
        }
      } //drawString
 
-    if (closeTag)                                                               // Add open tag or text
-     {currentPositionInTag = 0;                                                 // Position in tag
-      if (parent.proto->isTag(&parent))
-       {if (!parent.proto->empty(&parent))
-         {currentTagNumber++;                                                   // Close tag
-          if (!parent.proto->stayInLine(&parent)) startNewLine(1);                            // Start a new line unless this tag stays inline because it is preceded or followed by text
-          closeFont();
-          drawString(XmltagName, strlen(parent.proto->tagName(&parent)), XmlClose);           // tagName has the side effect of setting XmltagName
-         }
+    currentPositionInTag = 0;                                                   // Position in tag
+
+    void open()                                                                 // Open tag
+     {openFont();
+      if (!parent.proto->stayInLine(&parent))
+       {startNewLine(1, "CCCC");
+        ({typeof(lastIndentedOpen) sourcesourcesource = parent; memcpy((void *)&lastIndentedOpen, (void *)&sourcesourcesource, sizeof(lastIndentedOpen));});
+       }
+      makeLocalCopyOfXmlTagString(s, l, parent);
+      drawString(s, l, XmlOpen);
+     }
+
+    void drawClose()                                                            // Close tag
+     {closeFont();
+      drawString(XmltagName, strlen(parent.proto->tagName(&parent)), XmlClose);               // tagName has the side effect of setting XmltagName
+     }
+
+    void close()                                                                // Close tag
+     {if (parent.proto->isTag(&parent))
+       {currentTagNumber++;
+        if (!parent.proto->stayInLineClose(&parent)) startNewLine(1, "DDDD");                 // Start a new line unless this tag stays inline because it is preceded or followed by text
+        drawClose();
        }
      }
-    else
-     {currentPositionInTag = 0;                                                 // Position in tag
-      currentTagNumber++;                                                       // Count string as a tag
 
+    if (closeTag) close();                                                      // Close
+    else                                                                        // Open or singleton tag
+     {currentTagNumber++;                                                       // Count string as a tag
       if (parent.proto->isText(&parent))                                                      // Text
-       {textFont();
-        drawString(parent.proto->tagString(&parent), parent.proto->tagStringLength(&parent), 0);
+       {textFont(); drawString(parent.proto->tagString(&parent), parent.proto->tagStringLength(&parent), 0);
        }
-      else if (parent.proto->empty(&parent))                                                  // Write tag with no children on the same line
-       {makeLocalCopyOfXmlTagString(s, l, parent);
-        openFont();
-        drawString(s, l, XmlOpen);
-        currentTagNumber++;                                                     // Close tag
-        closeFont();
-        const typeof(parent.proto->tagName(&parent)) n = parent.proto->tagName(&parent);
-        drawString(n, strlen(n), XmlClose);
-       }
-      else                                                                      // Opener
-       {openFont();
-        if (!parent.proto->stayInLine(&parent)) startNewLine(1);                              // Start a new line unless this tag stays inline because it is preceded or followed by text
-        makeLocalCopyOfXmlTagString(s, l, parent);
-        drawString(s, l, XmlOpen);
-       }
+      else if (parent.proto->empty(&parent)) {open(); drawClose();}                           // Empty
+      else open();                                                              // Open with content
      }
    } // drawTagOrText
 
   if (1)                                                                        // Draw the tags from the starting position in the start tag
    {const typeof(editBuffer) e = editBuffer;                                                             // Edit buffer
     typeof(e->xml.tree.proto->offset(&e->xml.tree, e->startTagOffset)) s = e->xml.tree.proto->offset(&e->xml.tree, e->startTagOffset);                                // Start tag
-    typeof(e->startTagChar) startAtChar = e->startTagChar;                                              // Set for first tag
+    typeof(e->startTagChar - 1) startAtChar = e->startTagChar - 1;                                          // Set for first tag
 
     int sub(ArenaListNode node, int start, int depth)                           // Each node in the parse tree going forward from the start position
      {const typeof(newXmlTag(({struct XmlTag t = {xml: e->xml, node: node, proto: &ProtoTypes_XmlTag}; t;}))) t = newXmlTag(({struct XmlTag t = {xml: e->xml, node: node, proto: &ProtoTypes_XmlTag}; t;}));
       drawTagOrText(t, start < 0 ? 1 : 0, depth, startAtChar);                  // Draw tag
       startAtChar = 0;                                                          // Draw tags after the first one from their start position
-      return y > editText.Y;                                                    // Stop drawing when we clear the drawing area
+      return y > editText.Y;                                                    // Stop drawing when we clear the drawing area with any part of the text
      }
 
     s.proto->scanFrom(&s, sub, e->startTagClose);                                        // Draw from the current start tag
@@ -309,7 +332,8 @@ static void maintainCursorPosition_MimagemEditBuffer_MimagemEditBuffer          
   const typeof(altered->cursor.y) a = altered->cursor.y;                                                        // Location of cursor line in altered Mimagem edit buffer on display in pixels
 
   const typeof((a - b) / altered->lineHeight) s = (a - b) / altered->lineHeight;                                            // Amount we should scroll to minimize the apparent movement of the tag containing the cursor when we change font size or change the edit buffer width
-say("SSSS %f\n", s);
+
+  say("SSSS %f\n", s);
 
 //altered->scroll = nearbyint(s);
 //altered->scroll = floor(s);
@@ -345,38 +369,45 @@ void test0()
  }
 
 void test1()                                                                    //TdrawEditBuffer //TmaintainCursorPosition
- {const typeof("<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j><B><C/><D><E/>EE<F/>1 2 3 4 5 6 7 8 9 0<G>GGG</G></D><H>HH HH</H></B><i/>i<j></j><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>") xml = "<a><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j><B><C/><D><E/>EE<F/>1 2 3 4 5 6 7 8 9 0<G>GGG</G></D><H>HH HH</H></B><i/>i<j></j><b><c/><d><e/>ee<f/>1 2 3 4 5 6 7 8 9 0<g>ggg</g></d><h>hh hh</h></b><i/>i<j></j></a>";
-
-     const typeof(parseXmlFromString(xml, 0)) X = parseXmlFromString(xml, 0);
+ {   const typeof(parseXmlFromString(XmlsampleDita1(), 0)) X = parseXmlFromString(XmlsampleDita1(), 0);
   assert( !X.proto->errors(&X));
 
-  const typeof(X.proto->findFirstChild(&X, "b")) b = X.proto->findFirstChild(&X, "b");
+  const typeof(X.proto->root(&X)) pos1 = X.proto->root(&X);
 
   void draw(CairoTextImage * const i)                                           // Draw the xml into an image
    {const typeof(makeRectangleWH(0, 0, i->width, i->height)) page = makeRectangleWH(0, 0, i->width, i->height);
     const typeof(100) fontSize = 100;                                                             // Scroll amount in wide mode, font size of text in image
 
     const typeof(page.proto->right(&page, 0)) ww = page.proto->right(&page, 0);                                                       // Measure in wide mode to find the location of the pointer expected to be the middle G in GGG
-    typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, startTagOffset: b.node.offset, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, startTagOffset: b.node.offset, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
+    typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, startTagOffset: pos1.node.offset, startTagChar: 1, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) we = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize, px: 715, py: 894, startTagOffset: pos1.node.offset, startTagChar: 1, zone: ww.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     we.proto->drawEditBuffer(&we);
-    i->proto->saveAsPng(i, "Mimagem1_wide.png", "3014"); i->proto->clearWhite(i);
+    i->proto->saveAsPng(i, "Mimagem1_wide1.png", "e4b"); i->proto->clearWhite(i);
 
-    const typeof(X.tree.proto->offset(&X.tree, we.pointer.tag)) wn = X.tree.proto->offset(&X.tree, we.pointer.tag);                                       // Pointer location in wide version
+    char *(sum[]) = {"", "", "", "", "", "", 0};
+    typeof(1) pageNumber = 1;
+    for(char **page = sum+2; *page; ++page)
+     {we.startTagOffset = we.lastPos.tagOffset;                                 // Position so the last drawn character becomes the first one
+      we.startTagChar   = we.lastPos.tagChar;
+      we.startTagClose  = we.lastPos.tagClose;
+      we.proto->drawEditBuffer(&we);
+      lsprintf(file, 32, "Mimagem1_wide%d.png", ++pageNumber);
+      i->proto->saveAsPng(i, file, *page); i->proto->clearWhite(i);
+     }
+
+    const typeof(X.tree.proto->offset(&X.tree, we.pointer.tagOffset)) wn = X.tree.proto->offset(&X.tree, we.pointer.tagOffset);                                 // Pointer location in wide version
     assert( wn.proto->equalsString(&wn, "GGG"));
-    assert( we.pointer.positionInTag ==  2);
-    assert( we.pointer.character     == 81);
-    assert( we.pointer.editLine      == 12);
+    assert( we.pointer.tagChar        == 81);
+    assert( we.pointer.editLineNumber == 12);
 
     const typeof(page.proto->left(&page, i->width * 4 / 8)) nw = page.proto->left(&page, i->width * 4 / 8);                                         // Measure in narrow mode to find position of cursor as set by pointer in previous image
     typeof(newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: we.pointer, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}))) ne = newMimagemEditBuffer(({struct MimagemEditBuffer t = {cti: i, xml: X, fontSize: fontSize * 9.0 / 8, cursor: we.pointer, zone: nw.a, proto: &ProtoTypes_MimagemEditBuffer}; t;}));
     ne.proto->drawEditBuffer(&ne);
     i->proto->saveAsPng(i, "Mimagem1_narrow.png", "a"); i->proto->clearWhite(i);
 
-    const typeof(X.tree.proto->offset(&X.tree, ne.cursor.tag)) nn = X.tree.proto->offset(&X.tree, ne.cursor.tag);                                        // Cursor location in narrow mode
+    const typeof(X.tree.proto->offset(&X.tree, ne.cursor.tagOffset)) nn = X.tree.proto->offset(&X.tree, ne.cursor.tagOffset);                                        // Cursor location in narrow mode
     assert( nn.proto->equalsString(&nn, "GGG"));
-    assert( ne.cursor.positionInTag == we.pointer.positionInTag);
-    assert( ne.cursor.character     == we.pointer.character);
-    assert( ne.cursor.editLine      == 14);
+    assert( ne.cursor.tagChar        == we.pointer.tagChar);
+    assert( ne.cursor.editLineNumber == 14);
 
     we.cursor = we.pointer;                                                     // Simulate a click - the cursor position is set to match the pointer position
     we.proto->maintainCursorPosition(&we, &ne);                                           // Position the narrow display so that GGG is in much the same screen position as the wide display
@@ -385,11 +416,10 @@ void test1()                                                                    
     ne.proto->drawEditBuffer(&ne);                                                        // Draw scrolled edit buffer
 //  i.proto->save(&i, "Mimagem1_narrowScrolled.png", "8d73");
 
-    const typeof(X.tree.proto->offset(&X.tree, ne.cursor.tag)) nN = X.tree.proto->offset(&X.tree, ne.cursor.tag);                                        // Cursor location in narrow mode
+    const typeof(X.tree.proto->offset(&X.tree, ne.cursor.tagOffset)) nN = X.tree.proto->offset(&X.tree, ne.cursor.tagOffset);                                  // Cursor location in narrow mode
     assert( nN.proto->equalsString(&nN, "GGG"));
-    assert( ne.cursor.positionInTag == we.pointer.positionInTag);
-    assert( ne.cursor.character     == we.pointer.character);
-    assert( ne.cursor.editLine      == ne.cursor.editLine);
+    assert( ne.cursor.tagChar        == we.pointer.tagChar);
+    assert( ne.cursor.editLineNumber == ne.cursor.editLineNumber);
    }
 
   typeof(makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "a")) i = makeCairoTextImage(draw, 2000, 2000, "Mimagem1.png", "a");                      // Create image containing some text and check its digest
