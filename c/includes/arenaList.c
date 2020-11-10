@@ -901,7 +901,7 @@ static void scan__ArenaList_sub                                                 
   else function(root, 0, 0);                                                    // Call once as the root has no children
  }
 
-static void scanFrom__ArenaListNode_sub                                                 // Traverse the ArenaList starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
+static void scanFrom__ArenaListNode_sub_int                                             // Traverse the ArenaList starting at the specified node in post-order calling the specified function to process each child node continuing through the siblings of all the specified node's ancestors.  The ArenaList is buffered allowing changes to be made to the structure of the ArenaList without disruption as long as each child checks its context.
  (ArenaListNode * node,                                                                 // ArenaListNode
   int  (* const sub) (ArenaListNode node, int start, int depth),                        // Function: start is set to +1 before the children are processed, -1 afterwards. if the parent has no children the sub is called once with start set to zero.  The funstion should return true if processing should continue, else false.
   int     close)                                                                // Start at the close tag of a non singleton tag if true otherwise start at the open.
@@ -921,18 +921,21 @@ static void scanFrom__ArenaListNode_sub                                         
   if (!setjmp(finish))                                                          // Scan forwards until terminated
    {while(stack.proto->notEmpty(&stack))                                                     // Process remaining nodes
      {s = stack.proto->top(&stack);                                                          // Latest node to expand
-      if (!s->state)                                                            // Expand node
-       {if ((s->count = s->node.proto->countChildren(&s->node)))                               // Latest node has children
-         {if (sub(s->node, +1, stack.proto->count(&stack))) longjmp(finish, 1);              // Open scope
-          S = stack.proto->push(&stack); S->state = 0; S->node  = s->node.proto->first(&s->node);           // Add first child to scope
+      const typeof(s->node) node = s->node; const typeof(s->state) state = s->state; const typeof(s->count) count = s->count;
+      if (!state)                                                               // Expand node
+       {s->state = 1;                                                           // Mark node for processing after expansion
+        if ((s->count = node.proto->countChildren(&node)))                                  // Latest node has children
+         {if (sub(node, +1, stack.proto->count(&stack))) longjmp(finish, 1);                 // Open scope
+          S = stack.proto->push(&stack); S->state = 0; S->node = node.proto->first(&node);               // Add first child to scope
          }
-        else if (sub(s->node,  0, stack.proto->count(&stack))) longjmp(finish, 2);           // Latest node is a leaf
-        s->state = 1;                                                           // Mark node for processing after expansion
+        else
+         {if (sub(node,  0, stack.proto->count(&stack))) longjmp(finish, 2);                 // Latest node is a leaf
+         }
        }
       else                                                                      // Move to next node  after expansion has been completed
-       {if (s->count && sub(s->node, -1, stack.proto->count(&stack))) longjmp(finish, 3);    // Close scope if necessary
-        typeof(s->node.proto->next(&s->node)) n = s->node.proto->next(&s->node);                                                     // Next sibling
-        if (n.proto->valid(&n)) {s->state = 0; s->node = n;} else stack.proto->pop(&stack);           // Place next sibling on stack for processing or close the scope if there are no more siblings
+       {if (count && sub(node, -1, stack.proto->count(&stack))) longjmp(finish, 3);          // Close scope if necessary
+        typeof(node.proto->next(&node)) n = node.proto->next(&node);                                                        // Next sibling
+        if (n.proto->valid(&n)) {s->node = n; s->state = 0;} else stack.proto->pop(&stack);           // Place next sibling on stack for processing or close the scope if there are no more siblings
        }
      }
    }
@@ -1870,6 +1873,10 @@ void test19()                                                                   
     const typeof(b.proto->at(&b, 20)) y = b.proto->at(&b, 20); assert( y.proto->invalid(&y));
 
     s.proto->free(&s);
+ }
+
+void test19a()                                                                   //Tat //Tindex //Tinvalid //TkeyEqualsString
+ {  const typeof(newArenaListNode({})) n = newArenaListNode({});
  }
 
 void test20()                                                                   //TscanFrom
