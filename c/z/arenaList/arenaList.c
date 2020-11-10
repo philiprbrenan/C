@@ -868,18 +868,21 @@ static void scanFrom__$Node_sub_int                                             
   if (!setjmp(finish))                                                          // Scan forwards until terminated
    {while(stack ▷ notEmpty)                                                     // Process remaining nodes
      {s = stack ▷ top;                                                          // Latest node to expand
-      if (!s->state)                                                            // Expand node
-       {if ((s->count = s->node ▷ countChildren))                               // Latest node has children
-         {if (sub(s->node, +1, stack ▷ count)) longjmp(finish, 1);              // Open scope
-          S = stack ▷ push; S->state = 0; S->node  = s->node ▷ first;           // Add first child to scope
+      node ◁ s->node; state ◁ s->state; count ◁ s->count;
+      if (!state)                                                               // Expand node
+       {s->state = 1;                                                           // Mark node for processing after expansion
+        if ((s->count = node ▷ countChildren))                                  // Latest node has children
+         {if (sub(node, +1, stack ▷ count)) longjmp(finish, 1);                 // Open scope
+          S = stack ▷ push; S->state = 0; S->node = node ▷ first;               // Add first child to scope
          }
-        else if (sub(s->node,  0, stack ▷ count)) longjmp(finish, 2);           // Latest node is a leaf
-        s->state = 1;                                                           // Mark node for processing after expansion
+        else
+         {if (sub(node,  0, stack ▷ count)) longjmp(finish, 2);                 // Latest node is a leaf
+         }
        }
       else                                                                      // Move to next node  after expansion has been completed
-       {if (s->count && sub(s->node, -1, stack ▷ count)) longjmp(finish, 3);    // Close scope if necessary
-        n ◀ s->node ▷ next;                                                     // Next sibling
-        if (n ▷ valid) {s->state = 0; s->node = n;} else stack ▷ pop;           // Place next sibling on stack for processing or close the scope if there are no more siblings
+       {if (count && sub(node, -1, stack ▷ count)) longjmp(finish, 3);          // Close scope if necessary
+        n ◀ node ▷ next;                                                        // Next sibling
+        if (n ▷ valid) {s->node = n; s->state = 0;} else stack ▷ pop;           // Place next sibling on stack for processing or close the scope if there are no more siblings
        }
      }
    }
