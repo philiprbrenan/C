@@ -63,7 +63,7 @@ static int valid                                                                
  }
 
 static void add_$_string                                                        // Concatenate a string
- (const $ * buffer,                                                             // $
+ (const $    * buffer,                                                          // $
   const char * const string)                                                    // Zero terminated string
  {s ◁ buffer->string ▷ node(string, strlen(string));
   s ▷ putTreeLast;
@@ -79,7 +79,7 @@ static void addn_$_string                                                       
 
 static void add$_$_$                                                            // Add a string buffer
  (const $ * buffer,                                                             // Target $
-  const $ add)                                                                  // Source $
+  const $   add)                                                                // Source $
  {makeLocalCopyOf$(a, n, add);                                                  // Make a local copy of the buffer to be added in case the source and target buffers are the same
   buffer ▶ addn(a, n);                                                          // Add copy of source to target
  }
@@ -219,6 +219,14 @@ static size_t length_$                                                          
   ArenaListNode  root = buffer->string ▷ root;
   ArenaListfe(c, root) length += c ▷ length;
   return length;
+ }
+
+static size_t lengthOfLastLine_$                                                // Length of the last line in the buffer
+ (const $ * Buffer)                                                             // $
+ {buffer ◁ *Buffer;
+  makeLocalCopyOf$(a, n, buffer);                                               // Make a local copy of the buffer to be added in case the source and target buffers are the same
+  for(size_t i = n; i > 0; --i)  if (a[i-1] == '\n') return n - i;              // Look back for last new line
+  return n;                                                                     // No new line found
  }
 
 static int equals_$_$                                                           // Checks whether two $ are equal.
@@ -648,10 +656,18 @@ void test11()                                                                   
      b ▷ free;
  }
 
+void test12()                                                                   //TlengthOfLastLine
+ {$  a = make$();      ✓ a ▷ lengthOfLastLine == 0;
+     a ▷ add("a\n");
+     a ▷ add("bb\n");  ✓ a ▷ lengthOfLastLine == 0;
+     a ▷ add("ccc");   ✓ a ▷ lengthOfLastLine == 3;
+     a ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0,  test1,  test2, test3, test4,
                            test5,  test6,  test7, test8, test9,
-                           test10, test11, 0};
+                           test10, test11, test12, 0};
   run_tests("$", 1, tests);
   return 0;
  }
