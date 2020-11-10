@@ -437,17 +437,26 @@ static int isTag_int_tag                                                        
 static int hasText_int_XmlTag                                                     // Check whether the tag contains a text element
  (const XmlTag * Parent)                                                          // Parent tag
  {const typeof(*Parent) parent = *Parent;
-   Xmlfe(child, parent) if (child.proto->isText(&child)) return 1;
+  Xmlfe(child, parent) if (child.proto->isText(&child)) return 1;
   return 0;
  }
 
-static int stayInLine_int_XmlTag                                                  // Check whether a tag is text or is preceded or followed by text
+static int stayInLine_int_XmlTag                                                  // Check whether an opening or singleton tag can stay in line: if it is text or is preceded or followed by text.
  (const XmlTag * Tag)                                                             // Tag
  {const typeof(*Tag) tag = *Tag;
-  if ( tag.proto->isText(&tag))                   return 1;
-  if (!tag.proto->isFirst(&tag)) {const typeof(tag.proto->prev(&tag)) p = tag.proto->prev(&tag); return p.proto->isText(&p);}
-  if (!tag.proto->isLast(&tag))  {const typeof(tag.proto->next(&tag)) n = tag.proto->next(&tag); return n.proto->isText(&n);}
+  if ( tag.proto->isText(&tag))                                   return 1;
+//const typeof(tag.proto->countChildren(&tag)) n = tag.proto->countChildren(&tag); if (n == 0)                 return 1;                // Need to differentiate between tags that can never have any content and tags that can have content.
+  if (!tag.proto->isFirst(&tag)) {const typeof(tag.proto->prev(&tag)) p = tag.proto->prev(&tag); if (p.proto->isText(&p)) return 2;}
+  if (!tag.proto->isLast(&tag))  {const typeof(tag.proto->next(&tag)) n = tag.proto->next(&tag); if (n.proto->isText(&n)) return 3;}
   return 0;
+ }
+
+static int stayInLineClose_int_XmlTag                                             // Check whether a closing tag can stay inline: if it is preceded or followed by text or is empty, or its last child was text
+ (const XmlTag * Tag)                                                             // Tag
+ {const typeof(*Tag) tag = *Tag;
+  if (tag.proto->stayInLine(&tag)) return 1;
+  const typeof(tag.proto->last(&tag)) l = tag.proto->last(&tag);
+  return l.proto->valid(&l) && l.proto->isText(&l);
  }
 
 static size_t length_size__XmlTag                                                 // Length of a tag string
@@ -660,7 +669,13 @@ static StringBuffer prettyPrint_stringBuffer_XmlTag                             
  {typeof(makeStringBuffer()) p = makeStringBuffer();
 
   void print(const XmlTag parent, const int depth)                                // Print the specified parent and its children
-   {void open()                                                                 // Add open tag
+   {void indent()                                                               // Indent to the current depth
+     {const typeof(p.proto->lengthOfLastLine(&p)) l = p.proto->lengthOfLastLine(&p);
+      const typeof(depth * 2ul) n = depth * 2ul;
+      if (l < n)                 p.proto->addSpaces(&p, n - l);
+      else      {p.proto->addNewLine(&p); p.proto->addSpaces(&p, n);}
+     }
+    void open()                                                                 // Add open tag
      {if (parent.proto->isText(&parent))
        {p.proto->addn(&p, parent.proto->tagString(&parent), parent.proto->tagStringLength(&parent));
        }
@@ -676,7 +691,7 @@ static StringBuffer prettyPrint_stringBuffer_XmlTag                             
         p.proto->addChar(&p, XmlClose);
        }
       else                                                                      // Opener
-       {p.proto->addNewLine(&p); p.proto->addSpaces(&p, depth*2);
+       {indent();
         p.proto->addChar(&p, XmlOpen);
         p.proto->addn(&p, parent.proto->tagString(&parent), parent.proto->tagStringLength(&parent));
         p.proto->addChar(&p, XmlClose);
@@ -684,7 +699,7 @@ static StringBuffer prettyPrint_stringBuffer_XmlTag                             
      }
     void close()                                                                // Add close tag unless we are on text
      {if (parent.proto->isTag(&parent) && !parent.proto->empty(&parent))
-       {if (!parent.proto->stayInLine(&parent)) {p.proto->addNewLine(&p); p.proto->addSpaces(&p, depth*2);}
+       {if (!parent.proto->stayInLineClose(&parent)) indent();
         p.proto->addFormat(&p, "%c%c%s%c", XmlOpen, XmlSlash, parent.proto->tagName(&parent), XmlClose);
        }
      }
@@ -818,30 +833,28 @@ const char * XmlsampleDita1()                                                   
 "<!-- Created with XMetaL (http://www.xmetal.com) -->\n"
 "<concept id=\"concept_6FD9560EEEED4FB0A70086250EE15F88\">\n"
 "  <title>Foreword</title>\n"
-"  <shortdesc><?xm-replace_text Short Description?>\n"
+"  <shortdesc>Short Description\n"
 "  </shortdesc>\n"
 "  <conbody>\n"
-"   <p>DITA represents a fundamental shift in the approach to writing and\n"
+"   <p id=\"0\"> DITA <b>represents</b> a fundamental shift in the approach to writing and\n"
 "    publishing, and to a certain extent, the carefully accumulated practice of\n"
 "    hundreds of years of publication projects has to be reviewed and redefined.\n"
 "   </p>\n"
-"   <section id=\"section_73DD7CCCB3734B7DB29E4D200702B61F\"\n"
-"    audience=\"contributor\">\n"
+"   <section id=\"1\" audience=\"contributor\">\n"
 "    <title>Rationale</title>\n"
-"    <lq reftitle=\"Deborah Pickett, Yahoo! DITA Users Group\"\n"
-"     href=\"http://tech.dir.groups.yahoo.com/group/dita-users/message/12656\"> I would\n"
-"      suggest that users who are interested in a particular feature get together and\n"
+"    <p id=\"2\"> I <b>would</b> suggest that users who are <b>interested</b>\n"
+"      in a <b>particular</b> <i>feature</i> get together and\n"
 "      define their own best practices for said feature. Define the markup that\n"
 "      authors should use, and define the processing expectations of that markup. If\n"
-"      this unofficial spec is reasonable, then vendors will find it in their\n"
+"      this unofficial spec is reasonable, then <b>vendors</b> will find it in their\n"
 "      interests to support it rather than striking out on their own. (It's this kind\n"
 "      of distributed, grassroots power-to-the-users ideology that the DITA TC wants\n"
 "      to instill in the community.) I've found that vendors (both commercial and\n"
 "      non-commercial) are usually very willing to accommodate users' requirements,\n"
 "      once they know what those requirements are.\n"
-"    </lq>\n"
-"    <lq reftitle=\"Joe Gershon, OASIS DITA TC Mailing List\">The problem is\n"
-"      that the vast majority of new users are misusing DITA to a point that they are\n"
+"    </p>\n"
+"    <p  id=\"3\">The problem is\n"
+"      that the vast <b>majority</b> of new users are misusing DITA to a point that they are\n"
 "      often worse off than they were in Word or FrameMaker. Most companies choose not\n"
 "      to hire an expert to help them migrate to DITA, and they get what they pay for.\n"
 "      I'd like us as a TC (and moving forward via the Adoption SC) to put tutorials,\n"
@@ -851,7 +864,7 @@ const char * XmlsampleDita1()                                                   
 "      aware of and address their needs, suggesting best practices and, where\n"
 "      relevant, providing unofficial packages of DTDs and supporting code (e.g.\n"
 "      DITA-OT plugins).\n"
-"    </lq>\n"
+"    </p>\n"
 "   </section>\n"
 "  </conbody>\n"
 "</concept>\n"
@@ -896,7 +909,7 @@ void test0()                                                                    
   x.proto->free(&x);
  } // test0
 
-void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TparseXmlFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot //TstayInLine
+void test1()                                                                    //Tfirst //Tlast //Tprev //Tnext //Tequals //Tcount //TcountChildren //TfindFirstTag //TfindFirstChild //TparseXmlFromString //TparseXmlTagName //TtagName //TtagNameEquals //Tvalid //TtagString //TtagStringEquals //Tparent //Troot //Twrap //Tunwrap //TchangeName //TtagStringLength //TisText //TisFirst //TisLast //TisRoot
  {char * xml = "<a><b><c/><d><e/>e<f/>f<g>g</g></d><h>h</h></b><i/>i<j></j></a>";
   const typeof(parseXmlFromString(xml, 0)) x = parseXmlFromString(xml, 0);
 
@@ -916,7 +929,7 @@ void test1()                                                                    
   const typeof(x.proto->findFirstTag(&x, "j")) j = x.proto->findFirstTag(&x, "j"); assert( j.proto->valid(&j)); assert( j.proto->tagNameEquals(&j, "j")); assert( a.proto->equals(&a, j.proto->parent(&j)));
 
   assert( b.proto->equals(&b, a.proto->first(&a)));  assert(  b.proto->isFirst(&b));   assert( !d.proto->isFirst(&d)); assert( !b.proto->isRoot(&b));
-  assert( c.proto->equals(&c, b.proto->first(&b)));  assert(  c.proto->empty(&c));     assert( !c.proto->stayInLine(&c));
+  assert( c.proto->equals(&c, b.proto->first(&b)));  assert(  c.proto->empty(&c));
   assert( h.proto->equals(&h, b.proto->last(&b)));   assert(  h.proto->isLast(&h));    assert( !d.proto->isLast(&d));
   assert( j.proto->equals(&j, a.proto->last(&a)));
 
@@ -1102,7 +1115,7 @@ void test4()                                                                    
  } // test4
 
 void test5()                                                                    //ThasText //TstayInline //TprettyPrint
- {const typeof("<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>") xml = "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d></a>";         // Avoiding trailing blanks
+ {const typeof("<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d><l>lll</l><m>mmm</m></a>") xml = "<a><b>bb bb <c/> ccc</b><d> <i/> <j> jj <k/> kk</j> </d><l>lll</l><m>mmm</m></a>";
 
   const typeof(parseXmlFromString(xml, 0)) x = parseXmlFromString(xml, 0);  assert( ! x.proto->errors(&x));
   const typeof(x.proto->findFirstTag(&x, "b")) b = x.proto->findFirstTag(&x, "b");     assert(   b.proto->hasText(&b));
@@ -1110,16 +1123,17 @@ void test5()                                                                    
   const typeof(x.proto->findFirstTag(&x, "c")) c = x.proto->findFirstTag(&x, "c");     assert(   c.proto->stayInLine(&c));
   const typeof(c.proto->next(&c)) C = c.proto->next(&c);                  assert(   C.proto->stayInLine(&C));
   const typeof(x.proto->findFirstTag(&x, "d")) d = x.proto->findFirstTag(&x, "d");     assert( ! d.proto->hasText(&d));
+  const typeof(x.proto->findFirstTag(&x, "m")) m = x.proto->findFirstTag(&x, "m");     assert( ! m.proto->stayInLine(&m));
 
     const typeof(x.proto->prettyPrint(&x)) p = x.proto->prettyPrint(&x);
   assert( p.proto->printsAs(&p,
 "<a>\n"
-"  <b>bb bb <c/> ccc\n"
-"  </b>\n"
+"  <b>bb bb <c/> ccc</b>\n"
 "  <d><i/>\n"
-"    <j> jj <k/> kk\n"
-"    </j>\n"
+"    <j> jj <k/> kk</j>\n"
 "  </d>\n"
+"  <l>lll</l>\n"
+"  <m>mmm</m>\n"
 "</a>\n"
 ));
 
@@ -1177,9 +1191,7 @@ void test8()                                                                    
      const typeof(x.proto->root(&x)) X = x.proto->root(&x);                 assert( X.proto->charPosition(&X, 0) ==  0);  assert( X.proto->charPosition(&X, 1) == 19);
   const typeof(x.proto->findFirstChild(&x, "abcd")) a = x.proto->findFirstChild(&x, "abcd");  assert( a.proto->charPosition(&a, 0) ==  1);  assert( a.proto->charPosition(&a, 1) == 9);
   const typeof(a.proto->first(&a)) b = a.proto->first(&a);                   assert( b.proto->charPosition(&b, 0) ==  5);  assert( b.proto->charPosition(&b, 1) == 9);
-  const typeof(a.proto->next(&a)) c = a.proto->next(&a);
-say("AAAA %lu\n", c.proto->charPosition(&c, 0));
-                   assert( c.proto->charPosition(&c, 0) == 13);  assert( c.proto->charPosition(&c, 1) == 16);
+  const typeof(a.proto->next(&a)) c = a.proto->next(&a);                    assert( c.proto->charPosition(&c, 0) == 13);  assert( c.proto->charPosition(&c, 1) == 16);
 
   x.proto->free(&x);
  }
