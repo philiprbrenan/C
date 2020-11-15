@@ -549,7 +549,7 @@ static  $Node first_$Node__$                                                    
  {root ◁ list ▶ root;
   return root ▷ first;
  }
-duplicate s/first/last/g s/first/next/g s/first/prev/g
+duplicate s/first/last/g
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -1773,13 +1773,37 @@ void test17()                                                                   
   ✓ w ▷ printsWithBracketsAs("(0123456789)");
     w ▷ free;
 
-    a ◁ make$FromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14");
+    char *S = ◉;
+aaaa0 aaa1 aa2 a3 acc4
+cccc5 bbaa6 ccc7 cc8 c9
+bbbb10 bbb11 bb12 b13
+14
+◉
+    a ◁ make$FromWords(S);
     a ▷ sort;
   ✓ a ▷ countChildren == 15;
-  ✓ a ▷ printsWithBracketsAs("(14a3aa2aaa1aaaa0acc4b13bb12bbaa6bbb11bbbb10c9cc8ccc7cccc5)");
+    s ◁ makeStringBuffer(); $fe(A, a) s ▷ addFormat("%s\n", A ▷ key);
+   ✓ s ▷ equalsString(◉);
+14
+a3
+aa2
+aaa1
+aaaa0
+acc4
+b13
+bb12
+bbaa6
+bbb11
+bbbb10
+c9
+cc8
+ccc7
+cccc5
+◉
+
     l ◁ a ▷ lowest;            h ◁ a ▷ highest;
   ✓ l ▷ equalsString("14");  ✓ h ▷ equalsString("cccc5");
-    a ▷ free;
+    a ▷ free; s ▷ free;
  }
 
 void test18()                                                                   //TpreOrderPosition //TequalsPosition
