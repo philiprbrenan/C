@@ -1821,10 +1821,14 @@ void test17()                                                                   
 "14\n"
 ;
     const typeof(makeArenaListFromWords(S)) a = makeArenaListFromWords(S);
-    a.proto->sort(&a);
   assert( a.proto->countChildren(&a) == 15);
+
+    a.proto->sort(&a);
+
+  assert( a.proto->countChildren(&a) == 15);
+
     const typeof(makeStringBuffer()) s = makeStringBuffer(); ArenaListfe(A, a) s.proto->addFormat(&s, "%s\n", A.proto->key(&A));
-   assert( s.proto->equalsString(&s,
+  assert( s.proto->equalsString(&s,
 "14\n"
 "a3\n"
 "aa2\n"
@@ -1842,8 +1846,9 @@ void test17()                                                                   
 "cccc5\n"
 ));
 
-    const typeof(a.proto->lowest(&a)) l = a.proto->lowest(&a);            const typeof(a.proto->highest(&a)) h = a.proto->highest(&a);
-  assert( l.proto->equalsString(&l, "14"));  assert( h.proto->equalsString(&h, "cccc5"));
+    const typeof(a.proto->lowest(&a)) l = a.proto->lowest(&a);   assert( l.proto->equalsString(&l, "14"));
+    const typeof(a.proto->highest(&a)) h = a.proto->highest(&a);  assert( h.proto->equalsString(&h, "cccc5"));
+
     a.proto->free(&a); s.proto->free(&s);
  }
 
