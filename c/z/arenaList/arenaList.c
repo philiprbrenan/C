@@ -1780,10 +1780,14 @@ bbbb10 bbb11 bb12 b13
 14
 ◉
     a ◁ make$FromWords(S);
-    a ▷ sort;
   ✓ a ▷ countChildren == 15;
+
+    a ▷ sort;
+
+  ✓ a ▷ countChildren == 15;
+
     s ◁ makeStringBuffer(); $fe(A, a) s ▷ addFormat("%s\n", A ▷ key);
-   ✓ s ▷ equalsString(◉);
+  ✓ s ▷ equalsString(◉);
 14
 a3
 aa2
@@ -1801,8 +1805,9 @@ ccc7
 cccc5
 ◉
 
-    l ◁ a ▷ lowest;            h ◁ a ▷ highest;
-  ✓ l ▷ equalsString("14");  ✓ h ▷ equalsString("cccc5");
+    l ◁ a ▷ lowest;   ✓ l ▷ equalsString("14");
+    h ◁ a ▷ highest;  ✓ h ▷ equalsString("cccc5");
+
     a ▷ free; s ▷ free;
  }
 
