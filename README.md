@@ -16,6 +16,8 @@ for a working example.
 
 ## Quicksort
 
+An implementation of QuickSort:
+
 ```
 static int cmp_int__$_$                                                         //P Compare two keys
  ($Node * First,                                                                // First node
@@ -56,3 +58,42 @@ static void sort__$Node                                                         
  }
 ```
 
+### Tests
+
+Test results:
+
+```
+    char *S = ◉;
+aaaa0 aaa1 aa2 a3 acc4
+cccc5 bbaa6 ccc7 cc8 c9
+bbbb10 bbb11 bb12 b13
+14
+◉
+    a ◁ make$FromWords(S);
+
+    a ▷ sort;
+
+  ✓ a ▷ countChildren == 15;
+    s ◁ makeStringBuffer(); $fe(A, a) s ▷ addFormat("%s\n", A ▷ key);
+   ✓ s ▷ equalsString(◉);
+14
+a3
+aa2
+aaa1
+aaaa0
+acc4
+b13
+bb12
+bbaa6
+bbb11
+bbbb10
+c9
+cc8
+ccc7
+cccc5
+◉
+
+    l ◁ a ▷ lowest;            h ◁ a ▷ highest;
+  ✓ l ▷ equalsString("14");  ✓ h ▷ equalsString("cccc5");
+
+```
