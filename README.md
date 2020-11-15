@@ -94,4 +94,6 @@ cccc5
     l ◁ a ▷ lowest;   ✓ l ▷ equalsString("14");
     h ◁ a ▷ highest;  ✓ h ▷ equalsString("cccc5");
 
+SUCCESS: All 21 ArenaList tests passed successfully in 506 microseconds
+
 ```
