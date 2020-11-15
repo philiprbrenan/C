@@ -43,9 +43,8 @@ sub mwpl {qq(makeWithPerlLocally.pl)}                                           
 my $reversedDomain = qq(com.appaapps);                                          # Our domain name written in reverse order
 my $javaHome    = fpd(qw(/home phil java));                                     # Location of java files
 my $javaClasses = fpd($javaHome, qw(Classes));                                  # Folder containing java classes
-my $androidJar  = ''; #fpe(qw(/home phil Android sdk platforms android-25 android jar));
-my $swtJar      = fpe(qw(/home phil java    swt jars swt jar));
-my $classPath   = join ':', $javaClasses, $androidJar, $swtJar;                 # Class path to classes created locally and well know jars
+my $androidJar  = "/home/phil/android/sdk/platforms/android-25/android.jar";
+my $classPath   = join ':', $androidJar, $javaClasses;                          # Class path to classes created locally and well know jars
 my $androidLog;                                                                 # Android log
 my $bash;                                                                       # Bash
 my $c;                                                                          # C
@@ -56,6 +55,7 @@ my $cpp;                                                                        
 my $doc;                                                                        # Documentation
 my $gccVersion;                                                                 # Alternate version of gcc is set.  Example: --gccVersion gcc-10
 my $html;                                                                       # Html
+my $install;                                                                    # Install this script
 my $java;                                                                       # Java
 my $javascript;                                                                 # Javascript
 my $optimize;                                                                   # Run with valgrind to check for memory leaks
@@ -79,6 +79,7 @@ GetOptions(
   'doc'         =>\$doc,
   'gccVersion=s'=>\$gccVersion,
   'html'        =>\$html,
+  'install'     =>\$install,
   'java'        =>\$java,
   'javascript'  =>\$javascript,
   'optimize'    =>\$optimize,
@@ -89,18 +90,18 @@ GetOptions(
   'valgrind'    =>\$valgrind,
  );
 
-unless($compile or $run or $doc or $html or $androidLog)                        # Check action
+unless($install or $compile or $run or $doc or $html or $androidLog)            # Check action
  {confess "Specify --compile or --run or --doc or --androidLog";
  }
 
-my $file = shift @ARGV;                                                         # File to process
+my $file = shift @ARGV // q(/home/phil/perl/makeWithPerl/makeWithPerl.pl);      # File to process
 
 unless($file)
  {confess "Use %f to specify the file to process";
  }
 
-if ($run and $file =~ m(((make|run)WithPerl).pl\Z)s)                            # Install this file
- {my $c = qq(cp $file ~/.local/bin/$1; chmod ugo+x ~/.local/bin/$1; hash -r);
+if ($install or $run && $file =~ m(makeWithPerl.pl\Z)s)                # Install this file
+ {my $c = qq(cp $file ~/.local/bin/makeWithPerl; chmod ugo+x ~/.local/bin/makeWithPerl; hash -r);
   lll qq($c);
   xxx ($c);
   confess "Installed";
@@ -142,6 +143,15 @@ if (-e mwpl and $run)                                                           
     print STDERR qx(perl -CSDA $c $p);
     exit;
    }
+ }
+
+if ($file =~ m(/AppaAppsGitHubPhotoApp/java/Activity.java))                     # Process special files
+ {#if ($compile or $run)
+   {my $c = qq(perl /home/phil/AppaAppsGitHubPhotoApp/genApp.pm);
+    say   STDERR $c;
+    print STDERR for qx($c);
+   }
+  exit;
  }
 
 if ($file =~ m(VocabularyActivity.java))                                        # Process special files
@@ -309,10 +319,10 @@ elsif ($bash)                                                                   
    }
  }
 elsif ($androidLog)                                                             # Android log
- {my $adb = q(/home/phil/Android/sdk/platform-tools/adb);
-  my $c = qq($adb -e logcat -d > $file && $adb -e logcat -c);
+ {my $adb = q(/home/phil/android/sdk/platform-tools/adb);
+  my $c = qq($adb -e logcat "*:W" -d > $file && $adb -e logcat -c);
   say STDERR "Android log\n$c";
-  print STDERR qx($adb -e logcat -d > $file && $adb -e logcat -c);
+  print STDERR qx($c);
  }
 elsif ($java)                                                                   # Java
  {my ($name, undef, $ext) = fileparse($file, qw(.java));                        # Parse file name
