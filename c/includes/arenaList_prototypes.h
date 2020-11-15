@@ -119,10 +119,6 @@ static  ArenaListNode first_ArenaListNode__ArenaList
  (const ArenaList * list);
 static  ArenaListNode last_ArenaListNode__ArenaList
  (const ArenaList * list);
-static  ArenaListNode next_ArenaListNode__ArenaList
- (const ArenaList * list);
-static  ArenaListNode prev_ArenaListNode__ArenaList
- (const ArenaList * list);
 static int equalsString_int__ArenaListNode_string
  (const ArenaListNode      * node,
   const char * const key);
@@ -324,8 +320,6 @@ struct ProtoTypes_ArenaList {
     const ArenaList * list);                                                    // Parent
   ArenaListNode  (*lowest)(                                                     // Find an example of the lowest key under the root node of a ArenaList
     const  ArenaList * Parent);                                                 // ArenaListNode
-  ArenaListNode  (*next)(                                                       // Get the next child in the specified ArenaList.
-    const ArenaList * list);                                                    // Parent
   ArenaListNode  (*node)(                                                       // Create a new ArenaList node with the specified key.
     const ArenaList    * list,                                                  // ArenaList in which to create the node
     const void * const key,                                                     // Key for this node.  Note: we do not order nodes automatically by key - the actually ordering of nodes in the ArenaList is determined solely by the user.
@@ -339,8 +333,6 @@ struct ProtoTypes_ArenaList {
   void *  (*pointer)(                                                           // Return a temporary pointer to data in the arena of the specified ArenaList
     const ArenaList   * list,                                                   // ArenaList
     const size_t offset);                                                       // Offset
-  ArenaListNode  (*prev)(                                                       // Get the prev child in the specified ArenaList.
-    const ArenaList * list);                                                    // Parent
   int  (*printContains)(                                                        // Check the print of an ArenaList contains the expected string.
     const ArenaList    * list,                                                  // ArenaList parse ArenaList
     const char * expected);                                                     // Expected string
@@ -371,7 +363,7 @@ struct ProtoTypes_ArenaList {
     const ArenaList    * list,                                                  // ArenaList
     const char * const file);                                                   // File
  } const ProtoTypes_ArenaList =
-{allocate_ArenaListNode__ArenaList_size, at_ArenaListNode__ArenaList_size, by__ArenaList_sub, check_string_ArenaList, copyAndCompact_ArenaList__ArenaList, countChildren_size__ArenaList, count_size__ArenaList, dumpWithBrackets__ArenaList, dump__ArenaList, findFirstChild_ArenaListNode__ArenaList_string, findFirst_ArenaListNode__ArenaList_string, first_ArenaListNode__ArenaList, free__ArenaList, freedSpace_size__ArenaList, fromLetters__ArenaList_string, highest_ArenaListNode__ArenaList, last_ArenaListNode__ArenaList, lowest_ArenaListNode__ArenaList, next_ArenaListNode__ArenaList, node_ArenaListNode__ArenaList_string_size, nodez_ArenaListNode__ArenaList_string, offset__ArenaList_size, pointer__ArenaList_size, prev_ArenaListNode__ArenaList, printContains_int__ArenaList, printWithBrackets__string_ArenaList, printsAs_int__ArenaList_string, printsWithBracketsAs_int__ArenaList_string, root_ArenaListNode__ArenaList, scan__ArenaList_sub, sort__ArenaList, swap_ArenaList_ArenaList, used_size__ArenaList, width_size__ArenaList, write__ArenaList_string};
+{allocate_ArenaListNode__ArenaList_size, at_ArenaListNode__ArenaList_size, by__ArenaList_sub, check_string_ArenaList, copyAndCompact_ArenaList__ArenaList, countChildren_size__ArenaList, count_size__ArenaList, dumpWithBrackets__ArenaList, dump__ArenaList, findFirstChild_ArenaListNode__ArenaList_string, findFirst_ArenaListNode__ArenaList_string, first_ArenaListNode__ArenaList, free__ArenaList, freedSpace_size__ArenaList, fromLetters__ArenaList_string, highest_ArenaListNode__ArenaList, last_ArenaListNode__ArenaList, lowest_ArenaListNode__ArenaList, node_ArenaListNode__ArenaList_string_size, nodez_ArenaListNode__ArenaList_string, offset__ArenaList_size, pointer__ArenaList_size, printContains_int__ArenaList, printWithBrackets__string_ArenaList, printsAs_int__ArenaList_string, printsWithBracketsAs_int__ArenaList_string, root_ArenaListNode__ArenaList, scan__ArenaList_sub, sort__ArenaList, swap_ArenaList_ArenaList, used_size__ArenaList, width_size__ArenaList, write__ArenaList_string};
 ArenaList newArenaList(ArenaList allocator) {return allocator;}
 
 struct ProtoTypes_ArenaListArena {
