@@ -1820,14 +1820,12 @@ void test17()                                                                   
 "bbbb10 bbb11 bb12 b13\n"
 "14\n"
 ;
-    const typeof(makeArenaListFromWords(S)) a = makeArenaListFromWords(S);
-  assert( a.proto->countChildren(&a) == 15);
+    const typeof(makeArenaListFromWords(S)) a = makeArenaListFromWords(S);    assert( a.proto->countChildren(&a) == 15);
 
-    a.proto->sort(&a);
-
-  assert( a.proto->countChildren(&a) == 15);
+    a.proto->sort(&a);                 assert( a.proto->countChildren(&a) == 15);
 
     const typeof(makeStringBuffer()) s = makeStringBuffer(); ArenaListfe(A, a) s.proto->addFormat(&s, "%s\n", A.proto->key(&A));
+
   assert( s.proto->equalsString(&s,
 "14\n"
 "a3\n"
