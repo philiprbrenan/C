@@ -61,21 +61,18 @@ static void sort__$Node                                                         
 ### Test results
 
 ```
-
     char *S = ◉;
 aaaa0 aaa1 aa2 a3 acc4
 cccc5 bbaa6 ccc7 cc8 c9
 bbbb10 bbb11 bb12 b13
 14
 ◉
-    a ◁ make$FromWords(S);
-  ✓ a ▷ countChildren == 15;
+    a ◁ make$FromWords(S);    ✓ a ▷ countChildren == 15;
 
-    a ▷ sort;
-
-  ✓ a ▷ countChildren == 15;
+    a ▷ sort;                 ✓ a ▷ countChildren == 15;
 
     s ◁ makeStringBuffer(); $fe(A, a) s ▷ addFormat("%s\n", A ▷ key);
+
   ✓ s ▷ equalsString(◉);
 14
 a3
@@ -96,4 +93,5 @@ cccc5
 
     l ◁ a ▷ lowest;   ✓ l ▷ equalsString("14");
     h ◁ a ▷ highest;  ✓ h ▷ equalsString("cccc5");
+
 ```
