@@ -10,11 +10,11 @@ https://github.com/philiprbrenan/C/blob/master/c/z/arenaList/arenaList.c
 
 for a working example.
 
-(We reject: kings, presidents and voting. We believe in: rough consensus and running code. https://en.wikiquote.org/wiki/David_D._Clark)
-
 ## Quicksort
 
-An implementation of QuickSort:
+[We reject: kings, presidents and voting. We believe in: rough consensus and running code.](https://en.wikiquote.org/wiki/David_D._Clark)
+
+An implementation of the QuickSort algorithm:
 
 ```
 static int cmp_int__$_$                                                         //P Compare two keys
