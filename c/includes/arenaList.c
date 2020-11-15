@@ -570,18 +570,6 @@ static  ArenaListNode last_ArenaListNode__ArenaList                             
   return root.proto->last(&root);
  }
 #line 553 "/home/phil/c/z/arenaList/arenaList.c"
-static  ArenaListNode next_ArenaListNode__ArenaList                                                    // Get the next child in the specified ArenaList.
- (const ArenaList * list)                                                               // Parent
- {const typeof(list->proto->root(list)) root = list->proto->root(list);
-  return root.proto->next(&root);
- }
-#line 553 "/home/phil/c/z/arenaList/arenaList.c"
-static  ArenaListNode prev_ArenaListNode__ArenaList                                                    // Get the prev child in the specified ArenaList.
- (const ArenaList * list)                                                               // Parent
- {const typeof(list->proto->root(list)) root = list->proto->root(list);
-  return root.proto->prev(&root);
- }
-#line 553 "/home/phil/c/z/arenaList/arenaList.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -1826,13 +1814,37 @@ void test17()                                                                   
   assert( w.proto->printsWithBracketsAs(&w, "(0123456789)"));
     w.proto->free(&w);
 
-    const typeof(makeArenaListFromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14")) a = makeArenaListFromWords(" aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14");
+    char *S =
+"aaaa0 aaa1 aa2 a3 acc4\n"
+"cccc5 bbaa6 ccc7 cc8 c9\n"
+"bbbb10 bbb11 bb12 b13\n"
+"14\n"
+;
+    const typeof(makeArenaListFromWords(S)) a = makeArenaListFromWords(S);
     a.proto->sort(&a);
   assert( a.proto->countChildren(&a) == 15);
-  assert( a.proto->printsWithBracketsAs(&a, "(14a3aa2aaa1aaaa0acc4b13bb12bbaa6bbb11bbbb10c9cc8ccc7cccc5)"));
+    const typeof(makeStringBuffer()) s = makeStringBuffer(); ArenaListfe(A, a) s.proto->addFormat(&s, "%s\n", A.proto->key(&A));
+   assert( s.proto->equalsString(&s,
+"14\n"
+"a3\n"
+"aa2\n"
+"aaa1\n"
+"aaaa0\n"
+"acc4\n"
+"b13\n"
+"bb12\n"
+"bbaa6\n"
+"bbb11\n"
+"bbbb10\n"
+"c9\n"
+"cc8\n"
+"ccc7\n"
+"cccc5\n"
+));
+
     const typeof(a.proto->lowest(&a)) l = a.proto->lowest(&a);            const typeof(a.proto->highest(&a)) h = a.proto->highest(&a);
   assert( l.proto->equalsString(&l, "14"));  assert( h.proto->equalsString(&h, "cccc5"));
-    a.proto->free(&a);
+    a.proto->free(&a); s.proto->free(&s);
  }
 
 void test18()                                                                   //TpreOrderPosition //TequalsPosition
@@ -1873,10 +1885,6 @@ void test19()                                                                   
     const typeof(b.proto->at(&b, 20)) y = b.proto->at(&b, 20); assert( y.proto->invalid(&y));
 
     s.proto->free(&s);
- }
-
-void test19a()                                                                   //Tat //Tindex //Tinvalid //TkeyEqualsString
- {  const typeof(newArenaListNode({})) n = newArenaListNode({});
  }
 
 void test20()                                                                   //TscanFrom
