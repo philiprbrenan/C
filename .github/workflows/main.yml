@@ -1,0 +1,114 @@
+# Test various C programs written with the help of: https://metacpan.org/pod/Preprocess::Ops
+
+name: Test
+
+on:
+  push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
+      with:
+        repository: 'philiprbrenan/perl'
+        path: perl
+
+    - name: Env
+      run: |
+        echo $HOME
+        pwd
+        ls -la fonts/NotoSansMono-Regular.ttf
+        md5sum fonts/NotoSansMono-Regular.ttf
+
+    - name: Install
+      run: |
+        sudo apt update
+        sudo apt -y install build-essential gdb tree gtk+-3.0-dev
+        sudo cpan install Data::Table::Text Data::Dump Dita::PCD Getopt::Long File::Basename Java::Doc Preprocess::Ops
+
+    - name: Install Valgrind
+      run: |
+        sudo apt -y install valgrind
+
+    - name: GCC10
+      run: |
+         sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+         sudo apt-get update
+         sudo apt install gcc-10
+
+    - name: Check
+      run: |
+        perl -v
+        gcc-10 -v
+
+    - name: Tree
+      run: |
+        tree
+
+    - name: Run utilities
+      if: always()
+      run: |
+        export PERL5LIB=${PERL5LIB}:perl/lib/
+        (cd /home/runner/work/C/C/c/z/utilities/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/utilities//utilities.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
+
+    - name: Run arenaArray
+      if: always()
+      run: |
+        export PERL5LIB=${PERL5LIB}:perl/lib/
+        (cd /home/runner/work/C/C/c/z/arenaArray/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/arenaArray//arenaArray.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
+
+    - name: Run arenaList
+      if: always()
+      run: |
+        export PERL5LIB=${PERL5LIB}:perl/lib/
+        (cd /home/runner/work/C/C/c/z/arenaList/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/arenaList//arenaList.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
+
+    - name: Run stringBuffer
+      if: always()
+      run: |
+        export PERL5LIB=${PERL5LIB}:perl/lib/
+        (cd /home/runner/work/C/C/c/z/stringBuffer/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/stringBuffer//stringBuffer.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
+
+    - name: Run arenaTree
+      if: always()
+      run: |
+        export PERL5LIB=${PERL5LIB}:perl/lib/
+        (cd /home/runner/work/C/C/c/z/arenaTree/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/arenaTree//arenaTree.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
+
+    - name: Run colour
+      if: always()
+      run: |
+        export PERL5LIB=${PERL5LIB}:perl/lib/
+        (cd /home/runner/work/C/C/c/z/colour/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/colour//colour.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
+
+    - name: Run rectangle
+      if: always()
+      run: |
+        export PERL5LIB=${PERL5LIB}:perl/lib/
+        (cd /home/runner/work/C/C/c/z/rectangle/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/rectangle//rectangle.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
+
+    - name: Run vector2d
+      if: always()
+      run: |
+        export PERL5LIB=${PERL5LIB}:perl/lib/
+        (cd /home/runner/work/C/C/c/z/vector2d/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/vector2d//vector2d.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
+
+    - name: Run xml
+      if: always()
+      run: |
+        export PERL5LIB=${PERL5LIB}:perl/lib/
+        (cd /home/runner/work/C/C/c/z/xml/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/xml//xml.c --cIncludes /home/runner/work/C/C/c/includes --valgrind --gccVersion gcc-10)
+
+    - name: Run cairoText
+      if: always()
+      run: |
+        export PERL5LIB=${PERL5LIB}:perl/lib/
+        (cd /home/runner/work/C/C/c/z/cairoText/; perl /home/runner/work/C/C/perl/makeWithPerl/makeWithPerl.pl --c --run /home/runner/work/C/C/c/z/cairoText//cairoText.c --cIncludes /home/runner/work/C/C/c/includes  --gccVersion gcc-10)
+
+    - name: Time
+      run: |
+        export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+        perl -m"GitHub::Crud" -e "GitHub::Crud::writeFileFromCurrentRun("lastModificationTime", time)" -Iperl/lib/
