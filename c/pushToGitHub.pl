@@ -112,7 +112,7 @@ sub test($$)                                                                    
   -e $file or confess "No such file: $file";
 
   my $path = fpd($git, q(c), $d, $c);
-  my $valg = $c =~ m(cairoText|mimagem)i ? '' : q(--valgrind);                  # Nop valgrind on GTK+ as it leaks
+  my $valg = $c =~ m(cairoText|mimagem)i ? '' : q(--valgrind);                  # No valgrind on GTK+ as it leaks
 
   my @r = <<END;
     - name: Run $c
@@ -195,8 +195,10 @@ if (1)                                                                          
    {my $t = swapFilePrefix($f, $cpan);                                          # Target on GitHub
     next if $t =~ m(backup|zzz);                                                # Ignore work files
     if ($t =~ m(\A(.gitignore|Build.PL|CHANGES|CONTRIBUTING|MANIFEST|README.*|test\.pl|lib/.*)\Z))
-     {my $s = readFile($f);
-      lll "$f to $t ", writeFileUsingSavedToken($user, $cpanRepo, $t, $s);
+     {if (fileModTime($f) > $lastModificationTime)                              # File has been modified
+       {my $s = readFile($f);
+        lll "$f to $t ", writeFileUsingSavedToken($user, $cpanRepo, $t, $s);
+       }
      }
    }
  }
