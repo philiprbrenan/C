@@ -1127,18 +1127,16 @@ static int cmp_int__$_$                                                         
  }
 
 static void sort__$Node                                                         // Quick sort the children of a node in the $ in situ
- (const           $Node * Parent)                                               // Parent node
- {void sort(      $Node   first, $Node last)                                    // Start and end of range to be sorted which must already be in their correct position
-   {next ◁ first ▷ next;                                                        // Parent key
-    if (next.offset != last.offset)                                             // Range has more than two nodes
-     {for(p ◀ next ▷ next; p.offset != last.offset; p = p ▷ next)               // Partition interior
-       {if (p ▷ cmp (next) < 0) next ▷ putPrev(p ▷ cut);                        // Partition around next
-       }
-      sort(first, next); sort(next,  last);                                     // Sort each partition
-     }
+ (const           $Node * parent)                                               // Parent node
+ {typedef struct {$Node   first, last;} Range;                                  // A range of nodes
+
+  stack ◀ makeArenaArray        (sizeof(Range));                                // Arena stack of ranges to use heap rather than local storage
+
+  void range($Node first, $Node last)                                           // Start and end of range to be sorted: the start and end nodes must already be in their correct positions.
+   {Range r = {first, last}; s ◁ stack ▷ push; s ◧ r;                           // Push a range onto the stack
    }
 
-  N ◀ 0; p ◁ *Parent; $fe(c, p) if (++N > 3) break;                             // Check for special cases
+  N ◀ 0; p ◁ *parent; $fe(c, p) if (++N > 3) break;                             // Check for special cases
 
   if (N > 1)                                                                    // Already sorted if no children or just one child
    {l ◀ p ▷ lowest;  if (!l ▷ isFirst) p ▷ putFirst(l ▷ cut);                   // Place child with  lowest key first
@@ -1146,11 +1144,24 @@ static void sort__$Node                                                         
 
     if (N > 3)                                                                  // Already sorted if two or three children
      {p ◀ l;
-      for(q ◀ p ▷ next; q ▷ valid; p = q, q = q ▷ next)                         // Sort if still out of order
-       {if (q ▷ cmp(p) < 0) {sort(l, h); return;}                               // Lowest and highest are in position so we can use them to to delimit the interior range to be sorted
+      for  (q ◀ p ▷ next; q ▷ valid; p = q, q = q ▷ next)                       // Sort if still out of order
+       {if (q ▷ cmp(p) < 0) {range(l, h); break;}                               // Lowest and highest are in position so we can use them to to delimit the interior range to be sorted
        }
      }
    }
+
+  while(stack ▷ notEmpty)                                                       // Perform all the sorts outstanding
+   {Range r; s ◁ stack   ▷ pop; r ◨ s;                                          // Pop the next range to be sorted off the stack
+         next  ◁ r.first ▷ next;                                                // Parent key
+    if (!next ▷ equals(r.last))                                                 // Range has more than two nodes
+     {for(p ◀ next ▷ next; !p ▷ equals(r.last); p = p ▷ next)                   // Partition interior
+       {if (p ▷ cmp (next) < 0) next ▷ putPrev(p ▷ cut);                        // Partition around next
+       }
+      range(r.first, next); range(next, r.last);                                // Sort each partition
+     }
+   }
+
+  stack ▷ free;
  }
 
 static void sort__$                                                             // Sort the children of the root of a $ in situ
@@ -1764,6 +1775,7 @@ void test17()                                                                   
     F ◁ make$FromWords("4 3 2 1");
     F ▷ sort;
   ✓ F ▷ countChildren == 4;
+
   ✓ F ▷ printsWithBracketsAs("(1234)");
     F ▷ free;
 
