@@ -12,7 +12,7 @@ use strict;
 use Carp;
 use Data::Dump qw(dump);
 use Data::Table::Text qw(:all);
-use GitHub::Crud qw(writeFileUsingSavedToken);
+use GitHub::Crud qw(:all);
 use YAML::Loader;
 use feature qw(say current_sub);
 
@@ -83,6 +83,8 @@ if (1)                                                                          
     searchDirectoryTreesForMatchingFiles($dir, qw(.h .c .pl .md));
 
   my %files = map {$_=>1} grep {1 or /makeWithPerl/} @files;                    # Filter files
+
+  deleteFileUsingSavedToken($user, $repo, $wf);                                 # Delete this file to prevent each upload triggering an action - it will be added at the end.
 
   for my $f(sort keys %files)                                                   # Upload each selected file
    {my $t = swapFilePrefix($f, $home);
