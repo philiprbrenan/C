@@ -193,14 +193,18 @@ my $lastModificationTimePreprocess =                                            
   // 0;
 
 if (1)                                                                          # Upload Cpan module
- {for my $f(searchDirectoryTreesForMatchingFiles($cpan))                        # Upload each file in module
-   {my $t = swapFilePrefix($f, $cpan);                                          # Target on GitHub
-    next if $t =~ m(backup|zzz);                                                # Ignore work files
-    if ($t =~ m(\A(.gitignore|Build.PL|CHANGES|CONTRIBUTING|MANIFEST|README.*|test\.pl|lib/.*)\Z))
-     {if (fileModTime($f) > $lastModificationTimePreprocess)                    # File has been modified
-       {my $s = readFile($f);
-        lll "$f to $t ", writeFileUsingSavedToken($user, $cpanRepo, $t, $s);
-       }
+ {my @files =                                                                   # Select files
+   grep {fileModTime($_) > $lastModificationTimePreprocess}                     # Changed since last modification time
+   grep { m((.gitignore|Build.PL|CHANGES|CONTRIBUTING|MANIFEST|README.*|test\.pl|lib/.*)\Z)i}
+   grep {!m(backup|zzz)}                                                        # Ignore work files
+   searchDirectoryTreesForMatchingFiles($cpan);
+
+  if (@files)                                                                   # Upload changed files
+   {deleteFileUsingSavedToken($user, $cpanRepo, $wf);                           # Delete this file to prevent each upload triggering an action - it will be added at the end.
+    for my $f(@files)                                                           # Upload each file in module
+     {my $t = swapFilePrefix($f, $cpan);                                        # Target on GitHub
+      my $s = readFile($f);
+      lll "$f to $t ", writeFileUsingSavedToken($user, $cpanRepo, $t, $s);
      }
    }
  }
