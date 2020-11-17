@@ -76,8 +76,8 @@ if (exists $$keywords{test})                                                    
 
 # C files
 
-my $lastModificationTime =                                                      # Get last modification time if possible
-  readFileUsingSavedToken(q(philiprbrenan), q(perl), q(lastModificationTime))
+my $lastModificationTimeC =                                                     # Get last modification time if possible of C repo
+  readFileUsingSavedToken($user, $repo, q(lastModificationTime))
   // 0;
 
 if (1)                                                                          # Upload C files
@@ -87,7 +87,7 @@ if (1)                                                                          
     searchDirectoryTreesForMatchingFiles($dir, qw(.h .c .pl .md));
 
   my %files = map {$_=>1}                                                       # Select files by date
-    grep {fileModTime($_) > $lastModificationTime}                              # Changed since last modification time
+    grep {fileModTime($_) > $lastModificationTimeC}                             # Changed since last modification time
     @files;
 
   if (keys %files)
@@ -179,23 +179,25 @@ jobs:
         tree
 
 $tests
-    - name: Time
-      run: |
-        export GITHUB_TOKEN=\${{ secrets.GITHUB_TOKEN }}
-        perl -m"GitHub::Crud" -e "GitHub::Crud::writeFileFromCurrentRun("lastModificationTime", time)" -Iperl/lib/
 END
 
   lll "Work flow to $repo ", writeFileUsingSavedToken($user, $repo, $wf, $y);
  }
 
+writeFileUsingSavedToken($user, $repo, "lastModificationTime", time);
+
 # Cpan module
+
+my $lastModificationTimePreprocess =                                            # Get last modification time if possible or Perl repo
+  readFileUsingSavedToken($user, $cpanRepo, q(lastModificationTime))
+  // 0;
 
 if (1)                                                                          # Upload Cpan module
  {for my $f(searchDirectoryTreesForMatchingFiles($cpan))                        # Upload each file in module
    {my $t = swapFilePrefix($f, $cpan);                                          # Target on GitHub
     next if $t =~ m(backup|zzz);                                                # Ignore work files
     if ($t =~ m(\A(.gitignore|Build.PL|CHANGES|CONTRIBUTING|MANIFEST|README.*|test\.pl|lib/.*)\Z))
-     {if (fileModTime($f) > $lastModificationTime)                              # File has been modified
+     {if (fileModTime($f) > $lastModificationTimePreprocess)                    # File has been modified
        {my $s = readFile($f);
         lll "$f to $t ", writeFileUsingSavedToken($user, $cpanRepo, $t, $s);
        }
@@ -236,3 +238,5 @@ jobs:
 END
   lll "Work flow to $cpanRepo ", writeFileUsingSavedToken($user, $cpanRepo, $wf, $y);
  }
+
+writeFileUsingSavedToken($user, $cpanRepo, "lastModificationTime", time);
