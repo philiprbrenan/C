@@ -1814,7 +1814,9 @@ void test17()                                                                   
   assert( w.proto->printsWithBracketsAs(&w, "(0123456789)"));
     w.proto->free(&w);
 
-    const typeof("aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14") S = "aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14";
+    const typeof("aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14\n") S = "aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14\n";
+//◉aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14
+//◉
 
     const typeof(makeArenaListFromWords(S)) a = makeArenaListFromWords(S);    assert( a.proto->countChildren(&a) == 15);
 
@@ -1822,23 +1824,23 @@ void test17()                                                                   
 
     const typeof(makeStringBuffer()) s = makeStringBuffer(); ArenaListfe(A, a) s.proto->addFormat(&s, "%s\n", A.proto->key(&A));
 
-  assert( s.proto->equalsString(&s,
-"14\n"
-"a3\n"
-"aa2\n"
-"aaa1\n"
-"aaaa0\n"
-"acc4\n"
-"b13\n"
-"bb12\n"
-"bbaa6\n"
-"bbb11\n"
-"bbbb10\n"
-"c9\n"
-"cc8\n"
-"ccc7\n"
-"cccc5\n"
-));
+  assert( s.proto->equalsString(&s, "14\n" "a3\n" "aa2\n" "aaa1\n" "aaaa0\n" "acc4\n" "b13\n" "bb12\n" "bbaa6\n" "bbb11\n" "bbbb10\n" "c9\n" "cc8\n" "ccc7\n" "cccc5\n"));
+//◉14
+//◉a3
+//◉aa2
+//◉aaa1
+//◉aaaa0
+//◉acc4
+//◉b13
+//◉bb12
+//◉bbaa6
+//◉bbb11
+//◉bbbb10
+//◉c9
+//◉cc8
+//◉ccc7
+//◉cccc5
+//◉
 
     const typeof(a.proto->lowest(&a)) l = a.proto->lowest(&a);   assert( l.proto->equalsString(&l, "14"));
     const typeof(a.proto->highest(&a)) h = a.proto->highest(&a);  assert( h.proto->equalsString(&h, "cccc5"));
@@ -1900,19 +1902,19 @@ void test20()                                                                   
      }
 
       f.proto->scanFrom(&f, sub, 0);
-    assert( S.proto->equalsString(&S,
-"start= 0  depth=3  f\n"
-"start= 0  depth=3  g\n"
-"start=-1  depth=2  e\n"
-"start= 1  depth=2  h\n"
-"start= 0  depth=3  i\n"
-"start= 0  depth=3  j\n"
-"start=-1  depth=2  h\n"
-"start=-1  depth=1  b\n"
-"start= 1  depth=1  k\n"
-"start= 0  depth=2  l\n"
-"start=-1  depth=1  k\n"
-));
+    assert( S.proto->equalsString(&S, "start= 0  depth=3  f\n" "start= 0  depth=3  g\n" "start=-1  depth=2  e\n" "start= 1  depth=2  h\n" "start= 0  depth=3  i\n" "start= 0  depth=3  j\n" "start=-1  depth=2  h\n" "start=-1  depth=1  b\n" "start= 1  depth=1  k\n" "start= 0  depth=2  l\n" "start=-1  depth=1  k\n"));
+//◉start= 0  depth=3  f
+//◉start= 0  depth=3  g
+//◉start=-1  depth=2  e
+//◉start= 1  depth=2  h
+//◉start= 0  depth=3  i
+//◉start= 0  depth=3  j
+//◉start=-1  depth=2  h
+//◉start=-1  depth=1  b
+//◉start= 1  depth=1  k
+//◉start= 0  depth=2  l
+//◉start=-1  depth=1  k
+//◉
 
     int tub(ArenaListNode node, int start, int depth)
      {makeLocalCopyOfArenaListKey(k, l, node);
@@ -1921,14 +1923,14 @@ void test20()                                                                   
      }
 
     h.proto->scanFrom(&h, tub, 1);
-    assert( T.proto->equalsString(&T,
-"start=-1  depth=2  h\n"
-"start=-1  depth=1  b\n"
-"start= 1  depth=1  k\n"
-"start= 0  depth=2  l\n"
-"start=-1  depth=1  k\n"
-"start= 0  depth=1  m\n"
-));
+    assert( T.proto->equalsString(&T, "start=-1  depth=2  h\n" "start=-1  depth=1  b\n" "start= 1  depth=1  k\n" "start= 0  depth=2  l\n" "start=-1  depth=1  k\n" "start= 0  depth=1  m\n"));
+//◉start=-1  depth=2  h
+//◉start=-1  depth=1  b
+//◉start= 1  depth=1  k
+//◉start= 0  depth=2  l
+//◉start=-1  depth=1  k
+//◉start= 0  depth=1  m
+//◉
     s.proto->free(&s); S.proto->free(&S); T.proto->free(&T);
  }
 
