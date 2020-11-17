@@ -17,8 +17,8 @@
 
 //D1 Structures                                                                 // Structures describing an Arena Tree.
 
-typedef struct MimagemEditPosition                                              // A position in a Mimagem edit buffer
- {const struct ProtoTypes_MimagemEditPosition *proto;                           // Prototypes for methods
+typedef struct MimagemEditPosition                                                    // A position in a Mimagem edit buffer
+ {const struct ProtoTypes_MimagemEditPosition *proto;                                 // Prototypes for methods
   size_t         tagOffset;                                                     // The offset of the tag
   size_t         tagChar;                                                       // The character offset in the tag
   size_t         editLineNumber;                                                // The edit line number containing the position
@@ -27,8 +27,8 @@ typedef struct MimagemEditPosition                                              
   int            tagClose;                                                      // True if this position is in a closing tag
  } MimagemEditPosition;
 
-typedef struct MimagemEditBuffer                                                // Mimagem edit buffer
- {const struct ProtoTypes_MimagemEditBuffer *proto;                             // Prototypes for methods
+typedef struct MimagemEditBuffer                                                      // Mimagem edit buffer
+ {const struct ProtoTypes_MimagemEditBuffer *proto;                                   // Prototypes for methods
   XmlParse       xml;                                                           //I Xml parse tree being edited
   CairoTextImage*cti;                                                           //I Cairo text image that we are drawing into
   Rectangle      zone;                                                          //I The rectangle in which the edit buffer will be drawn
