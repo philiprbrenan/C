@@ -44,8 +44,8 @@ static void sort__$Node                                                         
   while(stack ▷ notEmpty)                                                       // Perform all the sorts outstanding
    {Range r; s ◁ stack   ▷ pop; r ◨ s;                                          // Pop the next range to be sorted off the stack
          next  ◁ r.first ▷ next;                                                // Parent key
-    if (!next ▷ equals(r.last))                                                 // Range has more than two nodes
-     {for(p ◀ next ▷ next; !p ▷ equals(r.last); p = p ▷ next)                   // Partition interior
+    if ( next  ▷ notEquals(r.last))                                             // Range has more than two nodes
+     {for(p ◀ next ▷ next; p ▷ notEquals(r.last); p = p ▷ next)                 // Partition interior
        {if (p ▷ cmp (next) < 0) next ▷ putPrev(p ▷ cut);                        // Partition around next
        }
       range(r.first, next); range(next, r.last);                                // Sort each partition
