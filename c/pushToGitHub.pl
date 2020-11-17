@@ -76,25 +76,33 @@ if (exists $$keywords{test})                                                    
 
 # C files
 
+my $lastModificationTime =                                                      # Get last modification time if possible
+  readFileUsingSavedToken(q(philiprbrenan), q(perl), q(lastModificationTime))
+  // 0;
+
 if (1)                                                                          # Upload C files
  {my @files = ($compile, $licence);
 
   push @files, grep {-T $_ and !m(/backup/|/z/z/)}                              # Select files ignoring backups and tests
     searchDirectoryTreesForMatchingFiles($dir, qw(.h .c .pl .md));
 
-  my %files = map {$_=>1} grep {1 or /makeWithPerl/} @files;                    # Filter files
+  my %files = map {$_=>1}                                                       # Select files by date
+    grep {fileModTime($_) > $lastModificationTime}                              # Changed since last modification time
+    @files;
 
-  deleteFileUsingSavedToken($user, $repo, $wf);                                 # Delete this file to prevent each upload triggering an action - it will be added at the end.
+  if (keys %files)
+   {deleteFileUsingSavedToken($user, $repo, $wf);                               # Delete this file to prevent each upload triggering an action - it will be added at the end.
 
-  for my $f(sort keys %files)                                                   # Upload each selected file
-   {my $t = swapFilePrefix($f, $home);
-    if (($t =~ m(readme)i and $t !~ m(samples)) or $t =~ m(license)i)
-     {$t = swapFilePrefix($t, q(c/));
+    for my $f(sort keys %files)                                                 # Upload each selected file
+     {my $t = swapFilePrefix($f, $home);
+      if (($t =~ m(readme)i and $t !~ m(samples)) or $t =~ m(license)i)
+       {$t = swapFilePrefix($t, q(c/));
+       }
+      my $r = ppp  8, writeFileUsingSavedToken $user, $repo, $t, readFile($f);
+      my $F = ppp 30, $f;
+      my $T = ppp 20, $t;
+      lll "$r $F to $T";
      }
-    my $r = ppp  8, writeFileUsingSavedToken $user, $repo, $t, readFile($f);
-    my $F = ppp 30, $f;
-    my $T = ppp 20, $t;
-    lll "$r $F to $T";
    }
  }
 
@@ -110,7 +118,7 @@ sub test($$)                                                                    
     - name: Run $c
       if: always()
       run: |
-        export PERL5LIB=\${PERL5LIB}:lib/
+        export PERL5LIB=\${PERL5LIB}:perl/lib/
         (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes $valg --gccVersion gcc-10)
 END
     join '', @r;
@@ -136,6 +144,7 @@ jobs:
     - uses: actions/checkout\@v2
       with:
         repository: 'philiprbrenan/perl'
+        path: perl
 
     - name: Env
       run: |
@@ -170,6 +179,10 @@ jobs:
         tree
 
 $tests
+    - name: Time
+      run: |
+        export GITHUB_TOKEN=\${{ secrets.GITHUB_TOKEN }}
+        perl -m"GitHub::Crud" -e "GitHub::Crud::writeFileFromCurrentRun("lastModificationTime", time)" -Iperl/lib/
 END
 
   lll "Work flow to $repo ", writeFileUsingSavedToken($user, $repo, $wf, $y);
