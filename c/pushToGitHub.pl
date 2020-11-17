@@ -132,7 +132,8 @@ jobs:
     steps:
     - uses: actions/checkout\@v2
     - uses: actions/checkout\@v2
-      repository: 'philiprbrenan/perl'
+      with:
+        repository: 'philiprbrenan/perl'
 
     - name: Env
       run: |
