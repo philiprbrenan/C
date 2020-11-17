@@ -262,6 +262,12 @@ static int equals_int__$Node_$Node                                              
  {return a->list.arena == b.list.arena && a->offset == b.offset;
  }
 
+static int notEquals_int__$Node_$Node                                           // Confirm two nodes are not equal
+ (const $Node * a,                                                              // First offset
+  const $Node   b)                                                              // Second offset
+ {return !a ▶ equals(b);
+ }
+
 static int equalsPosition_int__$Position_$Position                              // Confirm two positions are equal
  (const $Position * a,                                                          // First position
   const $Position   b)                                                          // Second position
@@ -1153,8 +1159,8 @@ static void sort__$Node                                                         
   while(stack ▷ notEmpty)                                                       // Perform all the sorts outstanding
    {Range r; s ◁ stack   ▷ pop; r ◨ s;                                          // Pop the next range to be sorted off the stack
          next  ◁ r.first ▷ next;                                                // Parent key
-    if (!next ▷ equals(r.last))                                                 // Range has more than two nodes
-     {for(p ◀ next ▷ next; !p ▷ equals(r.last); p = p ▷ next)                   // Partition interior
+    if ( next  ▷ notEquals(r.last))                                             // Range has more than two nodes
+     {for(p ◀ next ▷ next; p ▷ notEquals(r.last); p = p ▷ next)                 // Partition interior
        {if (p ▷ cmp (next) < 0) next ▷ putPrev(p ▷ cut);                        // Partition around next
        }
       range(r.first, next); range(next, r.last);                                // Sort each partition
@@ -1334,7 +1340,7 @@ void test0()                                                                    
   t ▷ free;
  }
 
-void test1()                                                                    //Troot //Tfirst //Tlast //Tnext //Tprev //Tparent //Tequals //Tprint //TprintWithBrackets //TfromLetters //TprintsAs
+void test1()                                                                    //Troot //Tfirst //Tlast //Tnext //Tprev //Tparent //Tequals //TnotEquals //Tprint //TprintWithBrackets //TfromLetters //TprintsAs
  {  t ◁ make$(); t ▷ fromLetters("b(c(de)f)g(hi)j");
   ✓ t ▷ printsWithBracketsAs   ("(b(c(de)f)g(hi)j)");
   ✓ t ▷ printsAs("bcdefghij");
@@ -1344,6 +1350,8 @@ void test1()                                                                    
   c ◁ b ▷ first;
   e ◁ c ▷ last;
   d ◁ e ▷ prev;
+
+  ✓ a ▷ equals(a);  ✓ a ▷ notEquals(b);
 
   char * k = d ▷ key;
   ✓ *k == 'd';
