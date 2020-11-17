@@ -827,48 +827,48 @@ static void dump_XmlTag                                                         
 //D1 Samples                                                                    // Samples of Xml
 
 const char * XmlsampleDita1()                                                     // Dita
- {return
-"<?xml version=\"1.0\"?>\n"
-"<!DOCTYPE concept PUBLIC \"-//OASIS//DTD DITA Concept//EN\" \"concept.dtd\">\n"
-"<!-- Created with XMetaL (http://www.xmetal.com) -->\n"
-"<concept id=\"concept_6FD9560EEEED4FB0A70086250EE15F88\">\n"
-"  <title>Foreword</title>\n"
-"  <shortdesc>Short Description\n"
-"  </shortdesc>\n"
-"  <conbody>\n"
-"   <p id=\"0\"> DITA <b>represents</b> a fundamental shift in the approach to writing and\n"
-"    publishing, and to a certain extent, the carefully accumulated practice of\n"
-"    hundreds of years of publication projects has to be reviewed and redefined.\n"
-"   </p>\n"
-"   <section id=\"1\" audience=\"contributor\">\n"
-"    <title>Rationale</title>\n"
-"    <p id=\"2\"> I <b>would</b> suggest that users who are <b>interested</b>\n"
-"      in a <b>particular</b> <i>feature</i> get together and\n"
-"      define their own best practices for said feature. Define the markup that\n"
-"      authors should use, and define the processing expectations of that markup. If\n"
-"      this unofficial spec is reasonable, then <b>vendors</b> will find it in their\n"
-"      interests to support it rather than striking out on their own. (It's this kind\n"
-"      of distributed, grassroots power-to-the-users ideology that the DITA TC wants\n"
-"      to instill in the community.) I've found that vendors (both commercial and\n"
-"      non-commercial) are usually very willing to accommodate users' requirements,\n"
-"      once they know what those requirements are.\n"
-"    </p>\n"
-"    <p  id=\"3\">The problem is\n"
-"      that the vast <b>majority</b> of new users are misusing DITA to a point that they are\n"
-"      often worse off than they were in Word or FrameMaker. Most companies choose not\n"
-"      to hire an expert to help them migrate to DITA, and they get what they pay for.\n"
-"      I'd like us as a TC (and moving forward via the Adoption SC) to put tutorials,\n"
-"      white papers, etc. in place to educate new users to help them to do the right\n"
-"      thing from the beginning. At the same time, we must develop tutorials, white\n"
-"      papers, and other guides that cover as many use cases and user groups as we're\n"
-"      aware of and address their needs, suggesting best practices and, where\n"
-"      relevant, providing unofficial packages of DTDs and supporting code (e.g.\n"
-"      DITA-OT plugins).\n"
-"    </p>\n"
-"   </section>\n"
-"  </conbody>\n"
-"</concept>\n"
-;
+ {return "<?xml version=\"1.0\"?>\n" "<!DOCTYPE concept PUBLIC \"-//OASIS//DTD DITA Concept//EN\" \"concept.dtd\">\n" "<!-- Created with XMetaL (http://www.xmetal.com) -->\n" "<concept id=\"concept_6FD9560EEEED4FB0A70086250EE15F88\">\n" "  <title>Foreword</title>\n" "  <shortdesc>Short Description\n" "  </shortdesc>\n" "  <conbody>\n" "   <p id=\"0\"> DITA <b>represents</b> a fundamental shift in the approach to writing and\n" "    publishing, and to a certain extent, the carefully accumulated practice of\n" "    hundreds of years of publication projects has to be reviewed and redefined.\n" "   </p>\n" "   <section id=\"1\" audience=\"contributor\">\n" "    <title>Rationale</title>\n" "    <p id=\"2\"> I <b>would</b> suggest that users who are <b>interested</b>\n" "      in a <b>particular</b> <i>feature</i> get together and\n" "      define their own best practices for said feature. Define the markup that\n" "      authors should use, and define the processing expectations of that markup. If\n" "      this unofficial spec is reasonable, then <b>vendors</b> will find it in their\n" "      interests to support it rather than striking out on their own. (It's this kind\n" "      of distributed, grassroots power-to-the-users ideology that the DITA TC wants\n" "      to instill in the community.) I've found that vendors (both commercial and\n" "      non-commercial) are usually very willing to accommodate users' requirements,\n" "      once they know what those requirements are.\n" "    </p>\n" "    <p  id=\"3\">The problem is\n" "      that the vast <b>majority</b> of new users are misusing DITA to a point that they are\n" "      often worse off than they were in Word or FrameMaker. Most companies choose not\n" "      to hire an expert to help them migrate to DITA, and they get what they pay for.\n" "      I'd like us as a TC (and moving forward via the Adoption SC) to put tutorials,\n" "      white papers, etc. in place to educate new users to help them to do the right\n" "      thing from the beginning. At the same time, we must develop tutorials, white\n" "      papers, and other guides that cover as many use cases and user groups as we're\n" "      aware of and address their needs, suggesting best practices and, where\n" "      relevant, providing unofficial packages of DTDs and supporting code (e.g.\n" "      DITA-OT plugins).\n" "    </p>\n" "   </section>\n" "  </conbody>\n" "</concept>\n";
+//◉<?xml version="1.0"?>
+//◉<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+//◉<!-- Created with XMetaL (http://www.xmetal.com) -->
+//◉<concept id="concept_6FD9560EEEED4FB0A70086250EE15F88">
+//◉  <title>Foreword</title>
+//◉  <shortdesc>Short Description
+//◉  </shortdesc>
+//◉  <conbody>
+//◉   <p id="0"> DITA <b>represents</b> a fundamental shift in the approach to writing and
+//◉    publishing, and to a certain extent, the carefully accumulated practice of
+//◉    hundreds of years of publication projects has to be reviewed and redefined.
+//◉   </p>
+//◉   <section id="1" audience="contributor">
+//◉    <title>Rationale</title>
+//◉    <p id="2"> I <b>would</b> suggest that users who are <b>interested</b>
+//◉      in a <b>particular</b> <i>feature</i> get together and
+//◉      define their own best practices for said feature. Define the markup that
+//◉      authors should use, and define the processing expectations of that markup. If
+//◉      this unofficial spec is reasonable, then <b>vendors</b> will find it in their
+//◉      interests to support it rather than striking out on their own. (It's this kind
+//◉      of distributed, grassroots power-to-the-users ideology that the DITA TC wants
+//◉      to instill in the community.) I've found that vendors (both commercial and
+//◉      non-commercial) are usually very willing to accommodate users' requirements,
+//◉      once they know what those requirements are.
+//◉    </p>
+//◉    <p  id="3">The problem is
+//◉      that the vast <b>majority</b> of new users are misusing DITA to a point that they are
+//◉      often worse off than they were in Word or FrameMaker. Most companies choose not
+//◉      to hire an expert to help them migrate to DITA, and they get what they pay for.
+//◉      I'd like us as a TC (and moving forward via the Adoption SC) to put tutorials,
+//◉      white papers, etc. in place to educate new users to help them to do the right
+//◉      thing from the beginning. At the same time, we must develop tutorials, white
+//◉      papers, and other guides that cover as many use cases and user groups as we're
+//◉      aware of and address their needs, suggesting best practices and, where
+//◉      relevant, providing unofficial packages of DTDs and supporting code (e.g.
+//◉      DITA-OT plugins).
+//◉    </p>
+//◉   </section>
+//◉  </conbody>
+//◉</concept>
+//◉
  }
 #endif
 
@@ -1126,16 +1126,16 @@ void test5()                                                                    
   const typeof(x.proto->findFirstTag(&x, "m")) m = x.proto->findFirstTag(&x, "m");     assert( ! m.proto->stayInLine(&m));
 
     const typeof(x.proto->prettyPrint(&x)) p = x.proto->prettyPrint(&x);
-  assert( p.proto->printsAs(&p,
-"<a>\n"
-"  <b>bb bb <c/> ccc</b>\n"
-"  <d><i/>\n"
-"    <j> jj <k/> kk</j>\n"
-"  </d>\n"
-"  <l>lll</l>\n"
-"  <m>mmm</m>\n"
-"</a>\n"
-));
+  assert( p.proto->printsAs(&p, "<a>\n" "  <b>bb bb <c/> ccc</b>\n" "  <d><i/>\n" "    <j> jj <k/> kk</j>\n" "  </d>\n" "  <l>lll</l>\n" "  <m>mmm</m>\n" "</a>\n"));
+//◉<a>
+//◉  <b>bb bb <c/> ccc</b>
+//◉  <d><i/>
+//◉    <j> jj <k/> kk</j>
+//◉  </d>
+//◉  <l>lll</l>
+//◉  <m>mmm</m>
+//◉</a>
+//◉
 
   x.proto->free(&x); p.proto->free(&p);
  }
