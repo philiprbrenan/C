@@ -1168,18 +1168,16 @@ static int cmp_int__ArenaList_ArenaList                                         
  }
 
 static void sort__ArenaListNode                                                         // Quick sort the children of a node in the ArenaList in situ
- (const           ArenaListNode * Parent)                                               // Parent node
- {void sort(      ArenaListNode   first, ArenaListNode last)                                    // Start and end of range to be sorted which must already be in their correct position
-   {const typeof(first.proto->next(&first)) next = first.proto->next(&first);                                                        // Parent key
-    if (next.offset != last.offset)                                             // Range has more than two nodes
-     {for(typeof(next.proto->next(&next)) p = next.proto->next(&next); p.offset != last.offset; p = p.proto->next(&p))               // Partition interior
-       {if (p.proto->cmp(&p, next) < 0) next.proto->putPrev(&next, p.proto->cut(&p));                        // Partition around next
-       }
-      sort(first, next); sort(next,  last);                                     // Sort each partition
-     }
+ (const           ArenaListNode * parent)                                               // Parent node
+ {typedef struct {ArenaListNode   first, last;} Range;                                  // A range of nodes
+
+  typeof(makeArenaArray        (sizeof(Range))) stack = makeArenaArray        (sizeof(Range));                                // Arena stack of ranges to use heap rather than local storage
+
+  void range(ArenaListNode first, ArenaListNode last)                                           // Start and end of range to be sorted: the start and end nodes must already be in their correct positions.
+   {Range r = {first, last}; const typeof(stack.proto->push(&stack)) s = stack.proto->push(&stack); ({typeof(r) sourcesourcesource = r;  memcpy((void *)s,  (void *)&sourcesourcesource, sizeof(r));});                           // Push a range onto the stack
    }
 
-  typeof(0) N = 0; const typeof(*Parent) p = *Parent; ArenaListfe(c, p) if (++N > 3) break;                             // Check for special cases
+  typeof(0) N = 0; const typeof(*parent) p = *parent; ArenaListfe(c, p) if (++N > 3) break;                             // Check for special cases
 
   if (N > 1)                                                                    // Already sorted if no children or just one child
    {typeof(p.proto->lowest(&p)) l = p.proto->lowest(&p);  if (!l.proto->isFirst(&l)) p.proto->putFirst(&p, l.proto->cut(&l));                   // Place child with  lowest key first
@@ -1187,11 +1185,24 @@ static void sort__ArenaListNode                                                 
 
     if (N > 3)                                                                  // Already sorted if two or three children
      {typeof(l) p = l;
-      for(typeof(p.proto->next(&p)) q = p.proto->next(&p); q.proto->valid(&q); p = q, q = q.proto->next(&q))                         // Sort if still out of order
-       {if (q.proto->cmp(&q, p) < 0) {sort(l, h); return;}                               // Lowest and highest are in position so we can use them to to delimit the interior range to be sorted
+      for  (typeof(p.proto->next(&p)) q = p.proto->next(&p); q.proto->valid(&q); p = q, q = q.proto->next(&q))                       // Sort if still out of order
+       {if (q.proto->cmp(&q, p) < 0) {range(l, h); break;}                               // Lowest and highest are in position so we can use them to to delimit the interior range to be sorted
        }
      }
    }
+
+  while(stack.proto->notEmpty(&stack))                                                       // Perform all the sorts outstanding
+   {Range r; const typeof(stack.proto->pop(&stack)) s = stack.proto->pop(&stack);                        memcpy((void *)&r, (void *)s, sizeof(r));                                          // Pop the next range to be sorted off the stack
+         const typeof(r.first.proto->next(&r.first)) next = r.first.proto->next(&r.first);                                                // Parent key
+    if (!next.proto->equals(&next, r.last))                                                 // Range has more than two nodes
+     {for(typeof(next.proto->next(&next)) p = next.proto->next(&next); !p.proto->equals(&p, r.last); p = p.proto->next(&p))                   // Partition interior
+       {if (p.proto->cmp(&p, next) < 0) next.proto->putPrev(&next, p.proto->cut(&p));                        // Partition around next
+       }
+      range(r.first, next); range(next, r.last);                                // Sort each partition
+     }
+   }
+
+  stack.proto->free(&stack);
  }
 
 static void sort__ArenaList                                                             // Sort the children of the root of a ArenaList in situ
@@ -1805,6 +1816,7 @@ void test17()                                                                   
     const typeof(makeArenaListFromWords("4 3 2 1")) F = makeArenaListFromWords("4 3 2 1");
     F.proto->sort(&F);
   assert( F.proto->countChildren(&F) == 4);
+
   assert( F.proto->printsWithBracketsAs(&F, "(1234)"));
     F.proto->free(&F);
 
