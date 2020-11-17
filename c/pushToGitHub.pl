@@ -157,7 +157,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt -y install build-essential gdb tree gtk+-3.0-dev
-        sudo cpan install Data::Table::Text Data::Dump Dita::PCD Getopt::Long File::Basename Java::Doc Preprocess::Ops
+        sudo cpan install Data::Table::Text Data::Dump Dita::PCD Digest::SHA1 Getopt::Long File::Basename Java::Doc Preprocess::Ops
 
     - name: Install Valgrind
       run: |
