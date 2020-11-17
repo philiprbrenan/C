@@ -108,6 +108,7 @@ sub test($$)                                                                    
     - name: Run $c
       if: always()
       run: |
+        export PERL5LIB=\${PERL5LIB}:lib/
         (cd $path; perl $git/perl/makeWithPerl/makeWithPerl.pl --c --run $path/$c.c --cIncludes $git/c/includes $valg --gccVersion gcc-10)
 END
     join '', @r;
@@ -130,6 +131,8 @@ jobs:
 
     steps:
     - uses: actions/checkout\@v2
+    - uses: actions/checkout\@v2
+      repository: 'philiprbrenan/perl'
 
     - name: Env
       run: |
