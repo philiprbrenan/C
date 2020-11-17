@@ -181,7 +181,7 @@ jobs:
 $tests
 END
 
-  lll "Work flow to $repo ", writeFileUsingSavedToken($user, $repo, $wf, $y);
+  lll "Work flow for $repo ", writeFileUsingSavedToken($user, $repo, $wf, $y);
  }
 
 writeFileUsingSavedToken($user, $repo, "lastModificationTime", time);
@@ -236,7 +236,7 @@ jobs:
         perl Build.PL
         perl Build test
 END
-  lll "Work flow to $cpanRepo ", writeFileUsingSavedToken($user, $cpanRepo, $wf, $y);
+  lll "Work flow for $cpanRepo ", writeFileUsingSavedToken($user, $cpanRepo, $wf, $y);
  }
 
 writeFileUsingSavedToken($user, $cpanRepo, "lastModificationTime", time);
