@@ -256,7 +256,7 @@ static int cmp_int__ArenaList_ArenaList
  (ArenaListNode * First,
   ArenaListNode   second);
 static void sort__ArenaListNode
- (const           ArenaListNode * Parent);
+ (const           ArenaListNode * parent);
 static void sort__ArenaList
  (const ArenaList * list);
 static ArenaListNode lowest_ArenaListNode__ArenaListNode
@@ -538,7 +538,7 @@ struct ProtoTypes_ArenaListNode {
     const ArenaListNode child,                                                  // Child
     const ArenaListNode parent);                                                // Child
   void  (*sort)(                                                                // Quick sort the children of a node in the ArenaList in situ
-    const           ArenaListNode * Parent);                                    // Parent node
+    const           ArenaListNode * parent);                                    // Parent node
   void  (*splitKey)(                                                            // Split the specified node at the specified position.
     const ArenaListNode * Node,                                                 // ArenaListNode
     const size_t pos);                                                          // Position in key at which to split.
