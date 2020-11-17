@@ -89,7 +89,8 @@ if (1)                                                                          
     if (($t =~ m(readme)i and $t !~ m(samples)) or $t =~ m(license)i)
      {$t = swapFilePrefix($t, q(c/));
      }
-    lll "$f to $t ", writeFileUsingSavedToken($user, $repo, $t, readFile($f));
+    my $r = writeFileUsingSavedToken $user, $repo, $t, readFile($f);
+    lll "$r $f \tto $t";
    }
  }
 
