@@ -14,7 +14,7 @@ for a working example.
 
 [We reject: kings, presidents and voting. We believe in: rough consensus and running code.](https://en.wikiquote.org/wiki/David_D._Clark)
 
-An implementation of the QuickSort algorithm:
+A non recursive implementation of the QuickSort algorithm:
 
 ```
 static void sort__$Node                                                         // Quick sort the children of a node in the $ in situ
