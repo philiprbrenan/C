@@ -643,9 +643,9 @@ void test10()                                                                   
  {  typeof(makeStringBufferFromString("uname")) a = makeStringBufferFromString("uname");
     a.proto->system(&a);
   assert( a.proto->containsString(&a, "Linux"));
-  assert( a.proto->printsAs(&a,
-"Linux\n"
-));
+  assert( a.proto->printsAs(&a, "Linux\n"));
+//◉Linux
+//◉
     a.proto->free(&a);
  }
 
