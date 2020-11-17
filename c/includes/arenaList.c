@@ -1814,12 +1814,8 @@ void test17()                                                                   
   assert( w.proto->printsWithBracketsAs(&w, "(0123456789)"));
     w.proto->free(&w);
 
-    char *S =
-"aaaa0 aaa1 aa2 a3 acc4\n"
-"cccc5 bbaa6 ccc7 cc8 c9\n"
-"bbbb10 bbb11 bb12 b13\n"
-"14\n"
-;
+    const typeof("aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14") S = "aaaa0 aaa1 aa2 a3 acc4 cccc5 bbaa6 ccc7 cc8 c9 bbbb10 bbb11 bb12 b13 14";
+
     const typeof(makeArenaListFromWords(S)) a = makeArenaListFromWords(S);    assert( a.proto->countChildren(&a) == 15);
 
     a.proto->sort(&a);                 assert( a.proto->countChildren(&a) == 15);
