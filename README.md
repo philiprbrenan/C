@@ -21,17 +21,17 @@ static void sort__$Node                                                         
  (const           $Node * parent)                                               // Parent node
  {typedef struct {$Node   first, last;} Range;                                  // A range of nodes
 
-  stack ◀ makeArenaArray        (sizeof(Range));                                // Arena stack of ranges to use heap rather than local storage
+  stack ◀ makeArenaArray(sizeof(Range));                                        // Arena stack of ranges to use heap rather than local storage
 
   void range($Node first, $Node last)                                           // Start and end of range to be sorted: the start and end nodes must already be in their correct positions.
    {Range r = {first, last}; s ◁ stack ▷ push; s ◧ r;                           // Push a range onto the stack
    }
 
-  N ◀ 0; p ◁ *parent; $fe(c, p) if (++N > 3) break;                             // Check for special cases
+  p ◁ *parent; N ◁ p ▷ countChildren;                                           // Check for special cases
 
   if (N > 1)                                                                    // Already sorted if no children or just one child
-   {l ◀ p ▷ lowest;  if (!l ▷ isFirst) p ▷ putFirst(l ▷ cut);                   // Place child with  lowest key first
-    h ◁ p ▷ highest; if (!h ▷ isLast)  p ▷ putLast (h ▷ cut);                   // Place child with highest key last
+   {l ◀ p ▷ lowest;  p ▷ putFirst(l ▷ cut);                                     // Place child with  lowest key first
+    h ◁ p ▷ highest; p ▷ putLast (h ▷ cut);                                     // Place child with highest key last
 
     if (N > 3)                                                                  // Already sorted if two or three children
      {p ◀ l;
@@ -42,11 +42,11 @@ static void sort__$Node                                                         
    }
 
   while(stack ▷ notEmpty)                                                       // Perform all the sorts outstanding
-   {Range r; s ◁ stack   ▷ pop; r ◨ s;                                          // Pop the next range to be sorted off the stack
-         next  ◁ r.first ▷ next;                                                // Parent key
-    if ( next  ▷ notEquals(r.last))                                             // Range has more than two nodes
+   {Range r; s ◁ stack  ▷ pop; r ◨ s;                                           // Pop the next range to be sorted off the stack
+        next ◁ r.first ▷ next;                                                  // Parent key
+    if (next ▷ notEquals(r.last))                                               // Range has more than two nodes
      {for(p ◀ next ▷ next; p ▷ notEquals(r.last); p = p ▷ next)                 // Partition interior
-       {if (p ▷ cmp (next) < 0) next ▷ putPrev(p ▷ cut);                        // Partition around next
+       {if (p ▷ cmp(next) < 0) next ▷ putPrev(p ▷ cut);                         // Partition around next
        }
       range(r.first, next); range(next, r.last);                                // Sort each partition
      }
