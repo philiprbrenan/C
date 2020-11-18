@@ -1157,7 +1157,7 @@ static void sort__$Node                                                         
    }
 
   while(stack ▷ notEmpty)                                                       // Perform all the sorts outstanding
-   {Range r; s ◁ stack  ▷ pop; r ◨ s;                                           // Pop the next range to be sorted off the stack
+   {Range r; s ◁ stack ▷ pop; r ◨ s;                                            // Pop the next range to be sorted off the stack
         next ◁ r.first ▷ next;                                                  // Parent key
     if (next ▷ notEquals(r.last))                                               // Range has more than two nodes
      {for(p ◀ next ▷ next; p ▷ notEquals(r.last); p = p ▷ next)                 // Partition interior
