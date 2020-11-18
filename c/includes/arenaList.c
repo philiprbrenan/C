@@ -1177,17 +1177,17 @@ static void sort__ArenaListNode                                                 
  (const           ArenaListNode * parent)                                               // Parent node
  {typedef struct {ArenaListNode   first, last;} Range;                                  // A range of nodes
 
-  typeof(makeArenaArray        (sizeof(Range))) stack = makeArenaArray        (sizeof(Range));                                // Arena stack of ranges to use heap rather than local storage
+  typeof(makeArenaArray(sizeof(Range))) stack = makeArenaArray(sizeof(Range));                                        // Arena stack of ranges to use heap rather than local storage
 
   void range(ArenaListNode first, ArenaListNode last)                                           // Start and end of range to be sorted: the start and end nodes must already be in their correct positions.
    {Range r = {first, last}; const typeof(stack.proto->push(&stack)) s = stack.proto->push(&stack); ({typeof(r) sourcesourcesource = r;  memcpy((void *)s,  (void *)&sourcesourcesource, sizeof(r));});                           // Push a range onto the stack
    }
 
-  typeof(0) N = 0; const typeof(*parent) p = *parent; ArenaListfe(c, p) if (++N > 3) break;                             // Check for special cases
+  const typeof(*parent) p = *parent; const typeof(p.proto->countChildren(&p)) N = p.proto->countChildren(&p);                                           // Check for special cases
 
   if (N > 1)                                                                    // Already sorted if no children or just one child
-   {typeof(p.proto->lowest(&p)) l = p.proto->lowest(&p);  if (!l.proto->isFirst(&l)) p.proto->putFirst(&p, l.proto->cut(&l));                   // Place child with  lowest key first
-    const typeof(p.proto->highest(&p)) h = p.proto->highest(&p); if (!h.proto->isLast(&h))  p.proto->putLast(&p, h.proto->cut(&h));                   // Place child with highest key last
+   {typeof(p.proto->lowest(&p)) l = p.proto->lowest(&p);  p.proto->putFirst(&p, l.proto->cut(&l));                                     // Place child with  lowest key first
+    const typeof(p.proto->highest(&p)) h = p.proto->highest(&p); p.proto->putLast(&p, h.proto->cut(&h));                                     // Place child with highest key last
 
     if (N > 3)                                                                  // Already sorted if two or three children
      {typeof(l) p = l;
@@ -1198,11 +1198,11 @@ static void sort__ArenaListNode                                                 
    }
 
   while(stack.proto->notEmpty(&stack))                                                       // Perform all the sorts outstanding
-   {Range r; const typeof(stack.proto->pop(&stack)) s = stack.proto->pop(&stack);                        memcpy((void *)&r, (void *)s, sizeof(r));                                          // Pop the next range to be sorted off the stack
-         const typeof(r.first.proto->next(&r.first)) next = r.first.proto->next(&r.first);                                                // Parent key
-    if ( next.proto->notEquals(&next, r.last))                                             // Range has more than two nodes
+   {Range r; const typeof(stack.proto->pop(&stack)) s = stack.proto->pop(&stack);                        memcpy((void *)&r, (void *)s, sizeof(r));                                           // Pop the next range to be sorted off the stack
+        const typeof(r.first.proto->next(&r.first)) next = r.first.proto->next(&r.first);                                                  // Parent key
+    if (next.proto->notEquals(&next, r.last))                                               // Range has more than two nodes
      {for(typeof(next.proto->next(&next)) p = next.proto->next(&next); p.proto->notEquals(&p, r.last); p = p.proto->next(&p))                 // Partition interior
-       {if (p.proto->cmp(&p, next) < 0) next.proto->putPrev(&next, p.proto->cut(&p));                        // Partition around next
+       {if (p.proto->cmp(&p, next) < 0) next.proto->putPrev(&next, p.proto->cut(&p));                         // Partition around next
        }
       range(r.first, next); range(next, r.last);                                // Sort each partition
      }
