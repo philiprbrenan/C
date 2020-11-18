@@ -1198,7 +1198,7 @@ static void sort__ArenaListNode                                                 
    }
 
   while(stack.proto->notEmpty(&stack))                                                       // Perform all the sorts outstanding
-   {Range r; const typeof(stack.proto->pop(&stack)) s = stack.proto->pop(&stack);                        memcpy((void *)&r, (void *)s, sizeof(r));                                           // Pop the next range to be sorted off the stack
+   {Range r; const typeof(stack.proto->pop(&stack)) s = stack.proto->pop(&stack);                        memcpy((void *)&r, (void *)s, sizeof(r));                                            // Pop the next range to be sorted off the stack
         const typeof(r.first.proto->next(&r.first)) next = r.first.proto->next(&r.first);                                                  // Parent key
     if (next.proto->notEquals(&next, r.last))                                               // Range has more than two nodes
      {for(typeof(next.proto->next(&next)) p = next.proto->next(&next); p.proto->notEquals(&p, r.last); p = p.proto->next(&p))                 // Partition interior
