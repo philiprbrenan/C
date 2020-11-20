@@ -14,6 +14,8 @@
  can be carried out in parallel in a separate process as a $ is relocatable.
 */
 #define _GNU_SOURCE
+#include <sys/types.h>
+#include <dirent.h>
 #include <ctype.h>
 #include <setjmp.h>
 #include <arenaArray.c>
@@ -529,7 +531,7 @@ static void insertChar__$Node_char_size                                         
    }
  }
 
-static void replaceChar__$Node_size                                             // Replace the character at the specified position in the key string of a node with the specified character.
+static void replaceChar__$Node_char_size                                        // Replace the character at the specified position in the key string of a node with the specified character.
  (const $Node * node,                                                           // $Node
   const char    repl,                                                           // Replacement character
   size_t        pos)                                                            // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
@@ -1071,7 +1073,7 @@ static int printsWithBracketsAs_int__$Node_string                               
   const char  * const expected)                                                 // Expected string when printed
  {int r;
   void printer(char * s, size_t l)
-   {r = !strncmp(s, expected, l);
+   {r = !memcmp(s, expected, l);
    }
   node ▶ printWithBrackets(printer);
   return r;
@@ -1141,9 +1143,7 @@ static int printsAs_int__$Node_string                                           
  (const $Node *       node,                                                     // $
   const char  * const expected)                                                 // Expected string when printed
  {int r;
-  void printer(char * s, size_t l)
-   {r = !strncmp(s, expected, l);
-   }
+  void printer(char * s, size_t l) {r = !memcmp(s, expected, l);}
   node ▶ print(printer);
   return r;
  }
@@ -1152,7 +1152,7 @@ static int printsAs_int__$_string                                               
  (const $    *       list,                                                      // $
   const char * const expected)                                                  // Expected string when printed
  {int r;
-  void printer(char * s, size_t l) {r = !strncmp(s, expected, l);}              // Compare print with expected
+  void printer(char * s, size_t l) {r = !memcmp(s, expected, l);}               // Compare print with expected
   root ◁ list ▶ root; root ▷ print(printer);                                    // Print from root of $
   return r;
  }
@@ -1183,9 +1183,9 @@ static int cmp_int__$_$                                                         
  {first ◁ *First;
   makeLocalCopyOf$Key(K, L, first);                                             // Key of first node
   makeLocalCopyOf$Key(k, l, second);                                            // Key of second node
-  if (l < L) {i ◁ strncmp(K, k, l); return i ? i : +1;}                         // First key longer than second key
-  if (L < l) {i ◁ strncmp(K, k, L); return i ? i : -1;}                         // First key shorter then second key
-  return strncmp(K, k, L);                                                      // Equal length keys
+  if (l < L) {i ◁ memcmp(K, k, l); return i ? i : +1;}                          // First key longer than second key
+  if (L < l) {i ◁ memcmp(K, k, L); return i ? i : -1;}                          // First key shorter then second key
+  return memcmp(K, k, L);                                                       // Equal length keys
  }
 
 static void sort__$Node                                                         // Quick sort the children of a node in the $ in situ
@@ -1359,6 +1359,49 @@ $ read$                                                                         
   arena->root = h.root; arena->width = h.width;                                 // Offset to root in arena
   return list;
  }
+
+static void files__$                                                            // List all the files under the directory name specified by the key of the child
+ (const $Node   * node)                                                         // Child whose key represents the folder to start at
+ {void add(char * f)                                                            // Add the entries in a directory
+   {d ◀ opendir(f);                                                             // Open directory
+    if (d)                                                                      // Directory opened
+     {for(e ◀ readdir(d); e; e = readdir(d))                                    // Read through folder to end
+       {if (strcmp(e->d_name, ".") && strcmp(e->d_name, ".."))                  // Skip the two special entries
+         {lsprintf(F, 256, "%s/%s", f, e->d_name);                              // Fully qualified file name
+          if      (e->d_type == DT_DIR) add(F);                                 // Recurse into folder
+          else if (e->d_type == DT_REG) node ▶ nodeLast(F, Fl);                 // Add file
+         }
+       }
+      closedir(d);
+     }                                                                          // Close folder
+    else printStackBackTrace("No such folder %s\n", f);                         // Cannot find folder
+   }
+
+  makeLocalCopyOf$Key(start, l, *node);                                         // Start folder
+  if (l > 0) add(start); else {p ◁ getcwd(NULL, 0); add(p); free(p);}           // List files in named start folder or in present working directory if named folder has zero length
+ }
+
+static void folders__$                                                          // List all the folders under the directory name specified by the key of the child
+ (const $Node   * node)                                                         // Child whose key represents the folder to start at
+ {void add(char * f, size_t l)                                                  // Add the entries in a directory
+   {node ▶ nodeLast(f, l);                                                      // Save folder
+    d ◀ opendir(f);                                                             // Open directory
+    if (d)                                                                      // Directory opened
+     {for(e ◀ readdir(d); e; e = readdir(d))                                    // Read through folder to end
+       {if (strcmp(e->d_name, ".") && strcmp(e->d_name, ".."))                  // Skip the two special entries
+         {lsprintf(F, 256, "%s/%s", f, e->d_name);                              // Fully qualified file name
+          if (e->d_type == DT_DIR) add(F, Fl);                                  // Recurse into folder
+         }
+       }
+      closedir(d);
+     }                                                                          // Close folder
+    else printStackBackTrace("No such folder %s\n", f);                         // Cannot find folder
+   }
+
+  makeLocalCopyOf$Key(start, length, *node);                                    // Start folder
+  if (length > 0) add(start, length);                                           // List folders in named start folder or in present working directory if named folder has zero length
+  else {p ◁ getcwd(NULL, 0); add(p, strlen(p)); free(p);}
+ }
 #endif
 
 //D1 Tests                                                                      // Tests
@@ -1435,7 +1478,7 @@ void test2()                                                                    
 
     void process($Node n)
      {makeLocalCopyOf$Key(k, l, n);
-      strncpy(p, k, l); p += l; *p = 0;
+      memcpy(p, k, l); p += l; *p = 0;
      }
 
     t ▷ by(process);
@@ -2009,12 +2052,23 @@ void test22()                                                                   
   s ▷ free;
  }
 
+void test23()                                                                   //Tfiles //TFolders
+ {D ◀ make$(); F ◀ make$();
+
+  s ◁ "";
+
+  f ◁ F ▷ nodeFirst(s, strlen(s)); f ▷ files;   ✓ F ▷ count > 0;
+  d ◁ D ▷ nodeFirst(s, strlen(s)); d ▷ folders; ✓ D ▷ count > 0;
+
+  D ▷ free; F ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
                            test15, test16, test17, test18, test19,
-                           test20, test21, test22, 0};
+                           test20, test21, test22, test23, 0};
   run_tests("$", 1, tests);
 
   return 0;
