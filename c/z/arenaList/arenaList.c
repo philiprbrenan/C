@@ -747,6 +747,26 @@ static  $Node   putFirst_$Node__$Node_$Node                                     
  }
 duplicate s/First/Last/g,s/first/last/g,s/1/0/
 
+static  $Node   nodeFirst_$Node__$_string_size                                  // Create a new node with the specified key and place it first in the $
+ (const $     * list,                                                           // $
+  const char  * string,                                                         // Value of key for new child
+  const size_t  length)                                                         // Length of key for new child
+ {n ◁ list ▶ node(string, length);                                              // Create node
+  r ◁ list ▶ root;                                                              // Root of $
+  return r ▷ putFirst(n);                                                       // Put the new node first in the $
+ }
+duplicate s/First/Last/g
+
+static  $Node   nodeFirst_$Node__$Node_string_size                              // Create a new node and place it first under the specified node
+ (const $Node * parent,                                                         // Parent
+  const char  * string,                                                         // Value of key for new child
+  const size_t  length)                                                         // Length of key for new child
+ {l ◁ parent->list;                                                             // $ containing parent
+  n ◁ l ▷ node(string, length);                                                 // Create node
+  return parent ▶ putFirst(n);                                                  // Put a child first under its parent
+ }
+duplicate s/First/Last/g
+
 static  $Node putNP_$Node__int_$Node_$Node                                      //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
   const $Node sibling,                                                          // Sibling
@@ -790,6 +810,16 @@ static  $Node   putNext_$Node__$Node_$Node                                      
  {return putNP_$Node__int_$Node_$Node(1, *sibling, child);                      // Put child next
  }
 duplicate s/Next/Prev/g,s/next/previous/g,s/1/0/
+
+static  $Node   nodeNext_$Node__$Node_string_size                               // Create a new node next after the specified sibling
+ (const $Node * sibling,                                                        // Sibling
+  const char  * string,                                                         // Value of key for new child
+  const size_t  length)                                                         // Length of key for new child
+ {l ◁ sibling->list;                                                            // $ containing parent
+  n ◁ l ▷ node(string, length);                                                 // Create node
+  return sibling ▶ putNext(n);                                                  // Put a child next after its parent
+ }
+duplicate s/Next/Prev/g
 
 static  void replace__$Node_$Node                                               // Replace the specified node with this node
  (const $Node * with,                                                           // Replace with this node
@@ -1947,14 +1977,14 @@ void test21()                                                                   
   for  (size_t i = 0; i < N; ++i)
    {s ▷ clear; t ▷ clear; n ▷ clear;
 
-    for(size_t j = 0; j < N; ++j) {n ◁ s ▷ node(c, j+1); n ▷ putTreeLast;}
+    for(size_t j = 0; j < N; ++j) s ▷ nodeLast(c, j+1);
 
     ✓ s ▷ printsAs(◉);
 0010120123012340123450123456012345670123456780123456789
 ◉
 
-    for(size_t j = N; j > 0; --j) {f ◁ t ▷ node(c, j); f ▷ putTreeFirst;}
-    for(size_t j = N; j > 1; --j) {l ◁ n ▷ node(c, j); l ▷ putTreeLast;}
+    for(size_t j = N; j > 0; --j) t ▷ nodeFirst(c, j);
+    for(size_t j = N; j > 1; --j) n ▷ nodeLast (c, j);
 
     ✓ s ▷ equals(t); ✓ s ▷ notEquals(n); ✓ t ▷ notEquals(n);
    }
@@ -1962,12 +1992,29 @@ void test21()                                                                   
   s ▷ free; t ▷ free; n ▷ free;
  }
 
+void test22()                                                                   //TnodeFirst //TnodeLast //TnodeNext //TnodePrev
+ {s ◀ make$();
+
+  a ◁ s ▷ nodeFirst("a", 1);
+  d ◁ s ▷ nodeLast ("d", 1);
+      a ▷ nodeNext ("b", 1);
+      d ▷ nodePrev ("c", 1);
+      d ▷ nodeFirst("e", 1);
+      d ▷ nodeLast ("f", 1);
+
+  ✓ s ▷ printsWithBracketsAs(◉);
+(abcd(ef))
+◉
+
+  s ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
                            test15, test16, test17, test18, test19,
-                           test20, test21, 0};
+                           test20, test21, test22, 0};
   run_tests("$", 1, tests);
 
   return 0;
