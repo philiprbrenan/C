@@ -17,7 +17,7 @@
 #define StringBuffer_included_StringBuffer
 typedef struct StringBuffer                                                                // StringBuffer
  {const struct ProtoTypes_StringBuffer *proto;                                             // Prototypes for methods
-  ArenaList     string;                                                         // String being built
+  ArenaList    string;                                                          // String being built
  } StringBuffer;
 #endif
 
@@ -26,7 +26,7 @@ typedef struct StringBuffer                                                     
 #include <stringBuffer_prototypes.h>
 #define StringBufferfe( child, parent) for(typeof(parent.string.proto->first(&parent.string)) child = parent.string.proto->first(&parent.string); child.proto->valid(&child); child = child.proto->next(&child)) // Each child in a parent from first to last
 #define StringBufferfer(child, parent) for(typeof(parent.string.proto->last(&parent.string) ) child = parent.string.proto->last(&parent.string) ; child.proto->valid(&child); child = child.proto->prev(&child)) // Each child in a parent from last to first
-#define makeLocalCopyOfStringBuffer(string,length,buffer) const typeof(length_StringBuffer(&buffer)) length = length_StringBuffer(&buffer); char string[length+1]; string_StringBuffer_string(&buffer, string); // Load a string buffer into locally defined string/length variables.
+#define makeLocalCopyOfStringBuffer(string,length,buffer) const typeof(length_StringBuffer(&buffer)) length = length_StringBuffer(&buffer); char string[length+1]; string_StringBuffer_string(&buffer, string); // Load a StringBuffer into locally defined string/length variables.
 
 StringBuffer makeStringBuffer                                                                         // Make a StringBuffer
  ()                                                                             //
@@ -41,7 +41,7 @@ StringBuffer makeStringBufferFromString                                         
   return b;
  }
 
-StringBuffer makeStringBufferFromVaFormat                                                             // Make a string buffer from a variadic argument formatted string
+StringBuffer makeStringBufferFromVaFormat                                                             // Make a StringBuffer from a variadic argument formatted string
  (const char * const format,                                                    // Format
   ...)                                                                          // Variable argument list
  {va_list va;
@@ -51,12 +51,17 @@ StringBuffer makeStringBufferFromVaFormat                                       
   return s;
  }
 
-static void free_StringBuffer                                                              // Free a StringBuffer
+static void free__StringBuffer                                                             // Free a StringBuffer
  (const StringBuffer * buffer)                                                             // StringBuffer
  {buffer->string.proto->free(&buffer->string);
  }
 
-//D1 Concatenate                                                                // Concatenate various items to a string buffer.
+static void clear__StringBuffer                                                            // Clear a StringBuffer
+ (StringBuffer * buffer)                                                                   // StringBuffer
+ {buffer->string.proto->clear(&buffer->string);
+ }
+
+//D1 Concatenate                                                                // Concatenate various items to a StringBuffer.
 
 static int valid                                                                // Check whether the StringBuffer has been initialized
  (const StringBuffer * buffer)                                                             // StringBuffer
@@ -78,7 +83,7 @@ static void addn_StringBuffer_string                                            
   s.proto->putTreeLast(&s);
  }
 
-static void addStringBuffer_StringBuffer_StringBuffer                                                            // Add a string buffer
+static void addStringBuffer_StringBuffer_StringBuffer                                                            // Add a StringBuffer
  (const StringBuffer * buffer,                                                             // Target StringBuffer
   const StringBuffer   add)                                                                // Source StringBuffer
  {makeLocalCopyOfStringBuffer(a, n, add);                                                  // Make a local copy of the buffer to be added in case the source and target buffers are the same
@@ -145,25 +150,25 @@ static void addQuotedNewLine_StringBuffer                                       
  {buffer->proto->add(buffer, "\\n");
  }
 
-//D1 Join and Split                                                             // Join all the sub strings in the strin buffer into one string. Split the contents of the string buffer on spaces or new lines.
+//D1 Join and Split                                                             // Join all the sub strings in the StringBuffer into one string. Split the contents of the StringBuffer on spaces or new lines.
 
 static size_t count_StringBuffer                                                           // Count the number of sub strings in the buffer
  (const StringBuffer * buffer)                                                             // StringBuffer
  {return buffer->string.proto->countChildren(&buffer->string);                                        // Count the number of sub strings
  }
 
-static void join_StringBuffer                                                              // Join in place - join all the sub strings in the specified string buffer and replace them with one string.
+static void join_StringBuffer                                                              // Join in place - join all the sub strings in the specified StringBuffer and replace them with one string.
  (StringBuffer * Old)                                                                      // StringBuffer
  {const typeof(*Old) old = *Old;
   const typeof(old.string.proto->countChildren(&old.string)) N = old.string.proto->countChildren(&old.string);                                               // Number of sub strings
   if (N <= 1) return;                                                           // Already joined
   makeLocalCopyOfStringBuffer(b, l, old);                                                  // Local copy of string
-  const typeof(makeStringBuffer()) new = makeStringBuffer();                                                                // New string buffer
+  const typeof(makeStringBuffer()) new = makeStringBuffer();                                                                // New StringBuffer
   new.proto->addn(&new, b, l);                                                             // Load new buffer from joined string
   Old->proto->swap(Old, new);                                                              // Swap arenas so that the old becomes the new
  }
 
-static void joinWith_StringBuffer                                                          // Join in place - join all the sub strings in the specified string buffer with the specified string and replace the string buffer with the result.
+static void joinWith_StringBuffer                                                          // Join in place - join all the sub strings in the specified StringBuffer with the specified string and replace the StringBuffer with the result.
  (StringBuffer * Old,                                                                      // StringBuffer
   const char * const string)                                                    // String to separate the items being joined
  {const typeof(*Old) old = *Old;
@@ -171,7 +176,7 @@ static void joinWith_StringBuffer                                               
   if (S < 1) {Old->proto->join(Old); return;}                                              // Empty joining string
   const typeof(old.string.proto->countChildren(&old.string)) N = old.string.proto->countChildren(&old.string);                                               // Number of sub strings
   if (N <= 1) return;                                                           // Already joined
-  typeof(makeStringBuffer()) new = makeStringBuffer();                                                                // New string buffer
+  typeof(makeStringBuffer()) new = makeStringBuffer();                                                                // New StringBuffer
   typeof(0ul) n = 0ul;
   StringBufferfe(word, old)
    {makeLocalCopyOfArenaListKey(w, l, word);                                    // Local copy of word
@@ -210,6 +215,72 @@ static void splitWords                                                          
   for(; i < n; ++i) if (isspace(s[i])) save();
   save();
   String->proto->swap(String, r);                                                             // Swap arenas so that the old becomes the new
+ }
+
+//D1 File names                                                                 // Join all the sub strings in the StringBuffer to create a file or path name
+
+#define StringBufferFileComponentSeparator '/'
+#define StringBufferFileComponentExtension '.'
+
+static void fileNameFromComponents                                              // Make file name in situ
+ (const int type,                                                               // 'd' - path, 'f' - file, 'e' file with extension
+  StringBuffer * Old)                                                                      // StringBuffer
+ {const typeof(*Old) old = *Old;
+  typeof(makeStringBuffer()) new = makeStringBuffer();                                                                // New StringBuffer
+  const typeof(StringBufferFileComponentSeparator) slash = StringBufferFileComponentSeparator;
+
+  StringBufferfe(word, old)
+   {makeLocalCopyOfArenaListKey(w, l, word);                                    // Local copy of word
+    if (l > 0)
+     {const typeof(word.proto->isFirst(&word)) f = word.proto->isFirst(&word);
+      typeof(0ul) s = 0ul;
+
+      if (f && w[0] == slash) new.proto->addChar(&new, slash);                             // The first word keeps its first slash
+
+      for(typeof(0ul) i = 0ul; i < l; ++i) if (w[i] == slash) ++s; else break;              // Skip leading slashes
+
+      for(typeof(s) i = s; i < l; ++i)                                                    // Parse file name component
+       {if (w[i] != slash) new.proto->addChar(&new, w[i]);                                 // Between slashes
+        else                                                                    // Next slash
+         {for(typeof(i + 1) j = i + 1; j < l; ++j)                                            // Skip slashes
+           {if (w[j] != slash)
+             {new.proto->addChar(&new, slash); new.proto->addChar(&new, w[j]); i = j; break;
+             }
+           }
+         }
+       }
+      if (type == 'd' || !word.proto->isLast(&word)) new.proto->addChar(&new, slash);                  // Separating slashes
+     }
+   }
+  new.proto->join(&new);                                                                   // Concatenate components to make file name
+  Old->proto->swap(Old, new);                                                              // Swap arenas so that the old becomes the new
+
+  if (type == 'e')                                                              // Extension
+   {StringBufferfe(word, old)
+     {makeLocalCopyOfArenaListKey(w, l, word);                                  // Local copy of string
+      for(size_t i = l; i > 0; --i)                                             // Convert last slash in only word to dot
+       {if (w[i] == slash)
+         {word.proto->replaceChar(&word, StringBufferFileComponentExtension, i);
+          break;
+         }
+       }
+     }
+   }
+ }
+
+static void fpd_StringBuffer                                                               // Make path name in situ
+ (StringBuffer * Old)                                                                      // StringBuffer
+ {fileNameFromComponents('d', Old);
+ }
+
+static void fpe_StringBuffer                                                               // Make file name with extension in situ
+ (StringBuffer * Old)                                                                      // StringBuffer
+ {fileNameFromComponents('e', Old);
+ }
+
+static void fpf_StringBuffer                                                               // Make file name in situ
+ (StringBuffer * Old)                                                                      // StringBuffer
+ {fileNameFromComponents('f', Old);
  }
 
 //D1 Statistics                                                                 // Statistics on the contents of the StringBuffer.
@@ -373,12 +444,12 @@ static  void system_StringBuffer_StringBuffer                                   
     if(0)length=length;
    }
 
-  command->proto->apply(command, execString);                                                  // Execute command in string buffer
+  command->proto->apply(command, execString);                                                  // Execute command in StringBuffer
   t.proto->readFile(&t);                                                                 // Load the results
   command->proto->swap(command, t);                                                            // Overwrite the input command with the results
  }
 
-//D1 Read and Write                                                             // Read/write a string buffer from/to named and temporary files.
+//D1 Read and Write                                                             // Read/write a StringBuffer from/to named and temporary files.
 
 static ssize_t writeToFileHandle                                                //P Write a StringBuffer as a string to a file handle and return the non negative number of bytes written or a negative error.
  (const StringBuffer    * Buffer,                                                          // StringBuffer
@@ -430,14 +501,14 @@ static void dumpHex_StringBuffer                                                
   if (!n) say("StringBuffer is empty\n");
  }
 
-static  StringBuffer writeTemporaryFile_StringBuffer_string                                           // Write a StringBuffer as a string to a temporary file with the specified base name and return the full name of the file created as a string buffer.
+static  StringBuffer writeTemporaryFile_StringBuffer_string                                           // Write a StringBuffer as a string to a temporary file with the specified base name and return the full name of the file created as a StringBuffer.
  (const StringBuffer    *        buffer,                                                   // StringBuffer content to be written
   const char * const fileName)                                                  // Base name of the file
- {const typeof(makeStringBuffer()) fullFileName = makeStringBuffer();                                                       // String buffer to record full file name of file created
+ {const typeof(makeStringBuffer()) fullFileName = makeStringBuffer();                                                       // StringBuffer to record full file name of file created
 
   ssize_t writer(int d, char *f)                                                // Write
    {if (buffer->proto->writeToFileHandle(buffer, d, f) >= 0) fullFileName.proto->add(&fullFileName, f);          // Record full file name of temporary file name created if content was written successfully
-    return 0;                                                                   // Success is now determined by whether the temporary file name was created in the returned string buffer or not.
+    return 0;                                                                   // Success is now determined by whether the temporary file name was created in the returned StringBuffer or not.
    }
 
   makeTemporaryFileWithContent(fileName, writer);                               // Create temporary file and write to it
@@ -458,8 +529,8 @@ static void writeStderr_StringBuffer                                            
  {buffer->proto->writeToFileHandle(buffer, fileno(stderr), "stderr");
  }
 
-static void readFile_StringBuffer_string                                                   // Read a file and returns its content as a string buffer.
- (StringBuffer * FileName)                                                                 // Name of the file as the content of a string buffer
+static void readFile_StringBuffer_string                                                   // Read a file and returns its content as a StringBuffer.
+ (StringBuffer * FileName)                                                                 // Name of the file as the content of a StringBuffer
  {typeof(*FileName) fileName = *FileName;
   const typeof(makeStringBuffer()) buffer = makeStringBuffer();
   ssize_t reader(char * location, size_t length)                                // File content
@@ -471,9 +542,9 @@ static void readFile_StringBuffer_string                                        
   FileName->proto->swap(FileName, buffer);                                                      // Replace file name with contents of file name
  }
 
-//D1 Swap                                                                       // Swap two string buffers
+//D1 Swap                                                                       // Swap two StringBuffers
 
-static void swap_StringBuffer                                                              // Swap two string buffers and free the new one so that the old one is renewed.
+static void swap_StringBuffer                                                              // Swap two StringBuffers and free the new one so that the old one is renewed.
  (StringBuffer * old,                                                                      // StringBuffer Old
   const StringBuffer new)                                                                  // StringBuffer New
  {old->string.proto->swap(&old->string, new.string);                                               // Swap arenas so that the old becomes the new
@@ -657,18 +728,47 @@ void test11()                                                                   
      b.proto->free(&b);
  }
 
-void test12()                                                                   //TlengthOfLastLine
+void test12()                                                                   //TlengthOfLastLine //Tclear
  {StringBuffer  a = makeStringBuffer();      assert( a.proto->lengthOfLastLine(&a) == 0);
-     a.proto->add(&a, "a\n");
-     a.proto->add(&a, "bb\n");  assert( a.proto->lengthOfLastLine(&a) == 0);
-     a.proto->add(&a, "ccc");   assert( a.proto->lengthOfLastLine(&a) == 3);
-     a.proto->free(&a);
+  for(size_t i = 0; i < 10; ++i)
+   {a.proto->clear(&a);
+    a.proto->add(&a, "a\n");
+    a.proto->add(&a, "bb\n");  assert( a.proto->lengthOfLastLine(&a) == 0);
+    a.proto->add(&a, "ccc");   assert( a.proto->lengthOfLastLine(&a) == 3);
+    a.proto->equalsString(&a, "a\nbb\nccc");
+   }
+  a.proto->free(&a);
+ }
+
+void test13()                                                                   //Tfpd
+ {StringBuffer p = makeStringBuffer();
+
+    p.proto->clear(&p); p.proto->add(&p, "///a///");  p.proto->add(&p, "///b///c"); p.proto->add(&p, "///d"); p.proto->fpd(&p);
+  assert( p.proto->equalsString(&p, "/a/b/c/d/"));
+
+    p.proto->clear(&p); p.proto->add(&p, "a///"); p.proto->add(&p, "b///c"); p.proto->add(&p, "d");           p.proto->fpd(&p);
+  assert( p.proto->equalsString(&p, "a/b/c/d/"));
+
+    p.proto->clear(&p); p.proto->add(&p, "///a///");  p.proto->add(&p, "///b///c"); p.proto->add(&p, "///d"); p.proto->fpf(&p);
+  assert( p.proto->equalsString(&p, "/a/b/c/d"));
+
+    p.proto->clear(&p); p.proto->add(&p, "a///"); p.proto->add(&p, "b///c"); p.proto->add(&p, "d");           p.proto->fpf(&p);
+  assert( p.proto->equalsString(&p, "a/b/c/d"));
+
+    p.proto->clear(&p); p.proto->add(&p, "///a///");  p.proto->add(&p, "///b///c"); p.proto->add(&p, "///d"); p.proto->fpe(&p);
+p.proto->dump(&p);
+  assert( p.proto->equalsString(&p, "/a/b/c.d"));
+
+    p.proto->clear(&p); p.proto->add(&p, "a///"); p.proto->add(&p, "b///c"); p.proto->add(&p, "d");           p.proto->fpe(&p);
+  assert( p.proto->equalsString(&p, "a/b/c.d"));
+
+    p.proto->free(&p);
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0,  test1,  test2, test3, test4,
-                           test5,  test6,  test7, test8, test9,
-                           test10, test11, test12, 0};
+ {void (*tests[])(void) = {test0,  test1,  test2,  test3, test4,
+                           test5,  test6,  test7,  test8, test9,
+                           test10, test11, test12, test13, 0};
   run_tests("StringBuffer", 1, tests);
   return 0;
  }
