@@ -49,6 +49,12 @@ static int notEquals_int__ArenaListNode_ArenaListNode
 static int equalsPosition_int__ArenaListPosition_ArenaListPosition
  (const ArenaListPosition * a,
   const ArenaListPosition   b);
+static int equals_int__ArenaList_ArenaList
+ (const ArenaList * a,
+  const ArenaList   b);
+static int notEquals_int__ArenaList_ArenaList
+ (const ArenaList * a,
+  const ArenaList   b);
 static  ArenaListNode root_ArenaListNode__ArenaList
  (const ArenaList *   list);
 static  ArenaListNode root_ArenaListNode__ArenaListNode
@@ -90,6 +96,8 @@ static void free__ArenaList
  (const ArenaList * list);
 static void free__ArenaListNode
  (ArenaListNode * node);
+static void clear__ArenaList
+ (ArenaList * list);
 static void insertChar__ArenaListNode_char_size
  (ArenaListNode    * node,
   const char ins,
@@ -292,6 +300,8 @@ struct ProtoTypes_ArenaList {
     void (* const function) (const ArenaListNode node));                        // Function
   char *  (*check)(                                                             // Return a string describing the structure
     const ArenaList list);                                                      // ArenaList
+  void  (*clear)(                                                               // Clear a ArenaList
+    ArenaList * list);                                                          // ArenaList to clear
   ArenaList  (*copyAndCompact)(                                                 // Copy a ArenaList compacting any free space.  This method assumes that there are no direct external references to the nodes in the list as this process might change the location of one or more nodes in the arena.
     const ArenaList * source);                                                  // Source ArenaList
   size_t  (*countChildren)(                                                     // Count the number of children directly under a parent.
@@ -302,6 +312,9 @@ struct ProtoTypes_ArenaList {
     const ArenaList * list);                                                    // ArenaList
   void  (*dump)(                                                                // Dump a ArenaList on stderr
     const ArenaList * list);                                                    // ArenaList
+  int  (*equals)(                                                               // Confirm two ArenaList are equal by comparing their prints
+    const ArenaList * a,                                                        // First ArenaList
+    const ArenaList b);                                                         // Second ArenaList
   ArenaListNode  (*findFirstChild)(                                             // Find the first child immediately under the root with the specified key.
     const ArenaList    * list,                                                  // ArenaList
     const char * const key);                                                    // Key to find
@@ -330,6 +343,9 @@ struct ProtoTypes_ArenaList {
   ArenaListNode  (*nodez)(                                                      // Create a new ArenaList node with a key specified by a zero terminated string.
     const ArenaList    * list,                                                  // ArenaList in which to create the node
     const char * const key);                                                    // Zero terminated string representing the key for this node.
+  int  (*notEquals)(                                                            // Confirm two ArenaList are not equal by comparing their prints
+    const ArenaList * a,                                                        // First ArenaList
+    const ArenaList b);                                                         // Second ArenaList
   ArenaListNode   (*offset)(                                                    // Create a node to locate an allocation within the arena of a ArenaList.
     const ArenaList    * list,                                                  // ArenaList
     const size_t delta);                                                        // Delta within arena. A delta of zero represents no such node.
@@ -366,7 +382,7 @@ struct ProtoTypes_ArenaList {
     const ArenaList    * list,                                                  // ArenaList
     const char * const file);                                                   // File
  } const ProtoTypes_ArenaList =
-{allocate_ArenaListNode__ArenaList_size, at_ArenaListNode__ArenaList_size, by__ArenaList_sub, check_string_ArenaList, copyAndCompact_ArenaList__ArenaList, countChildren_size__ArenaList, count_size__ArenaList, dumpWithBrackets__ArenaList, dump__ArenaList, findFirstChild_ArenaListNode__ArenaList_string, findFirst_ArenaListNode__ArenaList_string, first_ArenaListNode__ArenaList, free__ArenaList, freedSpace_size__ArenaList, fromLetters__ArenaList_string, highest_ArenaListNode__ArenaList, last_ArenaListNode__ArenaList, lowest_ArenaListNode__ArenaList, node_ArenaListNode__ArenaList_string_size, nodez_ArenaListNode__ArenaList_string, offset__ArenaList_size, pointer__ArenaList_size, printContains_int__ArenaList, printWithBrackets__string_ArenaList, printsAs_int__ArenaList_string, printsWithBracketsAs_int__ArenaList_string, root_ArenaListNode__ArenaList, scan__ArenaList_sub, sort__ArenaList, swap_ArenaList_ArenaList, used_size__ArenaList, width_size__ArenaList, write__ArenaList_string};
+{allocate_ArenaListNode__ArenaList_size, at_ArenaListNode__ArenaList_size, by__ArenaList_sub, check_string_ArenaList, clear__ArenaList, copyAndCompact_ArenaList__ArenaList, countChildren_size__ArenaList, count_size__ArenaList, dumpWithBrackets__ArenaList, dump__ArenaList, equals_int__ArenaList_ArenaList, findFirstChild_ArenaListNode__ArenaList_string, findFirst_ArenaListNode__ArenaList_string, first_ArenaListNode__ArenaList, free__ArenaList, freedSpace_size__ArenaList, fromLetters__ArenaList_string, highest_ArenaListNode__ArenaList, last_ArenaListNode__ArenaList, lowest_ArenaListNode__ArenaList, node_ArenaListNode__ArenaList_string_size, nodez_ArenaListNode__ArenaList_string, notEquals_int__ArenaList_ArenaList, offset__ArenaList_size, pointer__ArenaList_size, printContains_int__ArenaList, printWithBrackets__string_ArenaList, printsAs_int__ArenaList_string, printsWithBracketsAs_int__ArenaList_string, root_ArenaListNode__ArenaList, scan__ArenaList_sub, sort__ArenaList, swap_ArenaList_ArenaList, used_size__ArenaList, width_size__ArenaList, write__ArenaList_string};
 ArenaList newArenaList(ArenaList allocator) {return allocator;}
 
 struct ProtoTypes_ArenaListArena {
