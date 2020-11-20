@@ -1939,7 +1939,7 @@ start= 0  depth=1  m
     s ▷ free; S ▷ free; T ▷ free;
  }
 
-void test21()                                                                   //Tclear  //Need clone__$ equals__$
+void test21()                                                                   //Tclear //Tequals //TnotEquals  //Need clone__$ equals__$
  {s ◀ make$(); t ◀ make$(); n ◀ make$(); N ◁ 10ul; c ≋ N;
 
   for(size_t i = 0; i < N; ++i) c[i] = '0'+i%10;
