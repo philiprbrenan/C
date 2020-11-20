@@ -783,6 +783,42 @@ static  ArenaListNode   putLast_ArenaListNode__ArenaListNode_ArenaListNode      
  }
 #line 749 "/home/phil/c/z/arenaList/arenaList.c"
 
+static  ArenaListNode   nodeFirst_ArenaListNode__ArenaList_string_size                                  // Create a new node with the specified key and place it first in the ArenaList
+ (const ArenaList     * list,                                                           // ArenaList
+  const char  * string,                                                         // Value of key for new child
+  const size_t  length)                                                         // Length of key for new child
+ {const typeof(list->proto->node(list, string, length)) n = list->proto->node(list, string, length);                                              // Create node
+  const typeof(list->proto->root(list)) r = list->proto->root(list);                                                              // Root of ArenaList
+  return r.proto->putFirst(&r, n);                                                       // Put the new node first in the ArenaList
+ }
+static  ArenaListNode   nodeLast_ArenaListNode__ArenaList_string_size                                  // Create a new node with the specified key and place it first in the ArenaList
+ (const ArenaList     * list,                                                           // ArenaList
+  const char  * string,                                                         // Value of key for new child
+  const size_t  length)                                                         // Length of key for new child
+ {const typeof(list->proto->node(list, string, length)) n = list->proto->node(list, string, length);                                              // Create node
+  const typeof(list->proto->root(list)) r = list->proto->root(list);                                                              // Root of ArenaList
+  return r.proto->putLast(&r, n);                                                       // Put the new node first in the ArenaList
+ }
+#line 759 "/home/phil/c/z/arenaList/arenaList.c"
+
+static  ArenaListNode   nodeFirst_ArenaListNode__ArenaListNode_string_size                              // Create a new node and place it first under the specified node
+ (const ArenaListNode * parent,                                                         // Parent
+  const char  * string,                                                         // Value of key for new child
+  const size_t  length)                                                         // Length of key for new child
+ {const typeof(parent->list) l = parent->list;                                                             // ArenaList containing parent
+  const typeof(l.proto->node(&l, string, length)) n = l.proto->node(&l, string, length);                                                 // Create node
+  return parent->proto->putFirst(parent, n);                                                  // Put a child first under its parent
+ }
+static  ArenaListNode   nodeLast_ArenaListNode__ArenaListNode_string_size                              // Create a new node and place it first under the specified node
+ (const ArenaListNode * parent,                                                         // Parent
+  const char  * string,                                                         // Value of key for new child
+  const size_t  length)                                                         // Length of key for new child
+ {const typeof(parent->list) l = parent->list;                                                             // ArenaList containing parent
+  const typeof(l.proto->node(&l, string, length)) n = l.proto->node(&l, string, length);                                                 // Create node
+  return parent->proto->putLast(parent, n);                                                  // Put a child first under its parent
+ }
+#line 769 "/home/phil/c/z/arenaList/arenaList.c"
+
 static  ArenaListNode putNP_ArenaListNode__int_ArenaListNode_ArenaListNode                                      //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
   const ArenaListNode sibling,                                                          // Sibling
@@ -830,7 +866,25 @@ static  ArenaListNode   putPrev_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                          // Child
  {return putNP_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *sibling, child);                      // Put child previous
  }
-#line 793 "/home/phil/c/z/arenaList/arenaList.c"
+#line 813 "/home/phil/c/z/arenaList/arenaList.c"
+
+static  ArenaListNode   nodeNext_ArenaListNode__ArenaListNode_string_size                               // Create a new node next after the specified sibling
+ (const ArenaListNode * sibling,                                                        // Sibling
+  const char  * string,                                                         // Value of key for new child
+  const size_t  length)                                                         // Length of key for new child
+ {const typeof(sibling->list) l = sibling->list;                                                            // ArenaList containing parent
+  const typeof(l.proto->node(&l, string, length)) n = l.proto->node(&l, string, length);                                                 // Create node
+  return sibling->proto->putNext(sibling, n);                                                  // Put a child next after its parent
+ }
+static  ArenaListNode   nodePrev_ArenaListNode__ArenaListNode_string_size                               // Create a new node next after the specified sibling
+ (const ArenaListNode * sibling,                                                        // Sibling
+  const char  * string,                                                         // Value of key for new child
+  const size_t  length)                                                         // Length of key for new child
+ {const typeof(sibling->list) l = sibling->list;                                                            // ArenaList containing parent
+  const typeof(l.proto->node(&l, string, length)) n = l.proto->node(&l, string, length);                                                 // Create node
+  return sibling->proto->putPrev(sibling, n);                                                  // Put a child next after its parent
+ }
+#line 823 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  void replace__ArenaListNode_ArenaListNode                                               // Replace the specified node with this node
  (const ArenaListNode * with,                                                           // Replace with this node
@@ -1980,7 +2034,7 @@ void test20()                                                                   
     s.proto->free(&s); S.proto->free(&S); T.proto->free(&T);
  }
 
-void test21()                                                                   //Tclear  //Need clone__ArenaList equals__ArenaList
+void test21()                                                                   //Tclear //Tequals //TnotEquals  //Need clone__ArenaList equals__ArenaList
  {typeof(makeArenaList()) s = makeArenaList(); typeof(makeArenaList()) t = makeArenaList(); typeof(makeArenaList()) n = makeArenaList(); const typeof(10ul) N = 10ul; char c[N];
 
   for(size_t i = 0; i < N; ++i) c[i] = '0'+i%10;
@@ -1988,14 +2042,14 @@ void test21()                                                                   
   for  (size_t i = 0; i < N; ++i)
    {s.proto->clear(&s); t.proto->clear(&t); n.proto->clear(&n);
 
-    for(size_t j = 0; j < N; ++j) {const typeof(s.proto->node(&s, c, j+1)) n = s.proto->node(&s, c, j+1); n.proto->putTreeLast(&n);}
+    for(size_t j = 0; j < N; ++j) s.proto->nodeLast(&s, c, j+1);
 
     assert( s.proto->printsAs(&s, "0010120123012340123450123456012345670123456780123456789\n"));
 //◉0010120123012340123450123456012345670123456780123456789
 //◉
 
-    for(size_t j = N; j > 0; --j) {const typeof(t.proto->node(&t, c, j)) f = t.proto->node(&t, c, j); f.proto->putTreeFirst(&f);}
-    for(size_t j = N; j > 1; --j) {const typeof(n.proto->node(&n, c, j)) l = n.proto->node(&n, c, j); l.proto->putTreeLast(&l);}
+    for(size_t j = N; j > 0; --j) t.proto->nodeFirst(&t, c, j);
+    for(size_t j = N; j > 1; --j) n.proto->nodeLast(&n, c, j);
 
     assert( s.proto->equals(&s, t)); assert( s.proto->notEquals(&s, n)); assert( t.proto->notEquals(&t, n));
    }
@@ -2003,12 +2057,29 @@ void test21()                                                                   
   s.proto->free(&s); t.proto->free(&t); n.proto->free(&n);
  }
 
+void test22()                                                                   //TnodeFirst //TnodeLast //TnodeNext //TnodePrev
+ {typeof(makeArenaList()) s = makeArenaList();
+
+  const typeof(s.proto->nodeFirst(&s, "a", 1)) a = s.proto->nodeFirst(&s, "a", 1);
+  const typeof(s.proto->nodeLast(&s, "d", 1)) d = s.proto->nodeLast(&s, "d", 1);
+      a.proto->nodeNext(&a, "b", 1);
+      d.proto->nodePrev(&d, "c", 1);
+      d.proto->nodeFirst(&d, "e", 1);
+      d.proto->nodeLast(&d, "f", 1);
+
+  assert( s.proto->printsWithBracketsAs(&s, "(abcd(ef))\n"));
+//◉(abcd(ef))
+//◉
+
+  s.proto->free(&s);
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
                            test15, test16, test17, test18, test19,
-                           test20, test21, 0};
+                           test20, test21, test22, 0};
   run_tests("ArenaList", 1, tests);
 
   return 0;
