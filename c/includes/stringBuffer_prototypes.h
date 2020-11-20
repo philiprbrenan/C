@@ -1,5 +1,7 @@
-static void free_StringBuffer
+static void free__StringBuffer
  (const StringBuffer * buffer);
+static void clear__StringBuffer
+ (StringBuffer * buffer);
 static int valid
  (const StringBuffer * buffer);
 static void add_StringBuffer_string
@@ -45,6 +47,15 @@ static void splitLines
  (StringBuffer * String);
 static void splitWords
  (StringBuffer * String);
+static void fileNameFromComponents
+ (const int type,
+  StringBuffer * Old);
+static void fpd_StringBuffer
+ (StringBuffer * Old);
+static void fpe_StringBuffer
+ (StringBuffer * Old);
+static void fpf_StringBuffer
+ (StringBuffer * Old);
 static size_t length_StringBuffer
  (const StringBuffer * buffer);
 static size_t lengthOfLastLine_StringBuffer
@@ -122,7 +133,7 @@ struct ProtoTypes_StringBuffer {
   void  (*addSpaces)(                                                           // Add zero or more spaces
     const StringBuffer * buffer,                                                // StringBuffer
     const size_t spaces);                                                       // Number of spaces to add
-  void  (*addStringBuffer)(                                                     // Add a string buffer
+  void  (*addStringBuffer)(                                                     // Add a StringBuffer
     const StringBuffer * buffer,                                                // Target StringBuffer
     const StringBuffer add);                                                    // Source StringBuffer
   void  (*addVaFormat)(                                                         // Add a variadic argument formatted string
@@ -139,6 +150,8 @@ struct ProtoTypes_StringBuffer {
   void  (*apply)(                                                               // Apply a function to a string.
     const StringBuffer * String,                                                // StringBuffer
     void (*action) (char *string, size_t length));                              // Action to apply
+  void  (*clear)(                                                               // Clear a StringBuffer
+    StringBuffer * buffer);                                                     // StringBuffer
   int  (*containsString)(                                                       // Checks whether a StringBuffer contains a specified zero terminated string.
     const StringBuffer    * Buffer,                                             // StringBuffer
     const char * const string);                                                 // String
@@ -157,12 +170,18 @@ struct ProtoTypes_StringBuffer {
   int  (*equals)(                                                               // Checks whether two StringBuffer are equal.
     const StringBuffer * a,                                                     // First StringBuffer
     const StringBuffer b);                                                      // Second StringBuffer
+  void  (*fpd)(                                                                 // Make path name in situ
+    StringBuffer * Old);                                                        // StringBuffer
+  void  (*fpe)(                                                                 // Make file name with extension in situ
+    StringBuffer * Old);                                                        // StringBuffer
+  void  (*fpf)(                                                                 // Make file name in situ
+    StringBuffer * Old);                                                        // StringBuffer
   void  (*free)(                                                                // Free a StringBuffer
     const StringBuffer * buffer);                                               // StringBuffer
-  void  (*joinWith)(                                                            // Join in place - join all the sub strings in the specified string buffer with the specified string and replace the string buffer with the result.
+  void  (*joinWith)(                                                            // Join in place - join all the sub strings in the specified StringBuffer with the specified string and replace the StringBuffer with the result.
     StringBuffer * Old,                                                         // StringBuffer
     const char * const string);                                                 // String to separate the items being joined
-  void  (*join)(                                                                // Join in place - join all the sub strings in the specified string buffer and replace them with one string.
+  void  (*join)(                                                                // Join in place - join all the sub strings in the specified StringBuffer and replace them with one string.
     StringBuffer * Old);                                                        // StringBuffer
   size_t  (*lengthOfLastLine)(                                                  // Length of the last line in the buffer
     const StringBuffer * Buffer);                                               // StringBuffer
@@ -171,8 +190,8 @@ struct ProtoTypes_StringBuffer {
   int  (*printsAs)(                                                             // Checks whether a StringBuffer is equal to a specified zero terminated string.
     const StringBuffer    * String,                                             // StringBuffer
     const char * const expected);                                               // String expected
-  void  (*readFile)(                                                            // Read a file and returns its content as a string buffer.
-    StringBuffer * FileName);                                                   // Name of the file as the content of a string buffer
+  void  (*readFile)(                                                            // Read a file and returns its content as a StringBuffer.
+    StringBuffer * FileName);                                                   // Name of the file as the content of a StringBuffer
   void  (*splitLines)(                                                          // Split the specified StringBuffer on any new line characters and return the split text as a new StringBuffer
     StringBuffer * String);                                                     // StringBuffer
   void  (*splitWords)(                                                          // Split the specified StringBuffer into words delimited by spaces and return the split text as a new StringBuffer
@@ -190,7 +209,7 @@ struct ProtoTypes_StringBuffer {
     const size_t start,                                                         // Offset to start of string
     const size_t length,                                                        // Length of sub string. The length of the zero terminate string to be loaded must be larger than this.
     char * const string);                                                       // String to load with enough space for the string and its terminating zero
-  void  (*swap)(                                                                // Swap two string buffers and free the new one so that the old one is renewed.
+  void  (*swap)(                                                                // Swap two StringBuffers and free the new one so that the old one is renewed.
     StringBuffer * old,                                                         // StringBuffer Old
     const StringBuffer new);                                                    // StringBuffer New
   void  (*system)(                                                              // Replace a StringBuffer containing a system command with the results of executing that command.
@@ -202,7 +221,7 @@ struct ProtoTypes_StringBuffer {
     const char * const fileName);                                               // Base name of the file
   void  (*writeStderr)(                                                         // Write a StringBuffer as a string to stderr
     const StringBuffer * buffer);                                               // StringBuffer
-  StringBuffer  (*writeTemporaryFile)(                                          // Write a StringBuffer as a string to a temporary file with the specified base name and return the full name of the file created as a string buffer.
+  StringBuffer  (*writeTemporaryFile)(                                          // Write a StringBuffer as a string to a temporary file with the specified base name and return the full name of the file created as a StringBuffer.
     const StringBuffer    * buffer,                                             // StringBuffer content to be written
     const char * const fileName);                                               // Base name of the file
   ssize_t  (*writeToFileHandle)(                                                // Write a StringBuffer as a string to a file handle and return the non negative number of bytes written or a negative error.
@@ -210,6 +229,6 @@ struct ProtoTypes_StringBuffer {
     const int d,                                                                // Base name of the file
     const char * const fileName);                                               // The name of the file being written to
  } const ProtoTypes_StringBuffer =
-{addChar_StringBuffer_char, addDoubleQuote_StringBuffer, addFormat_StringBuffer_strings, addNewLine_StringBuffer, addQuotedNewLine_StringBuffer, addSingleQuote_StringBuffer, addSpaces, addStringBuffer_StringBuffer_StringBuffer, addVaFormat_StringBuffer_string_va, add_StringBuffer_string, addn_StringBuffer_string, apply_StringBuffer_function, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, count_StringBuffer, dumpHex_StringBuffer, dump_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, free_StringBuffer, joinWith_StringBuffer, join_StringBuffer, lengthOfLastLine_StringBuffer, length_StringBuffer, printsAs_StringBuffer_string, readFile_StringBuffer_string, splitLines, splitWords, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string, swap_StringBuffer, system_StringBuffer_StringBuffer, valid, writeFile_StringBuffer_string, writeStderr_StringBuffer, writeTemporaryFile_StringBuffer_string, writeToFileHandle};
+{addChar_StringBuffer_char, addDoubleQuote_StringBuffer, addFormat_StringBuffer_strings, addNewLine_StringBuffer, addQuotedNewLine_StringBuffer, addSingleQuote_StringBuffer, addSpaces, addStringBuffer_StringBuffer_StringBuffer, addVaFormat_StringBuffer_string_va, add_StringBuffer_string, addn_StringBuffer_string, apply_StringBuffer_function, clear__StringBuffer, containsString_StringBuffer_StringBuffer, contains_StringBuffer_StringBuffer, count_StringBuffer, dumpHex_StringBuffer, dump_StringBuffer, equalsString_StringBuffer_string, equals_StringBuffer_StringBuffer, fpd_StringBuffer, fpe_StringBuffer, fpf_StringBuffer, free__StringBuffer, joinWith_StringBuffer, join_StringBuffer, lengthOfLastLine_StringBuffer, length_StringBuffer, printsAs_StringBuffer_string, readFile_StringBuffer_string, splitLines, splitWords, string_StringBuffer_string, substringEquals_int_StringBuffer_int_int_string, substring_size_StringBuffer_int_int_string, swap_StringBuffer, system_StringBuffer_StringBuffer, valid, writeFile_StringBuffer_string, writeStderr_StringBuffer, writeTemporaryFile_StringBuffer_string, writeToFileHandle};
 StringBuffer newStringBuffer(StringBuffer allocator) {return allocator;}
 
