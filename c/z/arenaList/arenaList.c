@@ -149,7 +149,7 @@ static $ make$FromWords                                                         
     q = p + 1;
    }
 
-  for(; *p; ++p) if (isspace(*p)) save();
+  for(; *p; ++p) if (isspace(*p)) save();                                       // Break into words
   save();
 
   return l;
@@ -157,9 +157,9 @@ static $ make$FromWords                                                         
 
 static $ make$FromLinesOfWords                                                  // Make a $ of lists each sub list representing a line as a list of words.
  (const char * str)                                                             // String of lines of words separated by spaces;
- {list ◁ make$FromLines(str);
+ {list ◁ make$FromLines(str);                                                   // Load each line
 
-  $fe(line, list)
+  $fe(line, list)                                                               // Each line
    {makeLocalCopyOf$Key(s, l, line);
 
     const char * p = s, *q = p;                                                 // Parse the string into new lines
@@ -169,7 +169,7 @@ static $ make$FromLinesOfWords                                                  
       q = p + 1;
      }
 
-    for(; *p; ++p) if (isspace(*p)) save();
+    for(; *p; ++p) if (isspace(*p)) save();                                     // Break into words
     save();
    }
 
@@ -272,6 +272,26 @@ static int equalsPosition_int__$Position_$Position                              
  (const $Position * a,                                                          // First position
   const $Position   b)                                                          // Second position
  {return a->byte == b.byte && a->node == b.node && a->depth == b.depth;
+ }
+
+static int equals_int__$_$                                                      // Confirm two $ are equal by comparing their prints
+ (const $ * a,                                                                  // First $
+  const $   b)                                                                  // Second $
+ {int r;
+  void printer(char * s, size_t l)
+   {void printer(char * t, size_t m) {r = l == m && !memcmp(s, t, l);}          // Compare prints
+    B ◁ b ▷ root;
+    B ▷ print(printer);
+   }
+  A ◁ a ▶ root;
+  A ▷ print(printer);
+  return r;
+ }
+
+static int notEquals_int__$_$                                                   // Confirm two $ are not equal by comparing their prints
+ (const $ * a,                                                                  // First $
+  const $   b)                                                                  // Second $
+ {return !a ▶ equals(b);
  }
 
 //D1 Root node                                                                  // The root node of an $ is at offset 0
@@ -471,6 +491,18 @@ static void free__$Node                                                         
  {node=node;                                                                    // Free has no effect if we are not editable.
  }
 #endif
+
+static void clear__$                                                            // Clear a $
+ ($ * list)                                                                     // $ to clear
+ {a ◁ list->arena;                                                              // Arena for list
+  memset(a->data, 0, a->size);                                                  // ValGrind
+  a->used   = 0;                                                                // Length used so far
+  a->root   = 0;                                                                // Root not set in $
+  list ▶ node("", 0);                                                           // Initialize root node
+#ifdef $Editable
+  memset(a->freeSpace, 0, sizeof(a->freeSpace));
+#endif
+ }
 
 //D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
 
@@ -1090,9 +1122,7 @@ static int printsAs_int__$_string                                               
  (const $    *       list,                                                      // $
   const char * const expected)                                                  // Expected string when printed
  {int r;
-  void printer(char * s, size_t l)
-   {r = !strncmp(s, expected, l);
-   }
+  void printer(char * s, size_t l) {r = !strncmp(s, expected, l);}              // Compare print with expected
   root ◁ list ▶ root; root ▷ print(printer);                                    // Print from root of $
   return r;
  }
@@ -1101,9 +1131,7 @@ static int printContains_int__$Node                                             
  (const $Node * node,                                                           // Starting node
   const char  * expected)                                                       // Expected string
  {int r;
-  void printer(char * s, size_t l)
-   {r = !!strstr(s, expected); if(0)l=l;
-   }
+  void printer(char * s, size_t l) {r = !!strstr(s, expected); if(0)l=l;}       // Compare print with expected
   node ▶ print(printer);
   return r;
  }
@@ -1112,9 +1140,7 @@ static int printContains_int__$                                                 
  (const $    *  list,                                                           // $ parse $
   const char *  expected)                                                       // Expected string
  {int r;
-  void printer(char * s, size_t l)
-   {r = !!strstr(s, expected); if(0)l=l;
-   }
+  void printer(char * s, size_t l) {r = !!strstr(s, expected); if(0)l=l;}       // Compare print with expected
   root ◁ list ▶ root; root ▷ print(printer);                                    // Print from root of $
   return r;
  }
@@ -1913,12 +1939,35 @@ start= 0  depth=1  m
     s ▷ free; S ▷ free; T ▷ free;
  }
 
+void test21()                                                                   //Tclear  //Need clone__$ equals__$
+ {s ◀ make$(); t ◀ make$(); n ◀ make$(); N ◁ 10ul; c ≋ N;
+
+  for(size_t i = 0; i < N; ++i) c[i] = '0'+i%10;
+
+  for  (size_t i = 0; i < N; ++i)
+   {s ▷ clear; t ▷ clear; n ▷ clear;
+
+    for(size_t j = 0; j < N; ++j) {n ◁ s ▷ node(c, j+1); n ▷ putTreeLast;}
+
+    ✓ s ▷ printsAs(◉);
+0010120123012340123450123456012345670123456780123456789
+◉
+
+    for(size_t j = N; j > 0; --j) {f ◁ t ▷ node(c, j); f ▷ putTreeFirst;}
+    for(size_t j = N; j > 1; --j) {l ◁ n ▷ node(c, j); l ▷ putTreeLast;}
+
+    ✓ s ▷ equals(t); ✓ s ▷ notEquals(n); ✓ t ▷ notEquals(n);
+   }
+
+  s ▷ free; t ▷ free; n ▷ free;
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
                            test15, test16, test17, test18, test19,
-                           test20, 0};
+                           test20, test21, 0};
   run_tests("$", 1, tests);
 
   return 0;
