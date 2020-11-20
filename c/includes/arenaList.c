@@ -15,6 +15,8 @@
  can be carried out in parallel in a separate process as a ArenaList is relocatable.
 */
 #define _GNU_SOURCE
+#include <sys/types.h>
+#include <dirent.h>
 #include <ctype.h>
 #include <setjmp.h>
 #include <arenaArray.c>
@@ -530,7 +532,7 @@ static void insertChar__ArenaListNode_char_size                                 
    }
  }
 
-static void replaceChar__ArenaListNode_size                                             // Replace the character at the specified position in the key string of a node with the specified character.
+static void replaceChar__ArenaListNode_char_size                                        // Replace the character at the specified position in the key string of a node with the specified character.
  (const ArenaListNode * node,                                                           // ArenaListNode
   const char    repl,                                                           // Replacement character
   size_t        pos)                                                            // Position in key. 0 replaces the first character.  No replacement occurs if the requested character is beyond the end of the key string
@@ -585,17 +587,17 @@ static  ArenaListNode last_ArenaListNode__ArenaListNode                         
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->last);
  }
-#line 584 "/home/phil/c/z/arenaList/arenaList.c"
+#line 586 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaListNode                                                // Get the next child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->next);
  }
-#line 584 "/home/phil/c/z/arenaList/arenaList.c"
+#line 586 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaListNode                                                // Get the prev child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->prev);
  }
-#line 584 "/home/phil/c/z/arenaList/arenaList.c"
+#line 586 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode first_ArenaListNode__ArenaList                                                    // Get the first child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
@@ -607,7 +609,7 @@ static  ArenaListNode last_ArenaListNode__ArenaList                             
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->last(&root);
  }
-#line 591 "/home/phil/c/z/arenaList/arenaList.c"
+#line 593 "/home/phil/c/z/arenaList/arenaList.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -714,7 +716,7 @@ static int isLast_int__ArenaListNode                                            
  {const typeof(child->proto->parent(child)) parent = child->proto->parent(child);
   return child->proto->equals(child, parent.proto->last(&parent));
  }
-#line 693 "/home/phil/c/z/arenaList/arenaList.c"
+#line 695 "/home/phil/c/z/arenaList/arenaList.c"
 
 static int isEmpty_int__ArenaListNode                                                   // Confirm a node has no children.
  (const ArenaListNode   * node)                                                         // ArenaListNode
@@ -769,7 +771,7 @@ static  ArenaListNode   putTreeLast_ArenaListNode__ArenaListNode                
   const typeof(t.proto->root(&t)) r = t.proto->root(&t);
   return r.proto->putLast(&r, *child);                                                  // Put the child last
  }
-#line 742 "/home/phil/c/z/arenaList/arenaList.c"
+#line 744 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode   putFirst_ArenaListNode__ArenaListNode_ArenaListNode                                     // Put a child first under its parent
  (const ArenaListNode * parent,                                                         // Parent
@@ -781,7 +783,7 @@ static  ArenaListNode   putLast_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                          // Child
  {return putFL_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *parent, child);                       // Put a child last under its parent
  }
-#line 749 "/home/phil/c/z/arenaList/arenaList.c"
+#line 751 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode   nodeFirst_ArenaListNode__ArenaList_string_size                                  // Create a new node with the specified key and place it first in the ArenaList
  (const ArenaList     * list,                                                           // ArenaList
@@ -799,7 +801,7 @@ static  ArenaListNode   nodeLast_ArenaListNode__ArenaList_string_size           
   const typeof(list->proto->root(list)) r = list->proto->root(list);                                                              // Root of ArenaList
   return r.proto->putLast(&r, n);                                                       // Put the new node first in the ArenaList
  }
-#line 759 "/home/phil/c/z/arenaList/arenaList.c"
+#line 761 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode   nodeFirst_ArenaListNode__ArenaListNode_string_size                              // Create a new node and place it first under the specified node
  (const ArenaListNode * parent,                                                         // Parent
@@ -817,7 +819,7 @@ static  ArenaListNode   nodeLast_ArenaListNode__ArenaListNode_string_size       
   const typeof(l.proto->node(&l, string, length)) n = l.proto->node(&l, string, length);                                                 // Create node
   return parent->proto->putLast(parent, n);                                                  // Put a child first under its parent
  }
-#line 769 "/home/phil/c/z/arenaList/arenaList.c"
+#line 771 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putNP_ArenaListNode__int_ArenaListNode_ArenaListNode                                      //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -866,7 +868,7 @@ static  ArenaListNode   putPrev_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                          // Child
  {return putNP_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *sibling, child);                      // Put child previous
  }
-#line 813 "/home/phil/c/z/arenaList/arenaList.c"
+#line 815 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode   nodeNext_ArenaListNode__ArenaListNode_string_size                               // Create a new node next after the specified sibling
  (const ArenaListNode * sibling,                                                        // Sibling
@@ -884,7 +886,7 @@ static  ArenaListNode   nodePrev_ArenaListNode__ArenaListNode_string_size       
   const typeof(l.proto->node(&l, string, length)) n = l.proto->node(&l, string, length);                                                 // Create node
   return sibling->proto->putPrev(sibling, n);                                                  // Put a child next after its parent
  }
-#line 823 "/home/phil/c/z/arenaList/arenaList.c"
+#line 825 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  void replace__ArenaListNode_ArenaListNode                                               // Replace the specified node with this node
  (const ArenaListNode * with,                                                           // Replace with this node
@@ -1136,7 +1138,7 @@ static int printsWithBracketsAs_int__ArenaListNode_string                       
   const char  * const expected)                                                 // Expected string when printed
  {int r;
   void printer(char * s, size_t l)
-   {r = !strncmp(s, expected, l);
+   {r = !memcmp(s, expected, l);
    }
   node->proto->printWithBrackets(node, printer);
   return r;
@@ -1206,9 +1208,7 @@ static int printsAs_int__ArenaListNode_string                                   
  (const ArenaListNode *       node,                                                     // ArenaList
   const char  * const expected)                                                 // Expected string when printed
  {int r;
-  void printer(char * s, size_t l)
-   {r = !strncmp(s, expected, l);
-   }
+  void printer(char * s, size_t l) {r = !memcmp(s, expected, l);}
   node->proto->print(node, printer);
   return r;
  }
@@ -1217,7 +1217,7 @@ static int printsAs_int__ArenaList_string                                       
  (const ArenaList    *       list,                                                      // ArenaList
   const char * const expected)                                                  // Expected string when printed
  {int r;
-  void printer(char * s, size_t l) {r = !strncmp(s, expected, l);}              // Compare print with expected
+  void printer(char * s, size_t l) {r = !memcmp(s, expected, l);}               // Compare print with expected
   const typeof(list->proto->root(list)) root = list->proto->root(list); root.proto->print(&root, printer);                                    // Print from root of ArenaList
   return r;
  }
@@ -1248,9 +1248,9 @@ static int cmp_int__ArenaList_ArenaList                                         
  {const typeof(*First) first = *First;
   makeLocalCopyOfArenaListKey(K, L, first);                                             // Key of first node
   makeLocalCopyOfArenaListKey(k, l, second);                                            // Key of second node
-  if (l < L) {const typeof(strncmp(K, k, l)) i = strncmp(K, k, l); return i ? i : +1;}                         // First key longer than second key
-  if (L < l) {const typeof(strncmp(K, k, L)) i = strncmp(K, k, L); return i ? i : -1;}                         // First key shorter then second key
-  return strncmp(K, k, L);                                                      // Equal length keys
+  if (l < L) {const typeof(memcmp(K, k, l)) i = memcmp(K, k, l); return i ? i : +1;}                          // First key longer than second key
+  if (L < l) {const typeof(memcmp(K, k, L)) i = memcmp(K, k, L); return i ? i : -1;}                          // First key shorter then second key
+  return memcmp(K, k, L);                                                       // Equal length keys
  }
 
 static void sort__ArenaListNode                                                         // Quick sort the children of a node in the ArenaList in situ
@@ -1424,6 +1424,49 @@ ArenaList readArenaList                                                         
   arena->root = h.root; arena->width = h.width;                                 // Offset to root in arena
   return list;
  }
+
+static void files__ArenaList                                                            // List all the files under the directory name specified by the key of the child
+ (const ArenaListNode   * node)                                                         // Child whose key represents the folder to start at
+ {void add(char * f)                                                            // Add the entries in a directory
+   {typeof(opendir(f)) d = opendir(f);                                                             // Open directory
+    if (d)                                                                      // Directory opened
+     {for(typeof(readdir(d)) e = readdir(d); e; e = readdir(d))                                    // Read through folder to end
+       {if (strcmp(e->d_name, ".") && strcmp(e->d_name, ".."))                  // Skip the two special entries
+         {lsprintf(F, 256, "%s/%s", f, e->d_name);                              // Fully qualified file name
+          if      (e->d_type == DT_DIR) add(F);                                 // Recurse into folder
+          else if (e->d_type == DT_REG) node->proto->nodeLast(node, F, Fl);                 // Add file
+         }
+       }
+      closedir(d);
+     }                                                                          // Close folder
+    else printStackBackTrace("No such folder %s\n", f);                         // Cannot find folder
+   }
+
+  makeLocalCopyOfArenaListKey(start, l, *node);                                         // Start folder
+  if (l > 0) add(start); else {const typeof(getcwd(NULL, 0)) p = getcwd(NULL, 0); add(p); free(p);}           // List files in named start folder or in present working directory if named folder has zero length
+ }
+
+static void folders__ArenaList                                                          // List all the folders under the directory name specified by the key of the child
+ (const ArenaListNode   * node)                                                         // Child whose key represents the folder to start at
+ {void add(char * f, size_t l)                                                  // Add the entries in a directory
+   {node->proto->nodeLast(node, f, l);                                                      // Save folder
+    typeof(opendir(f)) d = opendir(f);                                                             // Open directory
+    if (d)                                                                      // Directory opened
+     {for(typeof(readdir(d)) e = readdir(d); e; e = readdir(d))                                    // Read through folder to end
+       {if (strcmp(e->d_name, ".") && strcmp(e->d_name, ".."))                  // Skip the two special entries
+         {lsprintf(F, 256, "%s/%s", f, e->d_name);                              // Fully qualified file name
+          if (e->d_type == DT_DIR) add(F, Fl);                                  // Recurse into folder
+         }
+       }
+      closedir(d);
+     }                                                                          // Close folder
+    else printStackBackTrace("No such folder %s\n", f);                         // Cannot find folder
+   }
+
+  makeLocalCopyOfArenaListKey(start, length, *node);                                    // Start folder
+  if (length > 0) add(start, length);                                           // List folders in named start folder or in present working directory if named folder has zero length
+  else {const typeof(getcwd(NULL, 0)) p = getcwd(NULL, 0); add(p, strlen(p)); free(p);}
+ }
 #endif
 
 //D1 Tests                                                                      // Tests
@@ -1500,7 +1543,7 @@ void test2()                                                                    
 
     void process(ArenaListNode n)
      {makeLocalCopyOfArenaListKey(k, l, n);
-      strncpy(p, k, l); p += l; *p = 0;
+      memcpy(p, k, l); p += l; *p = 0;
      }
 
     t.proto->by(&t, process);
@@ -2074,12 +2117,23 @@ void test22()                                                                   
   s.proto->free(&s);
  }
 
+void test23()                                                                   //Tfiles //TFolders
+ {typeof(makeArenaList()) D = makeArenaList(); typeof(makeArenaList()) F = makeArenaList();
+
+  const typeof("") s = "";
+
+  const typeof(F.proto->nodeFirst(&F, s, strlen(s))) f = F.proto->nodeFirst(&F, s, strlen(s)); f.proto->files(&f);   assert( F.proto->count(&F) > 0);
+  const typeof(D.proto->nodeFirst(&D, s, strlen(s))) d = D.proto->nodeFirst(&D, s, strlen(s)); d.proto->folders(&d); assert( D.proto->count(&D) > 0);
+
+  D.proto->free(&D); F.proto->free(&F);
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
                            test15, test16, test17, test18, test19,
-                           test20, test21, test22, 0};
+                           test20, test21, test22, test23, 0};
   run_tests("ArenaList", 1, tests);
 
   return 0;
