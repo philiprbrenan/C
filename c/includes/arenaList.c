@@ -150,7 +150,7 @@ static ArenaList makeArenaListFromWords                                         
     q = p + 1;
    }
 
-  for(; *p; ++p) if (isspace(*p)) save();
+  for(; *p; ++p) if (isspace(*p)) save();                                       // Break into words
   save();
 
   return l;
@@ -158,9 +158,9 @@ static ArenaList makeArenaListFromWords                                         
 
 static ArenaList makeArenaListFromLinesOfWords                                                  // Make a ArenaList of lists each sub list representing a line as a list of words.
  (const char * str)                                                             // String of lines of words separated by spaces;
- {const typeof(makeArenaListFromLines(str)) list = makeArenaListFromLines(str);
+ {const typeof(makeArenaListFromLines(str)) list = makeArenaListFromLines(str);                                                   // Load each line
 
-  ArenaListfe(line, list)
+  ArenaListfe(line, list)                                                               // Each line
    {makeLocalCopyOfArenaListKey(s, l, line);
 
     const char * p = s, *q = p;                                                 // Parse the string into new lines
@@ -170,7 +170,7 @@ static ArenaList makeArenaListFromLinesOfWords                                  
       q = p + 1;
      }
 
-    for(; *p; ++p) if (isspace(*p)) save();
+    for(; *p; ++p) if (isspace(*p)) save();                                     // Break into words
     save();
    }
 
@@ -273,6 +273,26 @@ static int equalsPosition_int__ArenaListPosition_ArenaListPosition              
  (const ArenaListPosition * a,                                                          // First position
   const ArenaListPosition   b)                                                          // Second position
  {return a->byte == b.byte && a->node == b.node && a->depth == b.depth;
+ }
+
+static int equals_int__ArenaList_ArenaList                                                      // Confirm two ArenaList are equal by comparing their prints
+ (const ArenaList * a,                                                                  // First ArenaList
+  const ArenaList   b)                                                                  // Second ArenaList
+ {int r;
+  void printer(char * s, size_t l)
+   {void printer(char * t, size_t m) {r = l == m && !memcmp(s, t, l);}          // Compare prints
+    const typeof(b.proto->root(&b)) B = b.proto->root(&b);
+    B.proto->print(&B, printer);
+   }
+  const typeof(a->proto->root(a)) A = a->proto->root(a);
+  A.proto->print(&A, printer);
+  return r;
+ }
+
+static int notEquals_int__ArenaList_ArenaList                                                   // Confirm two ArenaList are not equal by comparing their prints
+ (const ArenaList * a,                                                                  // First ArenaList
+  const ArenaList   b)                                                                  // Second ArenaList
+ {return !a->proto->equals(a, b);
  }
 
 //D1 Root node                                                                  // The root node of an ArenaList is at offset 0
@@ -473,6 +493,18 @@ static void free__ArenaListNode                                                 
  }
 #endif
 
+static void clear__ArenaList                                                            // Clear a ArenaList
+ (ArenaList * list)                                                                     // ArenaList to clear
+ {const typeof(list->arena) a = list->arena;                                                              // Arena for list
+  memset(a->data, 0, a->size);                                                  // ValGrind
+  a->used   = 0;                                                                // Length used so far
+  a->root   = 0;                                                                // Root not set in ArenaList
+  list->proto->node(list, "", 0);                                                           // Initialize root node
+#ifdef ArenaListEditable
+  memset(a->freeSpace, 0, sizeof(a->freeSpace));
+#endif
+ }
+
 //D1 Characters in Keys                                                         // Operations on characters in the keys of nodes
 
 static void insertChar__ArenaListNode_char_size                                         // Insert the specified character into the key string of a node at the specified position.
@@ -553,17 +585,17 @@ static  ArenaListNode last_ArenaListNode__ArenaListNode                         
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->last);
  }
-#line 552 "/home/phil/c/z/arenaList/arenaList.c"
+#line 584 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode next_ArenaListNode__ArenaListNode                                                // Get the next child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->next);
  }
-#line 552 "/home/phil/c/z/arenaList/arenaList.c"
+#line 584 "/home/phil/c/z/arenaList/arenaList.c"
 static  ArenaListNode prev_ArenaListNode__ArenaListNode                                                // Get the prev child under a parent.
  (const ArenaListNode * parent)                                                         // Parent
  {return  parent->list.proto->offset(&parent->list, parent->proto->content(parent)->prev);
  }
-#line 552 "/home/phil/c/z/arenaList/arenaList.c"
+#line 584 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode first_ArenaListNode__ArenaList                                                    // Get the first child in the specified ArenaList.
  (const ArenaList * list)                                                               // Parent
@@ -575,7 +607,7 @@ static  ArenaListNode last_ArenaListNode__ArenaList                             
  {const typeof(list->proto->root(list)) root = list->proto->root(list);
   return root.proto->last(&root);
  }
-#line 559 "/home/phil/c/z/arenaList/arenaList.c"
+#line 591 "/home/phil/c/z/arenaList/arenaList.c"
 
 //D1 Search                                                                     // Search for nodes.
 
@@ -682,7 +714,7 @@ static int isLast_int__ArenaListNode                                            
  {const typeof(child->proto->parent(child)) parent = child->proto->parent(child);
   return child->proto->equals(child, parent.proto->last(&parent));
  }
-#line 661 "/home/phil/c/z/arenaList/arenaList.c"
+#line 693 "/home/phil/c/z/arenaList/arenaList.c"
 
 static int isEmpty_int__ArenaListNode                                                   // Confirm a node has no children.
  (const ArenaListNode   * node)                                                         // ArenaListNode
@@ -737,7 +769,7 @@ static  ArenaListNode   putTreeLast_ArenaListNode__ArenaListNode                
   const typeof(t.proto->root(&t)) r = t.proto->root(&t);
   return r.proto->putLast(&r, *child);                                                  // Put the child last
  }
-#line 710 "/home/phil/c/z/arenaList/arenaList.c"
+#line 742 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode   putFirst_ArenaListNode__ArenaListNode_ArenaListNode                                     // Put a child first under its parent
  (const ArenaListNode * parent,                                                         // Parent
@@ -749,7 +781,7 @@ static  ArenaListNode   putLast_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                          // Child
  {return putFL_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *parent, child);                       // Put a child last under its parent
  }
-#line 717 "/home/phil/c/z/arenaList/arenaList.c"
+#line 749 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  ArenaListNode putNP_ArenaListNode__int_ArenaListNode_ArenaListNode                                      //P Put a child next or previous to the specified sibling
  (const int   next,                                                             // Put next if true, else previous
@@ -798,7 +830,7 @@ static  ArenaListNode   putPrev_ArenaListNode__ArenaListNode_ArenaListNode      
   const ArenaListNode   child)                                                          // Child
  {return putNP_ArenaListNode__int_ArenaListNode_ArenaListNode(0, *sibling, child);                      // Put child previous
  }
-#line 761 "/home/phil/c/z/arenaList/arenaList.c"
+#line 793 "/home/phil/c/z/arenaList/arenaList.c"
 
 static  void replace__ArenaListNode_ArenaListNode                                               // Replace the specified node with this node
  (const ArenaListNode * with,                                                           // Replace with this node
@@ -1131,9 +1163,7 @@ static int printsAs_int__ArenaList_string                                       
  (const ArenaList    *       list,                                                      // ArenaList
   const char * const expected)                                                  // Expected string when printed
  {int r;
-  void printer(char * s, size_t l)
-   {r = !strncmp(s, expected, l);
-   }
+  void printer(char * s, size_t l) {r = !strncmp(s, expected, l);}              // Compare print with expected
   const typeof(list->proto->root(list)) root = list->proto->root(list); root.proto->print(&root, printer);                                    // Print from root of ArenaList
   return r;
  }
@@ -1142,9 +1172,7 @@ static int printContains_int__ArenaListNode                                     
  (const ArenaListNode * node,                                                           // Starting node
   const char  * expected)                                                       // Expected string
  {int r;
-  void printer(char * s, size_t l)
-   {r = !!strstr(s, expected); if(0)l=l;
-   }
+  void printer(char * s, size_t l) {r = !!strstr(s, expected); if(0)l=l;}       // Compare print with expected
   node->proto->print(node, printer);
   return r;
  }
@@ -1153,9 +1181,7 @@ static int printContains_int__ArenaList                                         
  (const ArenaList    *  list,                                                           // ArenaList parse ArenaList
   const char *  expected)                                                       // Expected string
  {int r;
-  void printer(char * s, size_t l)
-   {r = !!strstr(s, expected); if(0)l=l;
-   }
+  void printer(char * s, size_t l) {r = !!strstr(s, expected); if(0)l=l;}       // Compare print with expected
   const typeof(list->proto->root(list)) root = list->proto->root(list); root.proto->print(&root, printer);                                    // Print from root of ArenaList
   return r;
  }
@@ -1954,12 +1980,35 @@ void test20()                                                                   
     s.proto->free(&s); S.proto->free(&S); T.proto->free(&T);
  }
 
+void test21()                                                                   //Tclear  //Need clone__ArenaList equals__ArenaList
+ {typeof(makeArenaList()) s = makeArenaList(); typeof(makeArenaList()) t = makeArenaList(); typeof(makeArenaList()) n = makeArenaList(); const typeof(10ul) N = 10ul; char c[N];
+
+  for(size_t i = 0; i < N; ++i) c[i] = '0'+i%10;
+
+  for  (size_t i = 0; i < N; ++i)
+   {s.proto->clear(&s); t.proto->clear(&t); n.proto->clear(&n);
+
+    for(size_t j = 0; j < N; ++j) {const typeof(s.proto->node(&s, c, j+1)) n = s.proto->node(&s, c, j+1); n.proto->putTreeLast(&n);}
+
+    assert( s.proto->printsAs(&s, "0010120123012340123450123456012345670123456780123456789\n"));
+//◉0010120123012340123450123456012345670123456780123456789
+//◉
+
+    for(size_t j = N; j > 0; --j) {const typeof(t.proto->node(&t, c, j)) f = t.proto->node(&t, c, j); f.proto->putTreeFirst(&f);}
+    for(size_t j = N; j > 1; --j) {const typeof(n.proto->node(&n, c, j)) l = n.proto->node(&n, c, j); l.proto->putTreeLast(&l);}
+
+    assert( s.proto->equals(&s, t)); assert( s.proto->notEquals(&s, n)); assert( t.proto->notEquals(&t, n));
+   }
+
+  s.proto->free(&s); t.proto->free(&t); n.proto->free(&n);
+ }
+
 int main(void)                                                                  // Run tests
  {void (*tests[])(void) = {test0,  test1,  test2,  test3,  test4,
                            test5,  test6,  test7,  test8,  test9,
                            test10, test11, test12, test13, test14,
                            test15, test16, test17, test18, test19,
-                           test20, 0};
+                           test20, test21, 0};
   run_tests("ArenaList", 1, tests);
 
   return 0;
