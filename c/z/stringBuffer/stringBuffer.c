@@ -16,7 +16,7 @@
 #define $_included_$
 typedef struct $                                                                // $
  {const struct ProtoTypes_$ *proto;                                             // Prototypes for methods
-  ArenaList     string;                                                         // String being built
+  ArenaList    string;                                                          // String being built
  } $;
 #endif
 
@@ -25,7 +25,7 @@ typedef struct $                                                                
 #include <$$_prototypes.h>
 #define $fe( child, parent) for(child ◀ parent.string ▷ first; child ▷ valid; child = child ▷ next) // Each child in a parent from first to last
 #define $fer(child, parent) for(child ◀ parent.string ▷ last ; child ▷ valid; child = child ▷ prev) // Each child in a parent from last to first
-#define makeLocalCopyOf$(string,length,buffer) length ◁ length_StringBuffer(&buffer); char string[length+1]; string_StringBuffer_string(&buffer, string); // Load a string buffer into locally defined string/length variables.
+#define makeLocalCopyOf$(string,length,buffer) length ◁ length_StringBuffer(&buffer); char string[length+1]; string_StringBuffer_string(&buffer, string); // Load a $ into locally defined string/length variables.
 
 $ make$                                                                         // Make a $
  ()                                                                             //
@@ -40,7 +40,7 @@ $ make$FromString                                                               
   return b;
  }
 
-$ make$FromVaFormat                                                             // Make a string buffer from a variadic argument formatted string
+$ make$FromVaFormat                                                             // Make a $ from a variadic argument formatted string
  (const char * const format,                                                    // Format
   ...)                                                                          // Variable argument list
  {va_list va;
@@ -50,12 +50,17 @@ $ make$FromVaFormat                                                             
   return s;
  }
 
-static void free_$                                                              // Free a $
+static void free__$                                                             // Free a $
  (const $ * buffer)                                                             // $
  {buffer->string ▷ free;
  }
 
-//D1 Concatenate                                                                // Concatenate various items to a string buffer.
+static void clear__$                                                            // Clear a $
+ ($ * buffer)                                                                   // $
+ {buffer->string ▷ clear;
+ }
+
+//D1 Concatenate                                                                // Concatenate various items to a $.
 
 static int valid                                                                // Check whether the $ has been initialized
  (const $ * buffer)                                                             // $
@@ -77,7 +82,7 @@ static void addn_$_string                                                       
   s ▷ putTreeLast;
  }
 
-static void add$_$_$                                                            // Add a string buffer
+static void add$_$_$                                                            // Add a $
  (const $ * buffer,                                                             // Target $
   const $   add)                                                                // Source $
  {makeLocalCopyOf$(a, n, add);                                                  // Make a local copy of the buffer to be added in case the source and target buffers are the same
@@ -144,25 +149,25 @@ static void addQuotedNewLine_$                                                  
  {buffer ▶ add("\\n");
  }
 
-//D1 Join and Split                                                             // Join all the sub strings in the strin buffer into one string. Split the contents of the string buffer on spaces or new lines.
+//D1 Join and Split                                                             // Join all the sub strings in the $ into one string. Split the contents of the $ on spaces or new lines.
 
 static size_t count_$                                                           // Count the number of sub strings in the buffer
  (const $ * buffer)                                                             // $
  {return buffer->string ▷ countChildren;                                        // Count the number of sub strings
  }
 
-static void join_$                                                              // Join in place - join all the sub strings in the specified string buffer and replace them with one string.
+static void join_$                                                              // Join in place - join all the sub strings in the specified $ and replace them with one string.
  ($ * Old)                                                                      // $
  {old ◁ *Old;
   N ◁ old.string ▷ countChildren;                                               // Number of sub strings
   if (N <= 1) return;                                                           // Already joined
   makeLocalCopyOf$(b, l, old);                                                  // Local copy of string
-  new ◁ make$();                                                                // New string buffer
+  new ◁ make$();                                                                // New $
   new ▷ addn(b, l);                                                             // Load new buffer from joined string
   Old ▶ swap(new);                                                              // Swap arenas so that the old becomes the new
  }
 
-static void joinWith_$                                                          // Join in place - join all the sub strings in the specified string buffer with the specified string and replace the string buffer with the result.
+static void joinWith_$                                                          // Join in place - join all the sub strings in the specified $ with the specified string and replace the $ with the result.
  ($ * Old,                                                                      // $
   const char * const string)                                                    // String to separate the items being joined
  {old ◁ *Old;
@@ -170,7 +175,7 @@ static void joinWith_$                                                          
   if (S < 1) {Old ▶ join; return;}                                              // Empty joining string
   N ◁ old.string ▷ countChildren;                                               // Number of sub strings
   if (N <= 1) return;                                                           // Already joined
-  new ◀ make$();                                                                // New string buffer
+  new ◀ make$();                                                                // New $
   n ◀ 0ul;
   $fe(word, old)
    {makeLocalCopyOfArenaListKey(w, l, word);                                    // Local copy of word
@@ -209,6 +214,72 @@ static void splitWords                                                          
   for(; i < n; ++i) if (isspace(s[i])) save();
   save();
   String ▶ swap(r);                                                             // Swap arenas so that the old becomes the new
+ }
+
+//D1 File names                                                                 // Join all the sub strings in the $ to create a file or path name
+
+#define $FileComponentSeparator '/'
+#define $FileComponentExtension '.'
+
+static void fileNameFromComponents                                              // Make file name in situ
+ (const int type,                                                               // 'd' - path, 'f' - file, 'e' file with extension
+  $ * Old)                                                                      // $
+ {old ◁ *Old;
+  new ◀ make$();                                                                // New $
+  slash ◁ $FileComponentSeparator;
+
+  $fe(word, old)
+   {makeLocalCopyOfArenaListKey(w, l, word);                                    // Local copy of word
+    if (l > 0)
+     {f ◁ word ▷ isFirst;
+      s ◀ 0ul;
+
+      if (f && w[0] == slash) new ▷ addChar(slash);                             // The first word keeps its first slash
+
+      for(i ◀ 0ul; i < l; ++i) if (w[i] == slash) ++s; else break;              // Skip leading slashes
+
+      for(i ◀ s; i < l; ++i)                                                    // Parse file name component
+       {if (w[i] != slash) new ▷ addChar(w[i]);                                 // Between slashes
+        else                                                                    // Next slash
+         {for(j ◀ i + 1; j < l; ++j)                                            // Skip slashes
+           {if (w[j] != slash)
+             {new ▷ addChar(slash); new ▷ addChar(w[j]); i = j; break;
+             }
+           }
+         }
+       }
+      if (type == 'd' || !word ▷ isLast) new ▷ addChar(slash);                  // Separating slashes
+     }
+   }
+  new ▷ join;                                                                   // Concatenate components to make file name
+  Old ▶ swap(new);                                                              // Swap arenas so that the old becomes the new
+
+  if (type == 'e')                                                              // Extension
+   {$fe(word, old)
+     {makeLocalCopyOfArenaListKey(w, l, word);                                  // Local copy of string
+      for(size_t i = l; i > 0; --i)                                             // Convert last slash in only word to dot
+       {if (w[i] == slash)
+         {word ▷ replaceChar($FileComponentExtension, i);
+          break;
+         }
+       }
+     }
+   }
+ }
+
+static void fpd_$                                                               // Make path name in situ
+ ($ * Old)                                                                      // $
+ {fileNameFromComponents('d', Old);
+ }
+
+static void fpe_$                                                               // Make file name with extension in situ
+ ($ * Old)                                                                      // $
+ {fileNameFromComponents('e', Old);
+ }
+
+static void fpf_$                                                               // Make file name in situ
+ ($ * Old)                                                                      // $
+ {fileNameFromComponents('f', Old);
  }
 
 //D1 Statistics                                                                 // Statistics on the contents of the $.
@@ -372,12 +443,12 @@ static  void system_$_$                                                         
     if(0)length=length;
    }
 
-  command ▶ apply(execString);                                                  // Execute command in string buffer
+  command ▶ apply(execString);                                                  // Execute command in $
   t ▷ readFile;                                                                 // Load the results
   command ▶ swap(t);                                                            // Overwrite the input command with the results
  }
 
-//D1 Read and Write                                                             // Read/write a string buffer from/to named and temporary files.
+//D1 Read and Write                                                             // Read/write a $ from/to named and temporary files.
 
 static ssize_t writeToFileHandle                                                //P Write a $ as a string to a file handle and return the non negative number of bytes written or a negative error.
  (const $    * Buffer,                                                          // $
@@ -429,14 +500,14 @@ static void dumpHex_$                                                           
   if (!n) say("$ is empty\n");
  }
 
-static  $ writeTemporaryFile_$_string                                           // Write a $ as a string to a temporary file with the specified base name and return the full name of the file created as a string buffer.
+static  $ writeTemporaryFile_$_string                                           // Write a $ as a string to a temporary file with the specified base name and return the full name of the file created as a $.
  (const $    *        buffer,                                                   // $ content to be written
   const char * const fileName)                                                  // Base name of the file
- {fullFileName ◁ make$();                                                       // String buffer to record full file name of file created
+ {fullFileName ◁ make$();                                                       // $ to record full file name of file created
 
   ssize_t writer(int d, char *f)                                                // Write
    {if (buffer ▶ writeToFileHandle(d, f) >= 0) fullFileName  ▷ add(f);          // Record full file name of temporary file name created if content was written successfully
-    return 0;                                                                   // Success is now determined by whether the temporary file name was created in the returned string buffer or not.
+    return 0;                                                                   // Success is now determined by whether the temporary file name was created in the returned $ or not.
    }
 
   makeTemporaryFileWithContent(fileName, writer);                               // Create temporary file and write to it
@@ -457,8 +528,8 @@ static void writeStderr_$                                                       
  {buffer ▶ writeToFileHandle(fileno(stderr), "stderr");
  }
 
-static void readFile_$_string                                                   // Read a file and returns its content as a string buffer.
- ($ * FileName)                                                                 // Name of the file as the content of a string buffer
+static void readFile_$_string                                                   // Read a file and returns its content as a $.
+ ($ * FileName)                                                                 // Name of the file as the content of a $
  {fileName ◀ *FileName;
   buffer ◁ make$();
   ssize_t reader(char * location, size_t length)                                // File content
@@ -470,9 +541,9 @@ static void readFile_$_string                                                   
   FileName ▶ swap(buffer);                                                      // Replace file name with contents of file name
  }
 
-//D1 Swap                                                                       // Swap two string buffers
+//D1 Swap                                                                       // Swap two $s
 
-static void swap_$                                                              // Swap two string buffers and free the new one so that the old one is renewed.
+static void swap_$                                                              // Swap two $s and free the new one so that the old one is renewed.
  ($ * old,                                                                      // $ Old
   const $ new)                                                                  // $ New
  {old->string ▷ swap(new.string);                                               // Swap arenas so that the old becomes the new
@@ -656,18 +727,46 @@ void test11()                                                                   
      b ▷ free;
  }
 
-void test12()                                                                   //TlengthOfLastLine
+void test12()                                                                   //TlengthOfLastLine //Tclear
  {$  a = make$();      ✓ a ▷ lengthOfLastLine == 0;
-     a ▷ add("a\n");
-     a ▷ add("bb\n");  ✓ a ▷ lengthOfLastLine == 0;
-     a ▷ add("ccc");   ✓ a ▷ lengthOfLastLine == 3;
-     a ▷ free;
+  for(size_t i = 0; i < 10; ++i)
+   {a ▷ clear;
+    a ▷ add("a\n");
+    a ▷ add("bb\n");  ✓ a ▷ lengthOfLastLine == 0;
+    a ▷ add("ccc");   ✓ a ▷ lengthOfLastLine == 3;
+    a ▷ equalsString("a\nbb\nccc");
+   }
+  a ▷ free;
+ }
+
+void test13()                                                                   //Tfpd //Tfpe T//fpf
+ {$ p = make$();
+
+    p ▷ clear; p ▷ add("///a///");  p ▷ add("///b///c"); p ▷ add("///d"); p ▷ fpd;
+  ✓ p ▷ equalsString("/a/b/c/d/");
+
+    p ▷ clear; p ▷ add("a///"); p ▷ add("b///c"); p ▷ add("d");           p ▷ fpd;
+  ✓ p ▷ equalsString("a/b/c/d/");
+
+    p ▷ clear; p ▷ add("///a///");  p ▷ add("///b///c"); p ▷ add("///d"); p ▷ fpf;
+  ✓ p ▷ equalsString("/a/b/c/d");
+
+    p ▷ clear; p ▷ add("a///"); p ▷ add("b///c"); p ▷ add("d");           p ▷ fpf;
+  ✓ p ▷ equalsString("a/b/c/d");
+
+    p ▷ clear; p ▷ add("///a///");  p ▷ add("///b///c"); p ▷ add("///d"); p ▷ fpe;
+  ✓ p ▷ equalsString("/a/b/c.d");
+
+    p ▷ clear; p ▷ add("a///"); p ▷ add("b///c"); p ▷ add("d");           p ▷ fpe;
+  ✓ p ▷ equalsString("a/b/c.d");
+
+    p ▷ free;
  }
 
 int main(void)                                                                  // Run tests
- {void (*tests[])(void) = {test0,  test1,  test2, test3, test4,
-                           test5,  test6,  test7, test8, test9,
-                           test10, test11, test12, 0};
+ {void (*tests[])(void) = {test0,  test1,  test2,  test3, test4,
+                           test5,  test6,  test7,  test8, test9,
+                           test10, test11, test12, test13, 0};
   run_tests("$", 1, tests);
   return 0;
  }
