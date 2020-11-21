@@ -131,7 +131,7 @@ static ArenaList makeArenaListFromLines                                         
   typeof(0ul) B = 0ul;
 
   void save()                                                                   // Save a line
-   {if (B && p > q) {const typeof(l.proto->node(&l, q, p - q)) n = l.proto->node(&l, q, p - q); n.proto->putTreeLast(&n); B = 0;}
+   {if (B && p > q) {const typeof(l.proto->node(&l, q, p - q)) n = l.proto->node(&l, q, p - q); n.proto->putListLast(&n); B = 0;}
     q = p + 1;
    }
 
@@ -148,7 +148,7 @@ static ArenaList makeArenaListFromWords                                         
   const char * p = str, *q = p;                                                 // Parse the string into new lines
 
   void save()                                                                   // Save a line
-   {if (p > q) {const typeof(l.proto->node(&l, q, p - q)) n = l.proto->node(&l, q, p - q); n.proto->putTreeLast(&n);}
+   {if (p > q) {const typeof(l.proto->node(&l, q, p - q)) n = l.proto->node(&l, q, p - q); n.proto->putListLast(&n);}
     q = p + 1;
    }
 
@@ -759,13 +759,13 @@ static  ArenaListNode putFL_ArenaListNode__int_ArenaListNode_ArenaListNode      
   return child;
  }
 
-static  ArenaListNode   putTreeFirst_ArenaListNode__ArenaListNode                                       // Put a child first in the ArenaList containing the arena in which the child was allocated.
+static  ArenaListNode   putListFirst_ArenaListNode__ArenaListNode                                       // Put a child first in the ArenaList containing the arena in which the child was allocated.
  (const ArenaListNode * child)                                                          // Child
  {const typeof(child->list) t = child->list;                                                              // ArenaList containing arena containing child
   const typeof(t.proto->root(&t)) r = t.proto->root(&t);
   return r.proto->putFirst(&r, *child);                                                  // Put the child first
  }
-static  ArenaListNode   putTreeLast_ArenaListNode__ArenaListNode                                       // Put a child last in the ArenaList containing the arena in which the child was allocated.
+static  ArenaListNode   putListLast_ArenaListNode__ArenaListNode                                       // Put a child last in the ArenaList containing the arena in which the child was allocated.
  (const ArenaListNode * child)                                                          // Child
  {const typeof(child->list) t = child->list;                                                              // ArenaList containing arena containing child
   const typeof(t.proto->root(&t)) r = t.proto->root(&t);
@@ -1181,7 +1181,7 @@ static void dump__ArenaListNode                                                 
 static void dumpPosition__ArenaListPosition                                             //P Dump a ArenaListPosition
  (const ArenaListPosition * position)                                                   // ArenaListPosition
  {const typeof(*position) p = *position;
-  say("position(byte: %lu, node: %lu, depth: %lu)", p.byte, p.node, p.depth);                                                           // Print key number
+  say("position(byte: %lu, node: %lu, depth: %lu)", p.byte, p.node, p.depth);   // Print key number
  }
 
 static void print__ArenaListNode_function                                               // Apply a function to the print of a ArenaListNode and the tree below it.
@@ -1369,7 +1369,7 @@ static  ArenaListNode unwrap_ArenaListNode__ArenaListNode                       
 static  ArenaListNode wrap_ArenaListNode__string                                                // Wrap the specified child with a new parent and return the new parent optionally setting its L[key] and L[value].
  (const ArenaListNode *       child,                                                    // Child to wrap
   const char  * const key)                                                      // Key for new parent
- {const typeof(child->list) list = child->list;                                                         // Tree
+ {const typeof(child->list) list = child->list;                                                         // ArenaList
   const typeof(list.proto->node(&list, key, strlen(key))) parent = list.proto->node(&list, key, strlen(key));                                       // New parent
   child->proto->putNext(child, parent);                                                     // Place parent after child
   parent.proto->putLast(&parent, child->proto->cut(child));                                                // Place child under parent
@@ -1632,8 +1632,8 @@ void test4()                                                                    
   t.proto->free(&t);
  }
 
-void test5()                                                                    //TreadArenaTree //Twrite
- {  const typeof(makeArenaList()) t = makeArenaList();     t.proto->fromLetters(&t, "b(c(de(f)gh)i)j");
+void test5()                                                                    //Twrite
+ {  const typeof(makeArenaList()) t = makeArenaList(); t.proto->fromLetters(&t, "b(c(de(f)gh)i)j");
   assert( t.proto->printsWithBracketsAs(&t, "(b(c(de(f)gh)i)j)"));
 
     const typeof("/tmp/arenaTreeTest.data") f = "/tmp/arenaTreeTest.data";
@@ -1683,12 +1683,12 @@ void test7()                                                                    
   t.proto->free(&t);
  }
 
-void test8()                                                                    //TputTreeFirst //TputTreeLast //TsetKey //Tkey //Tlength //Tused //TkeyEquals //Tnodez
+void test8()                                                                    //TputListFirst //TputListLast //TsetKey //Tkey //Tlength //Tused //TkeyEquals //Tnodez
  {  const typeof(makeArenaList()) t = makeArenaList();
 
-    const typeof(t.proto->node(&t, "c", 1)) c = t.proto->node(&t, "c", 1); c.proto->putTreeFirst(&c);
-    const typeof(t.proto->node(&t, "d", 1)) d = t.proto->node(&t, "d", 1); d.proto->putTreeLast(&d);
-    typeof(t.proto->nodez(&t, "b")) b = t.proto->nodez(&t, "b");    b.proto->putTreeFirst(&b);
+    const typeof(t.proto->node(&t, "c", 1)) c = t.proto->node(&t, "c", 1); c.proto->putListFirst(&c);
+    const typeof(t.proto->node(&t, "d", 1)) d = t.proto->node(&t, "d", 1); d.proto->putListLast(&d);
+    typeof(t.proto->nodez(&t, "b")) b = t.proto->nodez(&t, "b");    b.proto->putListFirst(&b);
 
     b.proto->setKey(&b, "B", 1);
   assert( b.proto->length(&b) == 1);
@@ -1729,7 +1729,7 @@ void test10()                                                                   
   for(size_t i = 0; i < 10; ++i)
    {char c = '0'+i;
     typeof(t.proto->node(&t, &c, 1)) n = t.proto->node(&t, &c, 1);
-    n.proto->putTreeLast(&n);
+    n.proto->putListLast(&n);
     n.proto->setData(&n, D);
    }
 
@@ -1786,7 +1786,7 @@ void test13()
 
   typeof(t.proto->node(&t, "a", 1)) a = t.proto->node(&t, "a", 1);
 
-  a.proto->putTreeLast(&a);
+  a.proto->putListLast(&a);
 #ifndef ArenaListEditable
   assert( t.proto->used(&t) == 65);
 #else
@@ -1803,7 +1803,7 @@ void test13()
 #endif
 
   const typeof(t.proto->node(&t, "b", 1)) b = t.proto->node(&t, "b", 1);
-  b.proto->putTreeLast(&b);
+  b.proto->putListLast(&b);
 #ifndef ArenaListEditable
   assert( t.proto->used(&t) == 98);
 #else
@@ -1851,7 +1851,7 @@ void test15()                                                                   
  {const typeof(makeArenaList()) t = makeArenaList();
 
     const typeof(t.proto->node(&t, "aabb", 4)) a = t.proto->node(&t, "aabb", 4);
-    a.proto->putTreeLast(&a);
+    a.proto->putListLast(&a);
     a.proto->splitKey(&a, 2);
   assert( a.proto->printsAs(&a, "aa"));
     const typeof(a.proto->next(&a)) b = a.proto->next(&a);
@@ -1994,8 +1994,8 @@ void test17()                                                                   
 void test18()                                                                   //TpreOrderPosition //TequalsPosition
  {const typeof(makeArenaList()) z = makeArenaList();
 
-  const typeof(z.proto->nodez(&z, "a")) a = z.proto->nodez(&z, "a");  a.proto->putTreeLast(&a);
-  const typeof(z.proto->nodez(&z, "b")) b = z.proto->nodez(&z, "b");  b.proto->putTreeLast(&b);
+  const typeof(z.proto->nodez(&z, "a")) a = z.proto->nodez(&z, "a");  a.proto->putListLast(&a);
+  const typeof(z.proto->nodez(&z, "b")) b = z.proto->nodez(&z, "b");  b.proto->putListLast(&b);
   const typeof(z.proto->nodez(&z, "aa")) aa = z.proto->nodez(&z, "aa"); a.proto->putLast(&a, aa);
   const typeof(z.proto->nodez(&z, "ab")) ab = z.proto->nodez(&z, "ab"); a.proto->putLast(&a, ab);
   const typeof(z.proto->nodez(&z, "ba")) ba = z.proto->nodez(&z, "ba"); b.proto->putLast(&b, ba);
