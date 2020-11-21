@@ -88,7 +88,7 @@ XmlParse makeXmlParse                                                           
     makeLocalCopyOfStringBuffer(M, L, m);                                       // The error message
 
     const typeof(errors.proto->node(&errors, M, L)) n = errors.proto->node(&errors, M, L);                                                    // Save the error message
-    n.proto->putTreeLast(&n);                                                            // Add the error to the error list
+    n.proto->putListLast(&n);                                                            // Add the error to the error list
     *(size_t *)(n.proto->data(&n)) = o;                                                  // Save offset of error
 
     m.proto->free(&m);                                                                   // Free string buffer
