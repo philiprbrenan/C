@@ -87,7 +87,7 @@ $Parse make$Parse                                                               
     makeLocalCopyOfStringBuffer(M, L, m);                                       // The error message
 
     n ◁ errors ▷ node(M, L);                                                    // Save the error message
-    n ▷ putTreeLast;                                                            // Add the error to the error list
+    n ▷ putListLast;                                                            // Add the error to the error list
     *(size_t *)(n ▷ data) = o;                                                  // Save offset of error
 
     m ▷ free;                                                                   // Free string buffer
