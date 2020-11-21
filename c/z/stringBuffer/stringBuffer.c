@@ -71,7 +71,7 @@ static void add_$_string                                                        
  (const $    * buffer,                                                          // $
   const char * const string)                                                    // Zero terminated string
  {s ◁ buffer->string ▷ node(string, strlen(string));
-  s ▷ putTreeLast;
+  s ▷ putListLast;
  }
 
 static void addn_$_string                                                       // Concatenate a string of known length
@@ -79,7 +79,7 @@ static void addn_$_string                                                       
   const char * const string,                                                    // String
   const size_t       length)                                                    // String length
  {s ◁ buffer->string ▷ node(string, length);
-  s ▷ putTreeLast;
+  s ▷ putListLast;
  }
 
 static void add$_$_$                                                            // Add a $
@@ -221,7 +221,7 @@ static void splitWords                                                          
 #define $FileComponentSeparator '/'
 #define $FileComponentExtension '.'
 
-static void fileNameFromComponents                                              // Make file name in situ
+static void fileNameFromComponents                                              //P Make file name in situ
  (const int type,                                                               // 'd' - path, 'f' - file, 'e' file with extension
   $ * Old)                                                                      // $
  {old ◁ *Old;
@@ -739,7 +739,7 @@ void test12()                                                                   
   a ▷ free;
  }
 
-void test13()                                                                   //Tfpd //Tfpe T//fpf
+void test13()                                                                   //Tfpd //Tfpe //Tfpf
  {$ p = make$();
 
     p ▷ clear; p ▷ add("///a///");  p ▷ add("///b///c"); p ▷ add("///d"); p ▷ fpd;
