@@ -130,7 +130,7 @@ static $ make$FromLines                                                         
   B ◀ 0ul;
 
   void save()                                                                   // Save a line
-   {if (B && p > q) {n ◁ l ▷ node(q, p - q); n ▷ putTreeLast; B = 0;}
+   {if (B && p > q) {n ◁ l ▷ node(q, p - q); n ▷ putListLast; B = 0;}
     q = p + 1;
    }
 
@@ -147,7 +147,7 @@ static $ make$FromWords                                                         
   const char * p = str, *q = p;                                                 // Parse the string into new lines
 
   void save()                                                                   // Save a line
-   {if (p > q) {n ◁ l ▷ node(q, p - q); n ▷ putTreeLast;}
+   {if (p > q) {n ◁ l ▷ node(q, p - q); n ▷ putListLast;}
     q = p + 1;
    }
 
@@ -734,7 +734,7 @@ static  $Node putFL_$Node__int_$Node_$Node                                      
   return child;
  }
 
-static  $Node   putTreeFirst_$Node__$Node                                       // Put a child first in the $ containing the arena in which the child was allocated.
+static  $Node   putListFirst_$Node__$Node                                       // Put a child first in the $ containing the arena in which the child was allocated.
  (const $Node * child)                                                          // Child
  {t ◁ child->list;                                                              // $ containing arena containing child
   r ◁ t ▷ root;
@@ -1116,7 +1116,7 @@ static void dump__$Node                                                         
 static void dumpPosition__$Position                                             //P Dump a $Position
  (const $Position * position)                                                   // $Position
  {p ◁ *position;
-  say("position(byte: %lu, node: %lu, depth: %lu)", p.byte, p.node, p.depth);                                                           // Print key number
+  say("position(byte: %lu, node: %lu, depth: %lu)", p.byte, p.node, p.depth);   // Print key number
  }
 
 static void print__$Node_function                                               // Apply a function to the print of a $Node and the tree below it.
@@ -1304,7 +1304,7 @@ static  $Node unwrap_$Node__$Node                                               
 static  $Node wrap_$Node__string                                                // Wrap the specified child with a new parent and return the new parent optionally setting its L[key] and L[value].
  (const $Node *       child,                                                    // Child to wrap
   const char  * const key)                                                      // Key for new parent
- {list   ◁ child->list;                                                         // Tree
+ {list   ◁ child->list;                                                         // $
   parent ◁ list ▷ node(key, strlen(key));                                       // New parent
   child  ▶ putNext(parent);                                                     // Place parent after child
   parent ▷ putLast(child ▶ cut);                                                // Place child under parent
@@ -1567,8 +1567,8 @@ void test4()                                                                    
   t ▷ free;
  }
 
-void test5()                                                                    //TreadArenaTree //Twrite
- {  t ◁ make$();     t ▷ fromLetters("b(c(de(f)gh)i)j");
+void test5()                                                                    //Twrite
+ {  t ◁ make$(); t ▷ fromLetters("b(c(de(f)gh)i)j");
   ✓ t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
     f ◁ "/tmp/arenaTreeTest.data";
@@ -1618,12 +1618,12 @@ void test7()                                                                    
   t ▷ free;
  }
 
-void test8()                                                                    //TputTreeFirst //TputTreeLast //TsetKey //Tkey //Tlength //Tused //TkeyEquals //Tnodez
+void test8()                                                                    //TputListFirst //TputListLast //TsetKey //Tkey //Tlength //Tused //TkeyEquals //Tnodez
  {  t ◁ make$();
 
-    c ◁ t ▷ node ("c", 1); c ▷ putTreeFirst;
-    d ◁ t ▷ node ("d", 1); d ▷ putTreeLast;
-    b ◀ t ▷ nodez("b");    b ▷ putTreeFirst;
+    c ◁ t ▷ node ("c", 1); c ▷ putListFirst;
+    d ◁ t ▷ node ("d", 1); d ▷ putListLast;
+    b ◀ t ▷ nodez("b");    b ▷ putListFirst;
 
     b ▷ setKey("B", 1);
   ✓ b ▷ length == 1;
@@ -1664,7 +1664,7 @@ void test10()                                                                   
   for(size_t i = 0; i < 10; ++i)
    {char c = '0'+i;
     n ◀ t ▷ node(&c, 1);
-    n ▷ putTreeLast;
+    n ▷ putListLast;
     n ▷ setData(D);
    }
 
@@ -1721,7 +1721,7 @@ void test13()
 
   a ◀ t ▷ node("a", 1);
 
-  a ▷ putTreeLast;
+  a ▷ putListLast;
 #ifndef $Editable
   ✓ t ▷ used == 65;
 #else
@@ -1738,7 +1738,7 @@ void test13()
 #endif
 
   b ◁ t ▷ node("b", 1);
-  b ▷ putTreeLast;
+  b ▷ putListLast;
 #ifndef $Editable
   ✓ t ▷ used == 98;
 #else
@@ -1786,7 +1786,7 @@ void test15()                                                                   
  {t ◁ make$();
 
     a ◁ t ▷ node("aabb", 4);
-    a ▷ putTreeLast;
+    a ▷ putListLast;
     a ▷ splitKey(2);
   ✓ a ▷ printsAs("aa");
     b ◁ a ▷ next;
@@ -1929,8 +1929,8 @@ cccc5
 void test18()                                                                   //TpreOrderPosition //TequalsPosition
  {z ◁ make$();
 
-  a  ◁ z ▷ nodez("a");  a ▷ putTreeLast;
-  b  ◁ z ▷ nodez("b");  b ▷ putTreeLast;
+  a  ◁ z ▷ nodez("a");  a ▷ putListLast;
+  b  ◁ z ▷ nodez("b");  b ▷ putListLast;
   aa ◁ z ▷ nodez("aa"); a ▷ putLast(aa);
   ab ◁ z ▷ nodez("ab"); a ▷ putLast(ab);
   ba ◁ z ▷ nodez("ba"); b ▷ putLast(ba);
