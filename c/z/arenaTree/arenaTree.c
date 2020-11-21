@@ -25,7 +25,7 @@ include ../arenaList/arenaList.c :structs !$ !$Content
 
 typedef struct $Content                                                         // Content of a node in a $
  {unsigned int left, right, up, height, tree, length;                           // Location of left, right, parent trees, sub tree height, owned sub tree, length of key.
-  char key[0];
+  char key [0];                                                                 // Variable length key whose current length is in the length field
  } $Content;
 
 typedef struct $Found                                                           // The result of trying to find a node in the $.
