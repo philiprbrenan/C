@@ -40,8 +40,8 @@ typedef struct $Content                                                         
 #ifdef $Editable
   unsigned char size;                                                           // The size of the node including the key as the exponent of a power of two
 #endif
-  char          data[0];                                                        // The fixed data content of the node - the actual width of this field is held in arena.width
-  char          key [0];                                                        // The content of the key
+  char data[0];                                                                 // The fixed data content of the node - the actual width of this field is held in arena.width
+  char key [0];                                                                 // Variable length key whose current length is in the length field - if the list is editable the key can expand up to take up any excess free space allocated in the node
  } $Content;
 
 typedef struct $Node                                                            // Offset to the content of a node in the $.
@@ -84,6 +84,21 @@ typedef struct $NodeAndState                                                    
   int    state;                                                                 // Processing state
  } $NodeAndState;
 
+typedef struct $TreeContent                                                     // Content of a node in a $
+ {unsigned int left, right, up, height, tree, length;                           // Location of left, right, parent trees, sub tree height, owned sub tree, length of key.
+  char data[0];                                                                 // Fixed width data section - width is held in the arena
+  char key [0];                                                                 // Variable length key
+ } $TreeContent;
+
+typedef struct $Found                                                           // The result of trying to find a node in the $.
+ {const struct ProtoTypes_$Found *proto;                                        // Methods
+  char  * key;                                                                  // Key to find
+  size_t  length;                                                               // Length of key to find
+  $       tree;                                                                 // $ being processed
+  $Node   last;                                                                 // Last node found during find.
+  int     different;                                                            // The compare result on the last node found. If zero, the last node found was a match
+ } $Found;
+
 #include <$$_prototypes.h>                                                      // $ prototypes now that the relevant structures have been declared
 #define $fe( child, parent) for(child ◀ parent ▷ first; child ▷ valid; child = child ▷ next) // Each child under a parent from first to last
 //#define $Fe( child, list)   for(child ◀ list   ▷ first; child ▷ valid; child = child ▷ next) // Each child under the root node of a $ from first to last
@@ -98,7 +113,7 @@ static $ make$WithWidth                                                         
  (const size_t width)                                                           // Width
  {$Arena * a = alloc(sizeof($Arena));                                           // Allocate arena description
   memset(a, 0, sizeof($Arena));                                                 // Clear arena description
-  t ◁ new $(arena: a);                                                          // $ we are creating
+  l ◁ new $(arena: a);                                                          // $ we are creating
 
   a->size   = 256;                                                              // This could be any reasonable value - it will be doubled everytime the arena overflows.
   a->data   = alloc( a->size);                                                  // Allocate arena
@@ -106,8 +121,8 @@ static $ make$WithWidth                                                         
   a->used   = 0;                                                                // Length used so far
   a->root   = 0;                                                                // Root not set in $
   a->width  = width;                                                            // Width of user data associated with each node
-  t ▷ node("", 0);                                                              // Initialize root node
-  return t;
+  l ▷ node("", 0);                                                              // Initialize root node
+  return l;
  }
 
 static $ make$                                                                  // Create a new $
@@ -759,6 +774,13 @@ static  $Node   nodeFirst_$Node__$_string_size                                  
  }
 duplicate s/First/Last/g
 
+static  $Node   nodezFirst_$Node__$_string_size                                 // Create a new node from the specified zero terminated key string and place it first in the $
+ (const $     * list,                                                           // $
+  const char  * string)                                                         // Value of key as a zero terminated string for new child
+ {return list ▶ nodeFirst(string, strlen(string));                              // Put the new node first in the $
+ }
+duplicate s/First/Last/g
+
 static  $Node   nodeFirst_$Node__$Node_string_size                              // Create a new node and place it first under the specified node
  (const $Node * parent,                                                         // Parent
   const char  * string,                                                         // Value of key for new child
@@ -766,6 +788,13 @@ static  $Node   nodeFirst_$Node__$Node_string_size                              
  {l ◁ parent->list;                                                             // $ containing parent
   n ◁ l ▷ node(string, length);                                                 // Create node
   return parent ▶ putFirst(n);                                                  // Put a child first under its parent
+ }
+duplicate s/First/Last/g
+
+static  $Node   nodezFirst_$Node__$Node_zstring                                 // Create a new node from the specified zero terminated key string and place it first in the $
+ (const $Node * parent,                                                         // Parent
+  const char  * string)                                                         // Value of key as a zero terminated string for new child
+ {return parent ▶ nodeFirst(string, strlen(string));                            // Put the new node first in the $
  }
 duplicate s/First/Last/g
 
@@ -813,13 +842,20 @@ static  $Node   putNext_$Node__$Node_$Node                                      
  }
 duplicate s/Next/Prev/g,s/next/previous/g,s/1/0/
 
-static  $Node   nodeNext_$Node__$Node_string_size                               // Create a new node next after the specified sibling
+static  $Node   nodeNext_$Node__$Node_string_size                               // Create a new node next after the specified sibling with the specified key
  (const $Node * sibling,                                                        // Sibling
   const char  * string,                                                         // Value of key for new child
   const size_t  length)                                                         // Length of key for new child
  {l ◁ sibling->list;                                                            // $ containing parent
   n ◁ l ▷ node(string, length);                                                 // Create node
   return sibling ▶ putNext(n);                                                  // Put a child next after its parent
+ }
+duplicate s/Next/Prev/g
+
+static  $Node   nodezNext_$Node__$Node_zstring                                  // Create a new node next after the specified sibling with a key specified via a zero terminated string
+ (const $Node * sibling,                                                        // Sibling
+  const char  * string)                                                         // Value of key for new child specified as a zero terminated string
+ {return sibling ▶ nodeNext(string, strlen(string));                            // Put a child next after its parent
  }
 duplicate s/Next/Prev/g
 
@@ -1505,16 +1541,16 @@ void test3()                                                                    
  {t ◁ make$();    t ▷ fromLetters("b(c(de(f)gh)i)j");
   ✓t ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
 
-  a ◁ t ▷ root;  ✓a ▷ equalsString("");                           ✓a ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
-  b ◁ a ▷ first; ✓b ▷ equalsString("b"); ✓a ▷ equals(b ▷ parent); ✓b ▷ printsWithBracketsAs( "b(c(de(f)gh)i)");
-  c ◁ b ▷ first; ✓c ▷ equalsString("c"); ✓b ▷ equals(c ▷ parent); ✓c ▷ printsWithBracketsAs(   "c(de(f)gh)");
-  d ◁ c ▷ first; ✓d ▷ equalsString("d"); ✓c ▷ equals(d ▷ parent); ✓d ▷ printsWithBracketsAs(     "d");
-  e ◁ d ▷ next;  ✓e ▷ equalsString("e"); ✓c ▷ equals(e ▷ parent); ✓e ▷ printsWithBracketsAs(      "e(f)");
-  f ◁ e ▷ last;  ✓f ▷ equalsString("f"); ✓e ▷ equals(f ▷ parent); ✓f ▷ printsWithBracketsAs(        "f");
-  g ◁ e ▷ next;  ✓g ▷ equalsString("g"); ✓c ▷ equals(g ▷ parent); ✓g ▷ printsWithBracketsAs(          "g");
-  h ◁ g ▷ next;  ✓h ▷ equalsString("h"); ✓c ▷ equals(h ▷ parent); ✓h ▷ printsWithBracketsAs(           "h");
-  i ◁ c ▷ next;  ✓i ▷ equalsString("i"); ✓b ▷ equals(i ▷ parent); ✓i ▷ printsWithBracketsAs(             "i");
-  j ◁ b ▷ next;  ✓j ▷ equalsString("j"); ✓a ▷ equals(j ▷ parent); ✓j ▷ printsWithBracketsAs(               "j");
+  a ◁ t ▷ root;  ✓ a ▷ equalsString("");                            ✓ a ▷ printsWithBracketsAs("(b(c(de(f)gh)i)j)");
+  b ◁ a ▷ first; ✓ b ▷ equalsString("b"); ✓ a ▷ equals(b ▷ parent); ✓ b ▷ printsWithBracketsAs( "b(c(de(f)gh)i)");
+  c ◁ b ▷ first; ✓ c ▷ equalsString("c"); ✓ b ▷ equals(c ▷ parent); ✓ c ▷ printsWithBracketsAs(   "c(de(f)gh)");
+  d ◁ c ▷ first; ✓ d ▷ equalsString("d"); ✓ c ▷ equals(d ▷ parent); ✓ d ▷ printsWithBracketsAs(     "d");
+  e ◁ d ▷ next;  ✓ e ▷ equalsString("e"); ✓ c ▷ equals(e ▷ parent); ✓ e ▷ printsWithBracketsAs(      "e(f)");
+  f ◁ e ▷ last;  ✓ f ▷ equalsString("f"); ✓ e ▷ equals(f ▷ parent); ✓ f ▷ printsWithBracketsAs(        "f");
+  g ◁ e ▷ next;  ✓ g ▷ equalsString("g"); ✓ c ▷ equals(g ▷ parent); ✓ g ▷ printsWithBracketsAs(          "g");
+  h ◁ g ▷ next;  ✓ h ▷ equalsString("h"); ✓ c ▷ equals(h ▷ parent); ✓ h ▷ printsWithBracketsAs(           "h");
+  i ◁ c ▷ next;  ✓ i ▷ equalsString("i"); ✓ b ▷ equals(i ▷ parent); ✓ i ▷ printsWithBracketsAs(             "i");
+  j ◁ b ▷ next;  ✓ j ▷ equalsString("j"); ✓ a ▷ equals(j ▷ parent); ✓ j ▷ printsWithBracketsAs(               "j");
 
   ✓ !a ▷ valid;
   ✓  b ▷ isFirst;
@@ -2035,24 +2071,26 @@ void test21()                                                                   
   s ▷ free; t ▷ free; n ▷ free;
  }
 
-void test22()                                                                   //TnodeFirst //TnodeLast //TnodeNext //TnodePrev
+void test22()                                                                   //TnodeFirst //TnodeLast //TnodeNext //TnodePrev //TnodezFirst //TnodezLast //TnodezNext //TnodezPrev
  {s ◀ make$();
 
   a ◁ s ▷ nodeFirst("a", 1);
   d ◁ s ▷ nodeLast ("d", 1);
       a ▷ nodeNext ("b", 1);
       d ▷ nodePrev ("c", 1);
-      d ▷ nodeFirst("e", 1);
-      d ▷ nodeLast ("f", 1);
+  e ◁ d ▷ nodezFirst("e");
+      e ▷ nodezNext ("f");
+  h ◁ d ▷ nodezLast ("h");
+      h ▷ nodezPrev ("g");
 
   ✓ s ▷ printsWithBracketsAs(◉);
-(abcd(ef))
+(abcd(efgh))
 ◉
 
   s ▷ free;
  }
 
-void test23()                                                                   //Tfiles //TFolders
+void test23()                                                                   //Tfiles //Tfolders
  {D ◀ make$(); F ◀ make$();
 
   s ◁ "";
