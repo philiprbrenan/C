@@ -72,7 +72,7 @@ static void add_StringBuffer_string                                             
  (const StringBuffer    * buffer,                                                          // StringBuffer
   const char * const string)                                                    // Zero terminated string
  {const typeof(buffer->string.proto->node(&buffer->string, string, strlen(string))) s = buffer->string.proto->node(&buffer->string, string, strlen(string));
-  s.proto->putTreeLast(&s);
+  s.proto->putListLast(&s);
  }
 
 static void addn_StringBuffer_string                                                       // Concatenate a string of known length
@@ -80,7 +80,7 @@ static void addn_StringBuffer_string                                            
   const char * const string,                                                    // String
   const size_t       length)                                                    // String length
  {const typeof(buffer->string.proto->node(&buffer->string, string, length)) s = buffer->string.proto->node(&buffer->string, string, length);
-  s.proto->putTreeLast(&s);
+  s.proto->putListLast(&s);
  }
 
 static void addStringBuffer_StringBuffer_StringBuffer                                                            // Add a StringBuffer
@@ -222,7 +222,7 @@ static void splitWords                                                          
 #define StringBufferFileComponentSeparator '/'
 #define StringBufferFileComponentExtension '.'
 
-static void fileNameFromComponents                                              // Make file name in situ
+static void fileNameFromComponents                                              //P Make file name in situ
  (const int type,                                                               // 'd' - path, 'f' - file, 'e' file with extension
   StringBuffer * Old)                                                                      // StringBuffer
  {const typeof(*Old) old = *Old;
@@ -740,7 +740,7 @@ void test12()                                                                   
   a.proto->free(&a);
  }
 
-void test13()                                                                   //Tfpd
+void test13()                                                                   //Tfpd //Tfpe //Tfpf
  {StringBuffer p = makeStringBuffer();
 
     p.proto->clear(&p); p.proto->add(&p, "///a///");  p.proto->add(&p, "///b///c"); p.proto->add(&p, "///d"); p.proto->fpd(&p);
@@ -756,7 +756,6 @@ void test13()                                                                   
   assert( p.proto->equalsString(&p, "a/b/c/d"));
 
     p.proto->clear(&p); p.proto->add(&p, "///a///");  p.proto->add(&p, "///b///c"); p.proto->add(&p, "///d"); p.proto->fpe(&p);
-p.proto->dump(&p);
   assert( p.proto->equalsString(&p, "/a/b/c.d"));
 
     p.proto->clear(&p); p.proto->add(&p, "a///"); p.proto->add(&p, "b///c"); p.proto->add(&p, "d");           p.proto->fpe(&p);
